@@ -1,0 +1,14 @@
+.DS_Store
+.env
+.env.local
+.venv/
+.idea/
+__pycache__/
+*.pyc
+chroma_db/
+
+# Next.js local env and build artifacts
+orthodox-site/.env.local
+orthodox-site/.next/
+orthodox-site/node_modules/
+orthodox-site/.idea/
