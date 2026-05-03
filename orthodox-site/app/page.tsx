@@ -8,6 +8,9 @@ import ChatSidebar from "../components/ChatSidebar";
 import { fetchConversationList, deleteConversationRequest } from "../lib/chat-client";
 import { ConversationSummary } from "../lib/chat-types";
 
+const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
+const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
+
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -52,7 +55,15 @@ export default function HomePage() {
   }
 
   function startNewChat() {
-    router.push("/chat?new=1");
+    router.push("/chat");
+  }
+
+  function startChatFromHome(message: string) {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(PENDING_CHAT_MESSAGE_KEY, message);
+      sessionStorage.setItem(PENDING_CHAT_TOKEN_KEY, `${Date.now()}`);
+    }
+    router.push("/chat");
   }
 
   async function deleteSession(sessionId: string) {
@@ -84,7 +95,7 @@ export default function HomePage() {
           </p>
 
           <div className="hero-chat-wrap">
-            <ChatShell />
+            <ChatShell onSubmit={startChatFromHome} />
           </div>
         </section>
 

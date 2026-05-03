@@ -9,6 +9,7 @@ import ChatSidebar from "../../components/ChatSidebar";
 import InteractiveAnswer from "../../components/InteractiveAnswer";
 import { buildSaintLookup, isValidSaintName } from "../../components/saintNameUtils";
 import {
+  createConversationRequest,
   deleteConversationRequest,
   fetchConversation,
   fetchConversationList,
@@ -35,6 +36,8 @@ type CatechismTopic = {
 const SAINTS_PAGE_SIZE = 200;
 const DEFAULT_ERROR =
   "Sorry — I could not reach the Orthodox AI server. Please try again in a moment.";
+const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
+const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
 const CATECHISM_TOPICS: CatechismTopic[] = [
   {
     title: "Prayer",
@@ -174,6 +177,7 @@ function ChatPageContent() {
   const [conversationError, setConversationError] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isDraftChat, setIsDraftChat] = useState(false);
+  const [composerInitialValue, setComposerInitialValue] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "saints" | "catechism">("chat");
   const [saints, setSaints] = useState<string[]>([]);
@@ -186,12 +190,10 @@ function ChatPageContent() {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const saintsListRef = useRef<HTMLDivElement>(null);
   const saintsLoadingRef = useRef(false);
-  const isSendingRef = useRef(false);
-  const isCreatingConversationRef = useRef(false);
-  const routeQueryInFlightRef = useRef("");
-  const handledQueryRef = useRef("");
+  const submittingRef = useRef(false);
+  const createdConversationRef = useRef(false);
+  const processedQuestionRef = useRef("");
   const handledChatRef = useRef("");
-  const handledNewRef = useRef("");
 
   const saintLookup = useMemo(() => buildSaintLookup(saints), [saints]);
   const messages = useMemo(() => currentConversation?.messages || [], [currentConversation]);
@@ -247,10 +249,6 @@ function ChatPageContent() {
   useEffect(() => {
     saintsLoadingRef.current = saintsLoading;
   }, [saintsLoading]);
-
-  useEffect(() => {
-    isSendingRef.current = isSending;
-  }, [isSending]);
 
   const loadSaintsPage = useCallback(
     async ({
@@ -350,17 +348,14 @@ function ChatPageContent() {
     const updateRoute = options?.updateRoute ?? true;
 
     handledChatRef.current = "";
-    handledQueryRef.current = "";
-    routeQueryInFlightRef.current = "";
     setCurrentConversation(null);
     setActiveConversationId("");
     setConversationError("");
     setActiveTab("chat");
     setIsDraftChat(true);
+    setComposerInitialValue("");
     if (updateRoute) {
-      const newToken = Date.now().toString();
-      handledNewRef.current = newToken;
-      router.replace(`/chat?new=${encodeURIComponent(newToken)}`, { scroll: false });
+      router.replace("/chat", { scroll: false });
     }
     console.debug("[chat] draft chat started");
     return "";
@@ -392,19 +387,15 @@ function ChatPageContent() {
     [activeConversationId]
   );
 
-  const submitQuestion = useCallback(
-    async (rawQuestion: string, preferredConversationId?: string) => {
+  const handleSendMessage = useCallback(
+    async (rawQuestion: string) => {
       const question = rawQuestion.trim();
-      if (!question || isSendingRef.current) return;
+      if (!question || submittingRef.current) return;
 
-      let conversationId = preferredConversationId || activeConversationId;
-      const isCreatingConversation = !conversationId;
-      if (isCreatingConversation && isCreatingConversationRef.current) {
-        console.debug("[chat] conversation creation already in flight, skipping duplicate submit");
+      let conversationId = activeConversationId;
+      if (!conversationId && createdConversationRef.current) {
+        console.debug("[chat] duplicate conversation creation blocked");
         return;
-      }
-      if (isCreatingConversation) {
-        isCreatingConversationRef.current = true;
       }
 
       const localConversationId = conversationId || `draft-${crypto.randomUUID()}`;
@@ -434,17 +425,37 @@ function ChatPageContent() {
       }
       setActiveTab("chat");
       setConversationError("");
-      isSendingRef.current = true;
+      submittingRef.current = true;
       setIsSending(true);
 
       try {
+        if (!conversationId) {
+          createdConversationRef.current = true;
+          console.log("CREATE_CONVERSATION", { mode: "create" });
+          const conversation = await createConversationRequest();
+          conversationId = conversation.id;
+          handledChatRef.current = conversation.id;
+          setConversations((prev) => mergeConversationSummary(prev, conversation));
+          setCurrentConversation((prev) => ({
+            ...(prev && prev.id === localConversationId ? prev : { ...conversation, messages: [] }),
+            ...conversation,
+            messages: prev?.id === localConversationId ? prev.messages : nextMessages,
+          }));
+          setActiveConversationId(conversation.id);
+          setIsDraftChat(false);
+        } else {
+          console.log("CREATE_CONVERSATION", { mode: "reuse", conversationId });
+        }
+
+        console.log("SAVE_USER_MESSAGE", { conversationId });
+        console.log("CALL_BACKEND", { conversationId, question });
         const result = await sendChatRequest({ question, conversationId });
         handledChatRef.current = result.conversation.id;
-        routeQueryInFlightRef.current = "";
         setIsDraftChat(false);
-        console.debug("[chat] conversation saved once", result.conversation.id);
-        console.debug("[chat] user message saved once", result.userMessage.id);
-        console.debug("[chat] assistant message saved once", result.assistantMessage.id);
+        console.log("SAVE_ASSISTANT_MESSAGE", {
+          conversationId: result.conversation.id,
+          assistantMessageId: result.assistantMessage.id,
+        });
         setConversations((prev) => mergeConversationSummary(prev, result.conversation));
         setCurrentConversation((prev) => {
           const baseMessages = prev?.messages.filter(
@@ -459,7 +470,6 @@ function ChatPageContent() {
         setActiveConversationId(result.conversation.id);
         router.replace(`/chat?chat=${encodeURIComponent(result.conversation.id)}`, { scroll: false });
       } catch (error) {
-        routeQueryInFlightRef.current = "";
         const message = error instanceof Error ? error.message : DEFAULT_ERROR;
         setConversationError(message);
         setCurrentConversation((prev) => {
@@ -474,8 +484,8 @@ function ChatPageContent() {
           };
         });
       } finally {
-        isCreatingConversationRef.current = false;
-        isSendingRef.current = false;
+        createdConversationRef.current = false;
+        submittingRef.current = false;
         setIsSending(false);
       }
     },
@@ -483,37 +493,20 @@ function ChatPageContent() {
   );
 
   useEffect(() => {
-    const q = searchParams.get("q")?.trim() || "";
     const chatId = searchParams.get("chat") || "";
-    const isNew = searchParams.get("new") || "";
-
-    if (q && q !== handledQueryRef.current && q !== routeQueryInFlightRef.current) {
-      handledQueryRef.current = q;
-      routeQueryInFlightRef.current = q;
-      void (async () => {
-        setCurrentConversation(null);
-        setActiveConversationId("");
-        setConversationError("");
-        setIsDraftChat(true);
-        await submitQuestion(q);
-      })();
-      return;
-    }
-
-    if (isNew && isNew !== handledNewRef.current) {
-      handledNewRef.current = isNew;
-      void startNewChat({ updateRoute: false });
-      return;
-    }
+    const hasPendingDraft =
+      typeof window !== "undefined" &&
+      Boolean(sessionStorage.getItem(PENDING_CHAT_TOKEN_KEY));
 
     if (chatId && chatId !== handledChatRef.current) {
       handledChatRef.current = chatId;
       setIsDraftChat(false);
+      setComposerInitialValue("");
       void loadConversationDetail(chatId);
       return;
     }
 
-    if (!chatId && !q && !isNew && conversations.length > 0 && !activeConversationId && !conversationLoading && !isDraftChat) {
+    if (!chatId && !hasPendingDraft && conversations.length > 0 && !activeConversationId && !conversationLoading && !isDraftChat) {
       void loadConversationDetail(conversations[0].id);
     }
   }, [
@@ -522,11 +515,28 @@ function ChatPageContent() {
     conversations,
     isDraftChat,
     loadConversationDetail,
-    router,
     searchParams,
-    startNewChat,
-    submitQuestion,
   ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pendingToken = sessionStorage.getItem(PENDING_CHAT_TOKEN_KEY) || "";
+    if (!pendingToken || pendingToken === processedQuestionRef.current) return;
+
+    const pendingMessage = (sessionStorage.getItem(PENDING_CHAT_MESSAGE_KEY) || "").trim();
+    processedQuestionRef.current = pendingToken;
+    sessionStorage.removeItem(PENDING_CHAT_TOKEN_KEY);
+    sessionStorage.removeItem(PENDING_CHAT_MESSAGE_KEY);
+
+    if (!pendingMessage) return;
+
+    handledChatRef.current = "";
+    setCurrentConversation(null);
+    setActiveConversationId("");
+    setConversationError("");
+    setIsDraftChat(true);
+    setComposerInitialValue(pendingMessage);
+  }, []);
 
   const submitSaintLookup = useCallback((name: string) => {
     const trimmed = name.trim();
@@ -788,7 +798,7 @@ function ChatPageContent() {
           )}
 
           <div className="chat-bottom-bar">
-            <ChatShell onSubmit={submitQuestion} isSubmitting={isSending} />
+            <ChatShell initialValue={composerInitialValue} onSubmit={handleSendMessage} isSubmitting={isSending} />
           </div>
         </section>
 

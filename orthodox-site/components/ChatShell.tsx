@@ -1,7 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 type ChatShellProps = {
   initialValue?: string;
@@ -11,9 +11,12 @@ type ChatShellProps = {
 
 export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = false }: ChatShellProps) {
   const [message, setMessage] = useState(initialValue);
-  const router = useRouter();
   const pathname = usePathname();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setMessage(initialValue);
+  }, [initialValue]);
 
   useEffect(() => {
     function handleInsertText(event: Event) {
@@ -36,8 +39,6 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
       setMessage("");
       if (onSubmit) {
         void onSubmit(nextText);
-      } else {
-        router.push(`/chat?q=${encodeURIComponent(nextText)}`);
       }
     }
 
@@ -47,7 +48,7 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
       window.removeEventListener("chat:insertText", handleInsertText);
       window.removeEventListener("chat:insertAndSubmitText", handleInsertAndSubmitText);
     };
-  }, [isSubmitting, onSubmit, router]);
+  }, [isSubmitting, onSubmit]);
 
   function submitMessage() {
     if (isSubmitting) return;
@@ -57,10 +58,7 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
     setMessage("");
     if (onSubmit) {
       void onSubmit(trimmed);
-      return;
     }
-
-    router.push(`/chat?q=${encodeURIComponent(trimmed)}`);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
