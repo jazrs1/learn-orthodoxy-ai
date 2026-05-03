@@ -28,10 +28,28 @@ async function loadLocalEnv() {
 
 await loadLocalEnv();
 
-const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+function resolveConnectionConfig() {
+  const candidates = [
+    ["POSTGRES_URL_NON_POOLING", process.env.POSTGRES_URL_NON_POOLING],
+    ["POSTGRES_URL", process.env.POSTGRES_URL],
+    ["DATABASE_URL", process.env.DATABASE_URL],
+  ];
+
+  for (const [name, value] of candidates) {
+    if (value && value.trim()) {
+      return { envName: name, connectionString: value.trim() };
+    }
+  }
+
+  return { envName: "", connectionString: "" };
+}
+
+const { envName, connectionString } = resolveConnectionConfig();
 
 if (!connectionString) {
-  throw new Error("Missing POSTGRES_URL or DATABASE_URL.");
+  throw new Error(
+    "Missing database connection string. Set POSTGRES_URL_NON_POOLING, POSTGRES_URL, or DATABASE_URL for the build environment."
+  );
 }
 
 const client = new Client({
@@ -42,6 +60,7 @@ const client = new Client({
 const migrationsDir = path.resolve(process.cwd(), "migrations");
 
 async function main() {
+  console.log(`Running chat DB migrations using ${envName}`);
   await client.connect();
   await client.query(`
     create table if not exists chat_migrations (
