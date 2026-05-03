@@ -1,6 +1,7 @@
 import os
 import re
 from typing import List, Dict, Any
+from pathlib import Path
 
 from dotenv import load_dotenv
 import chromadb
@@ -553,6 +554,51 @@ last_list = {}
 saint_name_index: List[str] = []
 
 
+def _collect_chroma_debug_info() -> Dict[str, Any]:
+    resolved_path = str(Path(CHROMA_DIR).resolve())
+    path_exists = Path(CHROMA_DIR).exists()
+
+    info: Dict[str, Any] = {
+        "chroma_dir_env": CHROMA_DIR,
+        "resolved_chroma_dir": resolved_path,
+        "directory_exists": path_exists,
+        "collection_name": COLLECTION_NAME,
+        "collection_ready": collection is not None,
+        "document_count": 0,
+        "sample_items": [],
+    }
+
+    if collection is None:
+        return info
+
+    try:
+        info["document_count"] = int(collection.count())
+    except Exception as exc:
+        info["count_error"] = str(exc)
+        return info
+
+    if info["document_count"] <= 0:
+        return info
+
+    try:
+        batch = collection.get(include=["documents", "metadatas"], limit=3, offset=0)
+        docs = batch.get("documents", []) or []
+        metas = batch.get("metadatas", []) or []
+        sample_items = []
+        for doc, metadata in zip(docs[:3], metas[:3]):
+            sample_items.append(
+                {
+                    "metadata": metadata or {},
+                    "document_preview": (doc or "")[:240],
+                }
+            )
+        info["sample_items"] = sample_items
+    except Exception as exc:
+        info["sample_error"] = str(exc)
+
+    return info
+
+
 @app.on_event("startup")
 def startup():
     global chroma_client, collection, oai_client
@@ -563,6 +609,8 @@ def startup():
         return
 
     print("Starting up API...")
+    print(f"CHROMA_DIR env: {CHROMA_DIR}")
+    print(f"Collection name: {COLLECTION_NAME}")
     chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
 
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
@@ -576,6 +624,10 @@ def startup():
     )
 
     oai_client = OpenAI(api_key=api_key)
+    debug_info = _collect_chroma_debug_info()
+    print(f"Resolved Chroma dir: {debug_info['resolved_chroma_dir']}")
+    print(f"Chroma dir exists: {debug_info['directory_exists']}")
+    print(f"Chroma document count: {debug_info['document_count']}")
     print("Startup complete.")
 
 
@@ -593,8 +645,18 @@ def root():
     return {
         "status": "alive",
         "service": "orthodox-api",
-        "routes": ["/", "/health", "/chat", "/saints", "/saint-suggestions"],
+        "routes": ["/", "/health", "/debug/chroma", "/chat", "/saints", "/saint-suggestions"],
     }
+
+
+@app.get("/debug/chroma")
+def debug_chroma():
+    global collection, oai_client
+
+    if collection is None or oai_client is None:
+        startup()
+
+    return _collect_chroma_debug_info()
 
 
 def _build_saint_name_index() -> List[str]:
