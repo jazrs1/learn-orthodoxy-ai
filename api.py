@@ -522,7 +522,7 @@ def startup():
         model_name="text-embedding-3-small",
     )
 
-    collection = chroma_client.get_collection(
+    collection = chroma_client.get_or_create_collection(
         name=COLLECTION_NAME,
         embedding_function=embed_fn,
     )
