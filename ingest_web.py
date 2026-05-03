@@ -127,18 +127,10 @@ def delete_existing_url_chunks(collection: Any, url: str, keep_ids: List[str]) -
         collection.delete(ids=stale_ids)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Ingest website pages into the Learn Orthodoxy AI Chroma collection.")
-    parser.add_argument("urls", nargs="+", help="One or more website URLs to ingest")
-    args = parser.parse_args()
-
+def get_collection():
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
-
-    urls = [normalize_url(url) for url in args.urls if normalize_url(url)]
-    if not urls:
-        raise RuntimeError("Provide at least one valid URL.")
 
     client = chromadb.PersistentClient(path=CHROMA_DIR)
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
@@ -150,6 +142,17 @@ def main() -> None:
         embedding_function=embed_fn,
         metadata={"source": "orthodox_pdfs"},
     )
+    return client, collection
+
+
+def ingest_website_sources(urls: List[str]) -> Dict[str, int]:
+    urls = [normalize_url(url) for url in urls if normalize_url(url)]
+    if not urls:
+        raise RuntimeError("Provide at least one valid URL.")
+
+    print(f"CHROMA_DIR: {CHROMA_DIR}")
+    print(f"Collection: {COLLECTION_NAME}")
+    _, collection = get_collection()
 
     total_chunks = 0
     batch_size = 100
@@ -199,11 +202,28 @@ def main() -> None:
         total_chunks += len(chunks)
         print(f"Finished ingesting {url}")
 
+    final_count = int(collection.count())
+    print(f"Final document count after website ingestion: {final_count}")
+    return {
+        "url_count": len(urls),
+        "chunk_count": total_chunks,
+        "document_count": final_count,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Ingest website pages into the Learn Orthodoxy AI Chroma collection.")
+    parser.add_argument("urls", nargs="+", help="One or more website URLs to ingest")
+    args = parser.parse_args()
+
+    stats = ingest_website_sources(args.urls)
+
     print("\n✅ Website ingestion complete.")
-    print(f"URLs processed: {len(urls)}")
-    print(f"Total chunks upserted: {total_chunks}")
+    print(f"URLs processed: {stats['url_count']}")
+    print(f"Total chunks upserted: {stats['chunk_count']}")
     print(f"Chroma DB saved to: {CHROMA_DIR}")
     print(f"Collection: {COLLECTION_NAME}")
+    print(f"Final document count: {stats['document_count']}")
 
 
 if __name__ == "__main__":

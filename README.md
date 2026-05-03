@@ -207,6 +207,69 @@ CORS_ALLOW_ORIGIN_REGEX=https://.*\.vercel\.app
 
 Your Chroma data must exist in the Railway filesystem at deploy time, or be recreated there. If the production backend needs the latest PDFs indexed, run your ingestion flow against the production environment before relying on live traffic.
 
+## How to Populate Production Chroma
+
+The FastAPI backend reads from the existing Chroma collection:
+
+- `COLLECTION_NAME=orthodox_pdfs`
+- `CHROMA_DIR` from env if present, otherwise `chroma_db`
+
+To populate production Chroma with all currently configured sources, run from the repository root:
+
+```bash
+python ingest_all_sources.py
+```
+
+This command will:
+
+1. Ingest all PDFs from `data/pdfs`
+2. Ingest all configured website URLs from [`website_sources.py`](/Users/johnazer/orthodox-ai/website_sources.py)
+3. Embed chunks with the existing OpenAI embedding setup
+4. Write them into the existing Chroma collection `orthodox_pdfs`
+5. Print the final document count
+
+### Required env vars for ingestion
+
+```env
+OPENAI_API_KEY=sk-your-openai-key
+CHROMA_DIR=chroma_db
+```
+
+On Railway with a mounted volume, prefer:
+
+```env
+CHROMA_DIR=/app/chroma_db
+```
+
+### Included source inputs
+
+PDF files included in the repo:
+
+- `data/pdfs/saints1.pdf`
+- `data/pdfs/saints2.pdf`
+- `data/pdfs/saints3.pdf`
+- `data/pdfs/saints4.pdf`
+- `data/pdfs/catechism1.pdf`
+- `data/pdfs/catechism2.pdf`
+
+Configured website URLs included in the repo:
+
+- `https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z`
+- `https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z-rzzxd`
+- `https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z-rzzxd-yspaf`
+- `https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z-rzzxd-xw8g5`
+- `https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z-rzzxd-xw8g5-jejkp`
+
+### Expected logs
+
+The ingestion scripts print:
+
+- Chroma dir
+- Collection name
+- Source extraction progress
+- Chunks inserted
+- Final document count
+
 ## Production Wiring
 
 For production, set the frontend to the deployed Railway backend:
