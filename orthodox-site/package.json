@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "node scripts/migrate-postgres.mjs && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "node scripts/migrate-postgres.mjs"
+    "db:migrate": "node scripts/migrate-postgres.mjs",
+    "db:deploy": "node scripts/migrate-postgres.mjs"
   },
   "dependencies": {
     "next": "16.2.1",
