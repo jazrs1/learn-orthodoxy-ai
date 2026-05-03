@@ -128,7 +128,14 @@ def _retrieve_documents(queries: List[str], top_k: int, entity: str | None = Non
         for doc, meta in zip(docs, metas):
             if not doc or not meta:
                 continue
-            key = (meta.get("pdf"), meta.get("page"), doc[:120])
+            key = (
+                meta.get("source_type", "pdf"),
+                meta.get("pdf"),
+                meta.get("page"),
+                meta.get("url"),
+                meta.get("chunk_index"),
+                doc[:120],
+            )
             if key in seen_docs:
                 continue
             seen_docs.add(key)
@@ -157,8 +164,11 @@ class ChatRequest(BaseModel):
 
 
 class Source(BaseModel):
-    pdf: str
-    page: int
+    source_type: str = "pdf"
+    pdf: str | None = None
+    page: int | None = None
+    url: str | None = None
+    title: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -203,6 +213,44 @@ def _normalize_entity_label(value: str) -> str:
     cleaned = re.sub(r"^\d+[\.)]\s*", "", cleaned)
     cleaned = cleaned.replace("**", "").strip()
     return cleaned
+
+
+def _source_from_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    source_type = str((metadata or {}).get("source_type", "pdf"))
+    if source_type == "website":
+        return {
+            "source_type": "website",
+            "url": str((metadata or {}).get("url", "")).strip() or None,
+            "title": str((metadata or {}).get("title", "")).strip() or None,
+        }
+
+    pdf_name = str((metadata or {}).get("pdf", "unknown.pdf"))
+    page_num = int((metadata or {}).get("page", 0) or 0)
+    return {
+        "source_type": "pdf",
+        "pdf": pdf_name,
+        "page": page_num,
+    }
+
+
+def _source_key(source: Dict[str, Any]) -> tuple[Any, ...]:
+    if source.get("source_type") == "website":
+        return ("website", source.get("url"), source.get("title"))
+    return ("pdf", source.get("pdf"), source.get("page"))
+
+
+def _source_context_label(metadata: Dict[str, Any]) -> str:
+    source_type = str((metadata or {}).get("source_type", "pdf"))
+    if source_type == "website":
+        title = str((metadata or {}).get("title", "")).strip()
+        url = str((metadata or {}).get("url", "")).strip()
+        if title and url:
+            return f"{title} ({url})"
+        return title or url or "website source"
+
+    pdf_name = str((metadata or {}).get("pdf", "unknown.pdf"))
+    page_num = (metadata or {}).get("page", 0)
+    return f"{pdf_name} p.{page_num}"
 
 
 def _extract_entity_candidate(list_item: str) -> str:
@@ -700,25 +748,19 @@ def chat(req: ChatRequest):
                 "entities": []
             }
 
-        sources = []
-        for m in metas:
-            pdf_name = m.get("pdf", "unknown.pdf")
-            page_num = int(m.get("page", 0))
-            sources.append({"pdf": pdf_name, "page": page_num})
+        sources = [_source_from_metadata(m) for m in metas]
 
         seen = set()
         unique_sources = []
         for s in sources:
-            key = (s["pdf"], s["page"])
+            key = _source_key(s)
             if key not in seen:
                 seen.add(key)
                 unique_sources.append(s)
 
         context_blocks = []
         for d, m in zip(docs, metas):
-            pdf_name = m.get("pdf", "unknown.pdf")
-            page_num = m.get("page", 0)
-            context_blocks.append(f"[Source: {pdf_name} p.{page_num}]\n{d}")
+            context_blocks.append(f"[Source: {_source_context_label(m)}]\n{d}")
 
         context = "\n\n".join(context_blocks)
 

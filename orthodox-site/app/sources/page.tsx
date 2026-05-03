@@ -18,6 +18,8 @@ function SourcesPageContent() {
   const selectedSourceRef = useRef<HTMLDivElement>(null);
   const selectedPdfParam = searchParams.get("pdf") || "";
   const selectedPageParam = searchParams.get("page") || "";
+  const selectedUrl = searchParams.get("url") || "";
+  const selectedTitle = searchParams.get("title") || "";
   const selectedPdf = SOURCE_FILES.some((entry) => entry.file === selectedPdfParam)
     ? selectedPdfParam
     : "";
@@ -28,19 +30,19 @@ function SourcesPageContent() {
     : "";
 
   useEffect(() => {
-    if (!selectedPdf) return;
+    if (!selectedPdf && !selectedUrl) return;
 
     requestAnimationFrame(() => {
       selectedSourceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, [selectedPdf, selectedPage]);
+  }, [selectedPdf, selectedPage, selectedUrl]);
 
   return (
     <section className="page-shell">
       <h1 className="page-title">Sources</h1>
       <p className="page-subtitle">
-        Chat responses are grounded in the saints and catechism source documents. Clickable
-        citations in chat route here with file and page context.
+        Chat responses are grounded in the saints and catechism source documents, plus any
+        ingested website sources. Clickable citations in chat route here with context.
       </p>
 
       <div className="sources-grid">
@@ -79,6 +81,17 @@ function SourcesPageContent() {
               src={selectedPdfUrl}
               className="source-preview-frame"
             />
+          </div>
+        </div>
+      ) : selectedUrl ? (
+        <div id="selected-source" ref={selectedSourceRef}>
+          <div className="selected-source-banner">
+            <span className="selected-source-label">Selected citation</span>
+            <strong>{selectedTitle || selectedUrl}</strong>
+            <span>{selectedUrl}</span>
+            <a className="source-card-link" href={selectedUrl} target="_blank" rel="noreferrer">
+              Open website
+            </a>
           </div>
         </div>
       ) : null}

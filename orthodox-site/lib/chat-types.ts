@@ -1,6 +1,9 @@
 export type SourceRef = {
-  pdf: string;
-  page: number;
+  source_type?: "pdf" | "website";
+  pdf?: string;
+  page?: number;
+  url?: string;
+  title?: string;
 };
 
 export type ChatMessage = {

@@ -33,8 +33,10 @@ function normalizeAssistantMessage(data: BackendChatResponse): Omit<ChatMessage,
       ? data.sources.filter(
           (source) =>
             source &&
-            typeof source.pdf === "string" &&
-            typeof source.page === "number"
+            (
+              (typeof source.pdf === "string" && typeof source.page === "number") ||
+              typeof source.url === "string"
+            )
         )
       : [],
   };
