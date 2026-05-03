@@ -9,13 +9,12 @@ import ChatSidebar from "../../components/ChatSidebar";
 import InteractiveAnswer from "../../components/InteractiveAnswer";
 import { buildSaintLookup, isValidSaintName } from "../../components/saintNameUtils";
 import {
-  createConversationRequest,
   deleteConversationRequest,
   fetchConversation,
   fetchConversationList,
   sendChatRequest,
 } from "../../lib/chat-client";
-import { ChatMessage, ConversationDetail, ConversationSummary } from "../../lib/chat-types";
+import { ChatMessage, ConversationDetail, ConversationSummary, SourceRef } from "../../lib/chat-types";
 
 type SaintsListResponse = {
   saints?: string[];
@@ -120,6 +119,30 @@ function mergeConversationSummary(
   return [nextConversation, ...conversations.filter((conversation) => conversation.id !== nextConversation.id)];
 }
 
+function sourceKey(source: SourceRef) {
+  if (source?.source_type === "website" || source?.url) {
+    return `website-${source.url || ""}-${source.title || ""}`;
+  }
+  return `pdf-${source?.pdf || ""}-${source?.page || 0}`;
+}
+
+function sourceHref(source: SourceRef) {
+  if (source?.source_type === "website" || source?.url) {
+    const params = new URLSearchParams();
+    if (source.url) params.set("url", source.url);
+    if (source.title) params.set("title", source.title);
+    return `/sources?${params.toString()}`;
+  }
+  return `/sources?pdf=${encodeURIComponent(source?.pdf || "")}&page=${source?.page || 0}`;
+}
+
+function sourceLabel(source: SourceRef) {
+  if (source?.source_type === "website" || source?.url) {
+    return source.title?.trim() || source.url || "Website source";
+  }
+  return `${(source?.pdf || "unknown.pdf").replace(".pdf", "")} p.${source?.page || 0}`;
+}
+
 function mergeUniqueSaints(current: string[], next: string[]) {
   const seen = new Set<string>();
   const merged: string[] = [];
@@ -150,6 +173,7 @@ function ChatPageContent() {
   const [conversationLoading, setConversationLoading] = useState(false);
   const [conversationError, setConversationError] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isDraftChat, setIsDraftChat] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "saints" | "catechism">("chat");
   const [saints, setSaints] = useState<string[]>([]);
@@ -162,6 +186,9 @@ function ChatPageContent() {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const saintsListRef = useRef<HTMLDivElement>(null);
   const saintsLoadingRef = useRef(false);
+  const isSendingRef = useRef(false);
+  const isCreatingConversationRef = useRef(false);
+  const routeQueryInFlightRef = useRef("");
   const handledQueryRef = useRef("");
   const handledChatRef = useRef("");
   const handledNewRef = useRef("");
@@ -220,6 +247,10 @@ function ChatPageContent() {
   useEffect(() => {
     saintsLoadingRef.current = saintsLoading;
   }, [saintsLoading]);
+
+  useEffect(() => {
+    isSendingRef.current = isSending;
+  }, [isSending]);
 
   const loadSaintsPage = useCallback(
     async ({
@@ -318,25 +349,26 @@ function ChatPageContent() {
   const startNewChat = useCallback(async (options?: { updateRoute?: boolean }) => {
     const updateRoute = options?.updateRoute ?? true;
 
-    try {
-      const conversation = await createConversationRequest();
-      setConversations((prev) => mergeConversationSummary(prev, conversation));
-      setCurrentConversation({ ...conversation, messages: [] });
-      setActiveConversationId(conversation.id);
-      setActiveTab("chat");
-      if (updateRoute) {
-        handledChatRef.current = conversation.id;
-        router.replace(`/chat?chat=${encodeURIComponent(conversation.id)}`, { scroll: false });
-      }
-      return conversation.id;
-    } catch (error) {
-      setConversationError(error instanceof Error ? error.message : "Unable to create chat.");
-      return "";
+    handledChatRef.current = "";
+    handledQueryRef.current = "";
+    routeQueryInFlightRef.current = "";
+    setCurrentConversation(null);
+    setActiveConversationId("");
+    setConversationError("");
+    setActiveTab("chat");
+    setIsDraftChat(true);
+    if (updateRoute) {
+      const newToken = Date.now().toString();
+      handledNewRef.current = newToken;
+      router.replace(`/chat?new=${encodeURIComponent(newToken)}`, { scroll: false });
     }
+    console.debug("[chat] draft chat started");
+    return "";
   }, [router]);
 
   const selectSession = useCallback(
     async (conversationId: string) => {
+      setIsDraftChat(false);
       await loadConversationDetail(conversationId);
       setActiveTab("chat");
       router.replace(`/chat?chat=${encodeURIComponent(conversationId)}`, { scroll: false });
@@ -363,27 +395,33 @@ function ChatPageContent() {
   const submitQuestion = useCallback(
     async (rawQuestion: string, preferredConversationId?: string) => {
       const question = rawQuestion.trim();
-      if (!question || isSending) return;
+      if (!question || isSendingRef.current) return;
 
       let conversationId = preferredConversationId || activeConversationId;
-      if (!conversationId) {
-        conversationId = await startNewChat({ updateRoute: false });
+      const isCreatingConversation = !conversationId;
+      if (isCreatingConversation && isCreatingConversationRef.current) {
+        console.debug("[chat] conversation creation already in flight, skipping duplicate submit");
+        return;
       }
-      if (!conversationId) return;
+      if (isCreatingConversation) {
+        isCreatingConversationRef.current = true;
+      }
+
+      const localConversationId = conversationId || `draft-${crypto.randomUUID()}`;
 
       const optimisticUserId = crypto.randomUUID();
       const optimisticAssistantId = crypto.randomUUID();
       const nextMessages = [
-        ...((currentConversation?.id === conversationId ? currentConversation.messages : []) || []),
+        ...((currentConversation?.id === localConversationId ? currentConversation.messages : []) || []),
         optimisticMessage(optimisticUserId, "user", question),
         { ...optimisticMessage(optimisticAssistantId, "assistant", ""), isTyping: true },
       ];
 
       setCurrentConversation((prev) =>
-        prev && prev.id === conversationId
+        prev && prev.id === localConversationId
           ? { ...prev, messages: nextMessages }
           : {
-              id: conversationId,
+              id: localConversationId,
               title: prev?.title || "New Chat",
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -391,13 +429,22 @@ function ChatPageContent() {
             }
       );
 
-      setActiveConversationId(conversationId);
+      if (conversationId) {
+        setActiveConversationId(conversationId);
+      }
       setActiveTab("chat");
       setConversationError("");
+      isSendingRef.current = true;
       setIsSending(true);
 
       try {
         const result = await sendChatRequest({ question, conversationId });
+        handledChatRef.current = result.conversation.id;
+        routeQueryInFlightRef.current = "";
+        setIsDraftChat(false);
+        console.debug("[chat] conversation saved once", result.conversation.id);
+        console.debug("[chat] user message saved once", result.userMessage.id);
+        console.debug("[chat] assistant message saved once", result.assistantMessage.id);
         setConversations((prev) => mergeConversationSummary(prev, result.conversation));
         setCurrentConversation((prev) => {
           const baseMessages = prev?.messages.filter(
@@ -409,8 +456,10 @@ function ChatPageContent() {
             messages: [...baseMessages, result.userMessage, result.assistantMessage],
           };
         });
+        setActiveConversationId(result.conversation.id);
         router.replace(`/chat?chat=${encodeURIComponent(result.conversation.id)}`, { scroll: false });
       } catch (error) {
+        routeQueryInFlightRef.current = "";
         const message = error instanceof Error ? error.message : DEFAULT_ERROR;
         setConversationError(message);
         setCurrentConversation((prev) => {
@@ -425,10 +474,12 @@ function ChatPageContent() {
           };
         });
       } finally {
+        isCreatingConversationRef.current = false;
+        isSendingRef.current = false;
         setIsSending(false);
       }
     },
-    [activeConversationId, currentConversation, isSending, router, startNewChat]
+    [activeConversationId, currentConversation, router]
   );
 
   useEffect(() => {
@@ -436,40 +487,40 @@ function ChatPageContent() {
     const chatId = searchParams.get("chat") || "";
     const isNew = searchParams.get("new") || "";
 
-    if (q && q !== handledQueryRef.current) {
+    if (q && q !== handledQueryRef.current && q !== routeQueryInFlightRef.current) {
       handledQueryRef.current = q;
+      routeQueryInFlightRef.current = q;
       void (async () => {
-        const conversationId = await startNewChat({ updateRoute: false });
-        if (conversationId) {
-          await submitQuestion(q, conversationId);
-        }
-        handledChatRef.current = conversationId;
-        router.replace(`/chat${conversationId ? `?chat=${encodeURIComponent(conversationId)}` : ""}`, {
-          scroll: false,
-        });
+        setCurrentConversation(null);
+        setActiveConversationId("");
+        setConversationError("");
+        setIsDraftChat(true);
+        await submitQuestion(q);
       })();
       return;
     }
 
     if (isNew && isNew !== handledNewRef.current) {
       handledNewRef.current = isNew;
-      void startNewChat();
+      void startNewChat({ updateRoute: false });
       return;
     }
 
     if (chatId && chatId !== handledChatRef.current) {
       handledChatRef.current = chatId;
+      setIsDraftChat(false);
       void loadConversationDetail(chatId);
       return;
     }
 
-    if (!chatId && !q && !isNew && conversations.length > 0 && !activeConversationId && !conversationLoading) {
+    if (!chatId && !q && !isNew && conversations.length > 0 && !activeConversationId && !conversationLoading && !isDraftChat) {
       void loadConversationDetail(conversations[0].id);
     }
   }, [
     activeConversationId,
     conversationLoading,
     conversations,
+    isDraftChat,
     loadConversationDetail,
     router,
     searchParams,
@@ -605,20 +656,15 @@ function ChatPageContent() {
                                   <div className="message-sources-list">
                                     {Array.from(
                                       new Map(
-                                        message.sources.map((source) => [
-                                          `${source.pdf}-${source.page}`,
-                                          source,
-                                        ])
+                                        message.sources.map((source) => [sourceKey(source), source])
                                       ).values()
                                     ).map((source) => (
                                       <Link
-                                        key={`${source.pdf}-${source.page}`}
-                                        href={`/sources?pdf=${encodeURIComponent(
-                                          source.pdf
-                                        )}&page=${source.page}`}
+                                        key={sourceKey(source)}
+                                        href={sourceHref(source)}
                                         className="message-source-chip"
                                       >
-                                        {source.pdf.replace(".pdf", "")} p.{source.page}
+                                        {sourceLabel(source)}
                                       </Link>
                                     ))}
                                   </div>
@@ -742,7 +788,7 @@ function ChatPageContent() {
           )}
 
           <div className="chat-bottom-bar">
-            <ChatShell onSubmit={submitQuestion} />
+            <ChatShell onSubmit={submitQuestion} isSubmitting={isSending} />
           </div>
         </section>
 

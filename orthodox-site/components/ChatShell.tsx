@@ -6,9 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 type ChatShellProps = {
   initialValue?: string;
   onSubmit?: (message: string) => void | Promise<void>;
+  isSubmitting?: boolean;
 };
 
-export default function ChatShell({ initialValue = "", onSubmit }: ChatShellProps) {
+export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = false }: ChatShellProps) {
   const [message, setMessage] = useState(initialValue);
   const router = useRouter();
   const pathname = usePathname();
@@ -27,6 +28,7 @@ export default function ChatShell({ initialValue = "", onSubmit }: ChatShellProp
     }
 
     function handleInsertAndSubmitText(event: Event) {
+      if (isSubmitting) return;
       const customEvent = event as CustomEvent<string>;
       const nextText = (customEvent.detail || "").trim();
       if (!nextText) return;
@@ -45,9 +47,10 @@ export default function ChatShell({ initialValue = "", onSubmit }: ChatShellProp
       window.removeEventListener("chat:insertText", handleInsertText);
       window.removeEventListener("chat:insertAndSubmitText", handleInsertAndSubmitText);
     };
-  }, [onSubmit, router]);
+  }, [isSubmitting, onSubmit, router]);
 
   function submitMessage() {
+    if (isSubmitting) return;
     const trimmed = message.trim();
     if (!trimmed) return;
 
@@ -61,6 +64,13 @@ export default function ChatShell({ initialValue = "", onSubmit }: ChatShellProp
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (isSubmitting) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+      }
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submitMessage();
@@ -78,12 +88,13 @@ export default function ChatShell({ initialValue = "", onSubmit }: ChatShellProp
           onKeyDown={handleKeyDown}
           placeholder="Ask about a saint or catechism..."
           rows={1}
+          disabled={isSubmitting}
         />
         <button
           type="button"
           className="chat-submit"
           onClick={submitMessage}
-          disabled={!message.trim()}
+          disabled={isSubmitting || !message.trim()}
           aria-label="Send message"
         >
           →
