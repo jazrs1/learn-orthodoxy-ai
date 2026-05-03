@@ -588,6 +588,15 @@ def health():
     }
 
 
+@app.get("/")
+def root():
+    return {
+        "status": "alive",
+        "service": "orthodox-api",
+        "routes": ["/", "/health", "/chat", "/saints", "/saint-suggestions"],
+    }
+
+
 def _build_saint_name_index() -> List[str]:
     global saint_name_index, collection
 
