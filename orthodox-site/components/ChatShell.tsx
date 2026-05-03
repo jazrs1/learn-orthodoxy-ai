@@ -76,7 +76,7 @@ export default function ChatShell({ initialValue = "", onSubmit }: ChatShellProp
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about a saint..."
+          placeholder="Ask about a saint or catechism..."
           rows={1}
         />
         <button

@@ -39,13 +39,115 @@ AMBIGUOUS_SAINT_FALLBACKS = {
         "St. John of Damascus",
         "St. John Climacus",
     ],
+    "thomas": [
+        "St. Thomas the Apostle",
+        "St. Thomas Aquinas",
+    ],
     "mary": [
         "St. Mary Theotokos",
         "St. Mary Magdalene",
         "St. Mary of Egypt",
         "St. Mary the Armenian",
     ],
+    "cyril": [
+        "St. Cyril of Alexandria",
+        "St. Cyril of Jerusalem",
+        "St. Cyril IV",
+        "St. Cyril VI",
+    ],
 }
+
+SAINT_QUERY_PREFIX_PATTERN = r"^(?:(?:who is|tell me about|about)\s+)?(?:(?:st\.?|saint|pope|patriarch|abba|anba)\s+)*"
+
+
+def _canonicalize_saint_text(value: str) -> str:
+    return (
+        (value or "")
+        .strip()
+        .replace("Kyrillos", "Cyril")
+        .replace("kyrillos", "cyril")
+        .replace("Cyrillus", "Cyril")
+        .replace("cyrillus", "cyril")
+    )
+
+
+def _saint_query_variants(saint_name: str) -> List[str]:
+    canonical = _canonicalize_saint_text(saint_name).strip()
+    variants: List[str] = []
+
+    def add_variant(value: str):
+        normalized = re.sub(r"\s+", " ", (value or "").strip())
+        if not normalized:
+            return
+        if normalized.lower() in {item.lower() for item in variants}:
+            return
+        variants.append(normalized)
+
+    base = re.sub(r"^(?:st\.?|saint)\s+", "", canonical, flags=re.IGNORECASE).strip()
+    add_variant(canonical)
+    add_variant(base)
+    add_variant(f"St. {base}")
+
+    if "cyril" in base.lower():
+        kyrillos_base = re.sub(r"\bCyril\b", "Kyrillos", base, flags=re.IGNORECASE)
+        add_variant(kyrillos_base)
+        add_variant(f"Pope {kyrillos_base}")
+        add_variant(f"St. {kyrillos_base}")
+        add_variant(f"Pope {base}")
+
+    if re.search(r"\b[IVX]+\b", base):
+        add_variant(f"{base} Coptic Orthodox Pope")
+        add_variant(f"{base} biography miracles sayings")
+
+    return variants
+
+
+def _retrieve_documents(queries: List[str], top_k: int, entity: str | None = None):
+    global collection
+
+    deduped_queries = []
+    seen_queries = set()
+    for query in queries:
+        normalized = re.sub(r"\s+", " ", (query or "").strip())
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen_queries:
+            continue
+        seen_queries.add(key)
+        deduped_queries.append(normalized)
+
+    aggregated: List[tuple[str, Dict[str, Any]]] = []
+    seen_docs = set()
+
+    for query in deduped_queries[:4]:
+        retrieved = collection.query(query_texts=[query], n_results=top_k)
+        docs = retrieved.get("documents", [[]])[0]
+        metas = retrieved.get("metadatas", [[]])[0]
+
+        for doc, meta in zip(docs, metas):
+            if not doc or not meta:
+                continue
+            key = (meta.get("pdf"), meta.get("page"), doc[:120])
+            if key in seen_docs:
+                continue
+            seen_docs.add(key)
+            aggregated.append((doc, meta))
+
+    if entity:
+        saint_docs = [
+            (doc, meta)
+            for doc, meta in aggregated
+            if str((meta or {}).get("pdf", "")).startswith("saints")
+        ]
+        if saint_docs:
+            aggregated = saint_docs + [
+                (doc, meta) for doc, meta in aggregated if not str((meta or {}).get("pdf", "")).startswith("saints")
+            ]
+
+    docs = [doc for doc, _ in aggregated[:top_k]]
+    metas = [meta for _, meta in aggregated[:top_k]]
+    return docs, metas
 
 
 class ChatRequest(BaseModel):
@@ -280,19 +382,38 @@ def _is_plausible_saint_index_name(value: str) -> bool:
 
 
 def _core_name_from_query(query: str) -> str:
-    name = re.sub(r"^(?:st\.?|saint)\s+", "", (query or "").strip(), flags=re.IGNORECASE)
+    name = re.sub(SAINT_QUERY_PREFIX_PATTERN, "", _canonicalize_saint_text(query), flags=re.IGNORECASE)
     parts = [p for p in re.split(r"\s+", name) if p]
     return parts[0].lower() if parts else ""
 
 
 def _normalize_saint_search_query(query: str) -> str:
-    return re.sub(r"^(?:st\.?|saint)\s+", "", (query or "").strip(), flags=re.IGNORECASE).lower()
+    return re.sub(
+        SAINT_QUERY_PREFIX_PATTERN,
+        "",
+        _canonicalize_saint_text(query),
+        flags=re.IGNORECASE,
+    ).lower()
 
 
 def _find_saint_suggestions(query: str, limit: int = 12) -> List[str]:
     global collection
+    query = _canonicalize_saint_text(query)
+    saint_index = _build_saint_name_index()
+    normalized_query = _normalize_saint_search_query(query)
+
+    index_matches = []
+    if normalized_query:
+        for name in saint_index:
+            normalized_name = _normalize_saint_search_query(name)
+            if normalized_query in normalized_name:
+                index_matches.append(name)
+        index_matches.sort(key=lambda name: (not _normalize_saint_search_query(name).startswith(normalized_query), len(name), name.lower()))
+        if len(index_matches) >= 2:
+            return index_matches[: max(1, min(limit, 12))]
+
     if collection is None:
-        return []
+        return index_matches[: max(1, min(limit, 12))]
 
     retrieved = collection.query(
         query_texts=[f"{query} Orthodox saint names list"],
@@ -313,16 +434,24 @@ def _find_saint_suggestions(query: str, limit: int = 12) -> List[str]:
         normalized_name = _normalize_suggestion_name(name)
         if not normalized_name:
             continue
+        replacement = MANUAL_SAINT_NAME_REPLACEMENTS.get(normalized_name)
+        if replacement == "":
+            continue
+        normalized_name = replacement or normalized_name
+        if normalized_name in MANUAL_SAINT_NAME_EXCLUSIONS:
+            continue
         key = normalized_name.lower()
         if key in seen:
             continue
         seen.add(key)
         unique.append(normalized_name)
 
-    q_no_prefix = re.sub(r"^(?:who is|tell me about|about)\s+", "", q_lower).strip()
-    q_no_prefix = re.sub(r"^(?:st\.?|saint)\s+", "", q_no_prefix).strip()
+    q_no_prefix = _normalize_saint_search_query(q_lower)
     filtered = [name for name in unique if q_no_prefix in name.lower()]
     filtered.sort(key=lambda name: (not name.lower().startswith(f"st. {q_no_prefix}"), len(name), name.lower()))
+
+    if index_matches:
+        filtered = list(dict.fromkeys(index_matches + filtered))
 
     if len(filtered) < 2 and core_word in AMBIGUOUS_SAINT_FALLBACKS:
         fallback = AMBIGUOUS_SAINT_FALLBACKS[core_word]
@@ -339,15 +468,19 @@ def _extract_ambiguous_saint_query(question: str) -> str:
     patterns = [
         r"^(?:who is|tell me about|about)\s+(st\.?\s+.+)$",
         r"^(?:who is|tell me about|about)\s+(saint\s+.+)$",
+        r"^(?:who is|tell me about|about)\s+(pope\s+.+)$",
+        r"^(?:who is|tell me about|about)\s+(patriarch\s+.+)$",
         r"^(st\.?\s+.+)$",
         r"^(saint\s+.+)$",
+        r"^(pope\s+.+)$",
+        r"^(patriarch\s+.+)$",
     ]
     for pattern in patterns:
         match = re.match(pattern, q, flags=re.IGNORECASE)
         if not match:
             continue
         candidate = re.sub(r"\s+", " ", match.group(1)).strip()
-        name_only = re.sub(r"^(st\.?|saint)\s+", "", candidate, flags=re.IGNORECASE).strip()
+        name_only = re.sub(r"^(?:st\.?|saint|pope|patriarch|abba|anba)\s+", "", candidate, flags=re.IGNORECASE).strip()
         # Treat short saint names as ambiguous (e.g. St. John / St. Mary)
         if len(name_only.split()) <= 2:
             return candidate
@@ -487,6 +620,7 @@ def chat(req: ChatRequest):
                 raise HTTPException(status_code=500, detail="Server not initialized")
 
         question = (req.question or "").strip()
+        question = _canonicalize_saint_text(question)
         if not question:
             raise HTTPException(status_code=400, detail="Question cannot be empty")
 
@@ -501,6 +635,7 @@ def chat(req: ChatRequest):
         if question.lower().startswith("search saint:"):
             saint_name = question[len("search saint:"):].strip()
             if saint_name:
+                saint_name = _canonicalize_saint_text(saint_name)
                 entity = saint_name
                 question = f"{saint_name} Orthodox saint biography life feast teachings martyr monk bishop"
 
@@ -548,14 +683,19 @@ def chat(req: ChatRequest):
         top_k = max(1, min(req.top_k, 12))
 
         # Retrieval
-        retrieved = collection.query(query_texts=[question], n_results=top_k)
+        retrieval_queries = [question]
+        if entity:
+            retrieval_queries.extend(
+                f"{variant} Orthodox saint biography life feast teachings martyr monk bishop"
+                for variant in _saint_query_variants(entity)
+            )
+            retrieval_queries.extend(_saint_query_variants(entity))
 
-        docs = retrieved.get("documents", [[]])[0]
-        metas = retrieved.get("metadatas", [[]])[0]
+        docs, metas = _retrieve_documents(retrieval_queries, top_k=top_k, entity=entity)
 
         if not docs or not metas:
             return {
-                "answer": "I don't know based on the provided documents.",
+                "answer": "I don't know based on the provided sources.",
                 "sources": [],
                 "entities": []
             }
@@ -594,7 +734,7 @@ You are an Orthodox theology assistant.
 Rules:
 - Answer ONLY using the provided sources.
 - If the sources do not contain the answer, say:
-  "I don't know based on the provided documents."
+  "I don't know based on the provided sources."
 - Do not include inline citations in the answer body.
 - When listing items, ALWAYS use numbered format exactly like:
   1. Name

@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import ChatShell from "../../components/ChatShell";
 import ChatSidebar from "../../components/ChatSidebar";
 import InteractiveAnswer from "../../components/InteractiveAnswer";
@@ -26,16 +27,70 @@ type CatechismPrompt = {
   prompt: string;
 };
 
+type CatechismTopic = {
+  title: string;
+  description: string;
+  prompts: CatechismPrompt[];
+};
+
 const SAINTS_PAGE_SIZE = 200;
 const DEFAULT_ERROR =
   "Sorry — I could not reach the Orthodox AI server. Please try again in a moment.";
-const CATECHISM_PROMPTS: CatechismPrompt[] = [
-  { label: "Prayer", prompt: "What does the catechism say about prayer?" },
-  { label: "Salvation", prompt: "What does the catechism teach about salvation?" },
-  { label: "Sacraments", prompt: "What does the catechism say about the sacraments?" },
-  { label: "Fasting", prompt: "What does the catechism say about fasting?" },
-  { label: "The Church", prompt: "What does the catechism teach about the Church?" },
-  { label: "Repentance", prompt: "What does the catechism say about repentance and confession?" },
+const CATECHISM_TOPICS: CatechismTopic[] = [
+  {
+    title: "Prayer",
+    description: "Daily prayer, worship, and the inner life with God.",
+    prompts: [
+      { label: "Prayer", prompt: "Why is prayer essential in the Coptic Orthodox life?" },
+      { label: "Lord's Prayer", prompt: "How does the Coptic Orthodox Church explain the Lord's Prayer?" },
+      { label: "Rule", prompt: "What guidance does the Coptic Orthodox Church give for a daily prayer rule?" },
+    ],
+  },
+  {
+    title: "Salvation",
+    description: "Grace, repentance, faith, and life in Christ.",
+    prompts: [
+      { label: "Salvation", prompt: "What does the Coptic Orthodox Church teach about salvation?" },
+      { label: "Faith", prompt: "How does the Coptic Orthodox Church explain faith and works in salvation?" },
+      { label: "Cross", prompt: "Why is the cross central to salvation in Coptic Orthodox teaching?" },
+    ],
+  },
+  {
+    title: "Sacraments",
+    description: "The mysteries of the Church and how grace is received.",
+    prompts: [
+      { label: "Sacraments", prompt: "What are the seven sacraments in the Coptic Orthodox Church?" },
+      { label: "Eucharist", prompt: "What does the Coptic Orthodox Church teach about the Eucharist?" },
+      { label: "Baptism", prompt: "Why is baptism necessary according to the Coptic Orthodox Church?" },
+    ],
+  },
+  {
+    title: "Repentance",
+    description: "Confession, spiritual struggle, and returning to God.",
+    prompts: [
+      { label: "Confession", prompt: "What does the Coptic Orthodox Church teach about confession and repentance?" },
+      { label: "Repentance", prompt: "What are the signs of true repentance in Coptic Orthodox teaching?" },
+      { label: "Temptation", prompt: "How should someone respond after falling again into the same sin?" },
+    ],
+  },
+  {
+    title: "The Church",
+    description: "The nature of the Church, tradition, and belonging to the body of Christ.",
+    prompts: [
+      { label: "Church", prompt: "What does the Coptic Orthodox Church teach about the Church itself?" },
+      { label: "Tradition", prompt: "Why is Holy Tradition important in the Coptic Orthodox Church?" },
+      { label: "Saints", prompt: "How does the Coptic Orthodox Church explain communion with the saints?" },
+    ],
+  },
+  {
+    title: "Fasting",
+    description: "Ascetic discipline, self-control, and preparation for holiness.",
+    prompts: [
+      { label: "Fasting", prompt: "Why does the Coptic Orthodox Church place such emphasis on fasting?" },
+      { label: "Purpose", prompt: "What is the spiritual purpose of fasting in the Coptic Orthodox Church?" },
+      { label: "Prayer", prompt: "How should fasting be joined with prayer and repentance?" },
+    ],
+  },
 ];
 
 function sendTextToInputAndSubmit(text: string) {
@@ -65,6 +120,27 @@ function mergeConversationSummary(
   return [nextConversation, ...conversations.filter((conversation) => conversation.id !== nextConversation.id)];
 }
 
+function mergeUniqueSaints(current: string[], next: string[]) {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+
+  for (const name of [...current, ...next]) {
+    const trimmed = name.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(trimmed);
+  }
+
+  return merged;
+}
+
+function submitCatechismPrompt(prompt: string, setActiveTab: (tab: "chat" | "saints" | "catechism") => void) {
+  sendTextToInputAndSubmit(prompt);
+  setActiveTab("chat");
+}
+
 function ChatPageContent() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
@@ -74,6 +150,7 @@ function ChatPageContent() {
   const [conversationLoading, setConversationLoading] = useState(false);
   const [conversationError, setConversationError] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "saints" | "catechism">("chat");
   const [saints, setSaints] = useState<string[]>([]);
   const [saintsTotal, setSaintsTotal] = useState(0);
@@ -92,6 +169,7 @@ function ChatPageContent() {
   const saintLookup = useMemo(() => buildSaintLookup(saints), [saints]);
   const messages = useMemo(() => currentConversation?.messages || [], [currentConversation]);
   const backendUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/+$/, "");
+  const hasMoreSaints = saints.length < saintsTotal;
 
   const loadConversationList = useCallback(async () => {
     try {
@@ -131,7 +209,12 @@ function ChatPageContent() {
   useEffect(() => {
     const el = chatMessagesRef.current;
     if (!el || activeTab !== "chat") return;
-    el.scrollTop = el.scrollHeight;
+    const rows = el.querySelectorAll<HTMLElement>(".message-row");
+    const lastRow = rows[rows.length - 1];
+    if (!lastRow) return;
+
+    const offsetTop = Math.max(lastRow.offsetTop - 12, 0);
+    el.scrollTo({ top: offsetTop, behavior: "smooth" });
   }, [messages, isSending, activeTab]);
 
   useEffect(() => {
@@ -183,7 +266,7 @@ function ChatPageContent() {
           ? data.saints.filter((name) => typeof name === "string" && name.trim())
           : [];
 
-        setSaints((prev) => (reset ? nextNames : [...prev, ...nextNames]));
+        setSaints((prev) => (reset ? nextNames : mergeUniqueSaints(prev, nextNames)));
         setSaintsTotal(typeof data.total === "number" ? data.total : nextNames.length);
         setSaintsError("");
       } catch (error) {
@@ -223,14 +306,28 @@ function ChatPageContent() {
     };
   }, [loadSaintsPage, saintSearch, saints.length, saintsLoading, saintsTotal]);
 
-  const startNewChat = useCallback(async () => {
+  useEffect(() => {
+    const el = saintsListRef.current;
+    if (!el || saintsLoading || saintsError || !hasMoreSaints) return;
+
+    if (el.scrollHeight <= el.clientHeight + 24) {
+      void loadSaintsPage({ query: saintSearch, offset: saints.length });
+    }
+  }, [hasMoreSaints, loadSaintsPage, saintSearch, saints.length, saintsError, saintsLoading]);
+
+  const startNewChat = useCallback(async (options?: { updateRoute?: boolean }) => {
+    const updateRoute = options?.updateRoute ?? true;
+
     try {
       const conversation = await createConversationRequest();
       setConversations((prev) => mergeConversationSummary(prev, conversation));
       setCurrentConversation({ ...conversation, messages: [] });
       setActiveConversationId(conversation.id);
       setActiveTab("chat");
-      router.replace(`/chat?chat=${encodeURIComponent(conversation.id)}`, { scroll: false });
+      if (updateRoute) {
+        handledChatRef.current = conversation.id;
+        router.replace(`/chat?chat=${encodeURIComponent(conversation.id)}`, { scroll: false });
+      }
       return conversation.id;
     } catch (error) {
       setConversationError(error instanceof Error ? error.message : "Unable to create chat.");
@@ -270,7 +367,7 @@ function ChatPageContent() {
 
       let conversationId = preferredConversationId || activeConversationId;
       if (!conversationId) {
-        conversationId = await startNewChat();
+        conversationId = await startNewChat({ updateRoute: false });
       }
       if (!conversationId) return;
 
@@ -342,10 +439,11 @@ function ChatPageContent() {
     if (q && q !== handledQueryRef.current) {
       handledQueryRef.current = q;
       void (async () => {
-        const conversationId = await startNewChat();
+        const conversationId = await startNewChat({ updateRoute: false });
         if (conversationId) {
           await submitQuestion(q, conversationId);
         }
+        handledChatRef.current = conversationId;
         router.replace(`/chat${conversationId ? `?chat=${encodeURIComponent(conversationId)}` : ""}`, {
           scroll: false,
         });
@@ -394,6 +492,21 @@ function ChatPageContent() {
     [saintLookup, submitSaintLookup]
   );
 
+  const copyMessage = useCallback(async (messageId: string, content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+
+    try {
+      await navigator.clipboard.writeText(trimmed);
+      setCopiedMessageId(messageId);
+      window.setTimeout(() => {
+        setCopiedMessageId((current) => (current === messageId ? "" : current));
+      }, 1800);
+    } catch {
+      setConversationError("Copy failed. Please try again.");
+    }
+  }, []);
+
   return (
     <main className="chat-page">
       <div className="chat-layout">
@@ -403,7 +516,7 @@ function ChatPageContent() {
               <div>
                 <h1 className="chat-page-title">Learn Orthodoxy</h1>
                 <p className="chat-page-subtitle">
-                  Ask about Scripture, saints, theology, liturgy, catechism, and Church history.
+                  Ask questions about Orthodox saints and Coptic Orthodox catechism.
                 </p>
               </div>
               <div className="chat-header-actions">
@@ -448,74 +561,95 @@ function ChatPageContent() {
                     key={message.id}
                     className={`message-row ${message.role === "user" ? "user-row" : "assistant-row"}`}
                   >
-                    <div
-                      className={`message-bubble ${
-                        message.role === "user" ? "user-bubble" : "assistant-bubble"
-                      }`}
-                    >
-                      {message.role === "assistant" ? (
-                        message.isTyping ? (
-                          <div className="typing-dots" aria-label="Assistant is typing" role="status">
-                            <span />
-                            <span />
-                            <span />
-                          </div>
-                        ) : (
-                          <>
-                            <InteractiveAnswer
-                              answer={message.content}
-                              entities={message.entities}
-                              saintLookup={saintLookup}
-                            />
-                            {message.options && message.options.length > 0 ? (
-                              <div className="message-options">
-                                <div className="message-options-label">Choose a saint</div>
-                                <div className="message-options-list">
-                                  {Array.from(new Set(message.options.map((option) => option.trim())))
-                                    .filter((option) => isValidSaintName(option, saintLookup))
-                                    .map((option) => (
-                                      <button
-                                        key={option}
-                                        type="button"
-                                        className="message-option-chip"
-                                        onClick={() => submitSaintLookup(option)}
+                    <div className="message-stack">
+                      <div
+                        className={`message-bubble ${
+                          message.role === "user" ? "user-bubble" : "assistant-bubble"
+                        }`}
+                      >
+                        {message.role === "assistant" ? (
+                          message.isTyping ? (
+                            <div className="typing-dots" aria-label="Assistant is typing" role="status">
+                              <span />
+                              <span />
+                              <span />
+                            </div>
+                          ) : (
+                            <>
+                              <InteractiveAnswer
+                                answer={message.content}
+                                entities={message.entities}
+                                saintLookup={saintLookup}
+                              />
+                              {message.options && message.options.length > 0 ? (
+                                <div className="message-options">
+                                  <div className="message-options-list">
+                                    {Array.from(new Set(message.options.map((option) => option.trim())))
+                                      .filter((option) => isValidSaintName(option, saintLookup))
+                                      .map((option) => (
+                                        <button
+                                          key={option}
+                                          type="button"
+                                          className="message-option-chip"
+                                          onClick={() => submitSaintLookup(option)}
+                                        >
+                                          {option}
+                                        </button>
+                                      ))}
+                                  </div>
+                                </div>
+                              ) : null}
+                              {message.sources && message.sources.length > 0 ? (
+                                <div className="message-sources">
+                                  <div className="message-sources-label">Sources</div>
+                                  <div className="message-sources-list">
+                                    {Array.from(
+                                      new Map(
+                                        message.sources.map((source) => [
+                                          `${source.pdf}-${source.page}`,
+                                          source,
+                                        ])
+                                      ).values()
+                                    ).map((source) => (
+                                      <Link
+                                        key={`${source.pdf}-${source.page}`}
+                                        href={`/sources?pdf=${encodeURIComponent(
+                                          source.pdf
+                                        )}&page=${source.page}`}
+                                        className="message-source-chip"
                                       >
-                                        {option}
-                                      </button>
+                                        {source.pdf.replace(".pdf", "")} p.{source.page}
+                                      </Link>
                                     ))}
+                                  </div>
                                 </div>
-                              </div>
-                            ) : null}
-                            {message.sources && message.sources.length > 0 ? (
-                              <div className="message-sources">
-                                <div className="message-sources-label">Sources</div>
-                                <div className="message-sources-list">
-                                  {Array.from(
-                                    new Map(
-                                      message.sources.map((source) => [
-                                        `${source.pdf}-${source.page}`,
-                                        source,
-                                      ])
-                                    ).values()
-                                  ).map((source) => (
-                                    <Link
-                                      key={`${source.pdf}-${source.page}`}
-                                      href={`/sources?pdf=${encodeURIComponent(
-                                        source.pdf
-                                      )}&page=${source.page}`}
-                                      className="message-source-chip"
-                                    >
-                                      {source.pdf.replace(".pdf", "")} p.{source.page}
-                                    </Link>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
-                          </>
-                        )
-                      ) : (
-                        message.content
-                      )}
+                              ) : null}
+                            </>
+                          )
+                        ) : (
+                          message.content
+                        )}
+                      </div>
+                      {!message.isTyping ? (
+                        <div className={`message-actions ${message.role === "user" ? "user-actions" : "assistant-actions"}`}>
+                          <button
+                            type="button"
+                            className="message-action-btn"
+                            onClick={() => void copyMessage(message.id, message.content)}
+                            aria-label={copiedMessageId === message.id ? "Copied" : "Copy message"}
+                            title={copiedMessageId === message.id ? "Copied" : "Copy"}
+                          >
+                            <Image
+                              src={copiedMessageId === message.id ? "/icons/checkmark.svg" : "/icons/copy.svg"}
+                              alt=""
+                              aria-hidden="true"
+                              width={24}
+                              height={24}
+                              className={`message-copy-icon ${copiedMessageId === message.id ? "message-copy-icon-copied" : ""}`}
+                            />
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 ))
@@ -554,8 +688,15 @@ function ChatPageContent() {
                     <div className="chat-empty-state">No saints found for that search.</div>
                   )
                 ) : null}
-                {!saintsLoading && !saintsError && saints.length > 0 && saints.length < saintsTotal ? (
-                  <div className="chat-empty-state">Scroll to load more saints...</div>
+                {!saintsError && hasMoreSaints ? (
+                  <button
+                    type="button"
+                    className="saints-load-more"
+                    onClick={() => void loadSaintsPage({ query: saintSearch, offset: saints.length })}
+                    disabled={saintsLoading}
+                  >
+                    {saintsLoading ? "Loading..." : `Load more saints (${saints.length}/${saintsTotal})`}
+                  </button>
                 ) : null}
               </div>
             </div>
@@ -568,21 +709,34 @@ function ChatPageContent() {
                   sacraments, repentance, and Christian life.
                 </p>
               </div>
-              <div className="catechism-prompt-grid">
-                {CATECHISM_PROMPTS.map((item) => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    className="catechism-prompt-card"
-                    onClick={() => {
-                      sendTextToInputAndSubmit(item.prompt);
-                      setActiveTab("chat");
-                    }}
-                  >
-                    <span className="catechism-prompt-label">{item.label}</span>
-                    <span className="catechism-prompt-text">{item.prompt}</span>
-                  </button>
-                ))}
+              <div className="catechism-more-topics">
+                <div className="catechism-more-topics-label">More topics for catechism</div>
+                <div className="catechism-topic-list">
+                  {CATECHISM_TOPICS.map((topic) => (
+                    <details key={topic.title} className="catechism-topic-group">
+                      <summary className="catechism-topic-summary">
+                        <span className="catechism-topic-summary-copy">
+                          <span className="catechism-topic-title">{topic.title}</span>
+                          <span className="catechism-topic-description">{topic.description}</span>
+                        </span>
+                        <span className="catechism-topic-chevron" aria-hidden="true" />
+                      </summary>
+                      <div className="catechism-prompt-grid">
+                        {topic.prompts.map((item) => (
+                          <button
+                            key={`${topic.title}-${item.label}`}
+                            type="button"
+                            className="catechism-prompt-card"
+                            onClick={() => submitCatechismPrompt(item.prompt, setActiveTab)}
+                          >
+                            <span className="catechism-prompt-label">{item.label}</span>
+                            <span className="catechism-prompt-text">{item.prompt}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </details>
+                  ))}
+                </div>
               </div>
             </div>
           )}

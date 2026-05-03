@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ConversationSummary } from "../lib/chat-types";
 
 type ChatSidebarProps = {
@@ -22,25 +21,14 @@ export default function ChatSidebar({
   loading = false,
   error = "",
 }: ChatSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
-
   return (
-    <aside className={`chat-sidebar ${collapsed ? "chat-sidebar-collapsed" : ""}`}>
+    <aside className="chat-sidebar">
       <div className="chat-sidebar-details">
         <div className="chat-sidebar-header">
-          {!collapsed ? <div className="chat-sidebar-title">Chats</div> : null}
-          <button
-            type="button"
-            className="chat-sidebar-toggle"
-            onClick={() => setCollapsed((value) => !value)}
-            aria-label={collapsed ? "Expand chats panel" : "Collapse chats panel"}
-          >
-            {collapsed ? "→" : "←"}
-          </button>
+          <div className="chat-sidebar-title">Chats</div>
         </div>
 
-        {!collapsed ? (
-          <div className="chat-sidebar-panel">
+        <div className="chat-sidebar-panel">
           <button type="button" className="chat-sidebar-new-btn" onClick={onNewChat}>
             New Chat
           </button>
@@ -89,14 +77,7 @@ export default function ChatSidebar({
               <div className="chat-sidebar-empty">No saved chats yet.</div>
             )}
           </div>
-          </div>
-        ) : (
-          <div className="chat-sidebar-collapsed-actions">
-            <button type="button" className="chat-sidebar-new-btn" onClick={onNewChat}>
-              +
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </aside>
   );

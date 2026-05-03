@@ -1,6 +1,9 @@
 MANUAL_SAINT_NAME_EXCLUSIONS = {
+    "St. Abba Abra",
+    "St. Abba Abram",
     "St. Abba Anthony the Great the Father",
     "St. Athanasius the Apostolic",
+    "St. Pope Cyril the Great Steps",
     "St. Cyprian Bishop of Carthage",
     "St. Gregory Minor",
     "St. Gregory Nazianzus",
@@ -25,4 +28,8 @@ MANUAL_SAINT_NAME_REPLACEMENTS = {
     "St. John Chr": "St. John Chrysostom",
     "St. John Chry": "St. John Chrysostom",
     "St. John Chrysost": "St. John Chrysostom",
+    "St. THOMAS OF AQUINAS": "St. Thomas Aquinas",
+    "St. THOMAS OF AQUINAS This Thomas": "St. Thomas Aquinas",
+    "St. Pope Cyril the Great Steps": "",
+    "St. Cyril Maqar": "",
 }

@@ -5,7 +5,10 @@ export function normalizeSaintKey(value: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase()
-    .replace(/^(?:st\.?|saint)\s+/i, "");
+    .replace(/^(?:(?:st\.?|saint|pope|patriarch|abba|anba)\s+)+/i, "")
+    .replace(/\bkyrillos\b/g, "cyril")
+    .replace(/\bkyrillos\b/g, "cyril")
+    .replace(/\bcyrillus\b/g, "cyril");
 }
 
 export function buildSaintLookup(names: string[]): Set<string> {
@@ -30,5 +33,5 @@ export function isValidSaintName(value: string, saintLookup: Set<string>): boole
   const normalized = normalizeSaintKey(value);
   if (!normalized) return false;
   if (saintLookup.size === 0) return looksLikeSaintName(value);
-  return saintLookup.has(normalized);
+  return saintLookup.has(normalized) || looksLikeSaintName(value);
 }

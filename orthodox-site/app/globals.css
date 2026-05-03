@@ -56,9 +56,9 @@ textarea {
 }
 
 .navbar {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 1rem 1.5rem;
+  max-width: none;
+  margin: 0;
+  padding: 1rem 1.5rem 1rem calc(300px + 1.5rem);
   min-height: 76px;
   display: flex;
   align-items: center;
@@ -105,26 +105,30 @@ textarea {
 /* HOME */
 
 .home-page {
-  min-height: calc(100vh - 76px);
+  height: calc(100vh - 76px);
+  overflow: hidden;
 }
 
 .home-layout {
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   display: flex;
   justify-content: center;
-  padding: 1.5rem 1.5rem 1.5rem calc(300px + 1.5rem);
+  padding: 0.75rem 1.5rem 0.75rem calc(300px + 1.5rem);
+  overflow: hidden;
 }
 
 .hero {
   width: min(980px, calc(100vw - 300px - 3rem));
   max-width: 980px;
   margin: 0;
-  min-height: calc(100vh - 3rem);
-  padding: 1.5rem 1.5rem 6rem;
+  min-height: 0;
+  height: 100%;
+  padding: 0.1rem 1.5rem 2.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
 }
 
@@ -133,8 +137,8 @@ textarea {
   height: auto;
   max-width: 100%;
   object-fit: contain;
-  margin-top: 30px;
-  margin-bottom: -72px;
+  margin-top: 18px;
+  margin-bottom: -88px;
   display: block;
 }
 
@@ -275,10 +279,6 @@ textarea {
   z-index: 60;
 }
 
-.chat-sidebar-collapsed {
-  width: 76px;
-}
-
 .chat-sidebar-details {
   height: 100%;
   border-radius: 0;
@@ -303,17 +303,6 @@ textarea {
 .chat-sidebar-title {
   font-family: "Merriweather", serif;
   color: var(--text);
-}
-
-.chat-sidebar-toggle {
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  border: 1px solid rgba(58, 38, 22, 0.16);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--text);
-  font-family: "Merriweather", serif;
-  cursor: pointer;
 }
 
 .chat-sidebar-panel {
@@ -406,14 +395,6 @@ textarea {
   color: var(--text);
 }
 
-.chat-sidebar-collapsed-actions {
-  flex: 1 1 auto;
-  padding: 0.9rem;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-
 .chat-window-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--border);
@@ -504,6 +485,13 @@ textarea {
   margin-bottom: 1rem;
 }
 
+.message-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 70%;
+}
+
 .user-row {
   justify-content: flex-end;
 }
@@ -513,7 +501,6 @@ textarea {
 }
 
 .message-bubble {
-  max-width: 70%;
   padding: 0.9rem 1.1rem;
   border-radius: 18px;
   line-height: 1.6;
@@ -532,6 +519,73 @@ textarea {
   background: white;
   border: 1px solid var(--border);
   color: var(--text);
+}
+
+.message-actions {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  margin-top: -0.05rem;
+  padding: 0 0.15rem;
+}
+
+.message-row:hover .message-actions,
+.message-row:focus-within .message-actions {
+  opacity: 1;
+}
+
+.user-actions {
+  justify-content: flex-end;
+}
+
+.assistant-actions {
+  justify-content: flex-start;
+}
+
+.message-action-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  line-height: 1;
+  padding: 0.1rem;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.72;
+}
+
+.message-action-btn:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.user-bubble .message-action-btn {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.assistant-bubble .message-action-btn {
+  color: rgba(58, 38, 22, 0.66);
+}
+
+.message-copy-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.user-actions .message-copy-icon {
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+.assistant-actions .message-copy-icon {
+  opacity: 0.75;
+}
+
+.message-copy-icon-copied {
+  opacity: 1;
 }
 
 .interactive-answer {
@@ -744,6 +798,30 @@ textarea {
   background: rgba(58, 38, 22, 0.08);
 }
 
+.saints-load-more {
+  width: 100%;
+  margin-top: 0.45rem;
+  border: 1px solid rgba(58, 38, 22, 0.16);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text);
+  font-family: "Merriweather", serif;
+  text-align: center;
+  padding: 0.85rem 0.9rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.saints-load-more:hover:not(:disabled) {
+  background: rgba(58, 38, 22, 0.08);
+  border-color: rgba(58, 38, 22, 0.24);
+}
+
+.saints-load-more:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .catechism-tab-panel {
   flex: 1;
   display: flex;
@@ -751,10 +829,14 @@ textarea {
   min-height: 0;
   padding: 1.5rem;
   gap: 1rem;
+  font-family: "Merriweather", serif;
+  overflow-y: auto;
 }
 
 .catechism-panel-copy {
-  padding: 0.2rem 0.1rem;
+  padding: 0.2rem 0.1rem 1rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(58, 38, 22, 0.12);
 }
 
 .catechism-panel-title {
@@ -771,42 +853,138 @@ textarea {
   line-height: 1.7;
 }
 
-.catechism-prompt-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.catechism-more-topics {
+  display: flex;
+  flex-direction: column;
   gap: 0.85rem;
+}
+
+.catechism-more-topics-label {
+  font-family: "Merriweather", serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.catechism-topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.catechism-topic-group {
+  border-radius: 20px;
+  border: 1px solid rgba(58, 38, 22, 0.12);
+  background: rgba(255, 255, 255, 0.44);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.catechism-topic-group[open] {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(58, 38, 22, 0.18);
+}
+
+.catechism-topic-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+  font-family: "Merriweather", serif;
+}
+
+.catechism-topic-summary::-webkit-details-marker {
+  display: none;
+}
+
+.catechism-topic-summary-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.catechism-topic-title {
+  font-family: "Merriweather", serif;
+  font-size: 1.02rem;
+  color: var(--title);
+}
+
+.catechism-topic-description {
+  font-family: "Merriweather", serif;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+.catechism-topic-chevron {
+  width: 0.72rem;
+  height: 0.72rem;
+  flex-shrink: 0;
+  border-right: 2px solid var(--text-soft);
+  border-bottom: 2px solid var(--text-soft);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.catechism-topic-group[open] .catechism-topic-chevron {
+  transform: rotate(225deg);
+}
+
+.catechism-prompt-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 1.1rem 0.7rem;
+  padding: 0.7rem 0 0;
+  border-top: 1px solid rgba(58, 38, 22, 0.12);
 }
 
 .catechism-prompt-card {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  padding: 1rem;
-  border-radius: 18px;
-  border: 1px solid rgba(58, 38, 22, 0.16);
-  background: rgba(255, 255, 255, 0.76);
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.95rem 0.1rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--text);
   font-family: "Merriweather", serif;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.catechism-prompt-card + .catechism-prompt-card {
+  border-top: 1px solid rgba(58, 38, 22, 0.08);
 }
 
 .catechism-prompt-card:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(58, 38, 22, 0.28);
+  background: rgba(58, 38, 22, 0.035);
 }
 
 .catechism-prompt-label {
-  font-size: 0.76rem;
-  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 1.7rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(58, 38, 22, 0.07);
+  color: #7d6551;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-soft);
+  white-space: nowrap;
 }
 
 .catechism-prompt-text {
   line-height: 1.5;
+  max-width: 52rem;
 }
 
 .chat-empty-state {
@@ -851,6 +1029,7 @@ textarea {
 .page-subtitle {
   margin: 0;
   max-width: 760px;
+  font-family: "Merriweather", serif;
   color: var(--text-soft);
   line-height: 1.7;
   opacity: 0.76;
@@ -862,6 +1041,7 @@ textarea {
   border-radius: 14px;
   background: rgba(58, 38, 22, 0.07);
   border: 1px solid rgba(58, 38, 22, 0.14);
+  font-family: "Merriweather", serif;
   display: flex;
   gap: 0.55rem;
   flex-wrap: wrap;
@@ -869,6 +1049,7 @@ textarea {
 }
 
 .selected-source-label {
+  font-family: "Merriweather", serif;
   font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -901,6 +1082,7 @@ textarea {
 
 .source-card p {
   margin: 0;
+  font-family: "Merriweather", serif;
   color: var(--text-soft);
   font-size: 0.95rem;
 }
@@ -936,6 +1118,8 @@ textarea {
 
 @media (max-width: 768px) {
   .navbar {
+    max-width: var(--max-width);
+    margin: 0 auto;
     min-height: 70px;
     padding: 0.95rem 1rem;
   }
@@ -955,6 +1139,7 @@ textarea {
   .home-layout,
   .chat-layout {
     min-height: auto;
+    height: auto;
     padding: 1rem;
     display: block;
   }
@@ -968,6 +1153,7 @@ textarea {
   .hero {
     padding: 1.25rem 1rem 4.5rem;
     min-height: auto;
+    height: auto;
     max-width: 100%;
     width: 100%;
     margin: 0 auto;
@@ -1031,8 +1217,11 @@ textarea {
     padding: 1rem;
   }
 
-  .message-bubble {
+  .message-stack {
     max-width: 92%;
+  }
+
+  .message-bubble {
     font-size: 0.98rem;
   }
 

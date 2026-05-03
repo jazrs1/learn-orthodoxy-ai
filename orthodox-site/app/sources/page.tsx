@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -15,6 +15,7 @@ const SOURCE_FILES = [
 
 function SourcesPageContent() {
   const searchParams = useSearchParams();
+  const selectedSourceRef = useRef<HTMLDivElement>(null);
   const selectedPdfParam = searchParams.get("pdf") || "";
   const selectedPageParam = searchParams.get("page") || "";
   const selectedPdf = SOURCE_FILES.some((entry) => entry.file === selectedPdfParam)
@@ -25,6 +26,14 @@ function SourcesPageContent() {
   const selectedPdfUrl = selectedPdf
     ? `/pdfs/${selectedPdf}${hasSelectedPage ? `#page=${selectedPage}` : ""}`
     : "";
+
+  useEffect(() => {
+    if (!selectedPdf) return;
+
+    requestAnimationFrame(() => {
+      selectedSourceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [selectedPdf, selectedPage]);
 
   return (
     <section className="page-shell">
@@ -54,7 +63,7 @@ function SourcesPageContent() {
       </div>
 
       {selectedPdf ? (
-        <>
+        <div id="selected-source" ref={selectedSourceRef}>
           <div className="selected-source-banner">
             <span className="selected-source-label">Selected citation</span>
             <strong>{selectedPdf}</strong>
@@ -71,7 +80,7 @@ function SourcesPageContent() {
               className="source-preview-frame"
             />
           </div>
-        </>
+        </div>
       ) : null}
     </section>
   );

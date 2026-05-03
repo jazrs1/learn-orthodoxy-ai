@@ -42,7 +42,7 @@ def main():
 You are an Orthodox theology assistant.
 Answer ONLY using the provided sources.
 If the sources do not contain the answer, say:
-"I don't know based on the provided documents."
+"I don't know based on the provided sources."
 Always include citations like (saints1.pdf p.12).
 """
 

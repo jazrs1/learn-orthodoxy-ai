@@ -9,10 +9,15 @@ import { fetchConversationList, deleteConversationRequest } from "../lib/chat-cl
 import { ConversationSummary } from "../lib/chat-types";
 
 export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +80,7 @@ export default function HomePage() {
           <h1 className="hero-title">Learn Orthodoxy</h1>
 
           <p className="hero-subtitle">
-            Ask questions about Orthodox saints, theology, liturgy, Scripture, and catechism.
+            Ask questions about Orthodox saints and Coptic Orthodox catechism.
           </p>
 
           <div className="hero-chat-wrap">
@@ -83,14 +88,16 @@ export default function HomePage() {
           </div>
         </section>
 
-        <ChatSidebar
-          sessions={conversations}
-          onSelectSession={openSession}
-          onNewChat={startNewChat}
-          onDeleteSession={deleteSession}
-          loading={loading}
-          error={error}
-        />
+        {mounted ? (
+          <ChatSidebar
+            sessions={conversations}
+            onSelectSession={openSession}
+            onNewChat={startNewChat}
+            onDeleteSession={deleteSession}
+            loading={loading}
+            error={error}
+          />
+        ) : null}
       </div>
     </main>
   );
