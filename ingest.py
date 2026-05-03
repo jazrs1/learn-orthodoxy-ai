@@ -5,14 +5,18 @@ from typing import List, Dict, Any
 
 from dotenv import load_dotenv
 from pypdf import PdfReader
-import chromadb
 from chromadb.utils import embedding_functions
+from chroma_client import (
+    CHROMA_DIR,
+    COLLECTION_NAME,
+    get_chroma_client,
+    get_resolved_chroma_dir,
+    persist_chroma_client,
+)
 
 load_dotenv()
 
 PDF_DIR = "data/pdfs"
-CHROMA_DIR = os.getenv("CHROMA_DIR", "chroma_db")
-COLLECTION_NAME = "orthodox_pdfs"
 
 CHUNK_SIZE_CHARS = 3500
 CHUNK_OVERLAP_CHARS = 400
@@ -75,7 +79,7 @@ def get_collection():
     if not api_key:
         raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
 
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
+    client = get_chroma_client()
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
         api_key=api_key,
         model_name="text-embedding-3-small",
@@ -95,6 +99,7 @@ def ingest_pdf_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
         raise RuntimeError(f"No PDFs found in {pdf_dir}. Put your PDFs there first.")
 
     print(f"CHROMA_DIR: {CHROMA_DIR}")
+    print(f"Resolved Chroma dir: {get_resolved_chroma_dir()}")
     print(f"Collection: {COLLECTION_NAME}")
     print(f"Found {len(pdf_paths)} PDFs.")
     all_pages = []
@@ -110,7 +115,9 @@ def ingest_pdf_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
     chunks = build_chunks(all_pages)
     print(f"Total PDF chunks created: {len(chunks)}")
 
-    _, collection = get_collection()
+    client, collection = get_collection()
+    print(f"Ingest start; resolved_chroma_dir: {get_resolved_chroma_dir()}")
+    print(f"Collection count before ingest: {int(collection.count())}")
 
     batch_size = 200
     max_retries = 6
@@ -137,6 +144,7 @@ def ingest_pdf_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
                 )
                 time.sleep(sleep_seconds)
 
+    persist_chroma_client(client)
     final_count = int(collection.count())
     print(f"Final document count after PDF ingestion: {final_count}")
     return {

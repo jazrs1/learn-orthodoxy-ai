@@ -5,16 +5,19 @@ import time
 from typing import Any, Dict, List
 from urllib.parse import urldefrag
 
-import chromadb
 import requests
 from bs4 import BeautifulSoup
 from chromadb.utils import embedding_functions
+from chroma_client import (
+    CHROMA_DIR,
+    COLLECTION_NAME,
+    get_chroma_client,
+    get_resolved_chroma_dir,
+    persist_chroma_client,
+)
 from dotenv import load_dotenv
 
 load_dotenv()
-
-CHROMA_DIR = os.getenv("CHROMA_DIR", "chroma_db")
-COLLECTION_NAME = "orthodox_pdfs"
 
 CHUNK_SIZE_CHARS = 3500
 CHUNK_OVERLAP_CHARS = 400
@@ -132,7 +135,7 @@ def get_collection():
     if not api_key:
         raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
 
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
+    client = get_chroma_client()
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
         api_key=api_key,
         model_name="text-embedding-3-small",
@@ -151,8 +154,11 @@ def ingest_website_sources(urls: List[str]) -> Dict[str, int]:
         raise RuntimeError("Provide at least one valid URL.")
 
     print(f"CHROMA_DIR: {CHROMA_DIR}")
+    print(f"Resolved Chroma dir: {get_resolved_chroma_dir()}")
     print(f"Collection: {COLLECTION_NAME}")
-    _, collection = get_collection()
+    client, collection = get_collection()
+    print(f"Ingest start; resolved_chroma_dir: {get_resolved_chroma_dir()}")
+    print(f"Collection count before ingest: {int(collection.count())}")
 
     total_chunks = 0
     batch_size = 100
@@ -202,6 +208,7 @@ def ingest_website_sources(urls: List[str]) -> Dict[str, int]:
         total_chunks += len(chunks)
         print(f"Finished ingesting {url}")
 
+    persist_chroma_client(client)
     final_count = int(collection.count())
     print(f"Final document count after website ingestion: {final_count}")
     return {

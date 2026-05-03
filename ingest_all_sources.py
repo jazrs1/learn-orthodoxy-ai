@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 
 from ingest import CHROMA_DIR, COLLECTION_NAME, get_collection as get_pdf_collection, ingest_pdf_sources
+from chroma_client import get_resolved_chroma_dir
 from ingest_web import ingest_website_sources
 from website_sources import WEBSITE_SOURCE_URLS
 
@@ -10,6 +11,7 @@ load_dotenv()
 def main() -> None:
     print("Starting full source ingestion")
     print(f"CHROMA_DIR: {CHROMA_DIR}")
+    print(f"Resolved Chroma dir: {get_resolved_chroma_dir()}")
     print(f"Collection: {COLLECTION_NAME}")
     print(f"Configured website URLs: {len(WEBSITE_SOURCE_URLS)}")
 

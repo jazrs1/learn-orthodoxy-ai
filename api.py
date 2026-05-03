@@ -4,21 +4,18 @@ from typing import List, Dict, Any
 from pathlib import Path
 
 from dotenv import load_dotenv
-import chromadb
 from chromadb.utils import embedding_functions
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
+from chroma_client import CHROMA_DIR, COLLECTION_NAME, get_chroma_client, get_resolved_chroma_dir
 from saint_index_overrides import (
     MANUAL_SAINT_NAME_EXCLUSIONS,
     MANUAL_SAINT_NAME_REPLACEMENTS,
 )
 
 load_dotenv()
-
-CHROMA_DIR = os.getenv("CHROMA_DIR", "chroma_db")
-COLLECTION_NAME = "orthodox_pdfs"
 
 NON_PERSON_ENTITY_TERMS = {
     "birth",
@@ -555,8 +552,9 @@ saint_name_index: List[str] = []
 
 
 def _collect_chroma_debug_info() -> Dict[str, Any]:
-    resolved_path = str(Path(CHROMA_DIR).resolve())
-    path_exists = Path(CHROMA_DIR).exists()
+    resolved_dir = get_resolved_chroma_dir()
+    resolved_path = str(resolved_dir)
+    path_exists = resolved_dir.exists()
 
     info: Dict[str, Any] = {
         "chroma_dir_env": CHROMA_DIR,
@@ -611,7 +609,7 @@ def startup():
     print("Starting up API...")
     print(f"CHROMA_DIR env: {CHROMA_DIR}")
     print(f"Collection name: {COLLECTION_NAME}")
-    chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
+    chroma_client = get_chroma_client()
 
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
         api_key=api_key,
@@ -622,6 +620,8 @@ def startup():
         name=COLLECTION_NAME,
         embedding_function=embed_fn,
     )
+    print(f"Ingest start; resolved_chroma_dir: {get_resolved_chroma_dir()}")
+    print(f"Collection count before ingest: {int(collection.count())}")
 
     oai_client = OpenAI(api_key=api_key)
     debug_info = _collect_chroma_debug_info()
