@@ -9,8 +9,15 @@ from chromadb.config import Settings
 COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "orthodox_pdfs")
 
 
+def _default_chroma_dir() -> str:
+    app_dir = Path("/app")
+    if app_dir.exists() and os.access(app_dir, os.W_OK):
+        return "/app/chroma_db"
+    return "chroma_db"
+
+
 def get_chroma_path() -> str:
-    raw = os.getenv("CHROMA_DIR", "/app/chroma_db")
+    raw = os.getenv("CHROMA_DIR", _default_chroma_dir())
     path = Path(raw).resolve()
     path.mkdir(parents=True, exist_ok=True)
     return str(path)
@@ -21,7 +28,7 @@ def get_resolved_chroma_dir() -> Path:
 
 
 def get_chroma_dir_env() -> str:
-    return os.getenv("CHROMA_DIR", "/app/chroma_db")
+    return os.getenv("CHROMA_DIR", _default_chroma_dir())
 
 
 def log_chroma_configuration(context: str = "chroma") -> None:
