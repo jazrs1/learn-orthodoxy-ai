@@ -17,6 +17,7 @@ def _default_chroma_dir() -> str:
 
 
 COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "orthodox_pdfs")
+MIN_DOCUMENT_COUNT = int(os.getenv("CHROMA_MIN_DOC_COUNT", "500"))
 
 
 def get_chroma_dir_env() -> str:
@@ -38,6 +39,7 @@ def log_chroma_configuration(context: str = "chroma") -> None:
     print(f"[{context}] CHROMA_DIR env/raw: {get_chroma_dir_env()}")
     print(f"[{context}] resolved_chroma_dir: {get_chroma_path()}")
     print(f"[{context}] collection_name: {COLLECTION_NAME}")
+    print(f"[{context}] min_document_count: {MIN_DOCUMENT_COUNT}")
 
 
 def get_chroma_client():
@@ -60,6 +62,15 @@ def get_chroma_collection(
         metadata=metadata,
     )
     return chroma_client, collection
+
+
+def get_collection_count(*, collection: Any | None = None) -> int:
+    _, chroma_collection = (None, collection) if collection is not None else get_chroma_collection()
+    return int(chroma_collection.count())
+
+
+def collection_needs_ingestion(count: int) -> bool:
+    return count < MIN_DOCUMENT_COUNT
 
 
 def persist_chroma_client(client) -> None:

@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 from chroma_store import (
     COLLECTION_NAME,
+    MIN_DOCUMENT_COUNT,
     get_chroma_collection,
     get_chroma_dir_env,
     get_resolved_chroma_dir,
@@ -578,6 +579,7 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
         "resolved_chroma_dir": resolved_path,
         "directory_exists": path_exists,
         "collection_name": COLLECTION_NAME,
+        "min_document_count": MIN_DOCUMENT_COUNT,
         "collection_ready": collection is not None,
         "document_count": 0,
         "sample_items": [],

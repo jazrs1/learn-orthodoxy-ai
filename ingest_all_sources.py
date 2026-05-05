@@ -1,3 +1,5 @@
+from typing import Dict
+
 from dotenv import load_dotenv
 
 from chroma_store import COLLECTION_NAME, get_chroma_collection, get_chroma_dir_env, get_resolved_chroma_dir, log_chroma_configuration
@@ -8,7 +10,7 @@ from website_sources import WEBSITE_SOURCE_URLS
 load_dotenv()
 
 
-def main() -> None:
+def ingest_all_sources() -> Dict[str, int]:
     log_chroma_configuration("ingest.all")
     print("Starting full source ingestion")
     print(f"CHROMA_DIR: {get_chroma_dir_env()}")
@@ -28,6 +30,15 @@ def main() -> None:
     print(f"PDF chunks inserted: {pdf_stats['chunk_count']}")
     print(f"Website chunks inserted: {web_stats['chunk_count']}")
     print(f"Final document count: {final_document_count}")
+    return {
+        "pdf_chunk_count": pdf_stats["chunk_count"],
+        "website_chunk_count": web_stats["chunk_count"],
+        "document_count": final_document_count,
+    }
+
+
+def main() -> None:
+    ingest_all_sources()
 
 
 if __name__ == "__main__":
