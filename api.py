@@ -97,6 +97,18 @@ def _saint_query_variants(saint_name: str) -> List[str]:
         add_variant(f"{base} Coptic Orthodox Pope")
         add_variant(f"{base} biography miracles sayings")
 
+    lowered_base = base.lower()
+    if "theotokos" in lowered_base:
+        add_variant("St. Mary the Virgin")
+        add_variant("Mary the Virgin")
+        add_variant("Virgin Mary")
+        add_variant("Holy Virgin Mary")
+
+    if "thomas" in lowered_base and "apostle" in lowered_base:
+        add_variant("Apostle Thomas")
+        add_variant("Thomas the Disciple")
+        add_variant("St. Thomas the Disciple")
+
     return variants
 
 

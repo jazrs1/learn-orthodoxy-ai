@@ -181,6 +181,7 @@ function ChatPageContent() {
   const [copiedMessageId, setCopiedMessageId] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "saints" | "catechism">("chat");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [pendingAutoSubmitText, setPendingAutoSubmitText] = useState("");
   const [saints, setSaints] = useState<string[]>([]);
   const [saintsTotal, setSaintsTotal] = useState(0);
   const [saintsLoading, setSaintsLoading] = useState(false);
@@ -198,7 +199,6 @@ function ChatPageContent() {
 
   const saintLookup = useMemo(() => buildSaintLookup(saints), [saints]);
   const messages = useMemo(() => currentConversation?.messages || [], [currentConversation]);
-  const backendUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/+$/, "");
   const hasMoreSaints = saints.length < saintsTotal;
 
   const loadConversationList = useCallback(async () => {
@@ -273,12 +273,6 @@ function ChatPageContent() {
       }
 
       try {
-        if (!backendUrl) {
-          throw new Error(
-            "Saints search is unavailable because NEXT_PUBLIC_API_URL is not configured."
-          );
-        }
-
         const params = new URLSearchParams({
           limit: String(SAINTS_PAGE_SIZE),
           offset: String(nextOffset),
@@ -287,7 +281,7 @@ function ChatPageContent() {
           params.set("q", normalizedQuery);
         }
 
-        const response = await fetch(`${backendUrl}/saints?${params.toString()}`, {
+        const response = await fetch(`/api/saints?${params.toString()}`, {
           signal: AbortSignal.timeout(15000),
         });
         if (!response.ok) throw new Error("Failed to load saints list");
@@ -306,7 +300,7 @@ function ChatPageContent() {
         setSaintsLoading(false);
       }
     },
-    [backendUrl, saintSearch]
+    [saintSearch]
   );
 
   useEffect(() => {
@@ -537,7 +531,19 @@ function ChatPageContent() {
     setConversationError("");
     setIsDraftChat(true);
     setComposerInitialValue(pendingMessage);
+    setPendingAutoSubmitText(pendingMessage);
   }, []);
+
+  useEffect(() => {
+    if (!pendingAutoSubmitText) return;
+    if (submittingRef.current || isSending) return;
+    if (activeConversationId || messages.length > 0) return;
+
+    const nextText = pendingAutoSubmitText;
+    setPendingAutoSubmitText("");
+    setComposerInitialValue("");
+    void handleSendMessage(nextText);
+  }, [activeConversationId, handleSendMessage, isSending, messages.length, pendingAutoSubmitText]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
