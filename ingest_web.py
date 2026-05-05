@@ -8,11 +8,12 @@ from urllib.parse import urldefrag
 import requests
 from bs4 import BeautifulSoup
 from chromadb.utils import embedding_functions
-from chroma_client import (
-    CHROMA_DIR,
+from chroma_store import (
     COLLECTION_NAME,
-    get_chroma_client,
+    get_chroma_collection,
+    get_chroma_dir_env,
     get_resolved_chroma_dir,
+    log_chroma_configuration,
     persist_chroma_client,
 )
 from dotenv import load_dotenv
@@ -135,13 +136,11 @@ def get_collection():
     if not api_key:
         raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
 
-    client = get_chroma_client()
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
         api_key=api_key,
         model_name="text-embedding-3-small",
     )
-    collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
+    client, collection = get_chroma_collection(
         embedding_function=embed_fn,
         metadata={"source": "orthodox_pdfs"},
     )
@@ -153,7 +152,8 @@ def ingest_website_sources(urls: List[str]) -> Dict[str, int]:
     if not urls:
         raise RuntimeError("Provide at least one valid URL.")
 
-    print(f"CHROMA_DIR: {CHROMA_DIR}")
+    log_chroma_configuration("ingest.web")
+    print(f"CHROMA_DIR: {get_chroma_dir_env()}")
     print(f"Resolved Chroma dir: {get_resolved_chroma_dir()}")
     print(f"Collection: {COLLECTION_NAME}")
     client, collection = get_collection()
@@ -228,7 +228,7 @@ def main() -> None:
     print("\n✅ Website ingestion complete.")
     print(f"URLs processed: {stats['url_count']}")
     print(f"Total chunks upserted: {stats['chunk_count']}")
-    print(f"Chroma DB saved to: {CHROMA_DIR}")
+    print(f"Chroma DB saved to: {get_chroma_dir_env()}")
     print(f"Collection: {COLLECTION_NAME}")
     print(f"Final document count: {stats['document_count']}")
 

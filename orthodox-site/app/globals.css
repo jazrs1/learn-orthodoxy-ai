@@ -58,11 +58,15 @@ textarea {
 .navbar {
   max-width: none;
   margin: 0;
-  padding: 1rem 1.5rem 1rem calc(300px + 1.5rem);
+  padding: 1rem 1.5rem;
   min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.navbar-sidebar-offset {
+  padding-left: calc(300px + 1.5rem);
 }
 
 .nav-brand {

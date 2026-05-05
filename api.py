@@ -1,7 +1,6 @@
 import os
 import re
 from typing import List, Dict, Any
-from pathlib import Path
 
 from dotenv import load_dotenv
 from chromadb.utils import embedding_functions
@@ -9,7 +8,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
-from chroma_client import CHROMA_DIR, COLLECTION_NAME, get_chroma_client, get_resolved_chroma_dir
+from chroma_store import (
+    COLLECTION_NAME,
+    get_chroma_collection,
+    get_chroma_dir_env,
+    get_resolved_chroma_dir,
+    log_chroma_configuration,
+)
 from saint_index_overrides import (
     MANUAL_SAINT_NAME_EXCLUSIONS,
     MANUAL_SAINT_NAME_REPLACEMENTS,
@@ -569,7 +574,7 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
     path_exists = resolved_dir.exists()
 
     info: Dict[str, Any] = {
-        "chroma_dir_env": CHROMA_DIR,
+        "chroma_dir_env": get_chroma_dir_env(),
         "resolved_chroma_dir": resolved_path,
         "directory_exists": path_exists,
         "collection_name": COLLECTION_NAME,
@@ -619,19 +624,19 @@ def startup():
         return
 
     print("Starting up API...")
-    print(f"CHROMA_DIR env: {CHROMA_DIR}")
-    print(f"Collection name: {COLLECTION_NAME}")
-    chroma_client = get_chroma_client()
+    log_chroma_configuration("api.startup")
 
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
         api_key=api_key,
         model_name="text-embedding-3-small",
     )
 
-    collection = chroma_client.get_or_create_collection(
-        name=COLLECTION_NAME,
+    chroma_client, collection = get_chroma_collection(
         embedding_function=embed_fn,
+        metadata={"source": COLLECTION_NAME},
     )
+    print(f"CHROMA_DIR env: {get_chroma_dir_env()}")
+    print(f"Collection name: {COLLECTION_NAME}")
     print(f"Ingest start; resolved_chroma_dir: {get_resolved_chroma_dir()}")
     print(f"Collection count before ingest: {int(collection.count())}")
 

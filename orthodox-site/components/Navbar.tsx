@@ -1,10 +1,16 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const hasSidebarOffset = pathname === "/" || pathname === "/chat";
+
   return (
     <header className="site-header">
-      <nav className="navbar">
+      <nav className={`navbar ${hasSidebarOffset ? "navbar-sidebar-offset" : ""}`}>
         <Link href="/" className="nav-brand">
           <Image
             src="/cross.png"

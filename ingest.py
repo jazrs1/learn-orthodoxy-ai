@@ -6,11 +6,12 @@ from typing import List, Dict, Any
 from dotenv import load_dotenv
 from pypdf import PdfReader
 from chromadb.utils import embedding_functions
-from chroma_client import (
-    CHROMA_DIR,
+from chroma_store import (
     COLLECTION_NAME,
-    get_chroma_client,
+    get_chroma_collection,
+    get_chroma_dir_env,
     get_resolved_chroma_dir,
+    log_chroma_configuration,
     persist_chroma_client,
 )
 
@@ -79,14 +80,12 @@ def get_collection():
     if not api_key:
         raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
 
-    client = get_chroma_client()
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
         api_key=api_key,
         model_name="text-embedding-3-small",
     )
 
-    collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
+    client, collection = get_chroma_collection(
         embedding_function=embed_fn,
         metadata={"source": "orthodox_pdfs"},
     )
@@ -98,7 +97,8 @@ def ingest_pdf_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
     if not pdf_paths:
         raise RuntimeError(f"No PDFs found in {pdf_dir}. Put your PDFs there first.")
 
-    print(f"CHROMA_DIR: {CHROMA_DIR}")
+    log_chroma_configuration("ingest.pdf")
+    print(f"CHROMA_DIR: {get_chroma_dir_env()}")
     print(f"Resolved Chroma dir: {get_resolved_chroma_dir()}")
     print(f"Collection: {COLLECTION_NAME}")
     print(f"Found {len(pdf_paths)} PDFs.")
@@ -159,7 +159,7 @@ def main():
     stats = ingest_pdf_sources()
 
     print("\n✅ Ingestion complete.")
-    print(f"Chroma DB saved to: {CHROMA_DIR}")
+    print(f"Chroma DB saved to: {get_chroma_dir_env()}")
     print(f"Collection: {COLLECTION_NAME}")
     print(f"PDF chunks inserted: {stats['chunk_count']}")
     print(f"Final document count: {stats['document_count']}")

@@ -1,28 +1,24 @@
-import os
-from pathlib import Path
+from chroma_store import (
+    COLLECTION_NAME,
+    get_chroma_client,
+    get_chroma_collection,
+    get_chroma_dir_env,
+    get_chroma_path,
+    get_resolved_chroma_dir,
+    log_chroma_configuration,
+    persist_chroma_client,
+)
 
-import chromadb
-from chromadb.config import Settings
+CHROMA_DIR = get_chroma_dir_env()
 
-
-CHROMA_DIR = os.getenv("CHROMA_DIR", "chroma_db")
-COLLECTION_NAME = "orthodox_pdfs"
-
-
-def get_resolved_chroma_dir() -> Path:
-    return Path(CHROMA_DIR).resolve()
-
-
-def get_chroma_client():
-    persist_dir = get_resolved_chroma_dir()
-    return chromadb.PersistentClient(
-        path=str(persist_dir),
-        settings=Settings(anonymized_telemetry=False),
-    )
-
-
-def persist_chroma_client(client) -> None:
-    try:
-        client.persist()
-    except Exception:
-        pass
+__all__ = [
+    "CHROMA_DIR",
+    "COLLECTION_NAME",
+    "get_chroma_client",
+    "get_chroma_collection",
+    "get_chroma_dir_env",
+    "get_chroma_path",
+    "get_resolved_chroma_dir",
+    "log_chroma_configuration",
+    "persist_chroma_client",
+]

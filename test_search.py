@@ -1,27 +1,22 @@
 import os
 from dotenv import load_dotenv
-import chromadb
 from chromadb.utils import embedding_functions
+from chroma_store import COLLECTION_NAME, get_chroma_collection, log_chroma_configuration
 
 load_dotenv()
-
-CHROMA_DIR = "chroma_db"
-COLLECTION_NAME = "orthodox_pdfs"
 
 def main():
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
 
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
-
+    log_chroma_configuration("test_search")
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
         api_key=api_key,
         model_name="text-embedding-3-small",
     )
 
-    collection = client.get_collection(
-        name=COLLECTION_NAME,
+    _, collection = get_chroma_collection(
         embedding_function=embed_fn,
     )
 
