@@ -1,22 +1,23 @@
 import argparse
 import hashlib
 import os
-import time
 from typing import Any, Dict, List
 from urllib.parse import urldefrag
 
 import requests
 from bs4 import BeautifulSoup
-from chromadb.utils import embedding_functions
 from chroma_store import (
     COLLECTION_NAME,
     get_chroma_collection,
+    get_chroma_client,
+    get_collection_count,
     get_chroma_dir_env,
     get_resolved_chroma_dir,
     log_chroma_configuration,
     persist_chroma_client,
 )
 from dotenv import load_dotenv
+from ingest_embeddings import upsert_chunks_with_embeddings
 
 load_dotenv()
 
@@ -132,18 +133,8 @@ def delete_existing_url_chunks(collection: Any, url: str, keep_ids: List[str]) -
 
 
 def get_collection():
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
-
-    embed_fn = embedding_functions.OpenAIEmbeddingFunction(
-        api_key=api_key,
-        model_name="text-embedding-3-small",
-    )
-    client, collection = get_chroma_collection(
-        embedding_function=embed_fn,
-        metadata={"source": "orthodox_pdfs"},
-    )
+    client = get_chroma_client()
+    collection = get_chroma_collection(client=client, metadata={"source": "orthodox_pdfs"})
     return client, collection
 
 
@@ -158,11 +149,9 @@ def ingest_website_sources(urls: List[str]) -> Dict[str, int]:
     print(f"Collection: {COLLECTION_NAME}")
     client, collection = get_collection()
     print(f"Ingest start; resolved_chroma_dir: {get_resolved_chroma_dir()}")
-    print(f"Collection count before ingest: {int(collection.count())}")
+    print(f"Collection count before ingest: {get_collection_count(collection=collection)}")
 
     total_chunks = 0
-    batch_size = 100
-    max_retries = 6
 
     print(f"Starting website ingestion for {len(urls)} URL(s)")
     for url in urls:
@@ -180,36 +169,17 @@ def ingest_website_sources(urls: List[str]) -> Dict[str, int]:
         print(f"Created {len(chunks)} chunk(s) for {url}")
         delete_existing_url_chunks(collection, url, [chunk["id"] for chunk in chunks])
 
-        for i in range(0, len(chunks), batch_size):
-            batch = chunks[i:i + batch_size]
-            for attempt in range(max_retries):
-                try:
-                    collection.upsert(
-                        ids=[chunk["id"] for chunk in batch],
-                        documents=[chunk["text"] for chunk in batch],
-                        metadatas=[chunk["metadata"] for chunk in batch],
-                    )
-                    print(
-                        f"Upserted {min(i + batch_size, len(chunks))}/{len(chunks)} chunk(s) for {url}"
-                    )
-                    break
-                except Exception as exc:
-                    if "rate_limit" not in str(exc).lower() and "429" not in str(exc):
-                        raise
-                    if attempt == max_retries - 1:
-                        raise
-                    sleep_seconds = min(30, 8 + attempt * 4)
-                    print(
-                        f"Rate limited while ingesting {url} at batch {i}. "
-                        f"Retrying in {sleep_seconds}s..."
-                    )
-                    time.sleep(sleep_seconds)
+        upsert_chunks_with_embeddings(
+            collection=collection,
+            chunks=chunks,
+            progress_label=f"Website ingestion [{title}]",
+        )
 
         total_chunks += len(chunks)
         print(f"Finished ingesting {url}")
 
     persist_chroma_client(client)
-    final_count = int(collection.count())
+    final_count = get_collection_count(collection=collection)
     print(f"Final document count after website ingestion: {final_count}")
     return {
         "url_count": len(urls),

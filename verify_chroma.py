@@ -1,11 +1,12 @@
 from dotenv import load_dotenv
 
-from chroma_store import COLLECTION_NAME, get_chroma_dir_env, get_chroma_path, get_collection_count
+from chroma_store import COLLECTION_NAME, get_chroma_dir_env, get_chroma_path, get_collection_count, log_chroma_configuration
 
 load_dotenv()
 
 
 def main() -> None:
+    log_chroma_configuration("verify_chroma")
     count = get_collection_count()
     print(f"verify_chroma: collection={COLLECTION_NAME}")
     print(f"verify_chroma: chroma_dir_env={get_chroma_dir_env()}")

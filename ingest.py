@@ -1,19 +1,20 @@
 import os
 import glob
-import time
 from typing import List, Dict, Any
 
 from dotenv import load_dotenv
 from pypdf import PdfReader
-from chromadb.utils import embedding_functions
 from chroma_store import (
     COLLECTION_NAME,
     get_chroma_collection,
+    get_chroma_client,
+    get_collection_count,
     get_chroma_dir_env,
     get_resolved_chroma_dir,
     log_chroma_configuration,
     persist_chroma_client,
 )
+from ingest_embeddings import upsert_chunks_with_embeddings
 
 load_dotenv()
 
@@ -76,19 +77,8 @@ def build_chunks(pages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def get_collection():
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
-
-    embed_fn = embedding_functions.OpenAIEmbeddingFunction(
-        api_key=api_key,
-        model_name="text-embedding-3-small",
-    )
-
-    client, collection = get_chroma_collection(
-        embedding_function=embed_fn,
-        metadata={"source": "orthodox_pdfs"},
-    )
+    client = get_chroma_client()
+    collection = get_chroma_collection(client=client, metadata={"source": "orthodox_pdfs"})
     return client, collection
 
 
@@ -117,35 +107,16 @@ def ingest_pdf_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
 
     client, collection = get_collection()
     print(f"Ingest start; resolved_chroma_dir: {get_resolved_chroma_dir()}")
-    print(f"Collection count before ingest: {int(collection.count())}")
+    print(f"Collection count before ingest: {get_collection_count(collection=collection)}")
 
-    batch_size = 200
-    max_retries = 6
-    for i in range(0, len(chunks), batch_size):
-        batch = chunks[i:i + batch_size]
-        for attempt in range(max_retries):
-            try:
-                collection.upsert(
-                    ids=[c["id"] for c in batch],
-                    documents=[c["text"] for c in batch],
-                    metadatas=[c["metadata"] for c in batch],
-                )
-                print(f"Upserted {min(i + batch_size, len(chunks))}/{len(chunks)} PDF chunks")
-                break
-            except Exception as exc:
-                if "rate_limit" not in str(exc).lower() and "429" not in str(exc):
-                    raise
-                if attempt == max_retries - 1:
-                    raise
-                sleep_seconds = min(30, 8 + attempt * 4)
-                print(
-                    f"Rate limited during PDF batch starting at {i}. "
-                    f"Retrying in {sleep_seconds}s..."
-                )
-                time.sleep(sleep_seconds)
+    upsert_chunks_with_embeddings(
+        collection=collection,
+        chunks=chunks,
+        progress_label="PDF ingestion",
+    )
 
     persist_chroma_client(client)
-    final_count = int(collection.count())
+    final_count = get_collection_count(collection=collection)
     print(f"Final document count after PDF ingestion: {final_count}")
     return {
         "pdf_count": len(pdf_paths),

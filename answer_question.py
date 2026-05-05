@@ -16,7 +16,7 @@ def main():
         api_key=api_key,
         model_name="text-embedding-3-small",
     )
-    _, collection = get_chroma_collection(
+    collection = get_chroma_collection(
         embedding_function=embed_fn,
     )
 

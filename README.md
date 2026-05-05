@@ -45,7 +45,7 @@ Local `.env` or Railway service env vars:
 
 ```env
 OPENAI_API_KEY=sk-your-openai-key
-CHROMA_DIR=chroma_db
+CHROMA_DIR=/app/chroma_db
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://your-project.vercel.app
 CORS_ALLOW_ORIGIN_REGEX=https://.*\.vercel\.app
 ```
@@ -198,7 +198,7 @@ The included `Procfile` already matches that.
 
 ```env
 OPENAI_API_KEY=sk-your-openai-key
-CHROMA_DIR=chroma_db
+CHROMA_DIR=/app/chroma_db
 ALLOWED_ORIGINS=https://your-production-site.vercel.app,http://localhost:3000,http://127.0.0.1:3000
 CORS_ALLOW_ORIGIN_REGEX=https://.*\.vercel\.app
 ```
@@ -212,7 +212,7 @@ Your Chroma data must exist in the Railway filesystem at deploy time, or be recr
 The FastAPI backend reads from the existing Chroma collection:
 
 - `COLLECTION_NAME=orthodox_pdfs`
-- `CHROMA_DIR` from env if present, otherwise `chroma_db`
+- `CHROMA_DIR` from env if present, otherwise `/app/chroma_db`
 
 To populate production Chroma with all currently configured sources, run from the repository root:
 
@@ -232,14 +232,14 @@ This command will:
 
 ```env
 OPENAI_API_KEY=sk-your-openai-key
-CHROMA_DIR=chroma_db
-```
-
-On Railway with a mounted volume, prefer:
-
-```env
 CHROMA_DIR=/app/chroma_db
 ```
+
+The ingestion scripts are designed to be rerun safely:
+
+- PDF chunks use deterministic IDs and are upserted
+- Website chunks use deterministic IDs and stale chunks for the same URL are deleted before upsert
+- Embeddings are created in smaller rate-limit-safe batches with retry/backoff
 
 ### Included source inputs
 
