@@ -22,7 +22,7 @@ export default function Navbar() {
             Home
           </Link>
           <Link href="/sources" className="nav-link">
-            Sources
+            Credits
           </Link>
         </div>
       </nav>

@@ -180,6 +180,7 @@ function ChatPageContent() {
   const [composerInitialValue, setComposerInitialValue] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "saints" | "catechism">("chat");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [saints, setSaints] = useState<string[]>([]);
   const [saintsTotal, setSaintsTotal] = useState(0);
   const [saintsLoading, setSaintsLoading] = useState(false);
@@ -538,6 +539,18 @@ function ChatPageContent() {
     setComposerInitialValue(pendingMessage);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!mobileSidebarOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileSidebarOpen]);
+
   const submitSaintLookup = useCallback((name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -574,7 +587,17 @@ function ChatPageContent() {
         <section className="chat-window">
           <div className="chat-window-header">
             <div className="chat-window-top">
-              <div>
+              <div className="chat-window-title-wrap">
+                <button
+                  type="button"
+                  className="chat-mobile-sidebar-toggle"
+                  onClick={() => setMobileSidebarOpen(true)}
+                  aria-label="Open chats panel"
+                >
+                  <span />
+                  <span />
+                  <span />
+                </button>
                 <h1 className="chat-page-title">Learn Orthodoxy</h1>
                 <p className="chat-page-subtitle">
                   Ask questions about Orthodox saints and Coptic Orthodox catechism.
@@ -802,6 +825,12 @@ function ChatPageContent() {
           </div>
         </section>
 
+        <button
+          type="button"
+          className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-label="Close chats panel"
+        />
         <ChatSidebar
           sessions={conversations}
           activeSessionId={activeConversationId}
@@ -810,6 +839,8 @@ function ChatPageContent() {
           onDeleteSession={(conversationId) => void deleteSession(conversationId)}
           loading={conversationsLoading}
           error={conversationsError}
+          isMobileOpen={mobileSidebarOpen}
+          onClose={() => setMobileSidebarOpen(false)}
         />
       </div>
     </main>

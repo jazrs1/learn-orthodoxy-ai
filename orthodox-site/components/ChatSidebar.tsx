@@ -10,6 +10,8 @@ type ChatSidebarProps = {
   onDeleteSession?: (sessionId: string) => void;
   loading?: boolean;
   error?: string;
+  isMobileOpen?: boolean;
+  onClose?: () => void;
 };
 
 export default function ChatSidebar({
@@ -20,16 +22,30 @@ export default function ChatSidebar({
   onDeleteSession,
   loading = false,
   error = "",
+  isMobileOpen = false,
+  onClose,
 }: ChatSidebarProps) {
   return (
-    <aside className="chat-sidebar">
+    <aside className={`chat-sidebar ${isMobileOpen ? "chat-sidebar-mobile-open" : ""}`}>
       <div className="chat-sidebar-details">
         <div className="chat-sidebar-header">
           <div className="chat-sidebar-title">Chats</div>
+          {onClose ? (
+            <button type="button" className="chat-sidebar-close-btn" onClick={onClose} aria-label="Close chats panel">
+              ×
+            </button>
+          ) : null}
         </div>
 
         <div className="chat-sidebar-panel">
-          <button type="button" className="chat-sidebar-new-btn" onClick={onNewChat}>
+          <button
+            type="button"
+            className="chat-sidebar-new-btn"
+            onClick={() => {
+              onNewChat();
+              onClose?.();
+            }}
+          >
             New Chat
           </button>
 
@@ -47,7 +63,10 @@ export default function ChatSidebar({
                   className={`chat-sidebar-item ${
                     session.id === activeSessionId ? "chat-sidebar-item-active" : ""
                   }`}
-                  onClick={() => onSelectSession(session.id)}
+                  onClick={() => {
+                    onSelectSession(session.id);
+                    onClose?.();
+                  }}
                 >
                   <span className="chat-sidebar-item-title">{session.title || "New Chat"}</span>
                   {onDeleteSession ? (
