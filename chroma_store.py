@@ -10,6 +10,13 @@ COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "orthodox_pdfs")
 
 
 def _default_chroma_dir() -> str:
+    railway_volume_path = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    if railway_volume_path:
+        volume_path = Path(railway_volume_path)
+        if volume_path.name.lower() in {"chroma", "chroma_db"}:
+            return str(volume_path)
+        return str(volume_path / "chroma_db")
+
     app_dir = Path("/app")
     if app_dir.exists() and os.access(app_dir, os.W_OK):
         return "/app/chroma_db"

@@ -46,6 +46,8 @@ Local `.env` or Railway service env vars:
 ```env
 OPENAI_API_KEY=sk-your-openai-key
 CHROMA_DIR=/app/chroma_db
+AUTO_INGEST_ON_START=1
+MIN_CHROMA_DOCUMENTS=1000
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://your-project.vercel.app
 CORS_ALLOW_ORIGIN_REGEX=https://.*\.vercel\.app
 ```
@@ -54,7 +56,9 @@ Notes:
 
 - `ALLOWED_ORIGINS` is a comma-separated list for exact origins.
 - `CORS_ALLOW_ORIGIN_REGEX` is optional and useful for Vercel preview deployments.
-- `CHROMA_DIR` defaults to `chroma_db` if omitted, but setting it explicitly is cleaner in production.
+- `CHROMA_DIR` defaults to `chroma_db` locally. On Railway, prefer a persistent volume and set `CHROMA_DIR` to the volume-backed path.
+- `AUTO_INGEST_ON_START=1` lets the backend populate an empty Chroma collection from the included PDFs and configured websites before starting the API.
+- `MIN_CHROMA_DOCUMENTS=1000` makes startup treat tiny or partial Chroma collections as underpopulated and re-run ingestion.
 
 ## Local Development
 
@@ -181,58 +185,77 @@ Copy the Vercel production URL. You will use it in Railway CORS settings.
 3. Select this repository.
 4. Set the service root to the repository root.
 5. Railway should detect Python automatically from `requirements.txt`.
-6. Add environment variables:
-   - `OPENAI_API_KEY`
-   - `CHROMA_DIR`
-   - `ALLOWED_ORIGINS`
-   - `CORS_ALLOW_ORIGIN_REGEX`
-7. Ensure the start command is:
+6. Attach a persistent volume to the backend service. Recommended mount path:
 
 ```bash
-uvicorn api:app --host 0.0.0.0 --port $PORT
+/app/chroma_db
 ```
 
-The included `Procfile` already matches that.
+7. Add environment variables:
+   - `OPENAI_API_KEY`
+   - `CHROMA_DIR`
+   - `AUTO_INGEST_ON_START`
+   - `MIN_CHROMA_DOCUMENTS`
+   - `ALLOWED_ORIGINS`
+   - `CORS_ALLOW_ORIGIN_REGEX`
+8. Ensure the start command is:
+
+```bash
+python start_backend.py
+```
+
+The included `Procfile` and `railway.json` already match that.
+
+The first production boot can take several minutes because the backend may need to embed and index the full document set. `railway.json` sets a longer healthcheck timeout so Railway does not mark that first boot as failed while ingestion is running.
 
 ### Recommended Railway env values
 
 ```env
 OPENAI_API_KEY=sk-your-openai-key
 CHROMA_DIR=/app/chroma_db
+AUTO_INGEST_ON_START=1
+MIN_CHROMA_DOCUMENTS=1000
 ALLOWED_ORIGINS=https://your-production-site.vercel.app,http://localhost:3000,http://127.0.0.1:3000
 CORS_ALLOW_ORIGIN_REGEX=https://.*\.vercel\.app
 ```
 
 ### Important backend note
 
-Your Chroma data must exist in the Railway filesystem at deploy time, or be recreated there. If the production backend needs the latest PDFs indexed, run your ingestion flow against the production environment before relying on live traffic.
+Your local `chroma_db/` is intentionally not committed. On Railway, `start_backend.py` checks the configured Chroma collection before starting FastAPI. If the collection has fewer than `MIN_CHROMA_DOCUMENTS` documents and `AUTO_INGEST_ON_START=1`, it ingests the PDFs from `data/pdfs`, attempts website ingestion, writes Chroma data to `CHROMA_DIR`, verifies documents exist, and then starts the API.
 
-## How to Populate Production Chroma
+Use a Railway volume mounted at `/app/chroma_db` so the first ingestion survives redeploys and restarts. Without a volume, Railway can still ingest at startup, but the generated Chroma database is ephemeral.
 
-The FastAPI backend reads from the existing Chroma collection:
+## How Production Chroma Is Populated
+
+The backend reads from the existing Chroma collection:
 
 - `COLLECTION_NAME=orthodox_pdfs`
 - `CHROMA_DIR` from env if present, otherwise `/app/chroma_db`
 
-To populate production Chroma with all currently configured sources, run from the repository root:
+The Railway start command runs:
 
 ```bash
-python ingest_all_sources.py
+python start_backend.py
 ```
 
 This command will:
 
-1. Ingest all PDFs from `data/pdfs`
-2. Ingest all configured website URLs from [`website_sources.py`](/Users/johnazer/orthodox-ai/website_sources.py)
-3. Embed chunks with the existing OpenAI embedding setup
-4. Write them into the existing Chroma collection `orthodox_pdfs`
-5. Print the final document count
+1. Check the current Chroma collection count
+2. Skip ingestion when at least `MIN_CHROMA_DOCUMENTS` documents already exist
+3. Ingest all PDFs from `data/pdfs` when the collection is missing or underpopulated
+4. Attempt all configured website URLs from [`website_sources.py`](/Users/johnazer/orthodox-ai/website_sources.py)
+5. Embed chunks with the existing OpenAI embedding setup
+6. Write them into the Chroma collection `orthodox_pdfs`
+7. Print the final document count
+8. Start FastAPI on Railway's `$PORT`
 
 ### Required env vars for ingestion
 
 ```env
 OPENAI_API_KEY=sk-your-openai-key
 CHROMA_DIR=/app/chroma_db
+AUTO_INGEST_ON_START=1
+MIN_CHROMA_DOCUMENTS=1000
 ```
 
 The ingestion scripts are designed to be rerun safely:
@@ -296,12 +319,15 @@ This removes all localhost assumptions from production.
 2. Add the backend env vars.
 3. Confirm the service starts and `/health` responds.
 4. Add your Vercel production URL to `ALLOWED_ORIGINS`.
-5. If you use Vercel previews, keep `CORS_ALLOW_ORIGIN_REGEX` enabled.
+5. Attach a Railway volume mounted at `/app/chroma_db`.
+6. If you use Vercel previews, keep `CORS_ALLOW_ORIGIN_REGEX` enabled.
 
 ## Files Added for Deployment
 
 - `requirements.txt`
 - `Procfile`
+- `railway.json`
+- `start_backend.py`
 - `runtime.txt`
 - `.env.example`
 - `orthodox-site/.env.example`

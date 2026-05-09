@@ -581,6 +581,8 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
         "collection_name": COLLECTION_NAME,
         "collection_ready": collection is not None,
         "document_count": 0,
+        "source_type_counts": {},
+        "pdf_counts": {},
         "sample_items": [],
     }
 
@@ -595,6 +597,36 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
 
     if info["document_count"] <= 0:
         return info
+
+    try:
+        source_type_counts: Dict[str, int] = {}
+        pdf_counts: Dict[str, int] = {}
+        offset = 0
+        page_size = 500
+
+        while True:
+            metadata_batch = collection.get(include=["metadatas"], limit=page_size, offset=offset)
+            metadatas = metadata_batch.get("metadatas", []) or []
+            if not metadatas:
+                break
+
+            for metadata in metadatas:
+                metadata = metadata or {}
+                source_type = str(metadata.get("source_type", "pdf") or "pdf")
+                source_type_counts[source_type] = source_type_counts.get(source_type, 0) + 1
+
+                pdf_name = str(metadata.get("pdf", "") or "")
+                if pdf_name:
+                    pdf_counts[pdf_name] = pdf_counts.get(pdf_name, 0) + 1
+
+            if len(metadatas) < page_size:
+                break
+            offset += len(metadatas)
+
+        info["source_type_counts"] = dict(sorted(source_type_counts.items()))
+        info["pdf_counts"] = dict(sorted(pdf_counts.items()))
+    except Exception as exc:
+        info["metadata_count_error"] = str(exc)
 
     try:
         batch = collection.get(include=["documents", "metadatas"], limit=3, offset=0)
