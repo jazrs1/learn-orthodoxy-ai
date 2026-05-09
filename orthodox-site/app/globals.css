@@ -433,11 +433,10 @@ textarea {
   align-items: flex-start;
 }
 
-.chat-mobile-sidebar-toggle {
+.mobile-sidebar-toggle {
   display: none;
   width: 44px;
   height: 44px;
-  margin: 0 0 0.9rem;
   padding: 0;
   border: 1px solid rgba(58, 38, 22, 0.14);
   border-radius: 14px;
@@ -449,18 +448,29 @@ textarea {
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.chat-mobile-sidebar-toggle:hover {
+.mobile-sidebar-toggle:hover {
   background: rgba(58, 38, 22, 0.08);
   border-color: rgba(58, 38, 22, 0.24);
   transform: translateY(-1px);
 }
 
-.chat-mobile-sidebar-toggle span {
+.mobile-sidebar-toggle span {
   display: block;
   width: 16px;
   height: 1.5px;
   border-radius: 999px;
   background: var(--accent);
+}
+
+.chat-mobile-sidebar-toggle {
+  margin: 0 0 0.9rem;
+}
+
+.home-mobile-sidebar-toggle {
+  position: fixed;
+  top: 84px;
+  left: 1rem;
+  z-index: 120;
 }
 
 .chat-window-top {
@@ -1201,10 +1211,20 @@ textarea {
 
   .home-layout,
   .chat-layout {
+    padding: 1rem;
+  }
+
+  .home-layout {
     min-height: auto;
     height: auto;
-    padding: 1rem;
     display: block;
+  }
+
+  .chat-layout {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    padding: 0.75rem;
   }
 
   .hero {
@@ -1249,14 +1269,16 @@ textarea {
   }
 
   .chat-page {
-    height: calc(100vh - 70px);
+    height: calc(100dvh - 70px);
     padding: 0;
     overflow: hidden;
   }
 
   .chat-window {
-    min-height: calc(100vh - 102px);
+    min-height: 0;
     height: 100%;
+    display: flex;
+    flex-direction: column;
     border-radius: 24px;
     max-width: 100%;
     width: 100%;
@@ -1265,13 +1287,14 @@ textarea {
 
   .chat-window-header {
     padding: 1.15rem 1rem 0.9rem;
+    flex: 0 0 auto;
   }
 
   .chat-window-title-wrap {
     flex: 1 1 auto;
   }
 
-  .chat-mobile-sidebar-toggle {
+  .mobile-sidebar-toggle {
     display: inline-flex;
   }
 
@@ -1280,6 +1303,11 @@ textarea {
   }
 
   .chat-messages {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 1rem;
   }
 
@@ -1292,7 +1320,21 @@ textarea {
   }
 
   .chat-bottom-bar {
+    flex: 0 0 auto;
     padding: 0.9rem 1rem 1rem;
+  }
+
+  .saints-tab-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .catechism-tab-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .chat-sidebar {

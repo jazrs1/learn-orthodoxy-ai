@@ -16,6 +16,7 @@ export default function HomePage() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -51,10 +52,12 @@ export default function HomePage() {
   }, []);
 
   function openSession(sessionId: string) {
+    setMobileSidebarOpen(false);
     router.push(`/chat?chat=${encodeURIComponent(sessionId)}`);
   }
 
   function startNewChat() {
+    setMobileSidebarOpen(false);
     router.push("/chat");
   }
 
@@ -78,6 +81,17 @@ export default function HomePage() {
   return (
     <main className="home-page">
       <div className="home-layout">
+        <button
+          type="button"
+          className="mobile-sidebar-toggle home-mobile-sidebar-toggle"
+          onClick={() => setMobileSidebarOpen(true)}
+          aria-label="Open chats panel"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
         <section className="hero">
           <Image
             src="/cross.png"
@@ -99,6 +113,13 @@ export default function HomePage() {
           </div>
         </section>
 
+        <button
+          type="button"
+          className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-label="Close chats panel"
+        />
+
         {mounted ? (
           <ChatSidebar
             sessions={conversations}
@@ -107,6 +128,8 @@ export default function HomePage() {
             onDeleteSession={deleteSession}
             loading={loading}
             error={error}
+            isMobileOpen={mobileSidebarOpen}
+            onClose={() => setMobileSidebarOpen(false)}
           />
         ) : null}
       </div>

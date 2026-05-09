@@ -596,7 +596,7 @@ function ChatPageContent() {
               <div className="chat-window-title-wrap">
                 <button
                   type="button"
-                  className="chat-mobile-sidebar-toggle"
+                  className="mobile-sidebar-toggle chat-mobile-sidebar-toggle"
                   onClick={() => setMobileSidebarOpen(true)}
                   aria-label="Open chats panel"
                 >
