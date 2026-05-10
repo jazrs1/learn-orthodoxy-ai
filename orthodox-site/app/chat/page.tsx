@@ -243,7 +243,14 @@ function ChatPageContent() {
     const lastRow = rows[rows.length - 1];
     if (!lastRow) return;
 
-    const offsetTop = Math.max(lastRow.offsetTop - 12, 0);
+    const latestMessage = messages[messages.length - 1];
+    const previousMessage = messages[messages.length - 2];
+    const targetRow =
+      latestMessage?.role === "assistant" && previousMessage?.role === "user"
+        ? rows[rows.length - 2]
+        : lastRow;
+
+    const offsetTop = Math.max((targetRow || lastRow).offsetTop - 12, 0);
     el.scrollTo({ top: offsetTop, behavior: "smooth" });
   }, [messages, isSending, activeTab]);
 
@@ -547,6 +554,18 @@ function ChatPageContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    function handleOpenSidebar() {
+      setMobileSidebarOpen(true);
+    }
+
+    window.addEventListener("chat:openSidebar", handleOpenSidebar);
+    return () => {
+      window.removeEventListener("chat:openSidebar", handleOpenSidebar);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     if (!mobileSidebarOpen) return;
 
     const previousOverflow = document.body.style.overflow;
@@ -594,16 +613,6 @@ function ChatPageContent() {
           <div className="chat-window-header">
             <div className="chat-window-top">
               <div className="chat-window-title-wrap">
-                <button
-                  type="button"
-                  className="mobile-sidebar-toggle chat-mobile-sidebar-toggle"
-                  onClick={() => setMobileSidebarOpen(true)}
-                  aria-label="Open chats panel"
-                >
-                  <span />
-                  <span />
-                  <span />
-                </button>
                 <h1 className="chat-page-title">Learn Orthodoxy</h1>
                 <p className="chat-page-subtitle">
                   Ask questions about Orthodox saints and Coptic Orthodox catechism.
@@ -649,6 +658,7 @@ function ChatPageContent() {
                 messages.map((message) => (
                   <div
                     key={message.id}
+                    data-message-role={message.role}
                     className={`message-row ${message.role === "user" ? "user-row" : "assistant-row"}`}
                   >
                     <div className="message-stack">

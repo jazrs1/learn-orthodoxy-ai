@@ -8,9 +8,27 @@ export default function Navbar() {
   const pathname = usePathname();
   const hasSidebarOffset = pathname === "/" || pathname === "/chat";
 
+  function openMobileSidebar() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("chat:openSidebar"));
+  }
+
   return (
     <header className="site-header">
       <nav className={`navbar ${hasSidebarOffset ? "navbar-sidebar-offset" : ""}`}>
+        {hasSidebarOffset ? (
+          <button
+            type="button"
+            className="mobile-sidebar-toggle navbar-sidebar-toggle"
+            onClick={openMobileSidebar}
+            aria-label="Open chats panel"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        ) : null}
+
         <Link href="/" className="nav-brand">
           <Image
             src="/cross.png"

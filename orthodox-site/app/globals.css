@@ -463,15 +463,9 @@ textarea {
   background: currentColor;
 }
 
-.chat-mobile-sidebar-toggle {
-  margin: 0 0 0.9rem;
-}
-
-.home-mobile-sidebar-toggle {
-  position: fixed;
-  top: 84px;
-  left: 1rem;
-  z-index: 120;
+.navbar-sidebar-toggle {
+  flex: 0 0 auto;
+  margin-right: 0.2rem;
 }
 
 .chat-window-top {

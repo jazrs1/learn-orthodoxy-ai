@@ -24,6 +24,28 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    function handleOpenSidebar() {
+      setMobileSidebarOpen(true);
+    }
+
+    window.addEventListener("chat:openSidebar", handleOpenSidebar);
+    return () => {
+      window.removeEventListener("chat:openSidebar", handleOpenSidebar);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileSidebarOpen]);
+
+  useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
@@ -81,17 +103,6 @@ export default function HomePage() {
   return (
     <main className="home-page">
       <div className="home-layout">
-        <button
-          type="button"
-          className="mobile-sidebar-toggle home-mobile-sidebar-toggle"
-          onClick={() => setMobileSidebarOpen(true)}
-          aria-label="Open chats panel"
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-
         <section className="hero">
           <Image
             src="/cross.png"

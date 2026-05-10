@@ -424,6 +424,12 @@ def _is_plausible_saint_index_name(value: str) -> bool:
         "december",
         "coptic",
         "orthodox",
+        "prophesied",
+        "prophesized",
+        "prophecies",
+        "prophecy",
+        "who",
+        "whose",
     }
     tokens = re.split(r"\s+", lower)
     if any(token in banned_terms for token in tokens):
@@ -458,6 +464,12 @@ def _normalize_saint_search_query(query: str) -> str:
         _canonicalize_saint_text(query),
         flags=re.IGNORECASE,
     ).lower()
+
+
+def _filter_sourced_saint_options(options: List[str]) -> List[str]:
+    saint_index = _build_saint_name_index()
+    sourced_keys = {name.lower() for name in saint_index}
+    return [name for name in options if name.lower() in sourced_keys]
 
 
 def _find_saint_suggestions(query: str, limit: int = 12) -> List[str]:
@@ -764,9 +776,12 @@ def _build_saint_name_index() -> List[str]:
         seen.add(key)
         normalized.append(name)
 
+    sourced_keys = set(seen)
     for names in AMBIGUOUS_SAINT_FALLBACKS.values():
         for name in names:
             key = name.lower()
+            if key not in sourced_keys:
+                continue
             if key in seen:
                 continue
             seen.add(key)
@@ -825,17 +840,18 @@ def chat(req: ChatRequest):
         if ambiguous_query and entity is None:
             core_name = _core_name_from_query(ambiguous_query)
             if core_name in AMBIGUOUS_SAINT_FALLBACKS:
-                clean_entities = AMBIGUOUS_SAINT_FALLBACKS[core_name][:]
-                last_list = {str(i + 1): name for i, name in enumerate(clean_entities)}
-                return {
-                    "answer": (
-                        f"I found multiple saints matching '{ambiguous_query}'. "
-                        "Choose one option below."
-                    ),
-                    "sources": [],
-                    "entities": [],
-                    "options": clean_entities,
-                }
+                clean_entities = _filter_sourced_saint_options(AMBIGUOUS_SAINT_FALLBACKS[core_name])
+                if len(clean_entities) > 1:
+                    last_list = {str(i + 1): name for i, name in enumerate(clean_entities)}
+                    return {
+                        "answer": (
+                            f"I found multiple saints matching '{ambiguous_query}'. "
+                            "Choose one option below."
+                        ),
+                        "sources": [],
+                        "entities": [],
+                        "options": clean_entities,
+                    }
 
             suggestion_options = _find_saint_suggestions(ambiguous_query, limit=10)
             if len(suggestion_options) > 1:

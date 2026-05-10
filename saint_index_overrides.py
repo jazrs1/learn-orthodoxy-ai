@@ -13,6 +13,10 @@ MANUAL_SAINT_NAME_EXCLUSIONS = {
     "St. John Chrysost",
     "St. Gregoryof Nyssa",
     "St. Hegomen Yassa Michael",
+    "St. Who Prohesized",
+    "St. Who Prohphesized",
+    "St. Who Prophesied",
+    "St. Who Prophesized",
 }
 
 MANUAL_SAINT_NAME_REPLACEMENTS = {
@@ -32,4 +36,8 @@ MANUAL_SAINT_NAME_REPLACEMENTS = {
     "St. THOMAS OF AQUINAS This Thomas": "St. Thomas Aquinas",
     "St. Pope Cyril the Great Steps": "",
     "St. Cyril Maqar": "",
+    "St. Who Prohesized": "",
+    "St. Who Prohphesized": "",
+    "St. Who Prophesied": "",
+    "St. Who Prophesized": "",
 }
