@@ -38,6 +38,9 @@ const DEFAULT_ERROR =
   "Sorry — I could not reach the Orthodox AI server. Please try again in a moment.";
 const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
 const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
+const DESKTOP_USER_MESSAGE_SCROLL_OFFSET = 96;
+const MOBILE_USER_MESSAGE_SCROLL_OFFSET = 72;
+const CHAT_BOTTOM_SCROLL_THRESHOLD = 120;
 const CATECHISM_TOPICS: CatechismTopic[] = [
   {
     title: "Prayer",
@@ -146,6 +149,11 @@ function sourceLabel(source: SourceRef) {
   return `${(source?.pdf || "unknown.pdf").replace(".pdf", "")} p.${source?.page || 0}`;
 }
 
+function isChatContainerNearBottom(el: HTMLDivElement | null) {
+  if (!el) return false;
+  return el.scrollHeight - el.scrollTop - el.clientHeight < CHAT_BOTTOM_SCROLL_THRESHOLD;
+}
+
 function mergeUniqueSaints(current: string[], next: string[]) {
   const seen = new Set<string>();
   const merged: string[] = [];
@@ -190,15 +198,25 @@ function ChatPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const latestUserMessageRef = useRef<HTMLDivElement>(null);
   const saintsListRef = useRef<HTMLDivElement>(null);
   const saintsLoadingRef = useRef(false);
   const submittingRef = useRef(false);
+  const pendingScrollToUserMessageRef = useRef(false);
+  const preserveUserMessageAnchorRef = useRef(false);
+  const shouldAutoScrollToBottomRef = useRef(false);
   const createdConversationRef = useRef(false);
   const processedQuestionRef = useRef("");
   const handledChatRef = useRef("");
 
   const saintLookup = useMemo(() => buildSaintLookup(saints), [saints]);
   const messages = useMemo(() => currentConversation?.messages || [], [currentConversation]);
+  const latestUserMessageId = useMemo(() => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      if (messages[index].role === "user") return messages[index].id;
+    }
+    return "";
+  }, [messages]);
   const hasMoreSaints = saints.length < saintsTotal;
 
   const loadConversationList = useCallback(async () => {
@@ -236,16 +254,46 @@ function ChatPageContent() {
     void loadConversationList();
   }, [loadConversationList]);
 
+  const scrollToLatestUserMessage = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const el = chatMessagesRef.current;
+    const message = latestUserMessageRef.current;
+    if (!el || !message) return;
+
+    const containerRect = el.getBoundingClientRect();
+    const messageRect = message.getBoundingClientRect();
+    const offset =
+      typeof window !== "undefined" && window.matchMedia("(max-width: 700px)").matches
+        ? MOBILE_USER_MESSAGE_SCROLL_OFFSET
+        : DESKTOP_USER_MESSAGE_SCROLL_OFFSET;
+    const targetTop = el.scrollTop + (messageRect.top - containerRect.top) - offset;
+    el.scrollTo({ top: Math.max(targetTop, 0), behavior });
+  }, []);
+
   useEffect(() => {
     const el = chatMessagesRef.current;
     if (!el || activeTab !== "chat") return;
-    const rows = el.querySelectorAll<HTMLElement>(".message-row");
-    const lastRow = rows[rows.length - 1];
-    if (!lastRow) return;
 
-    const offsetTop = Math.max(lastRow.offsetTop - 12, 0);
-    el.scrollTo({ top: offsetTop, behavior: "smooth" });
-  }, [messages, isSending, activeTab]);
+    if (pendingScrollToUserMessageRef.current) {
+      requestAnimationFrame(() => {
+        scrollToLatestUserMessage();
+        pendingScrollToUserMessageRef.current = false;
+      });
+      return;
+    }
+
+    if (shouldAutoScrollToBottomRef.current && !preserveUserMessageAnchorRef.current) {
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+        shouldAutoScrollToBottomRef.current = false;
+      });
+      return;
+    }
+
+    const latestMessage = messages[messages.length - 1];
+    if (preserveUserMessageAnchorRef.current && latestMessage?.role === "assistant" && !latestMessage.isTyping && !isSending) {
+      preserveUserMessageAnchorRef.current = false;
+    }
+  }, [messages, isSending, activeTab, scrollToLatestUserMessage]);
 
   useEffect(() => {
     saintsLoadingRef.current = saintsLoading;
@@ -343,6 +391,9 @@ function ChatPageContent() {
     const updateRoute = options?.updateRoute ?? true;
 
     handledChatRef.current = "";
+    pendingScrollToUserMessageRef.current = false;
+    preserveUserMessageAnchorRef.current = false;
+    shouldAutoScrollToBottomRef.current = false;
     setCurrentConversation(null);
     setActiveConversationId("");
     setConversationError("");
@@ -403,6 +454,10 @@ function ChatPageContent() {
         { ...optimisticMessage(optimisticAssistantId, "assistant", ""), isTyping: true },
       ];
 
+      pendingScrollToUserMessageRef.current = true;
+      preserveUserMessageAnchorRef.current = true;
+      shouldAutoScrollToBottomRef.current = false;
+
       setCurrentConversation((prev) =>
         prev && prev.id === localConversationId
           ? { ...prev, messages: nextMessages }
@@ -445,6 +500,8 @@ function ChatPageContent() {
         console.log("SAVE_USER_MESSAGE", { conversationId });
         console.log("CALL_BACKEND", { conversationId, question });
         const result = await sendChatRequest({ question, conversationId });
+        shouldAutoScrollToBottomRef.current =
+          !preserveUserMessageAnchorRef.current && isChatContainerNearBottom(chatMessagesRef.current);
         handledChatRef.current = result.conversation.id;
         setIsDraftChat(false);
         console.log("SAVE_ASSISTANT_MESSAGE", {
@@ -656,6 +713,7 @@ function ChatPageContent() {
                   >
                     <div className="message-stack">
                       <div
+                        ref={message.id === latestUserMessageId ? latestUserMessageRef : null}
                         className={`message-bubble ${
                           message.role === "user" ? "user-bubble" : "assistant-bubble"
                         }`}
