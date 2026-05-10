@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -38,8 +38,6 @@ const DEFAULT_ERROR =
   "Sorry — I could not reach the Orthodox AI server. Please try again in a moment.";
 const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
 const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
-const DESKTOP_USER_MESSAGE_SCROLL_OFFSET = 96;
-const MOBILE_USER_MESSAGE_SCROLL_OFFSET = 72;
 const CATECHISM_TOPICS: CatechismTopic[] = [
   {
     title: "Prayer",
@@ -191,7 +189,6 @@ function ChatPageContent() {
   const [saintSearch, setSaintSearch] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
-  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const latestUserMessageRef = useRef<HTMLDivElement | null>(null);
   const saintsListRef = useRef<HTMLDivElement>(null);
   const saintsLoadingRef = useRef(false);
@@ -246,36 +243,16 @@ function ChatPageContent() {
     void loadConversationList();
   }, [loadConversationList]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!pendingScrollToUserMessageRef.current || activeTab !== "chat") return;
 
-    const container = messagesContainerRef.current;
-    const target = latestUserMessageRef.current;
-    if (!container || !target) {
-      return;
-    }
-
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const offset =
-      typeof window !== "undefined" && window.innerWidth <= 768
-        ? MOBILE_USER_MESSAGE_SCROLL_OFFSET
-        : DESKTOP_USER_MESSAGE_SCROLL_OFFSET;
-    const nextTop = container.scrollTop + (targetRect.top - containerRect.top) - offset;
-
-    console.log("SCROLL_CONTAINER", container);
-    console.log("SCROLL_TARGET", target);
-    console.log("SCROLL_NEXT_TOP", nextTop);
-    console.log("SCROLL_CONTAINER_SCROLL_TOP_BEFORE", container.scrollTop);
-    container.scrollTo({
-      top: Math.max(0, nextTop),
-      behavior: "smooth",
-    });
     requestAnimationFrame(() => {
-      console.log("SCROLL_CONTAINER_SCROLL_TOP_AFTER", container.scrollTop);
+      latestUserMessageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      pendingScrollToUserMessageRef.current = false;
     });
-
-    pendingScrollToUserMessageRef.current = false;
   }, [messages, activeTab]);
 
   useEffect(() => {
@@ -678,7 +655,7 @@ function ChatPageContent() {
           </div>
 
           {activeTab === "chat" ? (
-            <div className="chat-messages" ref={messagesContainerRef}>
+            <div className="chat-messages">
               {conversationError ? <div className="chat-empty-state">{conversationError}</div> : null}
               {conversationLoading ? <div className="chat-empty-state">Loading chat...</div> : null}
               {!conversationLoading && messages.length ? (
