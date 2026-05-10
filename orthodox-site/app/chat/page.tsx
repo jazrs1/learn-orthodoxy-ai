@@ -243,14 +243,7 @@ function ChatPageContent() {
     const lastRow = rows[rows.length - 1];
     if (!lastRow) return;
 
-    const latestMessage = messages[messages.length - 1];
-    const previousMessage = messages[messages.length - 2];
-    const targetRow =
-      latestMessage?.role === "assistant" && previousMessage?.role === "user"
-        ? rows[rows.length - 2]
-        : lastRow;
-
-    const offsetTop = Math.max((targetRow || lastRow).offsetTop - 12, 0);
+    const offsetTop = Math.max(lastRow.offsetTop - 12, 0);
     el.scrollTo({ top: offsetTop, behavior: "smooth" });
   }, [messages, isSending, activeTab]);
 
