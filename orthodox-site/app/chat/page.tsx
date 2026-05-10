@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -40,7 +40,6 @@ const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
 const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
 const DESKTOP_USER_MESSAGE_SCROLL_OFFSET = 96;
 const MOBILE_USER_MESSAGE_SCROLL_OFFSET = 72;
-const CHAT_BOTTOM_SCROLL_THRESHOLD = 120;
 const CATECHISM_TOPICS: CatechismTopic[] = [
   {
     title: "Prayer",
@@ -149,11 +148,6 @@ function sourceLabel(source: SourceRef) {
   return `${(source?.pdf || "unknown.pdf").replace(".pdf", "")} p.${source?.page || 0}`;
 }
 
-function isChatContainerNearBottom(el: HTMLDivElement | null) {
-  if (!el) return false;
-  return el.scrollHeight - el.scrollTop - el.clientHeight < CHAT_BOTTOM_SCROLL_THRESHOLD;
-}
-
 function mergeUniqueSaints(current: string[], next: string[]) {
   const seen = new Set<string>();
   const merged: string[] = [];
@@ -197,14 +191,12 @@ function ChatPageContent() {
   const [saintSearch, setSaintSearch] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
-  const chatMessagesRef = useRef<HTMLDivElement>(null);
-  const latestUserMessageRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const latestUserMessageRef = useRef<HTMLDivElement | null>(null);
   const saintsListRef = useRef<HTMLDivElement>(null);
   const saintsLoadingRef = useRef(false);
   const submittingRef = useRef(false);
   const pendingScrollToUserMessageRef = useRef(false);
-  const preserveUserMessageAnchorRef = useRef(false);
-  const shouldAutoScrollToBottomRef = useRef(false);
   const createdConversationRef = useRef(false);
   const processedQuestionRef = useRef("");
   const handledChatRef = useRef("");
@@ -254,46 +246,37 @@ function ChatPageContent() {
     void loadConversationList();
   }, [loadConversationList]);
 
-  const scrollToLatestUserMessage = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const el = chatMessagesRef.current;
-    const message = latestUserMessageRef.current;
-    if (!el || !message) return;
+  useLayoutEffect(() => {
+    if (!pendingScrollToUserMessageRef.current || activeTab !== "chat") return;
 
-    const containerRect = el.getBoundingClientRect();
-    const messageRect = message.getBoundingClientRect();
+    const container = messagesContainerRef.current;
+    const target = latestUserMessageRef.current;
+    if (!container || !target) {
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
     const offset =
-      typeof window !== "undefined" && window.matchMedia("(max-width: 700px)").matches
+      typeof window !== "undefined" && window.innerWidth <= 768
         ? MOBILE_USER_MESSAGE_SCROLL_OFFSET
         : DESKTOP_USER_MESSAGE_SCROLL_OFFSET;
-    const targetTop = el.scrollTop + (messageRect.top - containerRect.top) - offset;
-    el.scrollTo({ top: Math.max(targetTop, 0), behavior });
-  }, []);
+    const nextTop = container.scrollTop + (targetRect.top - containerRect.top) - offset;
 
-  useEffect(() => {
-    const el = chatMessagesRef.current;
-    if (!el || activeTab !== "chat") return;
+    console.log("SCROLL_CONTAINER", container);
+    console.log("SCROLL_TARGET", target);
+    console.log("SCROLL_NEXT_TOP", nextTop);
+    console.log("SCROLL_CONTAINER_SCROLL_TOP_BEFORE", container.scrollTop);
+    container.scrollTo({
+      top: Math.max(0, nextTop),
+      behavior: "smooth",
+    });
+    requestAnimationFrame(() => {
+      console.log("SCROLL_CONTAINER_SCROLL_TOP_AFTER", container.scrollTop);
+    });
 
-    if (pendingScrollToUserMessageRef.current) {
-      requestAnimationFrame(() => {
-        scrollToLatestUserMessage();
-        pendingScrollToUserMessageRef.current = false;
-      });
-      return;
-    }
-
-    if (shouldAutoScrollToBottomRef.current && !preserveUserMessageAnchorRef.current) {
-      requestAnimationFrame(() => {
-        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-        shouldAutoScrollToBottomRef.current = false;
-      });
-      return;
-    }
-
-    const latestMessage = messages[messages.length - 1];
-    if (preserveUserMessageAnchorRef.current && latestMessage?.role === "assistant" && !latestMessage.isTyping && !isSending) {
-      preserveUserMessageAnchorRef.current = false;
-    }
-  }, [messages, isSending, activeTab, scrollToLatestUserMessage]);
+    pendingScrollToUserMessageRef.current = false;
+  }, [messages, activeTab]);
 
   useEffect(() => {
     saintsLoadingRef.current = saintsLoading;
@@ -392,8 +375,6 @@ function ChatPageContent() {
 
     handledChatRef.current = "";
     pendingScrollToUserMessageRef.current = false;
-    preserveUserMessageAnchorRef.current = false;
-    shouldAutoScrollToBottomRef.current = false;
     setCurrentConversation(null);
     setActiveConversationId("");
     setConversationError("");
@@ -455,8 +436,6 @@ function ChatPageContent() {
       ];
 
       pendingScrollToUserMessageRef.current = true;
-      preserveUserMessageAnchorRef.current = true;
-      shouldAutoScrollToBottomRef.current = false;
 
       setCurrentConversation((prev) =>
         prev && prev.id === localConversationId
@@ -500,8 +479,6 @@ function ChatPageContent() {
         console.log("SAVE_USER_MESSAGE", { conversationId });
         console.log("CALL_BACKEND", { conversationId, question });
         const result = await sendChatRequest({ question, conversationId });
-        shouldAutoScrollToBottomRef.current =
-          !preserveUserMessageAnchorRef.current && isChatContainerNearBottom(chatMessagesRef.current);
         handledChatRef.current = result.conversation.id;
         setIsDraftChat(false);
         console.log("SAVE_ASSISTANT_MESSAGE", {
@@ -701,7 +678,7 @@ function ChatPageContent() {
           </div>
 
           {activeTab === "chat" ? (
-            <div className="chat-messages" ref={chatMessagesRef}>
+            <div className="chat-messages" ref={messagesContainerRef}>
               {conversationError ? <div className="chat-empty-state">{conversationError}</div> : null}
               {conversationLoading ? <div className="chat-empty-state">Loading chat...</div> : null}
               {!conversationLoading && messages.length ? (
@@ -713,7 +690,11 @@ function ChatPageContent() {
                   >
                     <div className="message-stack">
                       <div
-                        ref={message.id === latestUserMessageId ? latestUserMessageRef : null}
+                        ref={
+                          message.role === "user" && message.id === latestUserMessageId
+                            ? latestUserMessageRef
+                            : null
+                        }
                         className={`message-bubble ${
                           message.role === "user" ? "user-bubble" : "assistant-bubble"
                         }`}

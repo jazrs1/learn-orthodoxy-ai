@@ -544,7 +544,7 @@ textarea {
 .chat-messages {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 1.5rem;
+  padding: 1.5rem 1.5rem max(1.5rem, 45vh);
   overflow-y: auto;
 }
 
@@ -1307,7 +1307,7 @@ textarea {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    padding: 1rem;
+    padding: 1rem 1rem max(1rem, 42vh);
   }
 
   .message-stack {
