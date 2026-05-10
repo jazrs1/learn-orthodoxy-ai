@@ -435,31 +435,32 @@ textarea {
 
 .mobile-sidebar-toggle {
   display: none;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   padding: 0;
-  border: 1px solid rgba(58, 38, 22, 0.14);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.82);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
+  flex-direction: column;
+  gap: 0.24rem;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  color: var(--accent);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .mobile-sidebar-toggle:hover {
-  background: rgba(58, 38, 22, 0.08);
-  border-color: rgba(58, 38, 22, 0.24);
+  opacity: 0.72;
   transform: translateY(-1px);
 }
 
 .mobile-sidebar-toggle span {
   display: block;
-  width: 16px;
-  height: 1.5px;
+  width: 22px;
+  height: 2px;
   border-radius: 999px;
-  background: var(--accent);
+  background: currentColor;
 }
 
 .chat-mobile-sidebar-toggle {
@@ -1340,8 +1341,8 @@ textarea {
   .chat-sidebar {
     top: 0;
     bottom: 0;
-    width: min(86vw, 320px);
-    max-width: 320px;
+    width: 100vw;
+    max-width: none;
     transform: translateX(-100%);
     transition: transform 0.28s ease;
     z-index: 140;
@@ -1354,8 +1355,8 @@ textarea {
   }
 
   .chat-sidebar-details {
-    border-right: 1px solid rgba(58, 38, 22, 0.1);
-    box-shadow: 0 18px 42px rgba(58, 38, 22, 0.18);
+    border-right: none;
+    background: var(--background);
   }
 
   .chat-sidebar-close-btn {
@@ -1377,7 +1378,7 @@ textarea {
   }
 
   .chat-sidebar-overlay-visible {
-    background: rgba(31, 21, 12, 0.24);
+    background: rgba(31, 21, 12, 0);
     pointer-events: auto;
   }
 }
