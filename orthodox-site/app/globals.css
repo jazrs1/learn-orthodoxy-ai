@@ -1291,6 +1291,10 @@ textarea {
     flex: 0 0 auto;
   }
 
+  .chat-close-page-btn {
+    display: none;
+  }
+
   .chat-window-title-wrap {
     flex: 1 1 auto;
   }

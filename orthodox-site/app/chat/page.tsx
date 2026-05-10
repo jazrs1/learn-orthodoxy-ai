@@ -610,7 +610,7 @@ function ChatPageContent() {
                 </p>
               </div>
               <div className="chat-header-actions">
-                <button type="button" className="chat-header-btn" onClick={() => router.push("/")}>
+                <button type="button" className="chat-header-btn chat-close-page-btn" onClick={() => router.push("/")}>
                   Close
                 </button>
               </div>
