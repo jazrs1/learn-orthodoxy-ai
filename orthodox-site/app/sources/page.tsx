@@ -7,34 +7,20 @@ export default function CreditsPage() {
       <h1 className="page-title">Credits</h1>
 
       <article className="credits-content" aria-label="Credits and source acknowledgements">
-        <div className="credits-intro-grid">
-          <div className="credits-copy">
-            <p>
-              LearnOrthodoxy.net is a platform developed by youth and servants dedicated to
-              spreading the faith of the Coptic Orthodox Church. To meet the growing global
-              interest in Orthodoxy, we have created this resource where everyone can learn
-              about the faith from trusted sources.
-            </p>
+        <p>
+          LearnOrthodoxy.net is a platform developed by youth and servants dedicated to
+          spreading the faith of the Coptic Orthodox Church. To meet the growing global
+          interest in Orthodoxy, we have created this resource where everyone can learn about
+          the faith from trusted sources.
+        </p>
 
-            <p>
-              Our content is primarily adopted from the works of Fr. Tadros Yacoub Malaty,
-              a prominent priest and theologian from St. George Coptic Orthodox Church in
-              Alexandria, Egypt. Fr. Tadros is a prolific writer known for making Patristics
-              and Biblical exegesis accessible to the modern faithful, specifically through
-              the lens of the Alexandrian School.
-            </p>
-          </div>
-
-          <figure className="credits-portrait">
-            <Image
-              src={frTadrosImage}
-              alt="Fr. Tadros Yacoub Malaty"
-              sizes="(max-width: 720px) 100vw, 280px"
-              priority
-            />
-            <figcaption>Fr. Tadros Yacoub Malaty</figcaption>
-          </figure>
-        </div>
+        <p>
+          Our content is primarily adopted from the works of Fr. Tadros Yacoub Malaty,
+          a prominent priest and theologian from St. George Coptic Orthodox Church in
+          Alexandria, Egypt. Fr. Tadros is a prolific writer known for making Patristics
+          and Biblical exegesis accessible to the modern faithful, specifically through
+          the lens of the Alexandrian School.
+        </p>
 
         <p>
           Fr. Tadros has dedicated his life to making the complex theological and spiritual
@@ -83,30 +69,40 @@ export default function CreditsPage() {
 
         <ol className="credits-number-list">
           <li>
-            Amazon Bookstore:{" "}
             <a
+              className="credits-link"
               href="https://www.amazon.com/stores/Fr.-Tadros-Y.-Malaty/author/B06XFDNRXY"
               target="_blank"
               rel="noreferrer"
             >
-              https://www.amazon.com/stores/Fr.-Tadros-Y.-Malaty/author/B06XFDNRXY
+              Amazon Bookstore
             </a>
           </li>
           <li>
-            Mind of Christ Light: MoCL exists to proclaim Christ, the true Light, as received
-            in Holy Scripture and understood through the living Tradition of the Church, handed
-            down by the Fathers of the church. A central pillar of this mission is the
-            preservation, translation, and sharing of the legacy of the writings of Fr. Tadros
-            Y. Malaty. More information at:{" "}
-            <a href="https://www.mindofchristlight.com/" target="_blank" rel="noreferrer">
-              https://www.mindofchristlight.com/
+            <a className="credits-link" href="https://www.mindofchristlight.com/" target="_blank" rel="noreferrer">
+              Mind of Christ Light
             </a>
+            : MoCL exists to proclaim Christ, the true Light, as received in Holy Scripture
+            and understood through the living Tradition of the Church, handed down by the
+            Fathers of the church. A central pillar of this mission is the preservation,
+            translation, and sharing of the legacy of the writings of Fr. Tadros Y. Malaty.
+            More information at mindofchristlight.com.
           </li>
         </ol>
 
         <p className="credits-doxology">
           To our God be the glory in His Holy Church now and forever. Amen.
         </p>
+
+        <figure className="credits-portrait">
+          <Image
+            src={frTadrosImage}
+            alt="Fr. Tadros Yacoub Malaty"
+            sizes="(max-width: 720px) 82vw, 320px"
+            priority
+          />
+          <figcaption>Fr. Tadros Yacoub Malaty</figcaption>
+        </figure>
       </article>
     </main>
   );

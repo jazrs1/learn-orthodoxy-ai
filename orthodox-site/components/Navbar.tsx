@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import LogoWordmark from "./LogoWordmark";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -30,15 +30,7 @@ export default function Navbar() {
         ) : null}
 
         <Link href="/" className="nav-brand">
-          <Image
-            src="/cross.png"
-            alt="Coptic cross"
-            width={34}
-            height={34}
-            className="nav-cross"
-            priority
-          />
-          <span className="nav-title">Learn Orthodoxy</span>
+          <LogoWordmark variant="nav" />
         </Link>
 
         <div className="nav-links">

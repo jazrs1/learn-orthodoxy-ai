@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ChatShell from "../components/ChatShell";
 import ChatSidebar from "../components/ChatSidebar";
+import LogoWordmark from "../components/LogoWordmark";
 import { fetchConversationList, deleteConversationRequest } from "../lib/chat-client";
 import { ConversationSummary } from "../lib/chat-types";
 
@@ -104,16 +104,9 @@ export default function HomePage() {
     <main className="home-page">
       <div className="home-layout">
         <section className="hero">
-          <Image
-            src="/cross.png"
-            alt="Coptic cross"
-            width={280}
-            height={280}
-            className="hero-cross"
-            priority
-          />
-
-          <h1 className="hero-title">Learn Orthodoxy</h1>
+          <h1 className="hero-title">
+            <LogoWordmark variant="hero" />
+          </h1>
 
           <p className="hero-subtitle">
             Ask questions about Orthodox saints and Coptic Orthodox catechism.
