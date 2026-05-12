@@ -1,6 +1,6 @@
 import os
 import re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set, Tuple
 
 from dotenv import load_dotenv
 from chromadb.utils import embedding_functions
@@ -63,6 +63,29 @@ AMBIGUOUS_SAINT_FALLBACKS = {
 
 SAINT_QUERY_PREFIX_PATTERN = r"^(?:(?:who is|tell me about|about)\s+)?(?:(?:st\.?|saint|pope|patriarch|abba|anba)\s+)*"
 
+SAINT_ALIAS_GROUPS: Dict[str, List[str]] = {
+    "St. Thomas the Apostle": [
+        "St. Thomas the Apostle",
+        "Saint Thomas",
+        "Thomas the Apostle",
+        "Apostle Thomas",
+        "Didymus",
+        "Doubting Thomas",
+    ],
+}
+
+SAINT_ORDERING_TITLES = {
+    "apostle",
+    "disciple",
+    "martyr",
+    "bishop",
+    "pope",
+    "patriarch",
+    "hermit",
+    "virgin",
+    "theologian",
+}
+
 
 def _canonicalize_saint_text(value: str) -> str:
     return (
@@ -73,6 +96,114 @@ def _canonicalize_saint_text(value: str) -> str:
         .replace("Cyrillus", "Cyril")
         .replace("cyrillus", "cyril")
     )
+
+
+def _normalize_saint_match_key(value: str) -> str:
+    text = _canonicalize_saint_text(value).lower()
+    text = re.sub(r"\bmarys\b", "mary", text)
+    text = re.sub(r"['’`]", "", text)
+    text = re.sub(r"[-_/]", " ", text)
+    text = re.sub(r"[^\w\s]", " ", text)
+    text = re.sub(r"\b(?:st|saint|saints)\b", " ", text)
+    text = re.sub(r"\bthe\b", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _saint_match_keys(value: str) -> Set[str]:
+    key = _normalize_saint_match_key(value)
+    if not key:
+        return set()
+
+    keys = {key}
+    words = key.split()
+    if len(words) >= 2:
+        if words[0] in SAINT_ORDERING_TITLES:
+            keys.add(" ".join(words[1:] + [words[0]]))
+        if words[-1] in SAINT_ORDERING_TITLES:
+            keys.add(" ".join([words[-1]] + words[:-1]))
+    return {item for item in keys if item}
+
+
+def _saint_aliases_for_name(name: str) -> List[str]:
+    name_keys = _saint_match_keys(name)
+    aliases: List[str] = []
+    seen = set()
+
+    def add(value: str):
+        normalized = re.sub(r"\s+", " ", (value or "").strip())
+        if not normalized:
+            return
+        lowered = normalized.lower()
+        if lowered in seen:
+            return
+        seen.add(lowered)
+        aliases.append(normalized)
+
+    add(name)
+    for canonical, values in SAINT_ALIAS_GROUPS.items():
+        group_keys = set()
+        for value in [canonical] + values:
+            group_keys.update(_saint_match_keys(value))
+        if name_keys & group_keys:
+            add(canonical)
+            for value in values:
+                add(value)
+
+    return aliases
+
+
+def _find_saint_index_matches(query: str, limit: int = 12) -> List[str]:
+    saint_index = _build_saint_name_index()
+    query_keys = _saint_match_keys(query)
+    if not query_keys:
+        return []
+
+    scored: List[Tuple[int, int, str]] = []
+    for name in saint_index:
+        name_keys = set()
+        for alias in _saint_aliases_for_name(name):
+            name_keys.update(_saint_match_keys(alias))
+        if not name_keys:
+            continue
+
+        score: int | None = None
+        for query_key in query_keys:
+            query_tokens = set(query_key.split())
+            for name_key in name_keys:
+                name_tokens = set(name_key.split())
+                if query_key == name_key:
+                    score = 0 if name.lower() == query.lower() else 1
+                elif name_key.startswith(query_key):
+                    score = 2 if score is None else min(score, 2)
+                elif query_key in name_key:
+                    score = 3 if score is None else min(score, 3)
+                elif query_tokens and query_tokens.issubset(name_tokens):
+                    score = 4 if score is None else min(score, 4)
+                elif name_tokens and name_tokens.issubset(query_tokens):
+                    score = 5 if score is None else min(score, 5)
+
+        if score is not None:
+            scored.append((score, len(name), name))
+
+    scored.sort(key=lambda item: (item[0], item[1], item[2].lower()))
+    matches = []
+    seen = set()
+    for _, _, name in scored:
+        key = name.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        matches.append(name)
+        if len(matches) >= max(1, min(limit, 400)):
+            break
+    return matches
+
+
+def _log_saint_query(raw: str, normalized: str, matches: List[str]) -> None:
+    print(f"SAINT_QUERY_RAW: {raw}")
+    print(f"SAINT_QUERY_NORMALIZED: {normalized}")
+    print(f"SAINT_MATCH_COUNT: {len(matches)}")
+    print(f"SAINT_MATCH_NAMES: {matches[:12]}")
 
 
 def _saint_query_variants(saint_name: str) -> List[str]:
@@ -458,12 +589,13 @@ def _core_name_from_query(query: str) -> str:
 
 
 def _normalize_saint_search_query(query: str) -> str:
-    return re.sub(
+    stripped = re.sub(
         SAINT_QUERY_PREFIX_PATTERN,
         "",
         _canonicalize_saint_text(query),
         flags=re.IGNORECASE,
-    ).lower()
+    )
+    return _normalize_saint_match_key(stripped)
 
 
 def _filter_sourced_saint_options(options: List[str]) -> List[str]:
@@ -475,17 +607,15 @@ def _filter_sourced_saint_options(options: List[str]) -> List[str]:
 def _find_saint_suggestions(query: str, limit: int = 12) -> List[str]:
     global collection
     query = _canonicalize_saint_text(query)
-    saint_index = _build_saint_name_index()
     normalized_query = _normalize_saint_search_query(query)
 
-    index_matches = []
+    index_matches = _find_saint_index_matches(query, limit=max(12, limit))
     if normalized_query:
-        for name in saint_index:
-            normalized_name = _normalize_saint_search_query(name)
-            if normalized_query in normalized_name:
-                index_matches.append(name)
-        index_matches.sort(key=lambda name: (not _normalize_saint_search_query(name).startswith(normalized_query), len(name), name.lower()))
-        if len(index_matches) >= 2:
+        exact_index_match = any(
+            _saint_match_keys(query) & set().union(*[_saint_match_keys(alias) for alias in _saint_aliases_for_name(name)])
+            for name in index_matches[:1]
+        )
+        if len(index_matches) >= 2 or exact_index_match:
             return index_matches[: max(1, min(limit, 12))]
 
     if collection is None:
@@ -523,8 +653,8 @@ def _find_saint_suggestions(query: str, limit: int = 12) -> List[str]:
         unique.append(normalized_name)
 
     q_no_prefix = _normalize_saint_search_query(q_lower)
-    filtered = [name for name in unique if q_no_prefix in name.lower()]
-    filtered.sort(key=lambda name: (not name.lower().startswith(f"st. {q_no_prefix}"), len(name), name.lower()))
+    filtered = [name for name in unique if q_no_prefix in _normalize_saint_search_query(name)]
+    filtered.sort(key=lambda name: (not _normalize_saint_search_query(name).startswith(q_no_prefix), len(name), name.lower()))
 
     if index_matches:
         filtered = list(dict.fromkeys(index_matches + filtered))
@@ -692,6 +822,10 @@ def startup():
     print(f"Resolved Chroma dir: {debug_info['resolved_chroma_dir']}")
     print(f"Chroma dir exists: {debug_info['directory_exists']}")
     print(f"Chroma document count: {debug_info['document_count']}")
+    try:
+        print(f"SAINTS_LOADED_COUNT: {len(_build_saint_name_index())}")
+    except Exception as exc:
+        print(f"SAINTS_LOADED_COUNT_ERROR: {repr(exc)}")
     print("Startup complete.")
 
 
@@ -709,7 +843,7 @@ def root():
     return {
         "status": "alive",
         "service": "orthodox-api",
-        "routes": ["/", "/health", "/debug/chroma", "/chat", "/saints", "/saint-suggestions"],
+        "routes": ["/", "/health", "/debug/chroma", "/debug/saints", "/chat", "/saints", "/saint-suggestions"],
     }
 
 
@@ -721,6 +855,56 @@ def debug_chroma():
         startup()
 
     return _collect_chroma_debug_info()
+
+
+def _collect_saint_debug_info() -> Dict[str, Any]:
+    saints = _build_saint_name_index()
+    thomas_matches = _find_saint_index_matches("Thomas", limit=20)
+    metadata_fields: Set[str] = set()
+    saint_source_counts: Dict[str, int] = {}
+
+    if collection is not None:
+        offset = 0
+        page_size = 500
+        while True:
+            batch = collection.get(include=["metadatas"], limit=page_size, offset=offset)
+            metadatas = batch.get("metadatas", []) or []
+            if not metadatas:
+                break
+
+            for metadata in metadatas:
+                metadata = metadata or {}
+                metadata_fields.update(metadata.keys())
+                pdf_name = str(metadata.get("pdf", "") or "")
+                if pdf_name.startswith("saints"):
+                    saint_source_counts[pdf_name] = saint_source_counts.get(pdf_name, 0) + 1
+
+            if len(metadatas) < page_size:
+                break
+            offset += len(metadatas)
+
+    return {
+        "total_saint_records_loaded": len(saints),
+        "sample_saint_names": saints[:20],
+        "thomas_matches": thomas_matches,
+        "record_fields": ["name"],
+        "source_metadata_fields": sorted(metadata_fields),
+        "saint_source_files": dict(sorted(saint_source_counts.items())),
+        "records_failed_to_parse": 0,
+        "loading_note": "Saint records are derived from saint-name mentions in Chroma documents whose pdf metadata starts with 'saints'.",
+    }
+
+
+@app.get("/debug/saints")
+def debug_saints():
+    global collection, oai_client
+
+    if collection is None or oai_client is None:
+        startup()
+        if collection is None:
+            raise HTTPException(status_code=500, detail="Server not initialized")
+
+    return _collect_saint_debug_info()
 
 
 def _build_saint_name_index() -> List[str]:
@@ -791,6 +975,196 @@ def _build_saint_name_index() -> List[str]:
     return saint_name_index
 
 
+def _heading_variants_for_saint_name(name: str) -> Set[str]:
+    variants = set()
+    base = re.sub(r"^(?:st\.?|saint)\s+", "", name or "", flags=re.IGNORECASE).strip()
+    if base:
+        variants.add(base.upper())
+        no_the = re.sub(r"\bthe\b\s+", "", base, flags=re.IGNORECASE).strip()
+        if no_the:
+            variants.add(no_the.upper())
+
+        parts = base.split()
+        if len(parts) > 1:
+            variants.add(f"{parts[0]}, {' '.join(parts[1:])}".upper())
+
+    for replacement_source, replacement_target in MANUAL_SAINT_NAME_REPLACEMENTS.items():
+        if replacement_target and replacement_target.lower() == name.lower():
+            source_base = re.sub(r"^(?:st\.?|saint)\s+", "", replacement_source, flags=re.IGNORECASE).strip()
+            if source_base:
+                variants.add(source_base.upper())
+
+    return {re.sub(r"\s+", " ", item).strip() for item in variants if item.strip()}
+
+
+def _saint_dedicated_entry_exists(name: str) -> bool:
+    if collection is None:
+        return False
+
+    heading_variants = _heading_variants_for_saint_name(name)
+    if not heading_variants:
+        return False
+
+    offset = 0
+    page_size = 500
+    while True:
+        batch = collection.get(include=["documents", "metadatas"], limit=page_size, offset=offset)
+        docs = batch.get("documents", []) or []
+        metadatas = batch.get("metadatas", []) or []
+        if not docs:
+            break
+
+        for doc, metadata in zip(docs, metadatas):
+            pdf_name = str((metadata or {}).get("pdf", "") or "")
+            if not pdf_name.startswith("saints"):
+                continue
+            text = doc or ""
+            for heading in heading_variants:
+                if re.search(rf"\b{re.escape(heading)}(?:\s*,?\s*ST\.?)?\b", text):
+                    return True
+
+        if len(docs) < page_size:
+            break
+        offset += len(docs)
+
+    return False
+
+
+def _find_saint_source_documents(name: str, limit: int = 6) -> tuple[List[str], List[Dict[str, Any]]]:
+    if collection is None:
+        return [], []
+
+    alias_keys = set()
+    for alias in _saint_aliases_for_name(name):
+        alias_keys.update(_saint_match_keys(alias))
+    specific_alias_keys = {key for key in alias_keys if len(key.split()) >= 2}
+    alias_keys = specific_alias_keys or alias_keys
+    if not alias_keys:
+        return [], []
+
+    exact_scored: List[Tuple[int, str, Dict[str, Any]]] = []
+    broad_scored: List[Tuple[int, str, Dict[str, Any]]] = []
+    offset = 0
+    page_size = 500
+    while True:
+        batch = collection.get(include=["documents", "metadatas"], limit=page_size, offset=offset)
+        docs = batch.get("documents", []) or []
+        metadatas = batch.get("metadatas", []) or []
+        if not docs:
+            break
+
+        for doc, metadata in zip(docs, metadatas):
+            metadata = metadata or {}
+            pdf_name = str(metadata.get("pdf", "") or "")
+            if not pdf_name.startswith("saints"):
+                continue
+
+            doc_key = _normalize_saint_match_key(doc or "")
+            if not doc_key:
+                continue
+
+            exact_match = False
+            broad_match = False
+            doc_tokens = set(doc_key.split())
+            for alias_key in alias_keys:
+                alias_tokens = set(alias_key.split())
+                if alias_key and alias_key in doc_key:
+                    exact_match = True
+                elif alias_tokens and alias_tokens.issubset(doc_tokens):
+                    broad_match = True
+
+            page = int(metadata.get("page", 0) or 0)
+            if exact_match:
+                exact_scored.append((page, doc or "", metadata))
+            elif broad_match:
+                broad_scored.append((page, doc or "", metadata))
+
+        if len(docs) < page_size:
+            break
+        offset += len(docs)
+
+    scored = exact_scored if exact_scored else broad_scored
+    scored.sort(key=lambda item: item[0])
+    docs = [doc for _, doc, _ in scored[:limit]]
+    metas = [metadata for _, _, metadata in scored[:limit]]
+    return docs, metas
+
+
+def _extract_saint_chat_intent(question: str) -> Dict[str, str] | None:
+    q = re.sub(r"\s+", " ", (question or "").strip()).rstrip("?!. ")
+    if not q:
+        return None
+
+    patterns = [
+        ("lookup", r"^search\s+saints?\s*:\s*(.+)$"),
+        ("lookup", r"^(?:look\s+up|lookup|find)\s+(.+)$"),
+        ("lookup", r"^(?:who\s+is|who\s+was|tell\s+me\s+about|about)\s+(.+)$"),
+        ("list", r"^(?:list|show)\s+saints?\s+named\s+(.+)$"),
+        ("list", r"^(?:give\s+me|show\s+me)\s+(?:a\s+)?list\s+of\s+(?:saints?\s+named\s+)?(.+)$"),
+        ("list", r"^list\s+(?:of\s+)?(.+)$"),
+    ]
+
+    for mode, pattern in patterns:
+        match = re.match(pattern, q, flags=re.IGNORECASE)
+        if not match:
+            continue
+        candidate = re.sub(r"\s+", " ", match.group(1)).strip()
+        if not candidate:
+            continue
+        has_marker = re.search(r"\b(?:st\.?|saint|saints|marys)\b", candidate, flags=re.IGNORECASE)
+        if mode == "list" or has_marker or _find_saint_index_matches(candidate, limit=1):
+            return {"mode": mode, "query": candidate}
+
+    return None
+
+
+def _saint_options_response(raw_query: str, matches: List[str], mode: str) -> Dict[str, Any]:
+    last_options = matches[:12]
+    answer = (
+        f"I found {len(last_options)} saint matches for '{raw_query}'."
+        if mode == "list"
+        else f"I found multiple saints matching '{raw_query}'. Choose one option below."
+    )
+    return {
+        "answer": answer,
+        "sources": [],
+        "entities": [],
+        "options": last_options,
+    }
+
+
+def _saint_missing_response(raw_query: str) -> Dict[str, Any]:
+    return {
+        "answer": f"I could not find '{raw_query}' in the loaded saint dataset.",
+        "sources": [],
+        "entities": [],
+        "options": [],
+    }
+
+
+def _saint_no_dedicated_entry_response(name: str, docs: List[str], metas: List[Dict[str, Any]]) -> Dict[str, Any]:
+    sources = [_source_from_metadata(metadata) for metadata in metas]
+    unique_sources = []
+    seen = set()
+    for source in sources:
+        key = _source_key(source)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_sources.append(source)
+
+    return {
+        "answer": (
+            f"I found {name} in the saint dataset, but the loaded saint sources do not include "
+            "a dedicated biography entry for this saint. The available matches are limited mentions, "
+            "so I cannot give a fuller biography from the provided saint sources."
+        ),
+        "sources": unique_sources[:6],
+        "entities": [name],
+        "options": [],
+    }
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     global last_list, collection, oai_client
@@ -817,13 +1191,25 @@ def chat(req: ChatRequest):
         print("Original question:", question)
         print("History:", req.history)
 
-        # Direct saint search
-        if question.lower().startswith("search saint:"):
-            saint_name = question[len("search saint:"):].strip()
-            if saint_name:
-                saint_name = _canonicalize_saint_text(saint_name)
-                entity = saint_name
-                question = f"{saint_name} Orthodox saint biography life feast teachings martyr monk bishop"
+        saint_intent = _extract_saint_chat_intent(question)
+        if saint_intent:
+            raw_saint_query = saint_intent["query"]
+            saint_matches = _find_saint_index_matches(raw_saint_query, limit=12)
+            _log_saint_query(raw_saint_query, _normalize_saint_search_query(raw_saint_query), saint_matches)
+
+            if not saint_matches:
+                return _saint_missing_response(raw_saint_query)
+
+            if saint_intent["mode"] == "list" or len(saint_matches) > 1:
+                last_list = {str(i + 1): name for i, name in enumerate(saint_matches[:12])}
+                return _saint_options_response(raw_saint_query, saint_matches, saint_intent["mode"])
+
+            entity = saint_matches[0]
+            exact_docs, exact_metas = _find_saint_source_documents(entity, limit=6)
+            if exact_docs and not _saint_dedicated_entry_exists(entity):
+                return _saint_no_dedicated_entry_response(entity, exact_docs, exact_metas)
+
+            question = f"{entity} Orthodox saint biography life feast teachings martyr monk bishop"
 
         # Numbered follow-up resolution
         q_lower = question.lower()
@@ -1006,14 +1392,16 @@ def saint_suggestions(q: str, limit: int = 8):
             raise HTTPException(status_code=500, detail="Server not initialized")
 
     try:
-        return {"suggestions": _find_saint_suggestions(query, limit=limit)}
+        suggestions = _find_saint_suggestions(query, limit=limit)
+        _log_saint_query(query, _normalize_saint_search_query(query), suggestions)
+        return {"suggestions": suggestions}
     except Exception as e:
         print("ERROR IN /saint-suggestions:", repr(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/saints", response_model=SaintsListResponse)
-def saints_list(q: str = "", limit: int = 400, offset: int = 0):
+def saints_list(q: str = "", search: str = "", limit: int = 400, offset: int = 0):
     global collection, oai_client
 
     if collection is None or oai_client is None:
@@ -1023,12 +1411,11 @@ def saints_list(q: str = "", limit: int = 400, offset: int = 0):
 
     try:
         saints = _build_saint_name_index()
-        query = _normalize_saint_search_query(q)
+        raw_query = q or search
+        query = _normalize_saint_search_query(raw_query)
         if query:
-            saints = [
-                name for name in saints
-                if query in _normalize_saint_search_query(name)
-            ]
+            saints = _find_saint_index_matches(raw_query, limit=400)
+            _log_saint_query(raw_query, query, saints)
         safe_limit = max(1, min(limit, 400))
         safe_offset = max(0, offset)
         paged_saints = saints[safe_offset:safe_offset + safe_limit]
