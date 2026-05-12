@@ -106,29 +106,40 @@ textarea {
   font-size: inherit;
 }
 
+.logo-learn {
+  margin-right: 0.28em;
+}
+
 .logo-orthodoxy {
   display: inline-flex;
   align-items: baseline;
 }
 
 .logo-cross-o {
-  display: inline-grid;
-  place-items: center;
-  width: 0.98em;
-  height: 0.98em;
-  margin: 0 0.02em 0 0.01em;
-  border: 0.055em solid currentColor;
-  border-radius: 50%;
-  transform: translateY(0.08em);
-  overflow: hidden;
+  position: relative;
+  display: inline-block;
+  width: 0.82em;
+  line-height: 1;
+  margin-right: 0.015em;
+  transform: translateY(0.02em);
   flex: 0 0 auto;
+}
+
+.logo-o-letter {
+  display: block;
+  font: inherit;
+  line-height: 1;
 }
 
 .logo-cross-o img {
   display: block;
-  width: 72%;
-  height: 72%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.66em;
+  height: 0.66em;
   object-fit: contain;
+  transform: translate(-50%, -50%);
 }
 
 .nav-link {

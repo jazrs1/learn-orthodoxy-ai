@@ -69,24 +69,26 @@ export default function CreditsPage() {
 
         <ol className="credits-number-list">
           <li>
+            Amazon Bookstore:{" "}
             <a
               className="credits-link"
               href="https://www.amazon.com/stores/Fr.-Tadros-Y.-Malaty/author/B06XFDNRXY"
               target="_blank"
               rel="noreferrer"
             >
-              Amazon Bookstore
+              https://www.amazon.com/stores/Fr.-Tadros-Y.-Malaty/author/B06XFDNRXY
             </a>
           </li>
           <li>
+            Mind of Christ Light: MoCL exists to proclaim Christ, the true Light, as received
+            in Holy Scripture and understood through the living Tradition of the Church, handed
+            down by the Fathers of the church. A central pillar of this mission is the
+            preservation, translation, and sharing of the legacy of the writings of Fr. Tadros
+            Y. Malaty. More information at{" "}
             <a className="credits-link" href="https://www.mindofchristlight.com/" target="_blank" rel="noreferrer">
-              Mind of Christ Light
+              mindofchristlight.com
             </a>
-            : MoCL exists to proclaim Christ, the true Light, as received in Holy Scripture
-            and understood through the living Tradition of the Church, handed down by the
-            Fathers of the church. A central pillar of this mission is the preservation,
-            translation, and sharing of the legacy of the writings of Fr. Tadros Y. Malaty.
-            More information at mindofchristlight.com.
+            .
           </li>
         </ol>
 
