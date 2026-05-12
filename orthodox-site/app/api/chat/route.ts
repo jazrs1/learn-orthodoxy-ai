@@ -16,7 +16,10 @@ type BackendChatResponse = {
 type ChatRequestBody = {
   question?: string;
   conversationId?: string;
+  mode?: "chat" | "saints" | "catechism";
 };
+
+type ChatMode = "chat" | "saints" | "catechism";
 
 function backendUrl() {
   const value = process.env.ORTHODOX_API_URL || process.env.NEXT_PUBLIC_API_URL || "";
@@ -47,6 +50,8 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as ChatRequestBody;
     const question = body.question?.trim() || "";
+    const mode: ChatMode =
+      body.mode === "saints" || body.mode === "catechism" ? body.mode : "chat";
 
     if (!question) {
       const badRequest = NextResponse.json({ error: "Question is required." }, { status: 400 });
@@ -80,6 +85,7 @@ export async function POST(request: Request) {
         question,
         history,
         top_k: 8,
+        mode,
       }),
       cache: "no-store",
       signal: AbortSignal.timeout(20000),

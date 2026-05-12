@@ -2,7 +2,6 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import ChatShell from "../../components/ChatShell";
 import ChatSidebar from "../../components/ChatSidebar";
@@ -15,7 +14,7 @@ import {
   fetchConversationList,
   sendChatRequest,
 } from "../../lib/chat-client";
-import { ChatMessage, ConversationDetail, ConversationSummary, SourceRef } from "../../lib/chat-types";
+import { ChatMessage, ConversationDetail, ConversationSummary } from "../../lib/chat-types";
 
 type SaintsListResponse = {
   saints?: string[];
@@ -120,30 +119,6 @@ function mergeConversationSummary(
   nextConversation: ConversationSummary
 ) {
   return [nextConversation, ...conversations.filter((conversation) => conversation.id !== nextConversation.id)];
-}
-
-function sourceKey(source: SourceRef) {
-  if (source?.source_type === "website" || source?.url) {
-    return `website-${source.url || ""}-${source.title || ""}`;
-  }
-  return `pdf-${source?.pdf || ""}-${source?.page || 0}`;
-}
-
-function sourceHref(source: SourceRef) {
-  if (source?.source_type === "website" || source?.url) {
-    const params = new URLSearchParams();
-    if (source.url) params.set("url", source.url);
-    if (source.title) params.set("title", source.title);
-    return `/sources?${params.toString()}`;
-  }
-  return `/sources?pdf=${encodeURIComponent(source?.pdf || "")}&page=${source?.page || 0}`;
-}
-
-function sourceLabel(source: SourceRef) {
-  if (source?.source_type === "website" || source?.url) {
-    return source.title?.trim() || source.url || "Website source";
-  }
-  return `${(source?.pdf || "unknown.pdf").replace(".pdf", "")} p.${source?.page || 0}`;
 }
 
 function mergeUniqueSaints(current: string[], next: string[]) {
@@ -433,6 +408,7 @@ function ChatPageContent() {
       setConversationError("");
       submittingRef.current = true;
       setIsSending(true);
+      const requestMode = activeTab;
 
       try {
         if (!conversationId) {
@@ -454,8 +430,8 @@ function ChatPageContent() {
         }
 
         console.log("SAVE_USER_MESSAGE", { conversationId });
-        console.log("CALL_BACKEND", { conversationId, question });
-        const result = await sendChatRequest({ question, conversationId });
+        console.log("CALL_BACKEND", { conversationId, question, mode: requestMode });
+        const result = await sendChatRequest({ question, conversationId, mode: requestMode });
         handledChatRef.current = result.conversation.id;
         setIsDraftChat(false);
         console.log("SAVE_ASSISTANT_MESSAGE", {
@@ -495,7 +471,7 @@ function ChatPageContent() {
         setIsSending(false);
       }
     },
-    [activeConversationId, currentConversation, router]
+    [activeConversationId, activeTab, currentConversation, router]
   );
 
   useEffect(() => {
@@ -705,26 +681,6 @@ function ChatPageContent() {
                                           {option}
                                         </button>
                                       ))}
-                                  </div>
-                                </div>
-                              ) : null}
-                              {message.sources && message.sources.length > 0 ? (
-                                <div className="message-sources">
-                                  <div className="message-sources-label">Sources</div>
-                                  <div className="message-sources-list">
-                                    {Array.from(
-                                      new Map(
-                                        message.sources.map((source) => [sourceKey(source), source])
-                                      ).values()
-                                    ).map((source) => (
-                                      <Link
-                                        key={sourceKey(source)}
-                                        href={sourceHref(source)}
-                                        className="message-source-chip"
-                                      >
-                                        {sourceLabel(source)}
-                                      </Link>
-                                    ))}
                                   </div>
                                 </div>
                               ) : null}

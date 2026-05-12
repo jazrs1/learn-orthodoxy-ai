@@ -53,7 +53,11 @@ export async function deleteConversationRequest(conversationId: string) {
   await readJson<{ success: boolean }>(response);
 }
 
-export async function sendChatRequest(payload: { question: string; conversationId?: string }) {
+export async function sendChatRequest(payload: {
+  question: string;
+  conversationId?: string;
+  mode?: "chat" | "saints" | "catechism";
+}) {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

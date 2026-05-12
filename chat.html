@@ -150,14 +150,6 @@ function addMessage(role, text, sources = [], entities = []) {
   bubble.textContent = text;
   wrapper.appendChild(bubble);
 
-  if (role === "bot" && sources.length > 0) {
-    const s = document.createElement("div");
-    s.className = "sources";
-    s.innerHTML = "<strong>Sources:</strong> " +
-      sources.map(x => `<code>${x.pdf} p.${x.page}</code>`).join(" ");
-    wrapper.appendChild(s);
-  }
-
   if (role === "bot" && entities.length > 0) {
     const entityDiv = document.createElement("div");
     entityDiv.className = "entity-buttons";

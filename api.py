@@ -321,10 +321,227 @@ def _retrieve_documents(queries: List[str], top_k: int, entity: str | None = Non
     return docs, metas
 
 
+def _normalize_chat_mode(value: str | None) -> str:
+    mode = re.sub(r"\s+", " ", (value or "chat").strip().lower())
+    return mode if mode in {"chat", "saints", "catechism"} else "chat"
+
+
+def _recent_history_text(history: list, limit: int = 6) -> str:
+    return "\n".join(
+        f"{m['role'].upper()}: {m['content']}"
+        for m in history[-limit:]
+        if isinstance(m, dict) and "role" in m and "content" in m
+    )
+
+
+def _history_messages(history: list, role: str | None = None) -> List[str]:
+    messages: List[str] = []
+    for item in history:
+        if not isinstance(item, dict):
+            continue
+        if role and item.get("role") != role:
+            continue
+        content = str(item.get("content", "") or "").strip()
+        if content:
+            messages.append(content)
+    return messages
+
+
+def _extract_entity_from_history(history: list) -> str | None:
+    for content in reversed(_history_messages(history, role="assistant")):
+        bold_match = re.search(r"\*\*([^*\n]{2,80})\*\*", content)
+        if bold_match:
+            candidate = _normalize_entity_label(bold_match.group(1))
+            if candidate:
+                return candidate
+
+        name_match = re.search(
+            r"\b(?:St\.|Saint|Abba|Anba)\s+([A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,4})",
+            content,
+        )
+        if name_match:
+            return _normalize_entity_label(name_match.group(0))
+
+    for content in reversed(_history_messages(history, role="user")):
+        match = re.match(
+            r"^(?:who\s+is|who\s+was|tell\s+me\s+about|about)\s+(.+?)\s*[?.!]*$",
+            content.strip(),
+            flags=re.IGNORECASE,
+        )
+        if not match:
+            continue
+        candidate = re.sub(r"\s+", " ", match.group(1)).strip()
+        if not candidate:
+            continue
+        saint_matches = _find_saint_index_matches(candidate, limit=1)
+        return saint_matches[0] if saint_matches else _canonicalize_saint_text(candidate)
+
+    return None
+
+
+def _question_has_followup_reference(question: str) -> bool:
+    q = f" {question.lower()} "
+    if re.search(r"\b(?:he|his|him|she|her|hers|it|its|they|their|that|this)\b", q):
+        return True
+    return len(question.split()) <= 8
+
+
+def _rewrite_question_with_history(question: str, history: list) -> Tuple[str, str | None]:
+    resolved_entity = _extract_entity_from_history(history)
+    if not resolved_entity or not _question_has_followup_reference(question):
+        return question, None
+
+    q_lower = question.lower()
+    if re.search(r"\bchurch\b", q_lower) and re.search(r"\b(?:name|named|called|dedicated)\b", q_lower):
+        return (
+            f"Is there a church, monastery, or place named after {resolved_entity}? "
+            f"{resolved_entity} church named after {resolved_entity} monastery",
+            resolved_entity,
+        )
+
+    if re.search(r"\bmonaster", q_lower):
+        return f"{question} {resolved_entity} monastery {resolved_entity}", resolved_entity
+
+    return f"{question} {resolved_entity}", resolved_entity
+
+
+def _is_broad_list_question(question: str) -> bool:
+    q = question.lower()
+    if not re.search(r"\b(?:list|show|name|what are|which are|give me)\b", q):
+        return False
+    return bool(
+        re.search(
+            r"\b(?:monasteries|monastery|churches|church|places|saints|fathers|disciples|items)\b",
+            q,
+        )
+    )
+
+
+def _is_definition_question(question: str) -> bool:
+    return bool(re.match(r"^\s*(?:who|what)\s+(?:is|are|were|was)\b", question, flags=re.IGNORECASE))
+
+
+def _build_retrieval_queries(question: str, entity: str | None = None) -> List[str]:
+    queries = [question]
+    q_lower = question.lower()
+
+    if "apostolic father" in q_lower or "apostolic fathers" in q_lower:
+        queries.extend(
+            [
+                "apostolic fathers",
+                "early church fathers",
+                "disciples of the apostles",
+                "first generations after the apostles",
+            ]
+        )
+
+    if "upper egypt" in q_lower and re.search(r"\bmonaster", q_lower):
+        queries.extend(
+            [
+                "Upper Egypt monasteries",
+                "monasteries in Upper Egypt",
+                "Egyptian monasteries Upper Egypt",
+                "monastery in Upper Egypt",
+            ]
+        )
+
+    if entity:
+        if re.search(r"\bchurch\b", q_lower):
+            queries.extend(
+                [
+                    f"{entity} church",
+                    f"church named after {entity}",
+                    f"{entity} monastery",
+                    entity,
+                ]
+            )
+        queries.extend(
+            f"{variant} Orthodox saint biography life feast teachings martyr monk bishop"
+            for variant in _saint_query_variants(entity)
+        )
+        queries.extend(_saint_query_variants(entity))
+
+    return queries
+
+
+def _response_grounding_status(answer: str, docs: List[str]) -> str:
+    if not docs:
+        return "no-source"
+    lowered = (answer or "").lower()
+    if (
+        "could not find" in lowered
+        or "do not contain" in lowered
+        or "does not say" in lowered
+        or "no relevant" in lowered
+    ):
+        return "no-source"
+    if (
+        "from the loaded sources" in lowered
+        or "the sources mention" in lowered
+        or "do not give a full" in lowered
+        or "may not be exhaustive" in lowered
+        or "not exhaustive" in lowered
+        or "partial" in lowered
+    ):
+        return "partial"
+    return "full"
+
+
+def _build_catechism_followups(question: str, answer: str) -> List[str]:
+    q = question.lower()
+    text = f"{q} {answer.lower()}"
+    followups: List[str]
+
+    if re.search(r"\bconvert|conversion|become orthodox|join\b", text):
+        followups = [
+            "Would you like to know what a catechumen is?",
+            "Would you like to know what baptism and chrismation mean?",
+            "Would you like help with how to start attending an Orthodox church?",
+        ]
+    elif re.search(r"\bbaptism|chrismation\b", text):
+        followups = [
+            "Would you like to know why baptism is part of entering the Church?",
+            "Would you like to know what chrismation means?",
+            "Would you like to ask how a catechumen prepares for baptism?",
+        ]
+    elif re.search(r"\bfast|fasting\b", text):
+        followups = [
+            "Would you like to know how fasting is joined to prayer?",
+            "Would you like to ask about repentance during fasting?",
+            "Would you like to know why the Church has fasting seasons?",
+        ]
+    elif re.search(r"\bprayer|pray\b", text):
+        followups = [
+            "Would you like to ask about daily prayer?",
+            "Would you like to know how prayer connects with repentance?",
+            "Would you like to ask about praying with the Church?",
+        ]
+    else:
+        followups = [
+            "Would you like to ask how this is practiced in Church life?",
+            "Would you like to know which catechism topic this connects to?",
+            "Would you like to ask what terms in this answer mean?",
+        ]
+
+    return followups[:3]
+
+
+def _append_catechism_followups(answer: str, question: str) -> str:
+    if "You might also ask:" in answer:
+        return answer
+    followups = _build_catechism_followups(question, answer)
+    if not followups:
+        return answer
+    lines = ["You might also ask:"]
+    lines.extend(f"- {item}" for item in followups)
+    return answer.rstrip() + "\n\n" + "\n".join(lines)
+
+
 class ChatRequest(BaseModel):
     question: str
     history: list = []
     top_k: int = 8
+    mode: str | None = None
 
 
 class Source(BaseModel):
@@ -1135,7 +1352,7 @@ def _extract_saint_chat_intent(question: str) -> Dict[str, str] | None:
         if not candidate:
             continue
         has_marker = re.search(r"\b(?:st\.?|saint|saints|marys)\b", candidate, flags=re.IGNORECASE)
-        if mode == "list" or has_marker or _find_saint_index_matches(candidate, limit=1):
+        if has_marker or _find_saint_index_matches(candidate, limit=1):
             return {"mode": mode, "query": candidate}
 
     return None
@@ -1179,16 +1396,21 @@ def chat(req: ChatRequest):
             if collection is None or oai_client is None:
                 raise HTTPException(status_code=500, detail="Server not initialized")
 
-        question = (req.question or "").strip()
-        question = _canonicalize_saint_text(question)
-        if not question:
+        original_question = (req.question or "").strip()
+        original_question = _canonicalize_saint_text(original_question)
+        if not original_question:
             raise HTTPException(status_code=400, detail="Question cannot be empty")
 
+        mode = _normalize_chat_mode(req.mode)
+        question, history_resolved_entity = _rewrite_question_with_history(original_question, req.history)
+        question = _canonicalize_saint_text(question)
         entity = None
         clean_entities = []
 
         print("\n--- NEW REQUEST ---")
-        print("Original question:", question)
+        print("Original question:", original_question)
+        print("Detected mode:", mode)
+        print("History-resolved entity:", history_resolved_entity)
         print("History:", req.history)
 
         saint_intent = _extract_saint_chat_intent(question)
@@ -1206,6 +1428,8 @@ def chat(req: ChatRequest):
 
             entity = saint_matches[0]
             question = f"{entity} Orthodox saint biography life feast teachings martyr monk bishop"
+        elif history_resolved_entity:
+            entity = history_resolved_entity
 
         # Numbered follow-up resolution
         q_lower = question.lower()
@@ -1249,22 +1473,21 @@ def chat(req: ChatRequest):
                     "options": clean_entities,
                 }
 
+        broad_list = _is_broad_list_question(question)
+        definition_question = _is_definition_question(question)
         top_k = max(1, min(req.top_k, 12))
+        retrieval_top_k = min(16, max(top_k, 12 if broad_list else 10 if definition_question else top_k))
 
         # Retrieval
-        retrieval_queries = [question]
-        if entity:
-            retrieval_queries.extend(
-                f"{variant} Orthodox saint biography life feast teachings martyr monk bishop"
-                for variant in _saint_query_variants(entity)
-            )
-            retrieval_queries.extend(_saint_query_variants(entity))
-
-        docs, metas = _retrieve_documents(retrieval_queries, top_k=top_k, entity=entity)
+        retrieval_queries = _build_retrieval_queries(question, entity=entity)
+        docs, metas = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
+        print("Retrieval queries:", retrieval_queries)
+        print("Retrieved chunk count:", len(docs))
 
         if not docs or not metas:
+            print("Response grounding status: no-source")
             return {
-                "answer": "I don't know based on the provided sources.",
+                "answer": "I could not find that in the loaded sources.",
                 "sources": [],
                 "entities": []
             }
@@ -1285,20 +1508,22 @@ def chat(req: ChatRequest):
 
         context = "\n\n".join(context_blocks)
 
-        history_text = "\n".join(
-            f"{m['role'].upper()}: {m['content']}"
-            for m in req.history[-6:]
-            if isinstance(m, dict) and "role" in m and "content" in m
-        )
+        history_text = _recent_history_text(req.history)
 
         system_prompt = """
 You are an Orthodox theology assistant.
 
 Rules:
 - Answer ONLY using the provided sources.
-- If the sources do not contain the answer, say:
-  "I don't know based on the provided sources."
+- Use conversation history to resolve pronouns and short follow-up references, but only answer from the provided source context.
+- If the sources contain no relevant information, say:
+  "I could not find that in the loaded sources."
+- If the sources partially answer the question, provide a cautious partial answer instead of refusing.
+- Do not say "I don't know" when the context supports a partial answer.
+- If the user asks for a list, extract all relevant entities found in the context. If the context may not be exhaustive, say "From the loaded sources, I found..." or "This may not be exhaustive."
+- If the sources mention a related fact but not enough for a complete answer, say what the sources mention and what they do not establish.
 - Do not include inline citations in the answer body.
+- Do not add a Sources section or raw source list at the bottom.
 - When listing items, ALWAYS use numbered format exactly like:
   1. Name
   2. Name
@@ -1316,6 +1541,9 @@ SELECTED ENTITY:
 NEW QUESTION:
 {question}
 
+ORIGINAL USER QUESTION:
+{original_question}
+
 SOURCES:
 {context}
 """
@@ -1330,6 +1558,8 @@ SOURCES:
         )
 
         answer = resp.choices[0].message.content or ""
+        if mode == "catechism":
+            answer = _append_catechism_followups(answer, original_question)
 
         items = re.findall(r"(?:\d+[\.\)]\s*)(.+)", answer)
 
@@ -1359,6 +1589,7 @@ SOURCES:
 
         print("Answer generated successfully.")
         print("Extracted entities:", clean_entities)
+        print("Response grounding status:", _response_grounding_status(answer, docs))
 
         return {
             "answer": answer,

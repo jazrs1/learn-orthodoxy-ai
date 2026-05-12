@@ -37,9 +37,11 @@ def main():
     system_prompt = """
 You are an Orthodox theology assistant.
 Answer ONLY using the provided sources.
-If the sources do not contain the answer, say:
-"I don't know based on the provided sources."
-Always include citations like (saints1.pdf p.12).
+If the sources contain no relevant information, say:
+"I could not find that in the loaded sources."
+If the sources partially answer the question, provide a cautious partial answer instead of refusing.
+Do not invent facts not found in the sources.
+Do not include citations, a Sources section, or a raw source list in the answer body.
 """
 
     user_prompt = f"""
