@@ -284,7 +284,7 @@ def _retrieve_documents(queries: List[str], top_k: int, entity: str | None = Non
     aggregated: List[tuple[str, Dict[str, Any]]] = []
     seen_docs = set()
 
-    for query in deduped_queries[:4]:
+    for query in deduped_queries[:8]:
         retrieved = collection.query(query_texts=[query], n_results=top_k)
         docs = retrieved.get("documents", [[]])[0]
         metas = retrieved.get("metadatas", [[]])[0]
@@ -381,9 +381,13 @@ def _extract_entity_from_history(history: list) -> str | None:
 
 def _question_has_followup_reference(question: str) -> bool:
     q = f" {question.lower()} "
-    if re.search(r"\b(?:he|his|him|she|her|hers|it|its|they|their|that|this)\b", q):
-        return True
-    return len(question.split()) <= 8
+    return bool(
+        re.search(
+            r"\b(?:he|his|him|she|her|hers|it|its|they|their|them|that|this)\b",
+            q,
+        )
+        or re.search(r"\b(?:that|this|the same)\s+(?:saint|church|monastery|one|person|place)\b", q)
+    )
 
 
 def _rewrite_question_with_history(question: str, history: list) -> Tuple[str, str | None]:
@@ -429,8 +433,11 @@ def _build_retrieval_queries(question: str, entity: str | None = None) -> List[s
         queries.extend(
             [
                 "apostolic fathers",
+                "early Christian writers connected to the apostles",
+                "Ignatius Polycarp Clement Barnabas Hermas",
                 "early church fathers",
                 "disciples of the apostles",
+                "disciples of the apostles early church fathers",
                 "first generations after the apostles",
             ]
         )
@@ -462,6 +469,191 @@ def _build_retrieval_queries(question: str, entity: str | None = None) -> List[s
         queries.extend(_saint_query_variants(entity))
 
     return queries
+
+
+RELEVANCE_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "give",
+    "how",
+    "in",
+    "is",
+    "it",
+    "list",
+    "me",
+    "of",
+    "on",
+    "or",
+    "show",
+    "tell",
+    "that",
+    "the",
+    "there",
+    "these",
+    "this",
+    "to",
+    "was",
+    "were",
+    "what",
+    "which",
+    "who",
+    "with",
+}
+
+
+def _normalized_match_text(value: str) -> str:
+    text = (value or "").lower()
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _question_keywords(question: str) -> List[str]:
+    normalized = _normalized_match_text(question)
+    words = [
+        word
+        for word in normalized.split()
+        if len(word) >= 3 and word not in RELEVANCE_STOPWORDS
+    ]
+    seen = set()
+    keywords: List[str] = []
+    for word in words:
+        if word in seen:
+            continue
+        seen.add(word)
+        keywords.append(word)
+    return keywords
+
+
+def _relevance_terms(question: str, entity: str | None = None) -> Tuple[List[str], List[str]]:
+    q_lower = question.lower()
+    phrases: List[str] = []
+    keywords = _question_keywords(question)
+
+    if entity:
+        phrases.append(entity)
+        keywords.extend(_question_keywords(entity))
+
+    if "apostolic father" in q_lower or "apostolic fathers" in q_lower:
+        phrases.extend(
+            [
+                "apostolic fathers",
+                "apostolic father",
+                "disciples of the apostles",
+                "early church fathers",
+                "first generations after the apostles",
+                "early christian writers",
+            ]
+        )
+        keywords.extend(["apostolic", "ignatius", "polycarp", "clement", "barnabas", "hermas"])
+
+    if "upper egypt" in q_lower and re.search(r"\bmonaster", q_lower):
+        phrases.extend(["upper egypt", "monasteries in upper egypt", "monastery in upper egypt"])
+        keywords.extend(["upper", "egypt", "monastery", "monasteries"])
+
+    seen_phrases = set()
+    clean_phrases: List[str] = []
+    for phrase in phrases:
+        normalized = _normalized_match_text(phrase)
+        if not normalized or normalized in seen_phrases:
+            continue
+        seen_phrases.add(normalized)
+        clean_phrases.append(normalized)
+
+    seen_keywords = set()
+    clean_keywords: List[str] = []
+    for keyword in keywords:
+        normalized = _normalized_match_text(keyword)
+        if not normalized or normalized in seen_keywords:
+            continue
+        seen_keywords.add(normalized)
+        clean_keywords.append(normalized)
+
+    return clean_phrases, clean_keywords
+
+
+def _is_relevant_chunk(doc: str, metadata: Dict[str, Any], question: str, entity: str | None = None) -> bool:
+    text = _normalized_match_text(
+        " ".join(
+            [
+                doc or "",
+                str((metadata or {}).get("title", "") or ""),
+                str((metadata or {}).get("pdf", "") or ""),
+            ]
+        )
+    )
+    if not text:
+        return False
+
+    phrases, keywords = _relevance_terms(question, entity=entity)
+    if any(phrase and phrase in text for phrase in phrases):
+        return True
+
+    q_lower = question.lower()
+    if "apostolic father" in q_lower or "apostolic fathers" in q_lower:
+        apostolic_hits = sum(1 for term in ["ignatius", "polycarp", "clement", "barnabas", "hermas"] if term in text)
+        return apostolic_hits >= 1 or ("apostolic" in text and "father" in text)
+
+    if "upper egypt" in q_lower and re.search(r"\bmonaster", q_lower):
+        return ("monaster" in text) and ("egypt" in text or "upper" in text)
+
+    if "abu fana" in q_lower:
+        return "abu fana" in text or "abu fam" in text or ("epiphanius" in text and "theodosius" in text)
+
+    if not keywords:
+        return True
+
+    hits = sum(1 for keyword in keywords if keyword in text)
+    required_hits = 1 if len(keywords) == 1 else 2
+    return hits >= required_hits
+
+
+def _filter_relevant_documents(
+    docs: List[str],
+    metas: List[Dict[str, Any]],
+    question: str,
+    entity: str | None = None,
+) -> Tuple[List[str], List[Dict[str, Any]], int]:
+    accepted_docs: List[str] = []
+    accepted_metas: List[Dict[str, Any]] = []
+    rejected_count = 0
+
+    for doc, meta in zip(docs, metas):
+        if _is_relevant_chunk(doc, meta, question, entity=entity):
+            accepted_docs.append(doc)
+            accepted_metas.append(meta)
+        else:
+            rejected_count += 1
+
+    return accepted_docs, accepted_metas, rejected_count
+
+
+def _log_retrieval_debug(
+    original_question: str,
+    rewritten_question: str,
+    entity: str | None,
+    docs: List[str],
+    metas: List[Dict[str, Any]],
+    accepted_count: int,
+    rejected_count: int,
+) -> None:
+    print("ORIGINAL_QUESTION:", original_question)
+    print("REWRITTEN_QUESTION:", rewritten_question)
+    print("RESOLVED_ENTITY:", entity)
+    print("RETRIEVED_CHUNK_COUNT:", len(docs))
+    top_sources = [_source_context_label(meta) for meta in metas[:3]]
+    print("TOP_CHUNK_TITLES_OR_SOURCES:", top_sources)
+    previews = [re.sub(r"\s+", " ", (doc or "")[:180]).strip() for doc in docs[:3]]
+    print("TOP_CHUNK_PREVIEWS:", previews)
+    print("RELEVANCE_ACCEPTED_COUNT:", accepted_count)
+    print("RELEVANCE_REJECTED_COUNT:", rejected_count)
 
 
 def _response_grounding_status(answer: str, docs: List[str]) -> str:
@@ -1408,7 +1600,7 @@ def chat(req: ChatRequest):
         clean_entities = []
 
         print("\n--- NEW REQUEST ---")
-        print("Original question:", original_question)
+        print("ORIGINAL_QUESTION:", original_question)
         print("Detected mode:", mode)
         print("History-resolved entity:", history_resolved_entity)
         print("History:", req.history)
@@ -1438,8 +1630,8 @@ def chat(req: ChatRequest):
             entity = last_list[match.group(1)]
             question = f"{entity} Orthodox saint biography life feast teachings martyr monk bishop"
 
-        print("Rewritten question:", question)
-        print("Resolved entity:", entity)
+        print("REWRITTEN_QUESTION:", question)
+        print("RESOLVED_ENTITY:", entity)
         print("Current last_list:", last_list)
 
         ambiguous_query = _extract_ambiguous_saint_query(question)
@@ -1482,15 +1674,59 @@ def chat(req: ChatRequest):
         retrieval_queries = _build_retrieval_queries(question, entity=entity)
         docs, metas = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
         print("Retrieval queries:", retrieval_queries)
-        print("Retrieved chunk count:", len(docs))
+        filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
+            docs,
+            metas,
+            question,
+            entity=entity,
+        )
 
         if not docs or not metas:
+            _log_retrieval_debug(original_question, question, entity, docs, metas, 0, 0)
             print("Response grounding status: no-source")
             return {
-                "answer": "I could not find that in the loaded sources.",
+                "answer": "I could not find enough about that in the loaded sources.",
                 "sources": [],
                 "entities": []
             }
+
+        if not filtered_docs:
+            retry_queries = _build_retrieval_queries(original_question, entity=entity)
+            retry_docs, retry_metas = _retrieve_documents(retry_queries, top_k=16, entity=entity)
+            retry_filtered_docs, retry_filtered_metas, retry_rejected_count = _filter_relevant_documents(
+                retry_docs,
+                retry_metas,
+                original_question if not entity else question,
+                entity=entity,
+            )
+            if retry_filtered_docs:
+                docs, metas = retry_docs, retry_metas
+                filtered_docs, filtered_metas = retry_filtered_docs, retry_filtered_metas
+                rejected_count = retry_rejected_count
+                print("Retry retrieval queries:", retry_queries)
+            else:
+                docs, metas = retry_docs or docs, retry_metas or metas
+                rejected_count = retry_rejected_count if retry_docs else rejected_count
+
+        _log_retrieval_debug(
+            original_question,
+            question,
+            entity,
+            docs,
+            metas,
+            len(filtered_docs),
+            rejected_count,
+        )
+
+        if not filtered_docs or not filtered_metas:
+            print("Response grounding status: no-source")
+            return {
+                "answer": "I could not find enough about that in the loaded sources.",
+                "sources": [],
+                "entities": []
+            }
+
+        docs, metas = filtered_docs, filtered_metas
 
         sources = [_source_from_metadata(m) for m in metas]
 
@@ -1508,7 +1744,7 @@ def chat(req: ChatRequest):
 
         context = "\n\n".join(context_blocks)
 
-        history_text = _recent_history_text(req.history)
+        history_text = _recent_history_text(req.history) if history_resolved_entity else ""
 
         system_prompt = """
 You are an Orthodox theology assistant.
@@ -1516,12 +1752,15 @@ You are an Orthodox theology assistant.
 Rules:
 - Answer ONLY using the provided sources.
 - Use conversation history to resolve pronouns and short follow-up references, but only answer from the provided source context.
+- Use only context that is relevant to the user's question. If provided context is unrelated to the user question, do not answer from it.
 - If the sources contain no relevant information, say:
-  "I could not find that in the loaded sources."
-- If the sources partially answer the question, provide a cautious partial answer instead of refusing.
+  "I could not find enough about that in the loaded sources."
+- If the relevant sources partially answer the question, provide a cautious partial answer instead of refusing.
 - Do not say "I don't know" when the context supports a partial answer.
 - If the user asks for a list, extract all relevant entities found in the context. If the context may not be exhaustive, say "From the loaded sources, I found..." or "This may not be exhaustive."
 - If the sources mention a related fact but not enough for a complete answer, say what the sources mention and what they do not establish.
+- Do not introduce saints, people, or places that are not relevant to the user's question.
+- Do not explain why an unrelated saint or entity is not part of the answer unless the user asked about that saint or entity.
 - Do not include inline citations in the answer body.
 - Do not add a Sources section or raw source list at the bottom.
 - When listing items, ALWAYS use numbered format exactly like:
