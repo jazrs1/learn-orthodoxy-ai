@@ -117,29 +117,24 @@ textarea {
 
 .logo-cross-o {
   position: relative;
-  display: inline-block;
-  width: 0.82em;
+  display: inline-grid;
+  place-items: center;
+  width: 0.94em;
+  height: 0.94em;
+  margin-right: 0.025em;
+  border: 0.075em solid currentColor;
+  border-radius: 50%;
   line-height: 1;
-  margin-right: 0.015em;
-  transform: translateY(0.02em);
+  transform: translateY(0.075em);
   flex: 0 0 auto;
 }
 
-.logo-o-letter {
+.logo-coptic-cross {
   display: block;
-  font: inherit;
-  line-height: 1;
-}
-
-.logo-cross-o img {
-  display: block;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0.66em;
-  height: 0.66em;
-  object-fit: contain;
-  transform: translate(-50%, -50%);
+  width: 52%;
+  height: 52%;
+  color: currentColor;
+  fill: currentColor;
 }
 
 .nav-link {
