@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 export default function Navbar() {
   const pathname = usePathname();
   const hasSidebarOffset = pathname === "/" || pathname === "/chat";
+  const showsMobileSidebarToggle = hasSidebarOffset || pathname === "/sources";
 
   function openMobileSidebar() {
     if (typeof window === "undefined") return;
@@ -16,7 +17,7 @@ export default function Navbar() {
   return (
     <header className="site-header">
       <nav className={`navbar ${hasSidebarOffset ? "navbar-sidebar-offset" : ""}`}>
-        {hasSidebarOffset ? (
+        {showsMobileSidebarToggle ? (
           <button
             type="button"
             className="mobile-sidebar-toggle navbar-sidebar-toggle"
