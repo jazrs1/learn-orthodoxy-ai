@@ -715,18 +715,12 @@ def _build_catechism_followups(question: str, answer: str) -> List[str]:
             "Would you like to ask what terms in this answer mean?",
         ]
 
-    return followups[:3]
+    return followups[:2]
 
 
-def _append_catechism_followups(answer: str, question: str) -> str:
-    if "You might also ask:" in answer:
-        return answer
+def _catechism_followup_options(answer: str, question: str) -> List[str]:
     followups = _build_catechism_followups(question, answer)
-    if not followups:
-        return answer
-    lines = ["You might also ask:"]
-    lines.extend(f"- {item}" for item in followups)
-    return answer.rstrip() + "\n\n" + "\n".join(lines)
+    return followups[:2]
 
 
 class ChatRequest(BaseModel):
@@ -1797,8 +1791,9 @@ SOURCES:
         )
 
         answer = resp.choices[0].message.content or ""
+        followup_options: List[str] = []
         if mode == "catechism":
-            answer = _append_catechism_followups(answer, original_question)
+            followup_options = _catechism_followup_options(answer, original_question)
 
         items = re.findall(r"(?:\d+[\.\)]\s*)(.+)", answer)
 
@@ -1834,7 +1829,7 @@ SOURCES:
             "answer": answer,
             "sources": unique_sources[:6],
             "entities": clean_entities,
-            "options": []
+            "options": followup_options
         }
 
     except HTTPException:

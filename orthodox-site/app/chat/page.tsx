@@ -142,6 +142,41 @@ function submitCatechismPrompt(prompt: string, setActiveTab: (tab: "chat" | "sai
   setActiveTab("chat");
 }
 
+function normalizeOptionText(option: string) {
+  return option
+    .trim()
+    .replace(/^You might also ask:\s*/i, "")
+    .replace(/^[-–—•]\s*/, "")
+    .trim();
+}
+
+function looksLikeQuestionOption(option: string) {
+  return (
+    option.includes("?") ||
+    /^(would|how|why|what|when|where|who|which|can|should|do|does|is|are)\b/i.test(option)
+  );
+}
+
+function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<string>) {
+  const saintOptions: string[] = [];
+  const questionOptions: string[] = [];
+  const seen = new Set<string>();
+
+  for (const option of options || []) {
+    const normalized = normalizeOptionText(option);
+    if (!normalized || seen.has(normalized.toLowerCase())) continue;
+    seen.add(normalized.toLowerCase());
+
+    if (isValidSaintName(normalized, saintLookup)) {
+      saintOptions.push(normalized);
+    } else if (looksLikeQuestionOption(normalized)) {
+      questionOptions.push(normalized);
+    }
+  }
+
+  return questionOptions.length ? questionOptions.slice(0, 2) : saintOptions;
+}
+
 function ChatPageContent() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
@@ -562,6 +597,17 @@ function ChatPageContent() {
     sendTextToInputAndSubmit(`search saint: ${trimmed}`);
   }, []);
 
+  const submitMessageOption = useCallback(
+    (option: string) => {
+      if (isValidSaintName(option, saintLookup)) {
+        submitSaintLookup(option);
+        return;
+      }
+      sendTextToInputAndSubmit(option);
+    },
+    [saintLookup, submitSaintLookup]
+  );
+
   const selectSaint = useCallback(
     (name: string) => {
       if (!isValidSaintName(name, saintLookup)) return;
@@ -666,24 +712,25 @@ function ChatPageContent() {
                                 entities={message.entities}
                                 saintLookup={saintLookup}
                               />
-                              {message.options && message.options.length > 0 ? (
-                                <div className="message-options">
-                                  <div className="message-options-list">
-                                    {Array.from(new Set(message.options.map((option) => option.trim())))
-                                      .filter((option) => isValidSaintName(option, saintLookup))
-                                      .map((option) => (
+                              {(() => {
+                                const options = visibleMessageOptions(message.options, saintLookup);
+                                return options.length > 0 ? (
+                                  <div className="message-options">
+                                    <div className="message-options-list">
+                                      {options.map((option) => (
                                         <button
                                           key={option}
                                           type="button"
                                           className="message-option-chip"
-                                          onClick={() => submitSaintLookup(option)}
+                                          onClick={() => submitMessageOption(option)}
                                         >
                                           {option}
                                         </button>
                                       ))}
+                                    </div>
                                   </div>
-                                </div>
-                              ) : null}
+                                ) : null;
+                              })()}
                             </>
                           )
                         ) : (

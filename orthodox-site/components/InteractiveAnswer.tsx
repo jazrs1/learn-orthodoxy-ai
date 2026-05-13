@@ -30,8 +30,8 @@ function parseBoldSegments(text: string): Segment[] {
 function handleNameClick(name: string) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(
-    new CustomEvent("chat:insertText", {
-      detail: name.trim(),
+    new CustomEvent("chat:insertAndSubmitText", {
+      detail: `search saint: ${name.trim()}`,
     })
   );
 }
