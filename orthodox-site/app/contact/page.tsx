@@ -77,7 +77,13 @@ export default function ContactPage() {
 
       <div className="section-heading left contact-heading">
         <h1>Contact</h1>
-        <p>Placeholder</p>
+        <p>
+          To ensure we provide precise and accurate faith education, we have restrained our model to reference the
+          sources listed on the Credits page. Please contact us with your feedback or questions.
+        </p>
+        <p>
+          We continue to fine-tune the model to ensure we provide rich Orthodox Christian faith education.
+        </p>
       </div>
 
       <form className="contact-form" onSubmit={handleSubmit}>
