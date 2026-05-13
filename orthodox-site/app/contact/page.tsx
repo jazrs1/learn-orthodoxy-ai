@@ -33,28 +33,36 @@ export default function ContactPage() {
 
     setState({ status: "sending", message: "Sending..." });
 
-    const response = await fetch("/api/contact", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: String(formData.get("name") || ""),
-        email: String(formData.get("email") || ""),
-        subject: String(formData.get("subject") || DEFAULT_SUBJECT),
-        message: String(formData.get("message") || ""),
-        company: String(formData.get("company") || ""),
-        captchaToken: String(formData.get("cf-turnstile-response") || ""),
-        startedAt,
-      }),
-    });
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: String(formData.get("name") || ""),
+          email: String(formData.get("email") || ""),
+          subject: String(formData.get("subject") || DEFAULT_SUBJECT),
+          message: String(formData.get("message") || ""),
+          company: String(formData.get("company") || ""),
+          captchaToken: String(formData.get("cf-turnstile-response") || ""),
+          startedAt,
+        }),
+      });
 
-    const result = (await response.json().catch(() => ({}))) as { error?: string };
+      const result = (await response.json().catch(() => ({}))) as { error?: string; message?: string };
 
-    if (!response.ok) {
+      if (!response.ok) {
+        setState({
+          status: "error",
+          message: result.message || result.error || "Unable to send message right now.",
+        });
+        return;
+      }
+    } catch {
       setState({
         status: "error",
-        message: result.error || "Unable to send message right now.",
+        message: "Unable to reach the contact service. Please try again.",
       });
       return;
     }
@@ -79,10 +87,8 @@ export default function ContactPage() {
         <h1>Contact</h1>
         <p>
           To ensure we provide precise and accurate faith education, we have restrained our model to reference the
-          sources listed on the Credits page. Please contact us with your feedback or questions.
-        </p>
-        <p>
-          We continue to fine-tune the model to ensure we provide rich Orthodox Christian faith education.
+          sources listed on the Credits page. Please contact us with your feedback or questions. We continue to
+          fine-tune the model to ensure we provide rich Orthodox Christian faith education.
         </p>
       </div>
 

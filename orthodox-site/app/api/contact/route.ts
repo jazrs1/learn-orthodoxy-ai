@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const DEFAULT_TO_EMAILS = ["johnazer07@gmail.com", "frjeromemaximous@gmail.com"];
 const DEFAULT_SUBJECT = "Learn Orthodoxy Contact";
 const MIN_SUBMIT_MS = 3500;
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-const RATE_LIMIT_MAX = 4;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 5;
 
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
@@ -20,6 +19,45 @@ type ContactPayload = {
   captchaToken?: string;
 };
 
+class ContactConfigError extends Error {
+  status = 500;
+
+  constructor(public code: string, message: string) {
+    super(message);
+  }
+}
+
+class EmailProviderError extends Error {
+  status = 502;
+
+  constructor(
+    message: string,
+    public resendStatus?: number,
+    public resendMessage?: string
+  ) {
+    super(message);
+  }
+}
+
+function logContactFailure(
+  event: string,
+  details: {
+    status: number;
+    reason: string;
+    ip?: string;
+    resendStatus?: number;
+    resendMessage?: string;
+    recipientCount?: number;
+    fromEmail?: string;
+  }
+) {
+  console.warn(event, details);
+}
+
+function contactError(error: string, message: string, status: number) {
+  return NextResponse.json({ error, message }, { status });
+}
+
 function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) return forwardedFor.split(",")[0]?.trim() || "unknown";
@@ -30,17 +68,27 @@ function getClientIp(request: Request) {
   );
 }
 
+function isLocalRequest(request: Request, ip: string) {
+  const hostname = new URL(request.url).hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1" || ip === "::1" || ip === "127.0.0.1";
+}
+
 function isRateLimited(ip: string) {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+
+  return Boolean(entry && entry.resetAt > now && entry.count >= RATE_LIMIT_MAX);
+}
+
+function recordSuccessfulSubmission(ip: string) {
   const now = Date.now();
   const entry = rateLimitStore.get(ip);
 
   if (!entry || entry.resetAt <= now) {
     rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
+    return;
   }
-
   entry.count += 1;
-  return entry.count > RATE_LIMIT_MAX;
 }
 
 function isValidEmail(email: string) {
@@ -75,13 +123,35 @@ function configuredRecipients() {
   const configured = process.env.CONTACT_TO_EMAILS?.split(",")
     .map((email) => email.trim())
     .filter(Boolean);
-  return configured?.length ? configured : DEFAULT_TO_EMAILS;
+  if (!configured?.length) {
+    throw new ContactConfigError("contact_recipients_missing", "Contact recipients are not configured.");
+  }
+  return configured;
+}
+
+function contactEmailConfig() {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey) {
+    throw new ContactConfigError("resend_api_key_missing", "Email service is not configured.");
+  }
+
+  if (!from) {
+    throw new ContactConfigError("contact_from_missing", "Contact sender email is not configured.");
+  }
+
+  return {
+    apiKey,
+    from,
+    to: configuredRecipients(),
+  };
 }
 
 async function verifyTurnstile(token: string, ip: string) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
-  if (!token) return false;
+  if (!secret) return { ok: true };
+  if (!token) return { ok: false, reason: "missing_token" };
 
   const body = new URLSearchParams({
     secret,
@@ -98,9 +168,14 @@ async function verifyTurnstile(token: string, ip: string) {
     cache: "no-store",
   });
 
-  if (!response.ok) return false;
-  const result = (await response.json()) as { success?: boolean };
-  return Boolean(result.success);
+  if (!response.ok) {
+    return { ok: false, reason: `turnstile_http_${response.status}` };
+  }
+  const result = (await response.json()) as { success?: boolean; "error-codes"?: string[] };
+  return {
+    ok: Boolean(result.success),
+    reason: result.success ? undefined : result["error-codes"]?.join(",") || "turnstile_rejected",
+  };
 }
 
 async function sendContactEmail({
@@ -118,13 +193,7 @@ async function sendContactEmail({
   ip: string;
   userAgent: string;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-  const to = configuredRecipients();
-
-  if (!apiKey || !from) {
-    throw new Error("Contact email is not configured.");
-  }
+  const { apiKey, from, to } = contactEmailConfig();
 
   const timestamp = new Date().toISOString();
   const safeSubject = subject || DEFAULT_SUBJECT;
@@ -168,19 +237,34 @@ async function sendContactEmail({
   });
 
   if (!response.ok) {
-    throw new Error("Unable to send contact email.");
+    const rawError = await response.text().catch(() => "");
+    let resendMessage = rawError;
+    try {
+      const data = JSON.parse(rawError) as { message?: string; error?: string };
+      resendMessage = data.message || data.error || rawError;
+    } catch {
+      resendMessage = rawError;
+    }
+
+    throw new EmailProviderError(
+      "The email service could not send the message.",
+      response.status,
+      resendMessage || "Resend request failed."
+    );
   }
+
+  return {
+    recipientCount: to.length,
+    fromEmail: from,
+  };
 }
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
   const userAgent = request.headers.get("user-agent") || "unknown";
+  const localRequest = isLocalRequest(request, ip);
 
   try {
-    if (isRateLimited(ip)) {
-      return NextResponse.json({ error: "Too many messages. Please try again later." }, { status: 429 });
-    }
-
     const payload = (await request.json().catch(() => ({}))) as ContactPayload;
     const name = (payload.name || "").trim();
     const email = (payload.email || "").trim();
@@ -191,52 +275,103 @@ export async function POST(request: Request) {
     const captchaToken = (payload.captchaToken || "").trim();
 
     if (honeypot) {
-      return NextResponse.json({ error: "Unable to send message." }, { status: 400 });
+      logContactFailure("CONTACT_VALIDATION_FAILED", { status: 400, reason: "honeypot_filled", ip });
+      return contactError("validation_failed", "Unable to send message.", 400);
     }
 
     if (!startedAt || Date.now() - startedAt < MIN_SUBMIT_MS) {
-      return NextResponse.json({ error: "Please take a little more time before sending." }, { status: 400 });
+      logContactFailure("CONTACT_VALIDATION_FAILED", { status: 400, reason: "submitted_too_fast", ip });
+      return contactError("validation_failed", "Please take a little more time before sending.", 400);
     }
 
     if (!name || name.length > 120) {
-      return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
+      logContactFailure("CONTACT_VALIDATION_FAILED", { status: 400, reason: "invalid_name", ip });
+      return contactError("validation_failed", "Please enter your name.", 400);
     }
 
     if (!isValidEmail(email) || email.length > 254) {
-      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+      logContactFailure("CONTACT_VALIDATION_FAILED", { status: 400, reason: "invalid_email", ip });
+      return contactError("validation_failed", "Please enter a valid email address.", 400);
     }
 
     if (subject.length > 160) {
-      return NextResponse.json({ error: "Please shorten the subject." }, { status: 400 });
+      logContactFailure("CONTACT_VALIDATION_FAILED", { status: 400, reason: "subject_too_long", ip });
+      return contactError("validation_failed", "Please shorten the subject.", 400);
     }
 
     if (message.length < 10 || message.length > 3000) {
-      return NextResponse.json(
-        { error: "Message must be between 10 and 3000 characters." },
-        { status: 400 }
-      );
+      logContactFailure("CONTACT_VALIDATION_FAILED", { status: 400, reason: "message_length", ip });
+      return contactError("validation_failed", "Message must be between 10 and 3000 characters.", 400);
     }
 
     if (countLinks(message) > 2 || hasSpamKeywords(`${subject}\n${message}`)) {
-      return NextResponse.json({ error: "Message could not be accepted." }, { status: 400 });
+      logContactFailure("CONTACT_VALIDATION_FAILED", { status: 400, reason: "spam_filter", ip });
+      return contactError("validation_failed", "Message could not be accepted.", 400);
     }
 
-    const captchaOk = await verifyTurnstile(captchaToken, ip);
-    if (!captchaOk) {
-      return NextResponse.json({ error: "Captcha verification failed." }, { status: 400 });
+    const captcha = await verifyTurnstile(captchaToken, ip);
+    if (!captcha.ok) {
+      logContactFailure("CONTACT_CAPTCHA_FAILED", {
+        status: 400,
+        reason: captcha.reason || "captcha_failed",
+        ip,
+      });
+      return contactError("captcha_failed", "Captcha verification failed. Please try again.", 400);
     }
 
     if (process.env.NODE_ENV === "production" && !process.env.TURNSTILE_SECRET_KEY) {
       console.warn("Contact form captcha is not configured. Set TURNSTILE_SECRET_KEY in Vercel.");
     }
 
-    await sendContactEmail({ name, email, subject, message, ip, userAgent });
+    contactEmailConfig();
+
+    if (!localRequest && isRateLimited(ip)) {
+      logContactFailure("CONTACT_RATE_LIMITED", { status: 429, reason: "rate_limit_exceeded", ip });
+      return contactError("rate_limited", "Too many messages. Please wait a few minutes and try again.", 429);
+    }
+
+    const result = await sendContactEmail({ name, email, subject, message, ip, userAgent });
+    if (!localRequest) {
+      recordSuccessfulSubmission(ip);
+    }
+    console.log("CONTACT_SUCCESS", {
+      status: 200,
+      recipientCount: result.recipientCount,
+      fromEmail: result.fromEmail,
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message =
-      error instanceof Error && error.message === "Contact email is not configured."
-        ? error.message
-        : "Unable to send message right now.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (error instanceof ContactConfigError) {
+      logContactFailure("CONTACT_RESEND_FAILED", {
+        status: error.status,
+        reason: error.code,
+        ip,
+        recipientCount: process.env.CONTACT_TO_EMAILS?.split(",").filter(Boolean).length || 0,
+        fromEmail: process.env.CONTACT_FROM_EMAIL || "",
+      });
+      return contactError("configuration_error", error.message, error.status);
+    }
+
+    if (error instanceof EmailProviderError) {
+      logContactFailure("CONTACT_RESEND_FAILED", {
+        status: error.status,
+        reason: "resend_rejected",
+        ip,
+        resendStatus: error.resendStatus,
+        resendMessage: error.resendMessage,
+        recipientCount: process.env.CONTACT_TO_EMAILS?.split(",").filter(Boolean).length || 0,
+        fromEmail: process.env.CONTACT_FROM_EMAIL || "",
+      });
+      return contactError("email_failed", "The email service could not send the message.", error.status);
+    }
+
+    logContactFailure("CONTACT_RESEND_FAILED", {
+      status: 500,
+      reason: error instanceof Error ? error.message : "unknown_error",
+      ip,
+      recipientCount: process.env.CONTACT_TO_EMAILS?.split(",").filter(Boolean).length || 0,
+      fromEmail: process.env.CONTACT_FROM_EMAIL || "",
+    });
+    return contactError("email_failed", "Unable to send message right now.", 500);
   }
 }

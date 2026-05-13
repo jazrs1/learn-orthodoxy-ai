@@ -727,9 +727,7 @@ textarea {
 }
 
 .message-options {
-  margin-top: 0.85rem;
-  padding-top: 0.7rem;
-  border-top: 1px solid rgba(58, 38, 22, 0.12);
+  margin-top: 0.9rem;
 }
 
 .message-options-label {
@@ -742,28 +740,33 @@ textarea {
 
 .message-options-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.45rem;
 }
 
 .message-option-chip {
-  display: inline-flex;
-  align-items: center;
+  display: inline;
   font-family: "Merriweather", serif;
-  padding: 0.38rem 0.62rem;
-  border-radius: 999px;
-  border: 1px solid rgba(58, 38, 22, 0.2);
-  background: rgba(58, 38, 22, 0.06);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--text);
-  font-size: 0.84rem;
-  line-height: 1;
+  font-size: inherit;
+  font-weight: 700;
+  line-height: inherit;
+  text-align: left;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease, opacity 0.2s ease;
 }
 
 .message-option-chip:hover {
-  background: rgba(58, 38, 22, 0.11);
-  border-color: rgba(58, 38, 22, 0.3);
+  color: var(--accent);
+  opacity: 0.76;
 }
 
 .chat-bottom-bar {
