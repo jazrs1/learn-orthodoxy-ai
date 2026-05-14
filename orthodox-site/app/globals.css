@@ -881,6 +881,15 @@ textarea {
   overflow-y: auto;
 }
 
+.catechism-inline-panel {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border: 1px solid rgba(58, 38, 22, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.46);
+  font-family: "Merriweather", serif;
+}
+
 .catechism-panel-copy {
   padding: 0.2rem 0.1rem 1rem;
   flex-shrink: 0;
@@ -890,7 +899,7 @@ textarea {
 .catechism-panel-title {
   margin: 0;
   font-family: "Merriweather", serif;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 400;
 }
 
@@ -919,6 +928,10 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+}
+
+.catechism-inline-panel .catechism-topic-list {
+  margin-top: 0.9rem;
 }
 
 .catechism-topic-group {
@@ -1011,6 +1024,11 @@ textarea {
 
 .catechism-prompt-card:hover {
   background: rgba(58, 38, 22, 0.035);
+}
+
+.catechism-inline-panel .catechism-prompt-card:hover {
+  background: transparent;
+  color: var(--accent);
 }
 
 .catechism-prompt-label {
@@ -1370,57 +1388,10 @@ textarea {
   color: #9b2f2f;
 }
 
-/* LANGUAGE */
-
-.floating-language-toggle {
-  position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
-  z-index: 120;
-}
-
-.floating-language-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.42rem 0.48rem 0.42rem 0.7rem;
-  border: 1px solid rgba(58, 38, 22, 0.16);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 24px rgba(58, 38, 22, 0.12);
-  backdrop-filter: blur(12px);
-}
-
-.floating-language-caption {
-  font-family: "Merriweather", serif;
-  color: var(--text-soft);
-  font-size: 0.78rem;
-}
-
-.floating-language-select {
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font-family: "Merriweather", serif;
-  font-size: 0.9rem;
-  cursor: pointer;
-  outline: none;
-}
-
-.floating-language-label:focus-within {
-  border-color: rgba(58, 38, 22, 0.3);
-  box-shadow: 0 0 0 3px rgba(58, 38, 22, 0.06), 0 10px 24px rgba(58, 38, 22, 0.12);
-}
-
 /* RTL */
 
 html[dir="rtl"] body {
   text-align: right;
-}
-
-html[dir="rtl"] .floating-language-toggle {
-  right: auto;
-  left: 1.25rem;
 }
 
 html[dir="rtl"] .navbar-sidebar-offset {
@@ -1778,27 +1749,6 @@ html[dir="rtl"] .navbar-sidebar-toggle {
     display: block;
   }
 
-  .floating-language-toggle {
-    right: 0.8rem;
-    bottom: 0.8rem;
-  }
-
-  body:has(.chat-page) .floating-language-toggle {
-    bottom: 5.75rem;
-  }
-
-  html[dir="rtl"] .floating-language-toggle {
-    left: 0.8rem;
-  }
-
-  .floating-language-label {
-    gap: 0.35rem;
-    padding: 0.36rem 0.42rem 0.36rem 0.56rem;
-  }
-
-  .floating-language-caption {
-    display: none;
-  }
 }
 
 @media (max-width: 380px) {

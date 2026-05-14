@@ -198,7 +198,7 @@ function mergeUniqueSaints(current: string[], next: string[]) {
 
 function submitCatechismPrompt(prompt: string, setActiveTab: (tab: "chat" | "saints" | "catechism") => void) {
   sendTextToInputAndSubmit(prompt);
-  setActiveTab("chat");
+  setActiveTab("catechism");
 }
 
 function normalizeOptionText(option: string) {
@@ -507,11 +507,13 @@ function ChatPageContent() {
       if (conversationId) {
         setActiveConversationId(conversationId);
       }
-      setActiveTab("chat");
       setConversationError("");
       submittingRef.current = true;
       setIsSending(true);
       const requestMode = activeTab;
+      if (activeTab === "saints") {
+        setActiveTab("chat");
+      }
 
       try {
         if (!conversationId) {
@@ -744,8 +746,42 @@ function ChatPageContent() {
             </div>
           </div>
 
-          {activeTab === "chat" ? (
+          {activeTab !== "saints" ? (
             <div className="chat-messages">
+              {activeTab === "catechism" ? (
+                <div className="catechism-inline-panel">
+                  <div className="catechism-panel-copy">
+                    <h2 className="catechism-panel-title">{t("catechismTopics")}</h2>
+                    <p className="catechism-panel-text">{t("catechismIntro")}</p>
+                  </div>
+                  <div className="catechism-topic-list">
+                    {catechismTopics.map((topic) => (
+                      <details key={topic.title} className="catechism-topic-group">
+                        <summary className="catechism-topic-summary">
+                          <span className="catechism-topic-summary-copy">
+                            <span className="catechism-topic-title">{topic.title}</span>
+                            <span className="catechism-topic-description">{topic.description}</span>
+                          </span>
+                          <span className="catechism-topic-chevron" aria-hidden="true" />
+                        </summary>
+                        <div className="catechism-prompt-grid">
+                          {topic.prompts.map((item) => (
+                            <button
+                              key={`${topic.title}-${item.label}`}
+                              type="button"
+                              className="catechism-prompt-card"
+                              onClick={() => submitCatechismPrompt(item.prompt, setActiveTab)}
+                            >
+                              <span className="catechism-prompt-label">{item.label}</span>
+                              <span className="catechism-prompt-text">{item.prompt}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {conversationError ? <div className="chat-empty-state">{conversationError}</div> : null}
               {conversationLoading ? <div className="chat-empty-state">{t("loadingChat")}</div> : null}
               {!conversationLoading && messages.length ? (
@@ -833,7 +869,7 @@ function ChatPageContent() {
                 <div className="chat-empty-state">{t("startByAsking")}</div>
               ) : null}
             </div>
-          ) : activeTab === "saints" ? (
+          ) : (
             <div className="saints-tab-panel">
               <div className="saints-tab-search">
                 <input
@@ -877,49 +913,13 @@ function ChatPageContent() {
                 ) : null}
               </div>
             </div>
-          ) : (
-            <div className="catechism-tab-panel">
-              <div className="catechism-panel-copy">
-                <h2 className="catechism-panel-title">{t("catechismTopics")}</h2>
-                <p className="catechism-panel-text">
-                  {t("catechismIntro")}
-                </p>
-              </div>
-              <div className="catechism-more-topics">
-                <div className="catechism-more-topics-label">{t("moreCatechismTopics")}</div>
-                <div className="catechism-topic-list">
-                  {catechismTopics.map((topic) => (
-                    <details key={topic.title} className="catechism-topic-group">
-                      <summary className="catechism-topic-summary">
-                        <span className="catechism-topic-summary-copy">
-                          <span className="catechism-topic-title">{topic.title}</span>
-                          <span className="catechism-topic-description">{topic.description}</span>
-                        </span>
-                        <span className="catechism-topic-chevron" aria-hidden="true" />
-                      </summary>
-                      <div className="catechism-prompt-grid">
-                        {topic.prompts.map((item) => (
-                          <button
-                            key={`${topic.title}-${item.label}`}
-                            type="button"
-                            className="catechism-prompt-card"
-                            onClick={() => submitCatechismPrompt(item.prompt, setActiveTab)}
-                          >
-                            <span className="catechism-prompt-label">{item.label}</span>
-                            <span className="catechism-prompt-text">{item.prompt}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </details>
-                  ))}
-                </div>
-              </div>
-            </div>
           )}
 
-          <div className="chat-bottom-bar">
-            <ChatShell initialValue={composerInitialValue} onSubmit={handleSendMessage} isSubmitting={isSending} />
-          </div>
+          {activeTab !== "saints" ? (
+            <div className="chat-bottom-bar">
+              <ChatShell initialValue={composerInitialValue} onSubmit={handleSendMessage} isSubmitting={isSending} />
+            </div>
+          ) : null}
         </section>
 
         <button

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import { LanguageProvider } from "../components/LanguageProvider";
-import LanguageToggle from "../components/LanguageToggle";
 
 const siteUrl = "https://learnorthodoxy.net";
 const siteDescription =
@@ -62,7 +61,6 @@ export default function RootLayout({
         <LanguageProvider>
           <Navbar />
           {children}
-          <LanguageToggle />
         </LanguageProvider>
       </body>
     </html>
