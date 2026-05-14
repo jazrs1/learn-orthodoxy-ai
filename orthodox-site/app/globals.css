@@ -1365,35 +1365,29 @@ textarea {
     max-width: var(--max-width);
     margin: 0 auto;
     min-height: 70px;
-    padding: 0.75rem 1rem 0.7rem;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    column-gap: 0.65rem;
-    row-gap: 0.45rem;
+    padding: 0.75rem;
   }
 
   .nav-brand {
-    flex: 1 1 calc(100% - 48px);
-    gap: 0.65rem;
+    flex: 0 1 auto;
+    gap: 0.5rem;
   }
 
   .nav-links {
-    flex: 0 0 100%;
-    justify-content: flex-start;
-    gap: 0.2rem;
+    gap: 0.08rem;
   }
 
   .nav-link {
-    padding: 0.5rem 0.55rem;
-    font-size: 0.92rem;
+    padding: 0.42rem 0.38rem;
+    font-size: 0.86rem;
   }
 
   .nav-cross {
-    width: 30px;
+    width: 28px;
   }
 
   .nav-title {
-    font-size: 1rem;
+    font-size: 0.95rem;
     white-space: nowrap;
   }
 
@@ -1531,6 +1525,12 @@ textarea {
 
   .mobile-sidebar-toggle {
     display: inline-flex;
+    width: 34px;
+    height: 34px;
+  }
+
+  .navbar-sidebar-toggle {
+    margin-right: 0.05rem;
   }
 
   .chat-page-title {
@@ -1622,5 +1622,37 @@ textarea {
 
   .credits-mobile-sidebar {
     display: block;
+  }
+}
+
+@media (max-width: 380px) {
+  .navbar {
+    padding: 0.68rem 0.45rem;
+  }
+
+  .nav-brand {
+    gap: 0.35rem;
+  }
+
+  .nav-cross {
+    width: 24px;
+  }
+
+  .nav-title {
+    font-size: 0.86rem;
+  }
+
+  .nav-links {
+    gap: 0;
+  }
+
+  .nav-link {
+    padding: 0.34rem 0.24rem;
+    font-size: 0.78rem;
+  }
+
+  .mobile-sidebar-toggle {
+    width: 30px;
+    height: 30px;
   }
 }
