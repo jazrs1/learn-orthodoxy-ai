@@ -31,7 +31,10 @@ function handleNameClick(name: string) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(
     new CustomEvent("chat:insertAndSubmitText", {
-      detail: `search saint: ${name.trim()}`,
+      detail: {
+        message: `search saint: ${name.trim()}`,
+        displayMessage: name.trim(),
+      },
     })
   );
 }

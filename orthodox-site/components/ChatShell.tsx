@@ -6,9 +6,28 @@ import { useLanguage } from "./LanguageProvider";
 
 type ChatShellProps = {
   initialValue?: string;
-  onSubmit?: (message: string) => void | Promise<void>;
+  onSubmit?: (message: string, options?: { displayMessage?: string }) => void | Promise<void>;
   isSubmitting?: boolean;
 };
+
+type ChatSubmitDetail = string | {
+  message?: string;
+  displayMessage?: string;
+};
+
+function normalizeSubmitDetail(detail: ChatSubmitDetail) {
+  if (typeof detail === "string") {
+    return {
+      message: detail.trim(),
+      displayMessage: "",
+    };
+  }
+
+  return {
+    message: (detail.message || "").trim(),
+    displayMessage: (detail.displayMessage || "").trim(),
+  };
+}
 
 export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = false }: ChatShellProps) {
   const [message, setMessage] = useState(initialValue);
@@ -34,13 +53,13 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
 
     function handleInsertAndSubmitText(event: Event) {
       if (isSubmitting) return;
-      const customEvent = event as CustomEvent<string>;
-      const nextText = (customEvent.detail || "").trim();
+      const customEvent = event as CustomEvent<ChatSubmitDetail>;
+      const { message: nextText, displayMessage } = normalizeSubmitDetail(customEvent.detail || "");
       if (!nextText) return;
 
       setMessage("");
       if (onSubmit) {
-        void onSubmit(nextText);
+        void onSubmit(nextText, displayMessage ? { displayMessage } : undefined);
       }
     }
 

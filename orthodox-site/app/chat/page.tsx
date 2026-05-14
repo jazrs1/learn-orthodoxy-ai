@@ -16,6 +16,7 @@ import {
   sendChatRequest,
 } from "../../lib/chat-client";
 import { ChatMessage, ConversationDetail, ConversationSummary } from "../../lib/chat-types";
+import { displaySaintName } from "../../lib/saint-display";
 
 type SaintsListResponse = {
   saints?: string[];
@@ -468,9 +469,10 @@ function ChatPageContent() {
   );
 
   const handleSendMessage = useCallback(
-    async (rawQuestion: string) => {
+    async (rawQuestion: string, options?: { displayMessage?: string }) => {
       const question = rawQuestion.trim();
       if (!question || submittingRef.current) return;
+      const displayQuestion = options?.displayMessage?.trim() || question;
 
       let conversationId = activeConversationId;
       if (!conversationId && createdConversationRef.current) {
@@ -484,7 +486,7 @@ function ChatPageContent() {
       const optimisticAssistantId = crypto.randomUUID();
       const nextMessages = [
         ...((currentConversation?.id === localConversationId ? currentConversation.messages : []) || []),
-        optimisticMessage(optimisticUserId, "user", question),
+        optimisticMessage(optimisticUserId, "user", displayQuestion),
         { ...optimisticMessage(optimisticAssistantId, "assistant", ""), isTyping: true },
       ];
 
@@ -531,8 +533,8 @@ function ChatPageContent() {
         }
 
         console.log("SAVE_USER_MESSAGE", { conversationId });
-        console.log("CALL_BACKEND", { conversationId, question, mode: requestMode, language });
-        const result = await sendChatRequest({ question, conversationId, mode: requestMode, language });
+        console.log("CALL_BACKEND", { conversationId, question, displayQuestion, mode: requestMode, language });
+        const result = await sendChatRequest({ question, displayQuestion, conversationId, mode: requestMode, language });
         handledChatRef.current = result.conversation.id;
         setIsDraftChat(false);
         console.log("SAVE_ASSISTANT_MESSAGE", {
@@ -660,8 +662,8 @@ function ChatPageContent() {
   const submitSaintLookup = useCallback((name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    sendTextToInputAndSubmit(`search saint: ${trimmed}`);
-  }, []);
+    void handleSendMessage(`search saint: ${trimmed}`, { displayMessage: displaySaintName(trimmed, language) });
+  }, [handleSendMessage, language]);
 
   const submitMessageOption = useCallback(
     (option: string) => {
@@ -791,7 +793,7 @@ function ChatPageContent() {
                                           className="message-option-chip"
                                           onClick={() => submitMessageOption(option)}
                                         >
-                                          {option}
+                                          {displaySaintName(option, language)}
                                         </button>
                                       ))}
                                     </div>
@@ -856,7 +858,7 @@ function ChatPageContent() {
                         className="saints-list-item"
                         onClick={() => selectSaint(name)}
                       >
-                        {name}
+                        {displaySaintName(name, language)}
                       </button>
                     ))
                   ) : (

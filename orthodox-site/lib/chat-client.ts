@@ -56,6 +56,7 @@ export async function deleteConversationRequest(conversationId: string) {
 
 export async function sendChatRequest(payload: {
   question: string;
+  displayQuestion?: string;
   conversationId?: string;
   mode?: "chat" | "saints" | "catechism";
   language?: Language;

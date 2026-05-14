@@ -16,6 +16,7 @@ type BackendChatResponse = {
 
 type ChatRequestBody = {
   question?: string;
+  displayQuestion?: string;
   conversationId?: string;
   mode?: "chat" | "saints" | "catechism";
   language?: Language;
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as ChatRequestBody;
     const question = body.question?.trim() || "";
+    const displayQuestion = body.displayQuestion?.trim() || question;
     const mode: ChatMode =
       body.mode === "saints" || body.mode === "catechism" ? body.mode : "chat";
     const language = normalizeLanguage(body.language);
@@ -115,7 +117,7 @@ export async function POST(request: Request) {
     const saved = await saveChatTurn({
       sessionId,
       conversationId: body.conversationId,
-      question,
+      question: displayQuestion,
       assistantMessage: normalizeAssistantMessage(assistantPayload),
     });
 
