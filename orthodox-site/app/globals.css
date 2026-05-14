@@ -73,6 +73,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 0.8rem;
+  min-width: 0;
 }
 
 .nav-cross {
@@ -92,6 +93,7 @@ textarea {
   border-radius: 999px;
   color: var(--text-soft);
   font-family: "Merriweather", serif;
+  white-space: nowrap;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -1381,6 +1383,9 @@ textarea {
 
   .nav-title {
     font-size: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .home-layout,
