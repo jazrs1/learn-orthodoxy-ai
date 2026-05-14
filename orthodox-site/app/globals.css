@@ -1516,11 +1516,27 @@ html[dir="rtl"] .navbar-sidebar-toggle {
     padding: 1rem;
   }
 
+  html[dir="rtl"] .navbar-sidebar-offset {
+    padding: 0.75rem;
+  }
+
+  html[dir="rtl"] .home-layout {
+    padding: 1rem;
+  }
+
+  html[dir="rtl"] .chat-layout {
+    padding: 0.75rem;
+  }
+
   .home-layout {
     padding-top: 0.3rem;
     min-height: auto;
     height: auto;
     display: block;
+  }
+
+  html[dir="rtl"] .home-layout {
+    padding-top: 0.3rem;
   }
 
   .chat-layout {
@@ -1628,6 +1644,12 @@ html[dir="rtl"] .navbar-sidebar-toggle {
     max-width: 100%;
     width: 100%;
     margin: 0 auto;
+  }
+
+  html[dir="rtl"] .hero,
+  html[dir="rtl"] .chat-window {
+    width: 100%;
+    max-width: 100%;
   }
 
   .chat-window-header {
@@ -1777,6 +1799,10 @@ html[dir="rtl"] .navbar-sidebar-toggle {
 
 @media (max-width: 380px) {
   .navbar {
+    padding: 0.68rem 0.45rem;
+  }
+
+  html[dir="rtl"] .navbar-sidebar-offset {
     padding: 0.68rem 0.45rem;
   }
 
