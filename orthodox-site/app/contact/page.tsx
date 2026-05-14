@@ -4,10 +4,12 @@ import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import ChatSidebar from "../../components/ChatSidebar";
+import { useLanguage } from "../../components/LanguageProvider";
 import { deleteConversationRequest, fetchConversationList } from "../../lib/chat-client";
 import type { ConversationSummary } from "../../lib/chat-types";
 
 const DEFAULT_SUBJECT = "Learn Orthodoxy Contact";
+const AR_DEFAULT_SUBJECT = "تواصل مع تعلّم الأرثوذكسية";
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
 type SubmitState = {
@@ -16,6 +18,7 @@ type SubmitState = {
 };
 
 export default function ContactPage() {
+  const { language, t } = useLanguage();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -26,12 +29,19 @@ export default function ContactPage() {
   const router = useRouter();
   const isSending = state.status === "sending";
   const captchaEnabled = Boolean(turnstileSiteKey);
+  const defaultSubject = t("contactDefaultSubject");
 
   const statusClassName = useMemo(() => {
     if (state.status === "success") return "contact-status contact-status-success";
     if (state.status === "error") return "contact-status contact-status-error";
     return "contact-status";
   }, [state.status]);
+
+  useEffect(() => {
+    setSubject((current) =>
+      current === DEFAULT_SUBJECT || current === AR_DEFAULT_SUBJECT ? defaultSubject : current
+    );
+  }, [defaultSubject]);
 
   useEffect(() => {
     function handleOpenSidebar() {
@@ -68,7 +78,7 @@ export default function ContactPage() {
         }
       } catch (loadError) {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : "Unable to load chats.");
+          setError(loadError instanceof Error ? loadError.message : t("unableToLoadChats"));
         }
       } finally {
         if (!cancelled) {
@@ -81,7 +91,7 @@ export default function ContactPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   function openSession(sessionId: string) {
     setMobileSidebarOpen(false);
@@ -98,7 +108,7 @@ export default function ContactPage() {
       await deleteConversationRequest(sessionId);
       setConversations((prev) => prev.filter((conversation) => conversation.id !== sessionId));
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete chat.");
+      setError(deleteError instanceof Error ? deleteError.message : t("unableToDeleteChat"));
     }
   }
 
@@ -109,7 +119,7 @@ export default function ContactPage() {
     const form = event.currentTarget;
     const formData = new FormData(form);
 
-    setState({ status: "sending", message: "Sending..." });
+    setState({ status: "sending", message: t("sending") });
 
     try {
       const response = await fetch("/api/contact", {
@@ -120,7 +130,7 @@ export default function ContactPage() {
         body: JSON.stringify({
           name: String(formData.get("name") || ""),
           email: String(formData.get("email") || ""),
-          subject: String(formData.get("subject") || DEFAULT_SUBJECT),
+          subject: String(formData.get("subject") || defaultSubject),
           message: String(formData.get("message") || ""),
           company: String(formData.get("company") || ""),
           captchaToken: String(formData.get("cf-turnstile-response") || ""),
@@ -133,21 +143,21 @@ export default function ContactPage() {
       if (!response.ok) {
         setState({
           status: "error",
-          message: result.message || result.error || "Unable to send message right now.",
+          message: result.message || result.error || t("unableToSend"),
         });
         return;
       }
     } catch {
       setState({
         status: "error",
-        message: "Unable to reach the contact service. Please try again.",
+        message: t("unableToReachContact"),
       });
       return;
     }
 
     form.reset();
-    setSubject(DEFAULT_SUBJECT);
-    setState({ status: "success", message: "Message sent." });
+    setSubject(defaultSubject);
+    setState({ status: "success", message: t("messageSent") });
   }
 
   return (
@@ -163,27 +173,25 @@ export default function ContactPage() {
         ) : null}
 
         <div className="section-heading left contact-heading">
-          <h1>Contact</h1>
+          <h1>{t("contact")}</h1>
           <p>
-            To ensure we provide precise and accurate faith education, we have restrained our model to reference the
-            sources listed on the Credits page. Please contact us with your feedback or questions. We continue to
-            fine-tune the model to ensure we provide rich Orthodox Christian faith education.
+            {t("contactIntro")}
           </p>
         </div>
 
         <form className="contact-form" onSubmit={handleSubmit}>
           <div className="contact-field">
-            <label htmlFor="contact-name">Name</label>
-            <input id="contact-name" name="name" type="text" autoComplete="name" required maxLength={120} />
+            <label htmlFor="contact-name">{t("name")}</label>
+            <input id="contact-name" name="name" type="text" autoComplete="name" required maxLength={120} dir={language === "ar" ? "rtl" : "ltr"} />
           </div>
 
           <div className="contact-field">
-            <label htmlFor="contact-email">Email</label>
-            <input id="contact-email" name="email" type="email" autoComplete="email" required maxLength={254} />
+            <label htmlFor="contact-email">{t("email")}</label>
+            <input id="contact-email" name="email" type="email" autoComplete="email" required maxLength={254} dir="ltr" />
           </div>
 
           <div className="contact-field">
-            <label htmlFor="contact-subject">Subject</label>
+            <label htmlFor="contact-subject">{t("subject")}</label>
             <input
               id="contact-subject"
               name="subject"
@@ -191,11 +199,12 @@ export default function ContactPage() {
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
               maxLength={160}
+              dir={language === "ar" ? "rtl" : "ltr"}
             />
           </div>
 
           <div className="contact-field">
-            <label htmlFor="contact-message">Message</label>
+            <label htmlFor="contact-message">{t("message")}</label>
             <textarea
               id="contact-message"
               name="message"
@@ -203,6 +212,7 @@ export default function ContactPage() {
               minLength={10}
               maxLength={3000}
               rows={7}
+              dir={language === "ar" ? "rtl" : "ltr"}
             />
           </div>
 
@@ -219,7 +229,7 @@ export default function ContactPage() {
 
           <div className="contact-actions">
             <button type="submit" className="contact-submit" disabled={isSending}>
-              {isSending ? "Sending..." : "Send Message"}
+              {isSending ? t("sending") : t("sendMessage")}
             </button>
             {state.message ? <div className={statusClassName}>{state.message}</div> : null}
           </div>
@@ -231,7 +241,7 @@ export default function ContactPage() {
           type="button"
           className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
-          aria-label="Close chats panel"
+          aria-label={t("closeChatsPanel")}
         />
         <ChatSidebar
           sessions={conversations}

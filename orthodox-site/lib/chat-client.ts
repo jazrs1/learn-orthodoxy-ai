@@ -1,4 +1,5 @@
 import { ChatMessage, ConversationDetail, ConversationSummary } from "./chat-types";
+import { Language } from "./i18n";
 
 type ConversationsResponse = {
   conversations: ConversationSummary[];
@@ -57,6 +58,7 @@ export async function sendChatRequest(payload: {
   question: string;
   conversationId?: string;
   mode?: "chat" | "saints" | "catechism";
+  language?: Language;
 }) {
   const response = await fetch("/api/chat", {
     method: "POST",

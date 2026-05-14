@@ -3,6 +3,7 @@ import { getOrCreateAnonymousSessionId } from "../../../lib/chat-auth";
 import { getRecentHistory, saveChatTurn } from "../../../lib/conversations";
 import { getDatabaseConfigError } from "../../../lib/db";
 import { ChatMessage, SourceRef } from "../../../lib/chat-types";
+import { Language, normalizeLanguage } from "../../../lib/i18n";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,7 @@ type ChatRequestBody = {
   question?: string;
   conversationId?: string;
   mode?: "chat" | "saints" | "catechism";
+  language?: Language;
 };
 
 type ChatMode = "chat" | "saints" | "catechism";
@@ -52,6 +54,7 @@ export async function POST(request: Request) {
     const question = body.question?.trim() || "";
     const mode: ChatMode =
       body.mode === "saints" || body.mode === "catechism" ? body.mode : "chat";
+    const language = normalizeLanguage(body.language);
 
     if (!question) {
       const badRequest = NextResponse.json({ error: "Question is required." }, { status: 400 });
@@ -86,6 +89,7 @@ export async function POST(request: Request) {
         history,
         top_k: 8,
         mode,
+        language,
       }),
       cache: "no-store",
       signal: AbortSignal.timeout(20000),

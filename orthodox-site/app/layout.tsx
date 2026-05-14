@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "../components/Navbar";
+import { LanguageProvider } from "../components/LanguageProvider";
+import LanguageToggle from "../components/LanguageToggle";
 
 const siteUrl = "https://learnorthodoxy.net";
 const siteDescription =
@@ -55,10 +57,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" dir="ltr">
       <body>
-        <Navbar />
-        {children}
+        <LanguageProvider>
+          <Navbar />
+          {children}
+          <LanguageToggle />
+        </LanguageProvider>
       </body>
     </html>
   );

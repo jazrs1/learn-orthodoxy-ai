@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "./LanguageProvider";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const hasSidebarOffset = pathname === "/" || pathname === "/chat";
   const showsMobileSidebarToggle = hasSidebarOffset || pathname === "/sources" || pathname === "/contact";
 
@@ -22,7 +24,7 @@ export default function Navbar() {
             type="button"
             className="mobile-sidebar-toggle navbar-sidebar-toggle"
             onClick={openMobileSidebar}
-            aria-label="Open chats panel"
+            aria-label={t("openChatsPanel")}
           >
             <span />
             <span />
@@ -39,18 +41,18 @@ export default function Navbar() {
             className="nav-cross"
             priority
           />
-          <span className="nav-title">Learn Orthodoxy</span>
+          <span className="nav-title">{t("appName")}</span>
         </Link>
 
         <div className="nav-links">
           <Link href="/" className="nav-link">
-            Home
+            {t("home")}
           </Link>
           <Link href="/sources" className="nav-link">
-            Credits
+            {t("credits")}
           </Link>
           <Link href="/contact" className="nav-link">
-            Contact
+            {t("contact")}
           </Link>
         </div>
       </nav>

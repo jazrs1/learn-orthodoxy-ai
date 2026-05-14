@@ -6,6 +6,7 @@ import Image from "next/image";
 import ChatShell from "../../components/ChatShell";
 import ChatSidebar from "../../components/ChatSidebar";
 import InteractiveAnswer from "../../components/InteractiveAnswer";
+import { useLanguage } from "../../components/LanguageProvider";
 import { buildSaintLookup, isValidSaintName } from "../../components/saintNameUtils";
 import {
   createConversationRequest,
@@ -94,6 +95,63 @@ const CATECHISM_TOPICS: CatechismTopic[] = [
   },
 ];
 
+const CATECHISM_TOPICS_AR: CatechismTopic[] = [
+  {
+    title: "الصلاة",
+    description: "الصلاة اليومية والعبادة والحياة الداخلية مع الله.",
+    prompts: [
+      { label: "الصلاة", prompt: "لماذا الصلاة مهمة في الحياة القبطية الأرثوذكسية؟" },
+      { label: "الصلاة الربانية", prompt: "كيف تشرح الكنيسة القبطية الأرثوذكسية الصلاة الربانية؟" },
+      { label: "قانون الصلاة", prompt: "ما إرشاد الكنيسة القبطية الأرثوذكسية لقانون صلاة يومي؟" },
+    ],
+  },
+  {
+    title: "الخلاص",
+    description: "النعمة والتوبة والإيمان والحياة في المسيح.",
+    prompts: [
+      { label: "الخلاص", prompt: "ماذا تعلّم الكنيسة القبطية الأرثوذكسية عن الخلاص؟" },
+      { label: "الإيمان", prompt: "كيف تشرح الكنيسة القبطية الأرثوذكسية الإيمان والأعمال في الخلاص؟" },
+      { label: "الصليب", prompt: "لماذا الصليب أساسي في التعليم القبطي الأرثوذكسي عن الخلاص؟" },
+    ],
+  },
+  {
+    title: "الأسرار",
+    description: "أسرار الكنيسة وكيف ننال النعمة.",
+    prompts: [
+      { label: "الأسرار", prompt: "ما هي الأسرار السبعة في الكنيسة القبطية الأرثوذكسية؟" },
+      { label: "الإفخارستيا", prompt: "ماذا تعلّم الكنيسة القبطية الأرثوذكسية عن الإفخارستيا؟" },
+      { label: "المعمودية", prompt: "لماذا المعمودية ضرورية بحسب الكنيسة القبطية الأرثوذكسية؟" },
+    ],
+  },
+  {
+    title: "التوبة",
+    description: "الاعتراف والجهاد الروحي والرجوع إلى الله.",
+    prompts: [
+      { label: "الاعتراف", prompt: "ماذا تعلّم الكنيسة القبطية الأرثوذكسية عن الاعتراف والتوبة؟" },
+      { label: "التوبة", prompt: "ما علامات التوبة الحقيقية في التعليم القبطي الأرثوذكسي؟" },
+      { label: "التجربة", prompt: "كيف يتعامل الإنسان مع السقوط المتكرر في نفس الخطية؟" },
+    ],
+  },
+  {
+    title: "الكنيسة",
+    description: "طبيعة الكنيسة والتقليد والانتماء إلى جسد المسيح.",
+    prompts: [
+      { label: "الكنيسة", prompt: "ماذا تعلّم الكنيسة القبطية الأرثوذكسية عن الكنيسة نفسها؟" },
+      { label: "التقليد", prompt: "لماذا التقليد المقدس مهم في الكنيسة القبطية الأرثوذكسية؟" },
+      { label: "القديسون", prompt: "كيف تشرح الكنيسة القبطية الأرثوذكسية الشركة مع القديسين؟" },
+    ],
+  },
+  {
+    title: "الصوم",
+    description: "تدريب نسكي وضبط للنفس واستعداد للقداسة.",
+    prompts: [
+      { label: "الصوم", prompt: "لماذا تهتم الكنيسة القبطية الأرثوذكسية بالصوم بهذا الشكل؟" },
+      { label: "الهدف", prompt: "ما الهدف الروحي من الصوم في الكنيسة القبطية الأرثوذكسية؟" },
+      { label: "الصلاة", prompt: "كيف يرتبط الصوم بالصلاة والتوبة؟" },
+    ],
+  },
+];
+
 function sendTextToInputAndSubmit(text: string) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(
@@ -146,6 +204,7 @@ function normalizeOptionText(option: string) {
   return option
     .trim()
     .replace(/^You might also ask:\s*/i, "")
+    .replace(/^يمكنك أيضًا أن تسأل[:：]\s*/i, "")
     .replace(/^[-–—•]\s*/, "")
     .trim();
 }
@@ -153,6 +212,8 @@ function normalizeOptionText(option: string) {
 function looksLikeQuestionOption(option: string) {
   return (
     option.includes("?") ||
+    option.includes("؟") ||
+    /^(هل|كيف|لماذا|ما|ماذا|متى|أين|من)\b/i.test(option) ||
     /^(would|how|why|what|when|where|who|which|can|should|do|does|is|are)\b/i.test(option)
   );
 }
@@ -178,6 +239,7 @@ function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<s
 }
 
 function ChatPageContent() {
+  const { language, t } = useLanguage();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [conversationsError, setConversationsError] = useState("");
@@ -210,6 +272,10 @@ function ChatPageContent() {
 
   const saintLookup = useMemo(() => buildSaintLookup(saints), [saints]);
   const messages = useMemo(() => currentConversation?.messages || [], [currentConversation]);
+  const catechismTopics = useMemo(
+    () => (language === "ar" ? CATECHISM_TOPICS_AR : CATECHISM_TOPICS),
+    [language]
+  );
   const latestUserMessageId = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       if (messages[index].role === "user") return messages[index].id;
@@ -226,12 +292,12 @@ function ChatPageContent() {
       setConversations(nextConversations);
       return nextConversations;
     } catch (error) {
-      setConversationsError(error instanceof Error ? error.message : "Unable to load chats.");
+      setConversationsError(error instanceof Error ? error.message : t("unableToLoadChats"));
       return [];
     } finally {
       setConversationsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadConversationDetail = useCallback(async (conversationId: string) => {
     try {
@@ -242,12 +308,12 @@ function ChatPageContent() {
       setActiveConversationId(conversation.id);
       return conversation;
     } catch (error) {
-      setConversationError(error instanceof Error ? error.message : "Unable to load chat.");
+      setConversationError(error instanceof Error ? error.message : t("unableToLoadChat"));
       return null;
     } finally {
       setConversationLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadConversationList();
@@ -312,13 +378,13 @@ function ChatPageContent() {
         setSaintsTotal(typeof data.total === "number" ? data.total : nextNames.length);
         setSaintsError("");
       } catch (error) {
-        setSaintsError(error instanceof Error ? error.message : "Unable to load saints list.");
+        setSaintsError(error instanceof Error ? error.message : t("unableToLoadChats"));
       } finally {
         saintsLoadingRef.current = false;
         setSaintsLoading(false);
       }
     },
-    [saintSearch]
+    [saintSearch, t]
   );
 
   useEffect(() => {
@@ -395,10 +461,10 @@ function ChatPageContent() {
           setCurrentConversation(null);
         }
       } catch (error) {
-        setConversationsError(error instanceof Error ? error.message : "Unable to delete chat.");
+        setConversationsError(error instanceof Error ? error.message : t("unableToDeleteChat"));
       }
     },
-    [activeConversationId]
+    [activeConversationId, t]
   );
 
   const handleSendMessage = useCallback(
@@ -429,7 +495,7 @@ function ChatPageContent() {
           ? { ...prev, messages: nextMessages }
           : {
               id: localConversationId,
-              title: prev?.title || "New Chat",
+              title: prev?.title || t("newChat"),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               messages: nextMessages,
@@ -465,8 +531,8 @@ function ChatPageContent() {
         }
 
         console.log("SAVE_USER_MESSAGE", { conversationId });
-        console.log("CALL_BACKEND", { conversationId, question, mode: requestMode });
-        const result = await sendChatRequest({ question, conversationId, mode: requestMode });
+        console.log("CALL_BACKEND", { conversationId, question, mode: requestMode, language });
+        const result = await sendChatRequest({ question, conversationId, mode: requestMode, language });
         handledChatRef.current = result.conversation.id;
         setIsDraftChat(false);
         console.log("SAVE_ASSISTANT_MESSAGE", {
@@ -506,7 +572,7 @@ function ChatPageContent() {
         setIsSending(false);
       }
     },
-    [activeConversationId, activeTab, currentConversation, router]
+    [activeConversationId, activeTab, currentConversation, language, router, t]
   );
 
   useEffect(() => {
@@ -628,9 +694,9 @@ function ChatPageContent() {
         setCopiedMessageId((current) => (current === messageId ? "" : current));
       }, 1800);
     } catch {
-      setConversationError("Copy failed. Please try again.");
+      setConversationError(t("copyFailed"));
     }
-  }, []);
+  }, [t]);
 
   return (
     <main className="chat-page">
@@ -639,14 +705,14 @@ function ChatPageContent() {
           <div className="chat-window-header">
             <div className="chat-window-top">
               <div className="chat-window-title-wrap">
-                <h1 className="chat-page-title">Learn Orthodoxy</h1>
+                <h1 className="chat-page-title">{t("appName")}</h1>
                 <p className="chat-page-subtitle">
-                  Ask questions about Orthodox saints and Coptic Orthodox catechism.
+                  {t("heroSubtitle")}
                 </p>
               </div>
               <div className="chat-header-actions">
                 <button type="button" className="chat-header-btn chat-close-page-btn" onClick={() => router.push("/")}>
-                  Close
+                  {t("close")}
                 </button>
               </div>
             </div>
@@ -657,21 +723,21 @@ function ChatPageContent() {
                 className={`chat-tab ${activeTab === "chat" ? "chat-tab-active" : ""}`}
                 onClick={() => setActiveTab("chat")}
               >
-                Chat
+                {t("chat")}
               </button>
               <button
                 type="button"
                 className={`chat-tab ${activeTab === "saints" ? "chat-tab-active" : ""}`}
                 onClick={() => setActiveTab("saints")}
               >
-                Saints Search
+                {t("saintsSearch")}
               </button>
               <button
                 type="button"
                 className={`chat-tab ${activeTab === "catechism" ? "chat-tab-active" : ""}`}
                 onClick={() => setActiveTab("catechism")}
               >
-                Catechism
+                {t("catechism")}
               </button>
             </div>
           </div>
@@ -679,7 +745,7 @@ function ChatPageContent() {
           {activeTab === "chat" ? (
             <div className="chat-messages">
               {conversationError ? <div className="chat-empty-state">{conversationError}</div> : null}
-              {conversationLoading ? <div className="chat-empty-state">Loading chat...</div> : null}
+              {conversationLoading ? <div className="chat-empty-state">{t("loadingChat")}</div> : null}
               {!conversationLoading && messages.length ? (
                 messages.map((message) => (
                   <div
@@ -697,6 +763,7 @@ function ChatPageContent() {
                         className={`message-bubble ${
                           message.role === "user" ? "user-bubble" : "assistant-bubble"
                         }`}
+                        dir="auto"
                       >
                         {message.role === "assistant" ? (
                           message.isTyping ? (
@@ -743,8 +810,8 @@ function ChatPageContent() {
                             type="button"
                             className="message-action-btn"
                             onClick={() => void copyMessage(message.id, message.content)}
-                            aria-label={copiedMessageId === message.id ? "Copied" : "Copy message"}
-                            title={copiedMessageId === message.id ? "Copied" : "Copy"}
+                            aria-label={copiedMessageId === message.id ? t("copied") : t("copyMessage")}
+                            title={copiedMessageId === message.id ? t("copied") : t("copy")}
                           >
                             <Image
                               src={copiedMessageId === message.id ? "/icons/checkmark.svg" : "/icons/copy.svg"}
@@ -761,7 +828,7 @@ function ChatPageContent() {
                   </div>
                 ))
               ) : !conversationLoading && !conversationError ? (
-                <div className="chat-empty-state">Start by asking a question below.</div>
+                <div className="chat-empty-state">{t("startByAsking")}</div>
               ) : null}
             </div>
           ) : activeTab === "saints" ? (
@@ -772,12 +839,13 @@ function ChatPageContent() {
                   className="saints-search-input"
                   value={saintSearch}
                   onChange={(event) => setSaintSearch(event.target.value)}
-                  placeholder="Search saints..."
+                  placeholder={t("searchSaints")}
+                  dir={language === "ar" ? "rtl" : "ltr"}
                 />
               </div>
 
               <div className="saints-list-shell" ref={saintsListRef}>
-                {saintsLoading ? <div className="chat-empty-state">Loading saints...</div> : null}
+                {saintsLoading ? <div className="chat-empty-state">{t("loadingSaints")}</div> : null}
                 {saintsError ? <div className="chat-empty-state">{saintsError}</div> : null}
                 {!saintsLoading && !saintsError ? (
                   saints.length > 0 ? (
@@ -792,7 +860,7 @@ function ChatPageContent() {
                       </button>
                     ))
                   ) : (
-                    <div className="chat-empty-state">No saints found for that search.</div>
+                    <div className="chat-empty-state">{t("noResultsFound")}</div>
                   )
                 ) : null}
                 {!saintsError && hasMoreSaints ? (
@@ -802,7 +870,7 @@ function ChatPageContent() {
                     onClick={() => void loadSaintsPage({ query: saintSearch, offset: saints.length })}
                     disabled={saintsLoading}
                   >
-                    {saintsLoading ? "Loading..." : `Load more saints (${saints.length}/${saintsTotal})`}
+                    {saintsLoading ? `${t("loading")}...` : `${t("loadMoreSaints")} (${saints.length}/${saintsTotal})`}
                   </button>
                 ) : null}
               </div>
@@ -810,16 +878,15 @@ function ChatPageContent() {
           ) : (
             <div className="catechism-tab-panel">
               <div className="catechism-panel-copy">
-                <h2 className="catechism-panel-title">Catechism Topics</h2>
+                <h2 className="catechism-panel-title">{t("catechismTopics")}</h2>
                 <p className="catechism-panel-text">
-                  Ask focused questions from the catechism volumes on doctrine, prayer,
-                  sacraments, repentance, and Christian life.
+                  {t("catechismIntro")}
                 </p>
               </div>
               <div className="catechism-more-topics">
-                <div className="catechism-more-topics-label">More topics for catechism</div>
+                <div className="catechism-more-topics-label">{t("moreCatechismTopics")}</div>
                 <div className="catechism-topic-list">
-                  {CATECHISM_TOPICS.map((topic) => (
+                  {catechismTopics.map((topic) => (
                     <details key={topic.title} className="catechism-topic-group">
                       <summary className="catechism-topic-summary">
                         <span className="catechism-topic-summary-copy">
@@ -857,7 +924,7 @@ function ChatPageContent() {
           type="button"
           className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
-          aria-label="Close chats panel"
+          aria-label={t("closeChatsPanel")}
         />
         <ChatSidebar
           sessions={conversations}

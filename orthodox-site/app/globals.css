@@ -18,6 +18,18 @@
   box-sizing: border-box;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 html,
 body {
   padding: 0;
@@ -139,18 +151,18 @@ textarea {
 }
 
 .hero-cross {
-  width: 290px;
+  width: 260px;
   height: auto;
   max-width: 100%;
   object-fit: contain;
   margin-top: 0;
-  margin-bottom: -72px;
+  margin-bottom: -66px;
   display: block;
 }
 
 .hero-title {
   font-family: "Merriweather", serif;
-  font-size: clamp(2.8rem, 5.5vw, 5rem);
+  font-size: clamp(2.55rem, 4.9vw, 4.5rem);
   font-weight: 400;
   letter-spacing: -0.01em;
   margin: 0rem 0 0.7rem;
@@ -1358,6 +1370,114 @@ textarea {
   color: #9b2f2f;
 }
 
+/* LANGUAGE */
+
+.floating-language-toggle {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 120;
+}
+
+.floating-language-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.48rem 0.42rem 0.7rem;
+  border: 1px solid rgba(58, 38, 22, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(58, 38, 22, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+.floating-language-caption {
+  font-family: "Merriweather", serif;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.floating-language-select {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: "Merriweather", serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.floating-language-label:focus-within {
+  border-color: rgba(58, 38, 22, 0.3);
+  box-shadow: 0 0 0 3px rgba(58, 38, 22, 0.06), 0 10px 24px rgba(58, 38, 22, 0.12);
+}
+
+/* RTL */
+
+html[dir="rtl"] body {
+  text-align: right;
+}
+
+html[dir="rtl"] .floating-language-toggle {
+  right: auto;
+  left: 1.25rem;
+}
+
+html[dir="rtl"] .navbar-sidebar-offset {
+  padding-right: calc(300px + 1.5rem);
+  padding-left: 1.5rem;
+}
+
+html[dir="rtl"] .home-layout {
+  padding-right: calc(300px + 1.5rem);
+  padding-left: 1.5rem;
+}
+
+html[dir="rtl"] .chat-layout {
+  padding-right: calc(300px + 2rem);
+  padding-left: 2rem;
+}
+
+html[dir="rtl"] .chat-sidebar {
+  right: 0;
+  left: auto;
+}
+
+html[dir="rtl"] .chat-sidebar-details {
+  border-left: 1px solid var(--border);
+  border-right: none;
+}
+
+html[dir="rtl"] .chat-sidebar-item,
+html[dir="rtl"] .saints-list-item,
+html[dir="rtl"] .message-option-chip,
+html[dir="rtl"] .catechism-prompt-card,
+html[dir="rtl"] .answer-name-button {
+  text-align: right;
+}
+
+html[dir="rtl"] .chat-window-title-wrap {
+  align-items: flex-end;
+  text-align: right;
+}
+
+html[dir="rtl"] .message-bubble,
+html[dir="rtl"] .contact-heading,
+html[dir="rtl"] .contact-form,
+html[dir="rtl"] .chat-empty-state,
+html[dir="rtl"] .catechism-tab-panel {
+  text-align: start;
+}
+
+html[dir="rtl"] .message-options-list {
+  align-items: flex-end;
+}
+
+html[dir="rtl"] .navbar-sidebar-toggle {
+  margin-right: 0;
+  margin-left: 0.2rem;
+}
+
 /* MOBILE */
 
 @media (max-width: 768px) {
@@ -1420,13 +1540,13 @@ textarea {
   }
 
   .hero-cross {
-    width: 180px;
+    width: 160px;
     margin-top: 0;
-    margin-bottom: -36px;
+    margin-bottom: -32px;
   }
 
   .hero-title {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
     margin: 0rem 0 0.55rem;
   }
 
@@ -1587,14 +1707,26 @@ textarea {
     pointer-events: none;
   }
 
+  html[dir="rtl"] .chat-sidebar {
+    transform: translateX(100%);
+  }
+
   .chat-sidebar-mobile-open {
     transform: translateX(0);
     pointer-events: auto;
   }
 
+  html[dir="rtl"] .chat-sidebar-mobile-open {
+    transform: translateX(0);
+  }
+
   .chat-sidebar-details {
     border-right: none;
     background: var(--background);
+  }
+
+  html[dir="rtl"] .chat-sidebar-details {
+    border-left: none;
   }
 
   .chat-sidebar-close-btn {
@@ -1622,6 +1754,24 @@ textarea {
 
   .credits-mobile-sidebar {
     display: block;
+  }
+
+  .floating-language-toggle {
+    right: 0.8rem;
+    bottom: 0.8rem;
+  }
+
+  html[dir="rtl"] .floating-language-toggle {
+    left: 0.8rem;
+  }
+
+  .floating-language-label {
+    gap: 0.35rem;
+    padding: 0.36rem 0.42rem 0.36rem 0.56rem;
+  }
+
+  .floating-language-caption {
+    display: none;
   }
 }
 

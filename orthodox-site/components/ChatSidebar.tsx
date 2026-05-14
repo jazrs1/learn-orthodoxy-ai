@@ -1,6 +1,7 @@
 "use client";
 
 import { ConversationSummary } from "../lib/chat-types";
+import { useLanguage } from "./LanguageProvider";
 
 type ChatSidebarProps = {
   sessions: ConversationSummary[];
@@ -25,13 +26,15 @@ export default function ChatSidebar({
   isMobileOpen = false,
   onClose,
 }: ChatSidebarProps) {
+  const { t } = useLanguage();
+
   return (
     <aside className={`chat-sidebar ${isMobileOpen ? "chat-sidebar-mobile-open" : ""}`}>
       <div className="chat-sidebar-details">
         <div className="chat-sidebar-header">
-          <div className="chat-sidebar-title">Chats</div>
+          <div className="chat-sidebar-title">{t("chats")}</div>
           {onClose ? (
-            <button type="button" className="chat-sidebar-close-btn" onClick={onClose} aria-label="Close chats panel">
+            <button type="button" className="chat-sidebar-close-btn" onClick={onClose} aria-label={t("closeChatsPanel")}>
               ×
             </button>
           ) : null}
@@ -46,13 +49,13 @@ export default function ChatSidebar({
               onClose?.();
             }}
           >
-            New Chat
+            {t("newChat")}
           </button>
 
-          <div className="chat-sidebar-section-label">Past Chats</div>
+          <div className="chat-sidebar-section-label">{t("pastChats")}</div>
           <div className="chat-sidebar-list">
             {loading ? (
-              <div className="chat-sidebar-empty">Loading chats...</div>
+              <div className="chat-sidebar-empty">{t("loadingChats")}</div>
             ) : error ? (
               <div className="chat-sidebar-empty">{error}</div>
             ) : sessions.length ? (
@@ -68,7 +71,7 @@ export default function ChatSidebar({
                     onClose?.();
                   }}
                 >
-                  <span className="chat-sidebar-item-title">{session.title || "New Chat"}</span>
+                  <span className="chat-sidebar-item-title">{session.title || t("newChat")}</span>
                   {onDeleteSession ? (
                     <span
                       role="button"
@@ -85,7 +88,7 @@ export default function ChatSidebar({
                           onDeleteSession(session.id);
                         }
                       }}
-                      aria-label={`Delete ${session.title || "chat"}`}
+                      aria-label={`${t("deleteChat")}: ${session.title || t("chat")}`}
                     >
                       ×
                     </span>
@@ -93,7 +96,7 @@ export default function ChatSidebar({
                 </button>
               ))
             ) : (
-              <div className="chat-sidebar-empty">No saved chats yet.</div>
+              <div className="chat-sidebar-empty">{t("noSavedChats")}</div>
             )}
           </div>
         </div>

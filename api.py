@@ -326,6 +326,89 @@ def _normalize_chat_mode(value: str | None) -> str:
     return mode if mode in {"chat", "saints", "catechism"} else "chat"
 
 
+def _contains_arabic(value: str) -> bool:
+    return bool(re.search(r"[\u0600-\u06ff]", value or ""))
+
+
+def _detect_language(selected_language: str | None, question: str) -> str:
+    if (selected_language or "").strip().lower() == "ar" or _contains_arabic(question):
+        return "ar"
+    return "en"
+
+
+def _no_source_answer(language: str) -> str:
+    if language == "ar":
+        return "لم أجد معلومات كافية عن هذا في المصادر المتاحة."
+    return "I could not find enough about that in the loaded sources."
+
+
+def _arabic_retrieval_hints(question: str) -> List[str]:
+    hints: List[str] = []
+    q = question or ""
+
+    if "الآباء الرسول" in q or "اباء رسول" in q:
+        hints.append(
+            "apostolic fathers early Christian writers connected to the apostles Ignatius Polycarp Clement Barnabas Hermas"
+        )
+    if "العذراء" in q or "مريم" in q:
+        hints.append("Virgin Mary Theotokos Saint Mary Mother of God")
+    if "المعمودية" in q or "معمودية" in q:
+        hints.append("baptism sacrament Coptic Orthodox Church born again water Holy Spirit chrismation")
+    if "الميرون" in q:
+        hints.append("chrismation holy myron sacrament Coptic Orthodox Church")
+    if re.search(r"(أتحول|اتحول|التحول|أصبح|اصبح|أنضم|انضم)", q) and "الأرثوذكس" in q:
+        hints.append("become Orthodox convert to Coptic Orthodox Church catechumen baptism chrismation")
+
+    return hints
+
+
+def _fallback_english_retrieval_query(question: str) -> str:
+    hints = _arabic_retrieval_hints(question)
+    if hints:
+        return " ".join(hints)
+    return question
+
+
+def _build_english_retrieval_query(question: str, mode: str) -> str:
+    fallback = _fallback_english_retrieval_query(question)
+
+    try:
+        resp = oai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0,
+            max_tokens=90,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Rewrite the user's Arabic or mixed-language Orthodox Christian question "
+                        "as one concise English retrieval query for searching English Coptic Orthodox source chunks. "
+                        "Include important Orthodox, Coptic, saint, sacrament, and catechism terms in English. "
+                        "Return only the query, with no quotes or explanation."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"Mode: {mode}\nQuestion: {question}",
+                },
+            ],
+        )
+        query = (resp.choices[0].message.content or "").strip()
+    except Exception as error:
+        print("ENGLISH_RETRIEVAL_QUERY_REWRITE_FAILED:", repr(error))
+        query = ""
+
+    if not query:
+        query = fallback
+
+    for hint in _arabic_retrieval_hints(question):
+        if hint.lower() not in query.lower():
+            query = f"{query} {hint}".strip()
+
+    query = re.sub(r"\s+", " ", query).strip()
+    return query or fallback or question
+
+
 def _recent_history_text(history: list, limit: int = 6) -> str:
     return "\n".join(
         f"{m['role'].upper()}: {m['content']}"
@@ -638,6 +721,8 @@ def _filter_relevant_documents(
 def _log_retrieval_debug(
     original_question: str,
     rewritten_question: str,
+    detected_language: str,
+    english_retrieval_query: str,
     entity: str | None,
     docs: List[str],
     metas: List[Dict[str, Any]],
@@ -645,6 +730,8 @@ def _log_retrieval_debug(
     rejected_count: int,
 ) -> None:
     print("ORIGINAL_QUESTION:", original_question)
+    print("DETECTED_LANGUAGE:", detected_language)
+    print("ENGLISH_RETRIEVAL_QUERY:", english_retrieval_query)
     print("REWRITTEN_QUESTION:", rewritten_question)
     print("RESOLVED_ENTITY:", entity)
     print("RETRIEVED_CHUNK_COUNT:", len(docs))
@@ -679,7 +766,34 @@ def _response_grounding_status(answer: str, docs: List[str]) -> str:
     return "full"
 
 
-def _build_catechism_followups(question: str, answer: str) -> List[str]:
+def _build_catechism_followups(question: str, answer: str, language: str = "en") -> List[str]:
+    if language == "ar":
+        text = f"{question} {answer}"
+        if "معمود" in text or "ميرون" in text:
+            return [
+                "هل تريد شرحًا عن المعمودية والميرون؟",
+                "هل تريد أن تعرف كيف يستعد الموعوظ للمعمودية؟",
+            ]
+        if re.search(r"(أتحول|اتحول|التحول|أصبح|اصبح|أنضم|انضم|موعوظ)", text):
+            return [
+                "هل تريد أن تعرف أكثر عن فترة الموعوظين؟",
+                "هل تريد شرحًا عن المعمودية والميرون؟",
+            ]
+        if "صوم" in text:
+            return [
+                "هل تريد أن تعرف كيف يرتبط الصوم بالصلاة؟",
+                "هل تريد أن تسأل عن التوبة أثناء الصوم؟",
+            ]
+        if "صلاة" in text:
+            return [
+                "هل تريد أن تسأل عن الصلاة اليومية؟",
+                "هل تريد أن تعرف كيف ترتبط الصلاة بالتوبة؟",
+            ]
+        return [
+            "هل تريد أن تعرف كيف يُمارَس هذا في حياة الكنيسة؟",
+            "هل تريد شرحًا أبسط للمصطلحات في هذه الإجابة؟",
+        ]
+
     q = question.lower()
     text = f"{q} {answer.lower()}"
     followups: List[str]
@@ -718,8 +832,8 @@ def _build_catechism_followups(question: str, answer: str) -> List[str]:
     return followups[:2]
 
 
-def _catechism_followup_options(answer: str, question: str) -> List[str]:
-    followups = _build_catechism_followups(question, answer)
+def _catechism_followup_options(answer: str, question: str, language: str = "en") -> List[str]:
+    followups = _build_catechism_followups(question, answer, language=language)
     return followups[:2]
 
 
@@ -728,6 +842,7 @@ class ChatRequest(BaseModel):
     history: list = []
     top_k: int = 8
     mode: str | None = None
+    language: str | None = None
 
 
 class Source(BaseModel):
@@ -1544,13 +1659,20 @@ def _extract_saint_chat_intent(question: str) -> Dict[str, str] | None:
     return None
 
 
-def _saint_options_response(raw_query: str, matches: List[str], mode: str) -> Dict[str, Any]:
+def _saint_options_response(raw_query: str, matches: List[str], mode: str, language: str = "en") -> Dict[str, Any]:
     last_options = matches[:12]
-    answer = (
-        f"I found {len(last_options)} saint matches for '{raw_query}'."
-        if mode == "list"
-        else f"I found multiple saints matching '{raw_query}'. Choose one option below."
-    )
+    if language == "ar":
+        answer = (
+            f"وجدت {len(last_options)} نتيجة لقديسين تطابق '{raw_query}'."
+            if mode == "list"
+            else f"وجدت أكثر من قديس يطابق '{raw_query}'. اختر واحدًا من الخيارات أدناه."
+        )
+    else:
+        answer = (
+            f"I found {len(last_options)} saint matches for '{raw_query}'."
+            if mode == "list"
+            else f"I found multiple saints matching '{raw_query}'. Choose one option below."
+        )
     return {
         "answer": answer,
         "sources": [],
@@ -1559,9 +1681,13 @@ def _saint_options_response(raw_query: str, matches: List[str], mode: str) -> Di
     }
 
 
-def _saint_missing_response(raw_query: str) -> Dict[str, Any]:
+def _saint_missing_response(raw_query: str, language: str = "en") -> Dict[str, Any]:
+    if language == "ar":
+        answer = f"لم أجد مدخلًا مخصصًا للقديس '{raw_query}' في قاعدة بيانات القديسين المتاحة. جرّب تهجئة أخرى."
+    else:
+        answer = f"I could not find a dedicated saint entry for '{raw_query}' in the loaded saint database. Try a different spelling."
     return {
-        "answer": f"I could not find a dedicated saint entry for '{raw_query}' in the loaded saint database. Try a different spelling.",
+        "answer": answer,
         "sources": [],
         "entities": [],
         "options": [],
@@ -1588,13 +1714,27 @@ def chat(req: ChatRequest):
             raise HTTPException(status_code=400, detail="Question cannot be empty")
 
         mode = _normalize_chat_mode(req.mode)
-        question, history_resolved_entity = _rewrite_question_with_history(original_question, req.history)
-        question = _canonicalize_saint_text(question)
+        detected_language = _detect_language(req.language, original_question)
+        if detected_language == "ar":
+            question = original_question
+            history_resolved_entity = None
+        else:
+            question, history_resolved_entity = _rewrite_question_with_history(original_question, req.history)
+            question = _canonicalize_saint_text(question)
+
+        english_retrieval_query = (
+            _build_english_retrieval_query(original_question, mode)
+            if detected_language == "ar"
+            else question
+        )
+        retrieval_question = english_retrieval_query if detected_language == "ar" else question
         entity = None
         clean_entities = []
 
         print("\n--- NEW REQUEST ---")
         print("ORIGINAL_QUESTION:", original_question)
+        print("DETECTED_LANGUAGE:", detected_language)
+        print("ENGLISH_RETRIEVAL_QUERY:", english_retrieval_query)
         print("Detected mode:", mode)
         print("History-resolved entity:", history_resolved_entity)
         print("History:", req.history)
@@ -1606,14 +1746,15 @@ def chat(req: ChatRequest):
             _log_saint_query(raw_saint_query, _normalize_saint_search_query(raw_saint_query), saint_matches)
 
             if not saint_matches:
-                return _saint_missing_response(raw_saint_query)
+                return _saint_missing_response(raw_saint_query, language=detected_language)
 
             if saint_intent["mode"] == "list" or len(saint_matches) > 1:
                 last_list = {str(i + 1): name for i, name in enumerate(saint_matches[:12])}
-                return _saint_options_response(raw_saint_query, saint_matches, saint_intent["mode"])
+                return _saint_options_response(raw_saint_query, saint_matches, saint_intent["mode"], language=detected_language)
 
             entity = saint_matches[0]
             question = f"{entity} Orthodox saint biography life feast teachings martyr monk bishop"
+            retrieval_question = question
         elif history_resolved_entity:
             entity = history_resolved_entity
 
@@ -1623,6 +1764,7 @@ def chat(req: ChatRequest):
         if match and match.group(1) in last_list:
             entity = last_list[match.group(1)]
             question = f"{entity} Orthodox saint biography life feast teachings martyr monk bishop"
+            retrieval_question = question
 
         print("REWRITTEN_QUESTION:", question)
         print("RESOLVED_ENTITY:", entity)
@@ -1635,11 +1777,13 @@ def chat(req: ChatRequest):
                 clean_entities = _filter_sourced_saint_options(AMBIGUOUS_SAINT_FALLBACKS[core_name])
                 if len(clean_entities) > 1:
                     last_list = {str(i + 1): name for i, name in enumerate(clean_entities)}
+                    ambiguous_answer = (
+                        f"وجدت أكثر من قديس يطابق '{ambiguous_query}'. اختر واحدًا من الخيارات أدناه."
+                        if detected_language == "ar"
+                        else f"I found multiple saints matching '{ambiguous_query}'. Choose one option below."
+                    )
                     return {
-                        "answer": (
-                            f"I found multiple saints matching '{ambiguous_query}'. "
-                            "Choose one option below."
-                        ),
+                        "answer": ambiguous_answer,
                         "sources": [],
                         "entities": [],
                         "options": clean_entities,
@@ -1649,48 +1793,61 @@ def chat(req: ChatRequest):
             if len(suggestion_options) > 1:
                 clean_entities = suggestion_options
                 last_list = {str(i + 1): name for i, name in enumerate(clean_entities)}
+                ambiguous_answer = (
+                    f"وجدت أكثر من قديس يطابق '{ambiguous_query}'. اختر واحدًا من الخيارات أدناه."
+                    if detected_language == "ar"
+                    else f"I found multiple saints matching '{ambiguous_query}'. Choose one option below."
+                )
                 return {
-                    "answer": (
-                        f"I found multiple saints matching '{ambiguous_query}'. "
-                        "Choose one option below."
-                    ),
+                    "answer": ambiguous_answer,
                     "sources": [],
                     "entities": [],
                     "options": clean_entities,
                 }
 
-        broad_list = _is_broad_list_question(question)
-        definition_question = _is_definition_question(question)
+        broad_list = _is_broad_list_question(retrieval_question)
+        definition_question = _is_definition_question(retrieval_question)
         top_k = max(1, min(req.top_k, 12))
         retrieval_top_k = min(16, max(top_k, 12 if broad_list else 10 if definition_question else top_k))
 
         # Retrieval
-        retrieval_queries = _build_retrieval_queries(question, entity=entity)
+        retrieval_queries = _build_retrieval_queries(retrieval_question, entity=entity)
         docs, metas = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
         print("Retrieval queries:", retrieval_queries)
         filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
             docs,
             metas,
-            question,
+            retrieval_question,
             entity=entity,
         )
 
         if not docs or not metas:
-            _log_retrieval_debug(original_question, question, entity, docs, metas, 0, 0)
+            _log_retrieval_debug(
+                original_question,
+                question,
+                detected_language,
+                english_retrieval_query,
+                entity,
+                docs,
+                metas,
+                0,
+                0,
+            )
             print("Response grounding status: no-source")
             return {
-                "answer": "I could not find enough about that in the loaded sources.",
+                "answer": _no_source_answer(detected_language),
                 "sources": [],
                 "entities": []
             }
 
         if not filtered_docs:
-            retry_queries = _build_retrieval_queries(original_question, entity=entity)
+            retry_seed = english_retrieval_query if detected_language == "ar" else original_question
+            retry_queries = _build_retrieval_queries(retry_seed, entity=entity)
             retry_docs, retry_metas = _retrieve_documents(retry_queries, top_k=16, entity=entity)
             retry_filtered_docs, retry_filtered_metas, retry_rejected_count = _filter_relevant_documents(
                 retry_docs,
                 retry_metas,
-                original_question if not entity else question,
+                retry_seed if not entity else retrieval_question,
                 entity=entity,
             )
             if retry_filtered_docs:
@@ -1705,6 +1862,8 @@ def chat(req: ChatRequest):
         _log_retrieval_debug(
             original_question,
             question,
+            detected_language,
+            english_retrieval_query,
             entity,
             docs,
             metas,
@@ -1715,7 +1874,7 @@ def chat(req: ChatRequest):
         if not filtered_docs or not filtered_metas:
             print("Response grounding status: no-source")
             return {
-                "answer": "I could not find enough about that in the loaded sources.",
+                "answer": _no_source_answer(detected_language),
                 "sources": [],
                 "entities": []
             }
@@ -1740,15 +1899,29 @@ def chat(req: ChatRequest):
 
         history_text = _recent_history_text(req.history) if history_resolved_entity else ""
 
-        system_prompt = """
+        language_rules = """
+- Answer in English.
+- If the sources contain no relevant information, say exactly:
+  "I could not find enough about that in the loaded sources."
+""" if detected_language == "en" else """
+- Answer in Arabic.
+- Use clear Modern Standard Arabic suitable for Coptic Orthodox users in Egypt.
+- Use only the provided English source context.
+- If the sources contain no relevant information, say exactly:
+  "لم أجد معلومات كافية عن هذا في المصادر المتاحة."
+- If the relevant sources partially answer the question, give a cautious partial answer and use wording like:
+  "بحسب المصادر المتاحة..."
+"""
+
+        system_prompt = f"""
 You are an Orthodox theology assistant.
 
 Rules:
+{language_rules}
 - Answer ONLY using the provided sources.
 - Use conversation history to resolve pronouns and short follow-up references, but only answer from the provided source context.
 - Use only context that is relevant to the user's question. If provided context is unrelated to the user question, do not answer from it.
-- If the sources contain no relevant information, say:
-  "I could not find enough about that in the loaded sources."
+- If the sources contain no relevant information, use the no-source wording specified above for the selected answer language.
 - If the relevant sources partially answer the question, provide a cautious partial answer instead of refusing.
 - Do not say "I don't know" when the context supports a partial answer.
 - If the user asks for a list, extract all relevant entities found in the context. If the context may not be exhaustive, say "From the loaded sources, I found..." or "This may not be exhaustive."
@@ -1772,10 +1945,13 @@ SELECTED ENTITY:
 {entity if entity else "None"}
 
 NEW QUESTION:
-{question}
+{original_question if detected_language == "ar" else question}
 
 ORIGINAL USER QUESTION:
 {original_question}
+
+ENGLISH RETRIEVAL QUERY:
+{english_retrieval_query}
 
 SOURCES:
 {context}
@@ -1793,7 +1969,7 @@ SOURCES:
         answer = resp.choices[0].message.content or ""
         followup_options: List[str] = []
         if mode == "catechism":
-            followup_options = _catechism_followup_options(answer, original_question)
+            followup_options = _catechism_followup_options(answer, original_question, language=detected_language)
 
         items = re.findall(r"(?:\d+[\.\)]\s*)(.+)", answer)
 

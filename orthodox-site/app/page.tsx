@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ChatShell from "../components/ChatShell";
 import ChatSidebar from "../components/ChatSidebar";
+import { useLanguage } from "../components/LanguageProvider";
 import { fetchConversationList, deleteConversationRequest } from "../lib/chat-client";
 import { ConversationSummary } from "../lib/chat-types";
 
@@ -18,6 +19,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const router = useRouter();
+  const { t } = useLanguage();
 
   useEffect(() => {
     setMounted(true);
@@ -58,7 +60,7 @@ export default function HomePage() {
         }
       } catch (loadError) {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : "Unable to load chats.");
+          setError(loadError instanceof Error ? loadError.message : t("unableToLoadChats"));
         }
       } finally {
         if (!cancelled) {
@@ -71,7 +73,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   function openSession(sessionId: string) {
     setMobileSidebarOpen(false);
@@ -96,7 +98,7 @@ export default function HomePage() {
       await deleteConversationRequest(sessionId);
       setConversations((prev) => prev.filter((conversation) => conversation.id !== sessionId));
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete chat.");
+      setError(deleteError instanceof Error ? deleteError.message : t("unableToDeleteChat"));
     }
   }
 
@@ -113,10 +115,10 @@ export default function HomePage() {
             priority
           />
 
-          <h1 className="hero-title">Learn Orthodoxy</h1>
+          <h1 className="hero-title">{t("appName")}</h1>
 
           <p className="hero-subtitle">
-            Ask questions about Orthodox saints and Coptic Orthodox catechism.
+            {t("heroSubtitle")}
           </p>
 
           <div className="hero-chat-wrap">
@@ -128,7 +130,7 @@ export default function HomePage() {
           type="button"
           className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
-          aria-label="Close chats panel"
+          aria-label={t("closeChatsPanel")}
         />
 
         {mounted ? (

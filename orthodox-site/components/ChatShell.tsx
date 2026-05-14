@@ -2,6 +2,7 @@
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "./LanguageProvider";
 
 type ChatShellProps = {
   initialValue?: string;
@@ -13,6 +14,7 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
   const [message, setMessage] = useState(initialValue);
   const pathname = usePathname();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { dir, t } = useLanguage();
 
   useEffect(() => {
     setMessage(initialValue);
@@ -84,16 +86,18 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about a saint or catechism..."
+          placeholder={t("askPlaceholder")}
           rows={1}
           disabled={isSubmitting}
+          dir={dir}
         />
         <button
           type="button"
           className="chat-submit"
           onClick={submitMessage}
           disabled={isSubmitting || !message.trim()}
-          aria-label="Send message"
+          aria-label={t("sendMessage")}
+          title={t("sendMessage")}
         >
           →
         </button>
