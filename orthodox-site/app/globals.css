@@ -847,6 +847,31 @@ textarea {
   line-height: 1.65;
 }
 
+.saint-detail-actions {
+  display: flex;
+  align-items: center;
+  margin-top: 0.85rem;
+}
+
+.saint-learn-more {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-family: "Merriweather", serif;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.saint-learn-more:hover {
+  opacity: 0.76;
+  transform: translateY(-1px);
+}
+
 .saints-list-shell {
   flex: 1 1 auto;
   min-height: 0;
@@ -868,15 +893,17 @@ textarea {
   color: var(--text);
   font-family: "Merriweather", serif;
   text-align: left;
-  padding: 0.48rem 0;
-  border-radius: 0;
+  padding: 0.48rem 0.65rem;
+  border-radius: 10px;
   cursor: pointer;
   line-height: 1.45;
-  transition: color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .saints-list-item:hover {
+  background: rgba(58, 38, 22, 0.07);
   color: var(--accent);
+  transform: translateX(3px);
 }
 
 .saints-load-more {

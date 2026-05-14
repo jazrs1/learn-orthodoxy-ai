@@ -925,13 +925,32 @@ function ChatPageContent() {
                   {saintDetailLoading ? <div className="chat-empty-state">{t("loading")}...</div> : null}
                   {saintDetailError ? <div className="chat-empty-state">{saintDetailError}</div> : null}
                   {!saintDetailLoading && !saintDetailError && saintDetail?.answer ? (
-                    <div className="saint-detail-answer" dir="auto">
-                      <InteractiveAnswer
-                        answer={saintDetail.answer}
-                        entities={saintDetail.entities}
-                        saintLookup={saintLookup}
-                      />
-                    </div>
+                    <>
+                      <div className="saint-detail-answer" dir="auto">
+                        <InteractiveAnswer
+                          answer={saintDetail.answer}
+                          entities={saintDetail.entities}
+                          saintLookup={saintLookup}
+                        />
+                      </div>
+                      <div className="saint-detail-actions">
+                        <button
+                          type="button"
+                          className="saint-learn-more"
+                          onClick={() => {
+                            const saintName = selectedSaint.trim();
+                            if (!saintName) return;
+                            setActiveTab("chat");
+                            if (typeof window !== "undefined") {
+                              window.history.replaceState(null, "", "/chat#chat");
+                            }
+                            void handleSendMessage(`I want to learn more about ${saintName}`, { mode: "saints" });
+                          }}
+                        >
+                          Learn more
+                        </button>
+                      </div>
+                    </>
                   ) : null}
                 </div>
               ) : null}
