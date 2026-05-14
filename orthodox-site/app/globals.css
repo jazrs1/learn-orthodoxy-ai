@@ -1783,6 +1783,10 @@ html[dir="rtl"] .navbar-sidebar-toggle {
     bottom: 0.8rem;
   }
 
+  body:has(.chat-page) .floating-language-toggle {
+    bottom: 5.75rem;
+  }
+
   html[dir="rtl"] .floating-language-toggle {
     left: 0.8rem;
   }
