@@ -49,6 +49,9 @@ export default function Navbar() {
           <Link href="/sources" className="nav-link">
             Credits
           </Link>
+          <Link href="/contact" className="nav-link">
+            Contact Us
+          </Link>
         </div>
       </nav>
     </header>

@@ -84,7 +84,7 @@ export default function ContactPage() {
       ) : null}
 
       <div className="section-heading left contact-heading">
-        <h1>Contact</h1>
+        <h1>Contact Us</h1>
         <p>
           To ensure we provide precise and accurate faith education, we have restrained our model to reference the
           sources listed on the Credits page. Please contact us with your feedback or questions. We continue to
