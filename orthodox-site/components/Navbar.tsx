@@ -50,7 +50,7 @@ export default function Navbar() {
             Credits
           </Link>
           <Link href="/contact" className="nav-link">
-            Contact Us
+            Contact
           </Link>
         </div>
       </nav>
