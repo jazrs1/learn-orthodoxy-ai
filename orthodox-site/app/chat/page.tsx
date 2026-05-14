@@ -912,17 +912,6 @@ function ChatPageContent() {
             </div>
           ) : (
             <div className="saints-tab-panel">
-              <div className="saints-tab-search">
-                <input
-                  type="text"
-                  className="saints-search-input"
-                  value={saintSearch}
-                  onChange={(event) => setSaintSearch(event.target.value)}
-                  placeholder={t("searchSaints")}
-                  dir={language === "ar" ? "rtl" : "ltr"}
-                />
-              </div>
-
               {selectedSaint ? (
                 <div className="saint-detail-panel">
                   <div className="saint-detail-header">
@@ -975,6 +964,17 @@ function ChatPageContent() {
                   ) : null}
                 </div>
               ) : null}
+
+              <div className="saints-tab-search">
+                <input
+                  type="text"
+                  className="saints-search-input"
+                  value={saintSearch}
+                  onChange={(event) => setSaintSearch(event.target.value)}
+                  placeholder={t("searchSaints")}
+                  dir={language === "ar" ? "rtl" : "ltr"}
+                />
+              </div>
 
               <div className="saints-list-shell" ref={saintsListRef}>
                 {saintsLoading ? <div className="chat-empty-state">{t("loadingSaints")}</div> : null}
