@@ -848,34 +848,40 @@ textarea {
 }
 
 .saints-list-shell {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: visible;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
+  overflow-y: auto;
+  border: 1px solid rgba(58, 38, 22, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  padding: 1rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: flex-start;
+  gap: 0.45rem 1rem;
 }
 
 .saints-list-item {
-  width: 100%;
-  border: 1px solid rgba(58, 38, 22, 0.1);
-  background: rgba(255, 255, 255, 0.64);
+  width: auto;
+  border: none;
+  background: transparent;
   color: var(--text);
   font-family: "Merriweather", serif;
   text-align: left;
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
+  padding: 0.18rem 0;
+  border-radius: 0;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  text-decoration: underline;
+  text-decoration-color: rgba(58, 38, 22, 0.24);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
 .saints-list-item:hover {
-  background: rgba(58, 38, 22, 0.08);
-  border-color: rgba(58, 38, 22, 0.2);
+  color: var(--accent);
+  text-decoration-color: var(--accent);
 }
 
 .saints-load-more {
@@ -1486,6 +1492,8 @@ html[dir="rtl"] .navbar-sidebar-toggle {
     margin: 0 auto;
     min-height: 70px;
     padding: 0.75rem;
+    position: relative;
+    justify-content: center;
   }
 
   .nav-brand {
@@ -1657,7 +1665,14 @@ html[dir="rtl"] .navbar-sidebar-toggle {
   }
 
   .navbar-sidebar-toggle {
+    position: absolute;
+    left: 1rem;
     margin-right: 0.05rem;
+  }
+
+  html[dir="rtl"] .navbar-sidebar-toggle {
+    right: 1rem;
+    left: auto;
   }
 
   .chat-page-title {
@@ -1706,6 +1721,11 @@ html[dir="rtl"] .navbar-sidebar-toggle {
     padding: 1rem;
   }
 
+  .saints-list-shell {
+    padding: 0.9rem;
+    gap: 0.5rem 0.85rem;
+  }
+
   .catechism-page-panel {
     padding: 1rem;
   }
@@ -1744,6 +1764,14 @@ html[dir="rtl"] .navbar-sidebar-toggle {
   .chat-sidebar-details {
     border-right: none;
     background: var(--background);
+  }
+
+  .chat-sidebar-header {
+    justify-content: flex-end;
+  }
+
+  .chat-sidebar-title {
+    display: none;
   }
 
   html[dir="rtl"] .chat-sidebar-details {
