@@ -1365,10 +1365,21 @@ textarea {
     max-width: var(--max-width);
     margin: 0 auto;
     min-height: 70px;
-    padding: 0.95rem 1rem;
+    padding: 0.75rem 1rem 0.7rem;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    column-gap: 0.65rem;
+    row-gap: 0.45rem;
+  }
+
+  .nav-brand {
+    flex: 1 1 calc(100% - 48px);
+    gap: 0.65rem;
   }
 
   .nav-links {
+    flex: 0 0 100%;
+    justify-content: flex-start;
     gap: 0.2rem;
   }
 
@@ -1383,8 +1394,6 @@ textarea {
 
   .nav-title {
     font-size: 1rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
