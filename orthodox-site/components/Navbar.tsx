@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 export default function Navbar() {
   const pathname = usePathname();
   const hasSidebarOffset = pathname === "/" || pathname === "/chat";
-  const showsMobileSidebarToggle = hasSidebarOffset || pathname === "/sources";
+  const showsMobileSidebarToggle = hasSidebarOffset || pathname === "/sources" || pathname === "/contact";
 
   function openMobileSidebar() {
     if (typeof window === "undefined") return;

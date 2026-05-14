@@ -1,7 +1,11 @@
 "use client";
 
 import Script from "next/script";
-import { FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import ChatSidebar from "../../components/ChatSidebar";
+import { deleteConversationRequest, fetchConversationList } from "../../lib/chat-client";
+import type { ConversationSummary } from "../../lib/chat-types";
 
 const DEFAULT_SUBJECT = "Learn Orthodoxy Contact";
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
@@ -12,9 +16,14 @@ type SubmitState = {
 };
 
 export default function ContactPage() {
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [startedAt] = useState(() => Date.now());
   const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const [state, setState] = useState<SubmitState>({ status: "idle", message: "" });
+  const router = useRouter();
   const isSending = state.status === "sending";
   const captchaEnabled = Boolean(turnstileSiteKey);
 
@@ -23,6 +32,75 @@ export default function ContactPage() {
     if (state.status === "error") return "contact-status contact-status-error";
     return "contact-status";
   }, [state.status]);
+
+  useEffect(() => {
+    function handleOpenSidebar() {
+      setMobileSidebarOpen(true);
+    }
+
+    window.addEventListener("chat:openSidebar", handleOpenSidebar);
+    return () => {
+      window.removeEventListener("chat:openSidebar", handleOpenSidebar);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileSidebarOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const nextConversations = await fetchConversationList();
+        if (!cancelled) {
+          setConversations(nextConversations);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Unable to load chats.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function openSession(sessionId: string) {
+    setMobileSidebarOpen(false);
+    router.push(`/chat?chat=${encodeURIComponent(sessionId)}`);
+  }
+
+  function startNewChat() {
+    setMobileSidebarOpen(false);
+    router.push("/chat");
+  }
+
+  async function deleteSession(sessionId: string) {
+    try {
+      await deleteConversationRequest(sessionId);
+      setConversations((prev) => prev.filter((conversation) => conversation.id !== sessionId));
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete chat.");
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,78 +151,99 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="page-shell contact-page">
-      {captchaEnabled ? (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-          async
-          defer
-          strategy="afterInteractive"
-        />
-      ) : null}
-
-      <div className="section-heading left contact-heading">
-        <h1>Contact Us</h1>
-        <p>
-          To ensure we provide precise and accurate faith education, we have restrained our model to reference the
-          sources listed on the Credits page. Please contact us with your feedback or questions. We continue to
-          fine-tune the model to ensure we provide rich Orthodox Christian faith education.
-        </p>
-      </div>
-
-      <form className="contact-form" onSubmit={handleSubmit}>
-        <div className="contact-field">
-          <label htmlFor="contact-name">Name</label>
-          <input id="contact-name" name="name" type="text" autoComplete="name" required maxLength={120} />
-        </div>
-
-        <div className="contact-field">
-          <label htmlFor="contact-email">Email</label>
-          <input id="contact-email" name="email" type="email" autoComplete="email" required maxLength={254} />
-        </div>
-
-        <div className="contact-field">
-          <label htmlFor="contact-subject">Subject</label>
-          <input
-            id="contact-subject"
-            name="subject"
-            type="text"
-            value={subject}
-            onChange={(event) => setSubject(event.target.value)}
-            maxLength={160}
-          />
-        </div>
-
-        <div className="contact-field">
-          <label htmlFor="contact-message">Message</label>
-          <textarea
-            id="contact-message"
-            name="message"
-            required
-            minLength={10}
-            maxLength={3000}
-            rows={7}
-          />
-        </div>
-
-        <div className="contact-honeypot" aria-hidden="true">
-          <label htmlFor="contact-company">Company</label>
-          <input id="contact-company" name="company" type="text" tabIndex={-1} autoComplete="off" />
-        </div>
-
+    <>
+      <main className="page-shell contact-page">
         {captchaEnabled ? (
-          <div className="contact-captcha">
-            <div className="cf-turnstile" data-sitekey={turnstileSiteKey} />
-          </div>
+          <Script
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+            async
+            defer
+            strategy="afterInteractive"
+          />
         ) : null}
 
-        <div className="contact-actions">
-          <button type="submit" className="contact-submit" disabled={isSending}>
-            {isSending ? "Sending..." : "Send Message"}
-          </button>
-          {state.message ? <div className={statusClassName}>{state.message}</div> : null}
+        <div className="section-heading left contact-heading">
+          <h1>Contact</h1>
+          <p>
+            To ensure we provide precise and accurate faith education, we have restrained our model to reference the
+            sources listed on the Credits page. Please contact us with your feedback or questions. We continue to
+            fine-tune the model to ensure we provide rich Orthodox Christian faith education.
+          </p>
         </div>
-      </form>
-    </main>
+
+        <form className="contact-form" onSubmit={handleSubmit}>
+          <div className="contact-field">
+            <label htmlFor="contact-name">Name</label>
+            <input id="contact-name" name="name" type="text" autoComplete="name" required maxLength={120} />
+          </div>
+
+          <div className="contact-field">
+            <label htmlFor="contact-email">Email</label>
+            <input id="contact-email" name="email" type="email" autoComplete="email" required maxLength={254} />
+          </div>
+
+          <div className="contact-field">
+            <label htmlFor="contact-subject">Subject</label>
+            <input
+              id="contact-subject"
+              name="subject"
+              type="text"
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+              maxLength={160}
+            />
+          </div>
+
+          <div className="contact-field">
+            <label htmlFor="contact-message">Message</label>
+            <textarea
+              id="contact-message"
+              name="message"
+              required
+              minLength={10}
+              maxLength={3000}
+              rows={7}
+            />
+          </div>
+
+          <div className="contact-honeypot" aria-hidden="true">
+            <label htmlFor="contact-company">Company</label>
+            <input id="contact-company" name="company" type="text" tabIndex={-1} autoComplete="off" />
+          </div>
+
+          {captchaEnabled ? (
+            <div className="contact-captcha">
+              <div className="cf-turnstile" data-sitekey={turnstileSiteKey} />
+            </div>
+          ) : null}
+
+          <div className="contact-actions">
+            <button type="submit" className="contact-submit" disabled={isSending}>
+              {isSending ? "Sending..." : "Send Message"}
+            </button>
+            {state.message ? <div className={statusClassName}>{state.message}</div> : null}
+          </div>
+        </form>
+      </main>
+
+      <div className="credits-mobile-sidebar">
+        <button
+          type="button"
+          className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-label="Close chats panel"
+        />
+        <ChatSidebar
+          sessions={conversations}
+          onSelectSession={openSession}
+          onNewChat={startNewChat}
+          onDeleteSession={deleteSession}
+          loading={loading}
+          error={error}
+          isMobileOpen={mobileSidebarOpen}
+          onClose={() => setMobileSidebarOpen(false)}
+        />
+      </div>
+    </>
   );
 }
