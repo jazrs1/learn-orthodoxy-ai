@@ -3,17 +3,48 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { MouseEvent } from "react";
 import { useLanguage } from "./LanguageProvider";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const [hash, setHash] = useState("");
+
   const hasSidebarOffset = pathname === "/" || pathname === "/chat";
   const showsMobileSidebarToggle = hasSidebarOffset || pathname === "/sources" || pathname === "/contact";
+  const chatModeHash = hash || "#chat";
+
+  useEffect(() => {
+    function syncHash() {
+      setHash(window.location.hash || "");
+    }
+
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => {
+      window.removeEventListener("hashchange", syncHash);
+    };
+  }, [pathname]);
 
   function openMobileSidebar() {
     if (typeof window === "undefined") return;
     window.dispatchEvent(new CustomEvent("chat:openSidebar"));
+  }
+
+  function navLinkClass(isActive: boolean) {
+    return `nav-link ${isActive ? "nav-link-active" : ""}`;
+  }
+
+  function selectChatMode(mode: "chat" | "catechism" | "saints", event: MouseEvent<HTMLAnchorElement>) {
+    if (pathname !== "/chat" || typeof window === "undefined") return;
+
+    event.preventDefault();
+    const nextHash = `#${mode}`;
+    window.history.replaceState(null, "", `/chat${nextHash}`);
+    setHash(nextHash);
+    window.dispatchEvent(new CustomEvent("chat:setMode", { detail: { mode } }));
   }
 
   return (
@@ -45,13 +76,28 @@ export default function Navbar() {
         </Link>
 
         <div className="nav-links">
-          <Link href="/" className="nav-link">
-            {t("home")}
+          <Link
+            href="/chat#chat"
+            className={navLinkClass(pathname === "/chat" && chatModeHash === "#chat")}
+            onClick={(event) => selectChatMode("chat", event)}
+          >
+            {t("chat")}
           </Link>
-          <Link href="/sources" className="nav-link">
-            {t("credits")}
+          <Link
+            href="/chat#catechism"
+            className={navLinkClass(pathname === "/chat" && chatModeHash === "#catechism")}
+            onClick={(event) => selectChatMode("catechism", event)}
+          >
+            {t("catechism")}
           </Link>
-          <Link href="/contact" className="nav-link">
+          <Link
+            href="/chat#saints"
+            className={navLinkClass(pathname === "/chat" && chatModeHash === "#saints")}
+            onClick={(event) => selectChatMode("saints", event)}
+          >
+            {t("saintsSearch")}
+          </Link>
+          <Link href="/contact" className={navLinkClass(pathname === "/contact")}>
             {t("contact")}
           </Link>
         </div>

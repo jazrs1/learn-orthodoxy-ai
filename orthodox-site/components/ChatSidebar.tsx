@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { ConversationSummary } from "../lib/chat-types";
 import { useLanguage } from "./LanguageProvider";
+
+type ChatMode = "chat" | "catechism" | "saints";
 
 type ChatSidebarProps = {
   sessions: ConversationSummary[];
@@ -9,6 +12,9 @@ type ChatSidebarProps = {
   onSelectSession: (sessionId: string) => void;
   onNewChat: () => void;
   onDeleteSession?: (sessionId: string) => void;
+  activeMode?: ChatMode;
+  onSelectMode?: (mode: ChatMode) => void;
+  showAppNav?: boolean;
   loading?: boolean;
   error?: string;
   isMobileOpen?: boolean;
@@ -21,12 +27,20 @@ export default function ChatSidebar({
   onSelectSession,
   onNewChat,
   onDeleteSession,
+  activeMode = "chat",
+  onSelectMode,
+  showAppNav = false,
   loading = false,
   error = "",
   isMobileOpen = false,
   onClose,
 }: ChatSidebarProps) {
   const { t } = useLanguage();
+  const modes: Array<{ id: ChatMode; label: string }> = [
+    { id: "chat", label: t("chat") },
+    { id: "catechism", label: t("catechism") },
+    { id: "saints", label: t("saintsSearch") },
+  ];
 
   return (
     <aside className={`chat-sidebar ${isMobileOpen ? "chat-sidebar-mobile-open" : ""}`}>
@@ -35,7 +49,7 @@ export default function ChatSidebar({
           <div className="chat-sidebar-title">{t("chats")}</div>
           {onClose ? (
             <button type="button" className="chat-sidebar-close-btn" onClick={onClose} aria-label={t("closeChatsPanel")}>
-              ×
+              x
             </button>
           ) : null}
         </div>
@@ -51,6 +65,28 @@ export default function ChatSidebar({
           >
             {t("newChat")}
           </button>
+
+          {showAppNav ? (
+            <nav className="chat-sidebar-nav" aria-label="Learn Orthodoxy modes">
+              {modes.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  className={`chat-sidebar-nav-btn ${activeMode === mode.id ? "chat-sidebar-nav-btn-active" : ""}`}
+                  onClick={() => {
+                    onSelectMode?.(mode.id);
+                    onClose?.();
+                  }}
+                  aria-current={activeMode === mode.id ? "page" : undefined}
+                >
+                  {mode.label}
+                </button>
+              ))}
+              <Link className="chat-sidebar-nav-btn" href="/contact" onClick={onClose}>
+                {t("contact")}
+              </Link>
+            </nav>
+          ) : null}
 
           <div className="chat-sidebar-section-label">{t("pastChats")}</div>
           <div className="chat-sidebar-list">
@@ -90,7 +126,7 @@ export default function ChatSidebar({
                       }}
                       aria-label={`${t("deleteChat")}: ${session.title || t("chat")}`}
                     >
-                      ×
+                      x
                     </span>
                   ) : null}
                 </button>

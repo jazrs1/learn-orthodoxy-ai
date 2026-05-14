@@ -203,6 +203,7 @@ export default function CreditsPage() {
           onSelectSession={openSession}
           onNewChat={startNewChat}
           onDeleteSession={deleteSession}
+          showAppNav
           loading={loading}
           error={error}
           isMobileOpen={mobileSidebarOpen}

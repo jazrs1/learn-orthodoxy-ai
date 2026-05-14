@@ -23,6 +23,15 @@ type SaintsListResponse = {
   total?: number;
 };
 
+type SaintDetailResponse = {
+  answer?: string;
+  entities?: string[];
+  options?: string[];
+  error?: string;
+};
+
+type ChatMode = "chat" | "saints" | "catechism";
+
 type CatechismPrompt = {
   label: string;
   prompt: string;
@@ -196,11 +205,6 @@ function mergeUniqueSaints(current: string[], next: string[]) {
   return merged;
 }
 
-function submitCatechismPrompt(prompt: string, setActiveTab: (tab: "chat" | "saints" | "catechism") => void) {
-  sendTextToInputAndSubmit(prompt);
-  setActiveTab("catechism");
-}
-
 function normalizeOptionText(option: string) {
   return option
     .trim()
@@ -252,7 +256,7 @@ function ChatPageContent() {
   const [isDraftChat, setIsDraftChat] = useState(false);
   const [composerInitialValue, setComposerInitialValue] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState("");
-  const [activeTab, setActiveTab] = useState<"chat" | "saints" | "catechism">("chat");
+  const [activeTab, setActiveTab] = useState<ChatMode>("chat");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [pendingAutoSubmitText, setPendingAutoSubmitText] = useState("");
   const [saints, setSaints] = useState<string[]>([]);
@@ -260,6 +264,10 @@ function ChatPageContent() {
   const [saintsLoading, setSaintsLoading] = useState(false);
   const [saintsError, setSaintsError] = useState("");
   const [saintSearch, setSaintSearch] = useState("");
+  const [selectedSaint, setSelectedSaint] = useState("");
+  const [saintDetail, setSaintDetail] = useState<SaintDetailResponse | null>(null);
+  const [saintDetailLoading, setSaintDetailLoading] = useState(false);
+  const [saintDetailError, setSaintDetailError] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
   const latestUserMessageRef = useRef<HTMLDivElement | null>(null);
@@ -391,6 +399,9 @@ function ChatPageContent() {
   useEffect(() => {
     setSaints([]);
     setSaintsTotal(0);
+    setSelectedSaint("");
+    setSaintDetail(null);
+    setSaintDetailError("");
     if (saintsListRef.current) {
       saintsListRef.current.scrollTop = 0;
     }
@@ -469,7 +480,7 @@ function ChatPageContent() {
   );
 
   const handleSendMessage = useCallback(
-    async (rawQuestion: string, options?: { displayMessage?: string }) => {
+    async (rawQuestion: string, options?: { displayMessage?: string; mode?: ChatMode }) => {
       const question = rawQuestion.trim();
       if (!question || submittingRef.current) return;
       const displayQuestion = options?.displayMessage?.trim() || question;
@@ -510,8 +521,8 @@ function ChatPageContent() {
       setConversationError("");
       submittingRef.current = true;
       setIsSending(true);
-      const requestMode = activeTab;
-      if (activeTab === "saints") {
+      const requestMode = options?.mode || activeTab;
+      if (activeTab !== "chat") {
         setActiveTab("chat");
       }
 
@@ -651,6 +662,33 @@ function ChatPageContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    function selectMode(mode: string) {
+      if (mode === "chat" || mode === "catechism" || mode === "saints") {
+        setActiveTab(mode);
+      }
+    }
+
+    function syncModeFromHash() {
+      selectMode(window.location.hash.replace("#", ""));
+    }
+
+    function handleSetMode(event: Event) {
+      const mode = (event as CustomEvent<{ mode?: string }>).detail?.mode || "";
+      selectMode(mode);
+    }
+
+    syncModeFromHash();
+    window.addEventListener("hashchange", syncModeFromHash);
+    window.addEventListener("chat:setMode", handleSetMode);
+    return () => {
+      window.removeEventListener("hashchange", syncModeFromHash);
+      window.removeEventListener("chat:setMode", handleSetMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     if (!mobileSidebarOpen) return;
 
     const previousOverflow = document.body.style.overflow;
@@ -660,6 +698,31 @@ function ChatPageContent() {
       document.body.style.overflow = previousOverflow;
     };
   }, [mobileSidebarOpen]);
+
+  const loadSaintDetail = useCallback(async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    setSelectedSaint(trimmed);
+    setSaintDetail(null);
+    setSaintDetailError("");
+    setSaintDetailLoading(true);
+
+    try {
+      const response = await fetch("/api/saint-detail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed, language }),
+      });
+      const data = (await response.json().catch(() => ({}))) as SaintDetailResponse;
+      if (!response.ok) throw new Error(data.error || "Unable to load saint details right now.");
+      setSaintDetail(data);
+    } catch (error) {
+      setSaintDetailError(error instanceof Error ? error.message : "Unable to load saint details right now.");
+    } finally {
+      setSaintDetailLoading(false);
+    }
+  }, [language]);
 
   const submitSaintLookup = useCallback((name: string) => {
     const trimmed = name.trim();
@@ -681,10 +744,9 @@ function ChatPageContent() {
   const selectSaint = useCallback(
     (name: string) => {
       if (!isValidSaintName(name, saintLookup)) return;
-      submitSaintLookup(name);
-      setActiveTab("chat");
+      void loadSaintDetail(name);
     },
-    [saintLookup, submitSaintLookup]
+    [loadSaintDetail, saintLookup]
   );
 
   const copyMessage = useCallback(async (messageId: string, content: string) => {
@@ -706,82 +768,8 @@ function ChatPageContent() {
     <main className="chat-page">
       <div className="chat-layout">
         <section className="chat-window">
-          <div className="chat-window-header">
-            <div className="chat-window-top">
-              <div className="chat-window-title-wrap">
-                <h1 className="chat-page-title">{t("appName")}</h1>
-                <p className="chat-page-subtitle">
-                  {t("heroSubtitle")}
-                </p>
-              </div>
-              <div className="chat-header-actions">
-                <button type="button" className="chat-header-btn chat-close-page-btn" onClick={() => router.push("/")}>
-                  {t("close")}
-                </button>
-              </div>
-            </div>
-
-            <div className="chat-tabs">
-              <button
-                type="button"
-                className={`chat-tab ${activeTab === "chat" ? "chat-tab-active" : ""}`}
-                onClick={() => setActiveTab("chat")}
-              >
-                {t("chat")}
-              </button>
-              <button
-                type="button"
-                className={`chat-tab ${activeTab === "saints" ? "chat-tab-active" : ""}`}
-                onClick={() => setActiveTab("saints")}
-              >
-                {t("saintsSearch")}
-              </button>
-              <button
-                type="button"
-                className={`chat-tab ${activeTab === "catechism" ? "chat-tab-active" : ""}`}
-                onClick={() => setActiveTab("catechism")}
-              >
-                {t("catechism")}
-              </button>
-            </div>
-          </div>
-
-          {activeTab !== "saints" ? (
+          {activeTab === "chat" ? (
             <div className="chat-messages">
-              {activeTab === "catechism" ? (
-                <div className="catechism-inline-panel">
-                  <div className="catechism-panel-copy">
-                    <h2 className="catechism-panel-title">{t("catechismTopics")}</h2>
-                    <p className="catechism-panel-text">{t("catechismIntro")}</p>
-                  </div>
-                  <div className="catechism-topic-list">
-                    {catechismTopics.map((topic) => (
-                      <details key={topic.title} className="catechism-topic-group">
-                        <summary className="catechism-topic-summary">
-                          <span className="catechism-topic-summary-copy">
-                            <span className="catechism-topic-title">{topic.title}</span>
-                            <span className="catechism-topic-description">{topic.description}</span>
-                          </span>
-                          <span className="catechism-topic-chevron" aria-hidden="true" />
-                        </summary>
-                        <div className="catechism-prompt-grid">
-                          {topic.prompts.map((item) => (
-                            <button
-                              key={`${topic.title}-${item.label}`}
-                              type="button"
-                              className="catechism-prompt-card"
-                              onClick={() => submitCatechismPrompt(item.prompt, setActiveTab)}
-                            >
-                              <span className="catechism-prompt-label">{item.label}</span>
-                              <span className="catechism-prompt-text">{item.prompt}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </details>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
               {conversationError ? <div className="chat-empty-state">{conversationError}</div> : null}
               {conversationLoading ? <div className="chat-empty-state">{t("loadingChat")}</div> : null}
               {!conversationLoading && messages.length ? (
@@ -869,6 +857,42 @@ function ChatPageContent() {
                 <div className="chat-empty-state">{t("startByAsking")}</div>
               ) : null}
             </div>
+          ) : activeTab === "catechism" ? (
+            <div className="catechism-page-panel">
+              <div className="catechism-panel-copy">
+                <h2 className="catechism-panel-title">{t("catechismTopics")}</h2>
+                <p className="catechism-panel-text">{t("catechismIntro")}</p>
+              </div>
+              <div className="catechism-topic-list">
+                {catechismTopics.map((topic) => (
+                  <details key={topic.title} className="catechism-topic-group">
+                    <summary className="catechism-topic-summary">
+                      <span className="catechism-topic-summary-copy">
+                        <span className="catechism-topic-title">{topic.title}</span>
+                        <span className="catechism-topic-description">{topic.description}</span>
+                      </span>
+                      <span className="catechism-topic-chevron" aria-hidden="true" />
+                    </summary>
+                    <div className="catechism-prompt-grid">
+                      {topic.prompts.map((item) => (
+                        <button
+                          key={`${topic.title}-${item.label}`}
+                          type="button"
+                          className="catechism-prompt-card"
+                          onClick={() => {
+                            setActiveTab("chat");
+                            void handleSendMessage(item.prompt, { mode: "catechism" });
+                          }}
+                        >
+                          <span className="catechism-prompt-label">{item.label}</span>
+                          <span className="catechism-prompt-text">{item.prompt}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="saints-tab-panel">
               <div className="saints-tab-search">
@@ -881,6 +905,36 @@ function ChatPageContent() {
                   dir={language === "ar" ? "rtl" : "ltr"}
                 />
               </div>
+
+              {selectedSaint ? (
+                <div className="saint-detail-panel">
+                  <div className="saint-detail-header">
+                    <h2 className="saint-detail-title">{displaySaintName(selectedSaint, language)}</h2>
+                    <button
+                      type="button"
+                      className="saint-detail-close"
+                      onClick={() => {
+                        setSelectedSaint("");
+                        setSaintDetail(null);
+                        setSaintDetailError("");
+                      }}
+                    >
+                      {t("close")}
+                    </button>
+                  </div>
+                  {saintDetailLoading ? <div className="chat-empty-state">{t("loading")}...</div> : null}
+                  {saintDetailError ? <div className="chat-empty-state">{saintDetailError}</div> : null}
+                  {!saintDetailLoading && !saintDetailError && saintDetail?.answer ? (
+                    <div className="saint-detail-answer" dir="auto">
+                      <InteractiveAnswer
+                        answer={saintDetail.answer}
+                        entities={saintDetail.entities}
+                        saintLookup={saintLookup}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="saints-list-shell" ref={saintsListRef}>
                 {saintsLoading ? <div className="chat-empty-state">{t("loadingSaints")}</div> : null}
@@ -915,7 +969,7 @@ function ChatPageContent() {
             </div>
           )}
 
-          {activeTab !== "saints" ? (
+          {activeTab === "chat" ? (
             <div className="chat-bottom-bar">
               <ChatShell initialValue={composerInitialValue} onSubmit={handleSendMessage} isSubmitting={isSending} />
             </div>
@@ -934,6 +988,9 @@ function ChatPageContent() {
           onSelectSession={selectSession}
           onNewChat={() => void startNewChat()}
           onDeleteSession={(conversationId) => void deleteSession(conversationId)}
+          activeMode={activeTab}
+          onSelectMode={setActiveTab}
+          showAppNav
           loading={conversationsLoading}
           error={conversationsError}
           isMobileOpen={mobileSidebarOpen}
