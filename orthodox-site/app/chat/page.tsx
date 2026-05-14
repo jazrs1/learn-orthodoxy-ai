@@ -15,7 +15,7 @@ import {
   fetchConversationList,
   sendChatRequest,
 } from "../../lib/chat-client";
-import { ChatMessage, ConversationDetail, ConversationSummary } from "../../lib/chat-types";
+import { ChatMessage, ConversationDetail, ConversationSummary, SourceRef } from "../../lib/chat-types";
 import { displaySaintName } from "../../lib/saint-display";
 
 type SaintsListResponse = {
@@ -27,6 +27,7 @@ type SaintDetailResponse = {
   answer?: string;
   entities?: string[];
   options?: string[];
+  sources?: SourceRef[];
   error?: string;
 };
 
@@ -241,6 +242,22 @@ function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<s
   }
 
   return questionOptions.length ? questionOptions.slice(0, 2) : saintOptions;
+}
+
+function hasSourceBackedSaintDetail(detail: SaintDetailResponse | null) {
+  const answer = detail?.answer?.trim() || "";
+  if (!answer) return false;
+  if (!Array.isArray(detail?.sources) || detail.sources.length === 0) return false;
+
+  const lowerAnswer = answer.toLowerCase();
+  return !(
+    lowerAnswer.includes("i don't have enough information") ||
+    lowerAnswer.includes("i could not find enough information") ||
+    lowerAnswer.includes("i found multiple saints") ||
+    lowerAnswer.includes("choose one option") ||
+    answer.includes("لم أجد معلومات كافية") ||
+    answer.includes("اختر")
+  );
 }
 
 function ChatPageContent() {
@@ -933,23 +950,27 @@ function ChatPageContent() {
                           saintLookup={saintLookup}
                         />
                       </div>
-                      <div className="saint-detail-actions">
-                        <button
-                          type="button"
-                          className="saint-learn-more"
-                          onClick={() => {
-                            const saintName = selectedSaint.trim();
-                            if (!saintName) return;
-                            setActiveTab("chat");
-                            if (typeof window !== "undefined") {
-                              window.history.replaceState(null, "", "/chat#chat");
-                            }
-                            void handleSendMessage(`I want to learn more about ${saintName}`, { mode: "saints" });
-                          }}
-                        >
-                          Learn more
-                        </button>
-                      </div>
+                      {hasSourceBackedSaintDetail(saintDetail) ? (
+                        <div className="saint-detail-actions">
+                          <button
+                            type="button"
+                            className="saint-learn-more"
+                            onClick={() => {
+                              const saintName = selectedSaint.trim();
+                              if (!saintName) return;
+                              setActiveTab("chat");
+                              if (typeof window !== "undefined") {
+                                window.history.pushState(null, "", "/chat#chat");
+                                window.dispatchEvent(new HashChangeEvent("hashchange"));
+                                window.dispatchEvent(new CustomEvent("chat:setMode", { detail: { mode: "chat" } }));
+                              }
+                              void handleSendMessage(`I want to learn more about ${saintName}`, { mode: "saints" });
+                            }}
+                          >
+                            Learn more
+                          </button>
+                        </div>
+                      ) : null}
                     </>
                   ) : null}
                 </div>
