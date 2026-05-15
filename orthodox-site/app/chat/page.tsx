@@ -224,6 +224,24 @@ function looksLikeQuestionOption(option: string) {
   );
 }
 
+function followUpToUserMessage(option: string) {
+  const cleaned = option.trim().replace(/[?？]\s*$/, "").trim();
+  const replacements: Array<[RegExp, string]> = [
+    [/^would\s+you\s+like\s+to\s+/i, "I would like to "],
+    [/^would\s+you\s+like\s+/i, "I would like "],
+    [/^do\s+you\s+want\s+to\s+/i, "I want to "],
+    [/^do\s+you\s+want\s+/i, "I want "],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    if (pattern.test(cleaned)) {
+      return cleaned.replace(pattern, replacement).trim();
+    }
+  }
+
+  return cleaned;
+}
+
 function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<string>) {
   const saintOptions: string[] = [];
   const questionOptions: string[] = [];
@@ -288,10 +306,12 @@ function ChatPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const latestUserMessageRef = useRef<HTMLDivElement | null>(null);
+  const chatMessagesRef = useRef<HTMLDivElement | null>(null);
   const saintsListRef = useRef<HTMLDivElement>(null);
   const saintsLoadingRef = useRef(false);
   const submittingRef = useRef(false);
   const pendingScrollToUserMessageRef = useRef(false);
+  const pendingScrollToMessageIdRef = useRef("");
   const createdConversationRef = useRef(false);
   const processedQuestionRef = useRef("");
   const handledChatRef = useRef("");
@@ -348,12 +368,35 @@ function ChatPageContent() {
   useEffect(() => {
     if (!pendingScrollToUserMessageRef.current || activeTab !== "chat") return;
 
-    requestAnimationFrame(() => {
-      latestUserMessageRef.current?.scrollIntoView({
+    const scrollToPendingMessage = () => {
+      const container = chatMessagesRef.current;
+      const messageId = pendingScrollToMessageIdRef.current;
+      const target =
+        messageId && container
+          ? container.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(messageId)}"]`)
+          : latestUserMessageRef.current;
+
+      if (!container || !target) return false;
+
+      const containerTop = container.getBoundingClientRect().top;
+      const targetTop = target.getBoundingClientRect().top;
+      const scrollMargin = window.matchMedia("(max-width: 720px)").matches ? 72 : 96;
+
+      container.scrollTo({
+        top: container.scrollTop + targetTop - containerTop - scrollMargin,
         behavior: "smooth",
-        block: "start",
       });
+      return true;
+    };
+
+    requestAnimationFrame(() => {
+      const didScroll = scrollToPendingMessage();
       pendingScrollToUserMessageRef.current = false;
+      pendingScrollToMessageIdRef.current = "";
+
+      if (didScroll) {
+        window.setTimeout(scrollToPendingMessage, 120);
+      }
     });
   }, [messages, activeTab]);
 
@@ -457,6 +500,7 @@ function ChatPageContent() {
 
     handledChatRef.current = "";
     pendingScrollToUserMessageRef.current = false;
+    pendingScrollToMessageIdRef.current = "";
     setCurrentConversation(null);
     setActiveConversationId("");
     setConversationError("");
@@ -519,6 +563,7 @@ function ChatPageContent() {
       ];
 
       pendingScrollToUserMessageRef.current = true;
+      pendingScrollToMessageIdRef.current = optimisticUserId;
 
       setCurrentConversation((prev) =>
         prev && prev.id === localConversationId
@@ -753,7 +798,7 @@ function ChatPageContent() {
         submitSaintLookup(option);
         return;
       }
-      sendTextToInputAndSubmit(option);
+      sendTextToInputAndSubmit(followUpToUserMessage(option));
     },
     [saintLookup, submitSaintLookup]
   );
@@ -786,13 +831,14 @@ function ChatPageContent() {
       <div className="chat-layout">
         <section className="chat-window">
           {activeTab === "chat" ? (
-            <div className="chat-messages">
+            <div className="chat-messages" ref={chatMessagesRef}>
               {conversationError ? <div className="chat-empty-state">{conversationError}</div> : null}
               {conversationLoading ? <div className="chat-empty-state">{t("loadingChat")}</div> : null}
               {!conversationLoading && messages.length ? (
                 messages.map((message) => (
                   <div
                     key={message.id}
+                    data-message-id={message.id}
                     data-message-role={message.role}
                     className={`message-row ${message.role === "user" ? "user-row" : "assistant-row"}`}
                   >
