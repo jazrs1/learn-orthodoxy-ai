@@ -439,6 +439,7 @@ function ChatPageContent() {
         const params = new URLSearchParams({
           limit: String(SAINTS_PAGE_SIZE),
           offset: String(nextOffset),
+          language,
         });
         if (normalizedQuery) {
           params.set("q", normalizedQuery);
@@ -463,7 +464,7 @@ function ChatPageContent() {
         setSaintsLoading(false);
       }
     },
-    [saintSearch, t]
+    [language, saintSearch, t]
   );
 
   useEffect(() => {

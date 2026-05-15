@@ -1,5 +1,6 @@
 import os
 import re
+import unicodedata
 from pathlib import Path
 from typing import List, Dict, Any, Set, Tuple
 
@@ -199,10 +200,12 @@ def _normalize_saint_match_key(value: str) -> str:
 
 
 def _normalize_arabic_alias_key(value: str) -> str:
-    text = value or ""
-    text = re.sub(r"[\u064b-\u065f\u0670\u0640]", "", text)
+    text = unicodedata.normalize("NFKC", value or "")
+    text = text.replace("ی", "ي").replace("ى", "ي")
+    text = text.replace("ک", "ك")
+    text = text.replace("ھ", "ه").replace("ة", "ه")
     text = text.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
-    text = text.replace("ى", "ي").replace("ة", "ه")
+    text = re.sub(r"[\u064b-\u065f\u0670\u0640]", "", text)
     text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
     return re.sub(r"\s+", " ", text).strip()
 
@@ -1415,6 +1418,7 @@ oai_client = None
 last_list = {}
 saint_name_index: List[str] = []
 saint_record_index: List[Dict[str, Any]] = []
+arabic_saint_name_index: List[str] = []
 
 
 def _collect_collection_debug_info(target_collection: Any, collection_name: str) -> Dict[str, Any]:
@@ -1779,6 +1783,153 @@ def _build_saint_name_index() -> List[str]:
     if saint_name_index:
         return saint_name_index
     return [str(record.get("name", "")) for record in _build_saint_record_index()]
+
+
+def _normalize_arabic_display_text(value: str) -> str:
+    text = unicodedata.normalize("NFKC", value or "")
+    text = text.replace("ی", "ي").replace("ک", "ك").replace("ھ", "ه")
+    text = text.replace("\u0640", "")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _is_plausible_arabic_saint_heading(value: str) -> bool:
+    text = _normalize_arabic_display_text(value)
+    if not text or not _contains_arabic(text):
+        return False
+    if len(text) < 2 or len(text) > 90:
+        return False
+    if re.search(r"[.!؟:؛]", text):
+        return False
+    if re.match(r"^(?:كان|كانت|عاش|عاشت|ولد|ولدت|وُلد|تنيح)\b", text):
+        return False
+    return True
+
+
+def _extract_arabic_saint_headings(document: str) -> List[str]:
+    normalized = unicodedata.normalize("NFKC", document or "")
+    headings: List[str] = []
+
+    for segment in normalized.split("\u271e")[1:]:
+        segment = segment.strip()
+        if not segment:
+            continue
+
+        heading = re.split(r"\s{2,}", segment, maxsplit=1)[0]
+        heading = re.split(r"\s+(?:St\.|SS\.)\b", heading, maxsplit=1)[0]
+        heading = _normalize_arabic_display_text(heading)
+        heading = re.split(
+            r"\s+(?:نشأته|نشأتها|حياته|حياتها|سيرته|سيرتها|طفولته|كان|كانت|عاش|عاشت|ولد|ولدت|وُلد|قال|سأل|يروي|روى|لما|إذ|القتل|لقاء)\b",
+            heading,
+            maxsplit=1,
+        )[0]
+        heading = re.sub(r"\s*\d+\s*$", "", heading).strip()
+        if _is_plausible_arabic_saint_heading(heading):
+            headings.append(heading)
+
+    return headings
+
+
+def _build_arabic_saint_name_index() -> List[str]:
+    global arabic_saint_name_index, arabic_collection
+
+    if arabic_saint_name_index:
+        return arabic_saint_name_index
+    if arabic_collection is None:
+        return []
+
+    names: List[str] = []
+    seen: Set[str] = set()
+    offset = 0
+    page_size = 500
+
+    while True:
+        batch = arabic_collection.get(
+            include=["documents", "metadatas"],
+            where={"title": "full saints arabic"},
+            limit=page_size,
+            offset=offset,
+        )
+        docs = batch.get("documents", []) or []
+        if not docs:
+            break
+
+        for doc in docs:
+            for heading in _extract_arabic_saint_headings(doc or ""):
+                key = _normalize_arabic_alias_key(heading)
+                if not key or key in seen:
+                    continue
+                seen.add(key)
+                names.append(heading)
+
+        if len(docs) < page_size:
+            break
+        offset += len(docs)
+
+    arabic_saint_name_index = names
+    print(f"ARABIC_SAINT_INDEX_COUNT: {len(arabic_saint_name_index)}")
+    return arabic_saint_name_index
+
+
+def _arabic_saint_query_keys(query: str) -> List[str]:
+    keys: List[str] = []
+
+    def add(value: str):
+        key = _normalize_arabic_alias_key(value)
+        if key and key not in keys:
+            keys.append(key)
+
+    add(query)
+    stripped = re.sub(r"\b(?:القديس|القديسة|الانبا|البابا|السيدة)\b", " ", query or "")
+    stripped = re.sub(r"\bمار\s*", "", stripped)
+    add(stripped)
+
+    if "العذراء" in _normalize_arabic_alias_key(query):
+        add("مريم العذراء")
+
+    return keys
+
+
+def _arabic_saint_descriptor_rank(query_key: str, name_key: str) -> int:
+    preferred_descriptors = ["العذراء", "الرسول", "الرسولي", "الكبير"]
+    if any(descriptor in query_key for descriptor in preferred_descriptors):
+        return 0 if any(descriptor in name_key for descriptor in preferred_descriptors) else 1
+    if query_key in {"مريم", "مرقس", "اثناسيوس"}:
+        return 0 if any(descriptor in name_key for descriptor in preferred_descriptors) else 1
+    return 0
+
+
+def _find_arabic_saint_index_matches(query: str, limit: int = 12) -> List[str]:
+    query_keys = _arabic_saint_query_keys(query)
+    if not query_keys:
+        return []
+
+    matches: List[Tuple[int, int, int, str]] = []
+    for name in _build_arabic_saint_name_index():
+        name_key = _normalize_arabic_alias_key(name)
+        if not name_key:
+            continue
+        name_tokens = set(name_key.split())
+        best: Tuple[int, int] | None = None
+        for query_key in query_keys:
+            query_tokens = set(query_key.split())
+            score: int | None = None
+            if query_key == name_key:
+                score = 0
+            elif name_key.startswith(query_key):
+                score = 1
+            elif query_key in name_key:
+                score = 2
+            elif query_tokens and query_tokens.issubset(name_tokens):
+                score = 3
+            if score is not None:
+                rank = _arabic_saint_descriptor_rank(query_key, name_key)
+                candidate = (score, rank)
+                best = candidate if best is None else min(best, candidate)
+        if best is not None:
+            matches.append((best[0], best[1], len(name), name))
+
+    matches.sort(key=lambda item: (item[0], item[1], item[2], item[3]))
+    return [name for _, _, _, name in matches[:max(1, min(limit, 400))]]
 
 
 def _find_weak_saint_mentions(query: str, limit: int = 12) -> List[Dict[str, Any]]:
@@ -2171,7 +2322,11 @@ def chat(req: ChatRequest):
                         "options": clean_entities,
                     }
 
-            suggestion_options = _find_saint_suggestions(ambiguous_query, limit=10)
+            suggestion_options = (
+                _find_arabic_saint_index_matches(ambiguous_query, limit=10)
+                if detected_language == "ar"
+                else _find_saint_suggestions(ambiguous_query, limit=10)
+            )
             if len(suggestion_options) > 1:
                 clean_entities = suggestion_options
                 last_list = {str(i + 1): name for i, name in enumerate(clean_entities)}
@@ -2411,21 +2566,25 @@ SOURCES:
 
 
 @app.get("/saint-suggestions", response_model=SaintSuggestionResponse)
-def saint_suggestions(q: str, limit: int = 8):
-    global collection, oai_client
+def saint_suggestions(q: str, limit: int = 8, language: str = "en"):
+    global collection, arabic_collection, oai_client
 
     query = (q or "").strip()
     if len(query) < 2:
         return {"suggestions": []}
 
-    if collection is None or oai_client is None:
+    if collection is None or arabic_collection is None or oai_client is None:
         startup()
-        if collection is None or oai_client is None:
+        if collection is None or arabic_collection is None or oai_client is None:
             raise HTTPException(status_code=500, detail="Server not initialized")
 
     try:
-        suggestions = _find_saint_suggestions(query, limit=limit)
-        _log_saint_query(query, _normalize_saint_search_query(query), suggestions)
+        if _detect_language(language, query) == "ar":
+            suggestions = _find_arabic_saint_index_matches(query, limit=limit)
+            _log_saint_query(query, _normalize_arabic_alias_key(query), suggestions)
+        else:
+            suggestions = _find_saint_suggestions(query, limit=limit)
+            _log_saint_query(query, _normalize_saint_search_query(query), suggestions)
         return {"suggestions": suggestions}
     except Exception as e:
         print("ERROR IN /saint-suggestions:", repr(e))
@@ -2433,21 +2592,30 @@ def saint_suggestions(q: str, limit: int = 8):
 
 
 @app.get("/saints", response_model=SaintsListResponse)
-def saints_list(q: str = "", search: str = "", limit: int = 400, offset: int = 0):
-    global collection, oai_client
+def saints_list(q: str = "", search: str = "", limit: int = 400, offset: int = 0, language: str = "en"):
+    global collection, arabic_collection, oai_client
 
-    if collection is None or oai_client is None:
+    if collection is None or arabic_collection is None or oai_client is None:
         startup()
-        if collection is None or oai_client is None:
+        if collection is None or arabic_collection is None or oai_client is None:
             raise HTTPException(status_code=500, detail="Server not initialized")
 
     try:
-        saints = _build_saint_name_index()
         raw_query = q or search
-        query = _normalize_saint_search_query(raw_query)
-        if query:
-            saints = _find_saint_index_matches(raw_query, limit=400)
-            _log_saint_query(raw_query, query, saints)
+        if _detect_language(language, raw_query) == "ar":
+            saints = _build_arabic_saint_name_index()
+            query = _normalize_arabic_alias_key(raw_query)
+            if query:
+                saints = _find_arabic_saint_index_matches(raw_query, limit=400)
+                _log_saint_query(raw_query, query, saints)
+            print(f"SAINT_QUERY_LANGUAGE: ar")
+        else:
+            saints = _build_saint_name_index()
+            query = _normalize_saint_search_query(raw_query)
+            if query:
+                saints = _find_saint_index_matches(raw_query, limit=400)
+                _log_saint_query(raw_query, query, saints)
+            print(f"SAINT_QUERY_LANGUAGE: en")
         safe_limit = max(1, min(limit, 400))
         safe_offset = max(0, offset)
         paged_saints = saints[safe_offset:safe_offset + safe_limit]
