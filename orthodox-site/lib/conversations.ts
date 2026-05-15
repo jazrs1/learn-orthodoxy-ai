@@ -194,11 +194,13 @@ export async function saveChatTurn({
   conversationId,
   question,
   assistantMessage,
+  saveUserMessage = true,
 }: {
   sessionId: string;
   conversationId?: string;
   question: string;
   assistantMessage: Omit<ChatMessage, "role">;
+  saveUserMessage?: boolean;
 }) {
   return withTransaction(async (client) => {
     let conversation = conversationId
@@ -227,22 +229,27 @@ export async function saveChatTurn({
       conversation = created.rows[0];
     }
 
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: question,
-      entities: [],
-      options: [],
-      sources: [],
-    };
-
     const firstSortOrder = await getNextSortOrder(client, conversation.id);
-    await insertMessage(client, conversation.id, userMessage, firstSortOrder);
+    const userMessage: ChatMessage | null = saveUserMessage
+      ? {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: question,
+          entities: [],
+          options: [],
+          sources: [],
+        }
+      : null;
+
+    if (userMessage) {
+      await insertMessage(client, conversation.id, userMessage, firstSortOrder);
+    }
+
     await insertMessage(
       client,
       conversation.id,
       { ...assistantMessage, role: "assistant" },
-      firstSortOrder + 1
+      firstSortOrder + (userMessage ? 1 : 0)
     );
 
     const updatedConversation = await client.query<ConversationRow>(

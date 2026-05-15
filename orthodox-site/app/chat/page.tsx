@@ -551,10 +551,11 @@ function ChatPageContent() {
   );
 
   const handleSendMessage = useCallback(
-    async (rawQuestion: string, options?: { displayMessage?: string; mode?: ChatMode }) => {
+    async (rawQuestion: string, options?: { displayMessage?: string; mode?: ChatMode; hideUserMessage?: boolean }) => {
       const question = followUpToUserMessage(rawQuestion.trim());
       if (!question || submittingRef.current) return;
       const displayQuestion = options?.displayMessage?.trim() || question;
+      const hideUserMessage = Boolean(options?.hideUserMessage);
 
       let conversationId = activeConversationId;
       if (!conversationId && createdConversationRef.current) {
@@ -568,12 +569,12 @@ function ChatPageContent() {
       const optimisticAssistantId = crypto.randomUUID();
       const nextMessages = [
         ...((currentConversation?.id === localConversationId ? currentConversation.messages : []) || []),
-        optimisticMessage(optimisticUserId, "user", displayQuestion),
+        ...(hideUserMessage ? [] : [optimisticMessage(optimisticUserId, "user", displayQuestion)]),
         { ...optimisticMessage(optimisticAssistantId, "assistant", ""), isTyping: true },
       ];
 
-      pendingScrollToUserMessageRef.current = true;
-      pendingScrollToMessageIdRef.current = optimisticUserId;
+      pendingScrollToUserMessageRef.current = !hideUserMessage;
+      pendingScrollToMessageIdRef.current = hideUserMessage ? "" : optimisticUserId;
 
       setCurrentConversation((prev) =>
         prev && prev.id === localConversationId
@@ -617,9 +618,16 @@ function ChatPageContent() {
           console.log("CREATE_CONVERSATION", { mode: "reuse", conversationId });
         }
 
-        console.log("SAVE_USER_MESSAGE", { conversationId });
+        console.log("SAVE_CHAT_TURN", { conversationId, hideUserMessage });
         console.log("CALL_BACKEND", { conversationId, question, displayQuestion, mode: requestMode, language });
-        const result = await sendChatRequest({ question, displayQuestion, conversationId, mode: requestMode, language });
+        const result = await sendChatRequest({
+          question,
+          displayQuestion,
+          conversationId,
+          mode: requestMode,
+          language,
+          hideUserMessage,
+        });
         handledChatRef.current = result.conversation.id;
         setIsDraftChat(false);
         console.log("SAVE_ASSISTANT_MESSAGE", {
@@ -634,7 +642,11 @@ function ChatPageContent() {
 
           return {
             ...result.conversation,
-            messages: [...baseMessages, result.userMessage, result.assistantMessage],
+            messages: [
+              ...baseMessages,
+              ...(result.userMessage ? [result.userMessage] : []),
+              result.assistantMessage,
+            ],
           };
         });
         setActiveConversationId(result.conversation.id);
@@ -810,7 +822,7 @@ function ChatPageContent() {
       }
       const displayQuestion = followUpToUserMessage(option);
       const backendQuestion = followUpBackendQuestion(displayQuestion, answerContext);
-      void handleSendMessage(backendQuestion, { displayMessage: displayQuestion });
+      void handleSendMessage(backendQuestion, { displayMessage: displayQuestion, hideUserMessage: true });
     },
     [handleSendMessage, saintLookup, submitSaintLookup]
   );

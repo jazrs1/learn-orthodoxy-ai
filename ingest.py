@@ -19,6 +19,10 @@ from ingest_embeddings import upsert_chunks_with_embeddings
 load_dotenv()
 
 PDF_DIR = "data/pdfs"
+ARABIC_PDF_FILENAMES = {
+    "full arabic catechism.pdf",
+    "full saints arabic.pdf",
+}
 
 CHUNK_SIZE_CHARS = 3500
 CHUNK_OVERLAP_CHARS = 400
@@ -27,6 +31,7 @@ CHUNK_OVERLAP_CHARS = 400
 def extract_pages(pdf_path: str) -> List[Dict[str, Any]]:
     reader = PdfReader(pdf_path)
     pdf_name = os.path.basename(pdf_path)
+    title = os.path.splitext(pdf_name)[0]
     pages = []
 
     for i, page in enumerate(reader.pages):
@@ -35,6 +40,7 @@ def extract_pages(pdf_path: str) -> List[Dict[str, Any]]:
         if text:
             pages.append({
                 "pdf": pdf_name,
+                "title": title,
                 "page": i + 1,
                 "text": text
             })
@@ -68,9 +74,13 @@ def build_chunks(pages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 "id": f'{p["pdf"]}::p{p["page"]}::c{idx}',
                 "text": ch,
                 "metadata": {
+                    "source_type": "pdf",
                     "pdf": p["pdf"],
+                    "title": p.get("title", p["pdf"]),
                     "page": p["page"],
-                    "chunk_index": idx
+                    "chunk_index": idx,
+                    "language": "en",
+                    "source_group": "english",
                 }
             })
     return all_chunks
@@ -83,7 +93,11 @@ def get_collection():
 
 
 def ingest_pdf_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
-    pdf_paths = sorted(glob.glob(os.path.join(pdf_dir, "*.pdf")))
+    pdf_paths = [
+        path
+        for path in sorted(glob.glob(os.path.join(pdf_dir, "*.pdf")))
+        if os.path.basename(path).lower() not in ARABIC_PDF_FILENAMES
+    ]
     if not pdf_paths:
         raise RuntimeError(f"No PDFs found in {pdf_dir}. Put your PDFs there first.")
 

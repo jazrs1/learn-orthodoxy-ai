@@ -20,6 +20,7 @@ type ChatRequestBody = {
   conversationId?: string;
   mode?: "chat" | "saints" | "catechism";
   language?: Language;
+  hideUserMessage?: boolean;
 };
 
 type ChatMode = "chat" | "saints" | "catechism";
@@ -119,6 +120,7 @@ export async function POST(request: Request) {
       conversationId: body.conversationId,
       question: displayQuestion,
       assistantMessage: normalizeAssistantMessage(assistantPayload),
+      saveUserMessage: !body.hideUserMessage,
     });
 
     const response = NextResponse.json({

@@ -7,6 +7,7 @@ from chromadb.config import Settings
 
 
 COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "orthodox_pdfs")
+ARABIC_COLLECTION_NAME = os.getenv("CHROMA_ARABIC_COLLECTION", "orthodox_arabic_pdfs")
 
 
 def _default_chroma_dir() -> str:
@@ -43,6 +44,7 @@ def log_chroma_configuration(context: str = "chroma") -> None:
     print(f"[{context}] CHROMA_DIR env/raw: {get_chroma_dir_env()}")
     print(f"[{context}] resolved_chroma_dir: {get_chroma_path()}")
     print(f"[{context}] collection_name: {COLLECTION_NAME}")
+    print(f"[{context}] arabic_collection_name: {ARABIC_COLLECTION_NAME}")
 
 
 def get_chroma_client():
@@ -57,10 +59,11 @@ def get_chroma_collection(
     client: Any | None = None,
     embedding_function: Any | None = None,
     metadata: dict[str, Any] | None = None,
+    collection_name: str | None = None,
 ) -> Any:
     chroma_client = client or get_chroma_client()
     return chroma_client.get_or_create_collection(
-        COLLECTION_NAME,
+        collection_name or COLLECTION_NAME,
         embedding_function=embedding_function,
         metadata=metadata,
     )

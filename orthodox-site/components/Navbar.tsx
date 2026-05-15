@@ -9,7 +9,7 @@ import { useLanguage } from "./LanguageProvider";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [hash, setHash] = useState("");
 
   const hasSidebarOffset = pathname === "/" || pathname === "/chat";
@@ -74,6 +74,23 @@ export default function Navbar() {
           />
           <span className="nav-title">{t("appName")}</span>
         </Link>
+
+        <div className="language-toggle" aria-label={t("language")}>
+          <button
+            type="button"
+            className={`language-toggle-btn ${language === "en" ? "language-toggle-btn-active" : ""}`}
+            onClick={() => setLanguage("en")}
+          >
+            English
+          </button>
+          <button
+            type="button"
+            className={`language-toggle-btn ${language === "ar" ? "language-toggle-btn-active" : ""}`}
+            onClick={() => setLanguage("ar")}
+          >
+            العربية
+          </button>
+        </div>
 
         <div className="nav-links">
           <Link

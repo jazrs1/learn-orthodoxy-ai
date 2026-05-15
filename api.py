@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from typing import List, Dict, Any, Set, Tuple
 
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 from chroma_store import (
+    ARABIC_COLLECTION_NAME,
     COLLECTION_NAME,
     get_chroma_client,
     get_chroma_collection,
@@ -438,8 +440,17 @@ def _saint_query_variants(saint_name: str) -> List[str]:
     return variants
 
 
-def _retrieve_documents(queries: List[str], top_k: int, entity: str | None = None):
+def _retrieve_documents(
+    queries: List[str],
+    top_k: int,
+    entity: str | None = None,
+    target_collection: Any | None = None,
+    metadata_filter: Dict[str, Any] | None = None,
+):
     global collection
+    search_collection = target_collection or collection
+    if search_collection is None:
+        return [], []
 
     deduped_queries = []
     seen_queries = set()
@@ -457,7 +468,10 @@ def _retrieve_documents(queries: List[str], top_k: int, entity: str | None = Non
     seen_docs = set()
 
     for query in deduped_queries[:8]:
-        retrieved = collection.query(query_texts=[query], n_results=top_k)
+        query_kwargs: Dict[str, Any] = {"query_texts": [query], "n_results": top_k}
+        if metadata_filter:
+            query_kwargs["where"] = metadata_filter
+        retrieved = search_collection.query(**query_kwargs)
         docs = retrieved.get("documents", [[]])[0]
         metas = retrieved.get("metadatas", [[]])[0]
 
@@ -503,6 +517,11 @@ def _contains_arabic(value: str) -> bool:
 
 
 def _detect_language(selected_language: str | None, question: str) -> str:
+    selected = (selected_language or "").strip().lower()
+    if selected == "ar":
+        return "ar"
+    if selected == "en":
+        return "en"
     if _contains_arabic(question):
         return "ar"
     return "en"
@@ -510,7 +529,7 @@ def _detect_language(selected_language: str | None, question: str) -> str:
 
 def _no_source_answer(language: str) -> str:
     if language == "ar":
-        return "لم أجد معلومات كافية عن هذا في المصادر المتاحة."
+        return "لم أجد معلومات كافية عن هذا في المصادر العربية المتاحة."
     return "I could not find enough about that in the loaded sources."
 
 
@@ -931,6 +950,23 @@ def _log_retrieval_debug(
     print("TOP_CHUNK_PREVIEWS:", previews)
     print("RELEVANCE_ACCEPTED_COUNT:", accepted_count)
     print("RELEVANCE_REJECTED_COUNT:", rejected_count)
+
+
+def _collection_count_safe(target_collection: Any | None) -> int:
+    if target_collection is None:
+        return 0
+    try:
+        return int(target_collection.count())
+    except Exception:
+        return 0
+
+
+def _arabic_metadata_filter_for_mode(mode: str) -> Dict[str, Any] | None:
+    if mode == "catechism":
+        return {"title": "full arabic catechism"}
+    if mode == "saints":
+        return {"title": "full saints arabic"}
+    return None
 
 
 def _response_grounding_status(answer: str, docs: List[str]) -> str:
@@ -1374,34 +1410,28 @@ app.add_middleware(
 
 chroma_client = None
 collection = None
+arabic_collection = None
 oai_client = None
 last_list = {}
 saint_name_index: List[str] = []
 saint_record_index: List[Dict[str, Any]] = []
 
 
-def _collect_chroma_debug_info() -> Dict[str, Any]:
-    resolved_dir = get_resolved_chroma_dir()
-    resolved_path = str(resolved_dir)
-    path_exists = resolved_dir.exists()
-
+def _collect_collection_debug_info(target_collection: Any, collection_name: str) -> Dict[str, Any]:
     info: Dict[str, Any] = {
-        "chroma_dir_env": get_chroma_dir_env(),
-        "resolved_chroma_dir": resolved_path,
-        "directory_exists": path_exists,
-        "collection_name": COLLECTION_NAME,
-        "collection_ready": collection is not None,
+        "collection_name": collection_name,
+        "collection_ready": target_collection is not None,
         "document_count": 0,
         "source_type_counts": {},
         "pdf_counts": {},
         "sample_items": [],
     }
 
-    if collection is None:
+    if target_collection is None:
         return info
 
     try:
-        info["document_count"] = int(collection.count())
+        info["document_count"] = int(target_collection.count())
     except Exception as exc:
         info["count_error"] = str(exc)
         return info
@@ -1416,7 +1446,7 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
         page_size = 500
 
         while True:
-            metadata_batch = collection.get(include=["metadatas"], limit=page_size, offset=offset)
+            metadata_batch = target_collection.get(include=["metadatas"], limit=page_size, offset=offset)
             metadatas = metadata_batch.get("metadatas", []) or []
             if not metadatas:
                 break
@@ -1440,7 +1470,7 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
         info["metadata_count_error"] = str(exc)
 
     try:
-        batch = collection.get(include=["documents", "metadatas"], limit=3, offset=0)
+        batch = target_collection.get(include=["documents", "metadatas"], limit=3, offset=0)
         docs = batch.get("documents", []) or []
         metas = batch.get("metadatas", []) or []
         sample_items = []
@@ -1448,7 +1478,7 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
             sample_items.append(
                 {
                     "metadata": metadata or {},
-                    "document_preview": (doc or "")[:240],
+                    "document_preview": re.sub(r"\s+", " ", (doc or "")[:240]).strip(),
                 }
             )
         info["sample_items"] = sample_items
@@ -1458,9 +1488,32 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
     return info
 
 
+def _arabic_source_files_found() -> List[str]:
+    pdf_dir = Path("data/pdfs")
+    expected = ["full arabic catechism.pdf", "full saints arabic.pdf"]
+    return [name for name in expected if (pdf_dir / name).exists()]
+
+
+def _collect_chroma_debug_info() -> Dict[str, Any]:
+    resolved_dir = get_resolved_chroma_dir()
+    resolved_path = str(resolved_dir)
+    path_exists = resolved_dir.exists()
+
+    return {
+        "chroma_dir_env": get_chroma_dir_env(),
+        "resolved_chroma_dir": resolved_path,
+        "directory_exists": path_exists,
+        "english": _collect_collection_debug_info(collection, COLLECTION_NAME),
+        "arabic": {
+            **_collect_collection_debug_info(arabic_collection, ARABIC_COLLECTION_NAME),
+            "source_files_found": _arabic_source_files_found(),
+        },
+    }
+
+
 @app.on_event("startup")
 def startup():
-    global chroma_client, collection, oai_client
+    global chroma_client, collection, arabic_collection, oai_client
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -1481,16 +1534,25 @@ def startup():
         embedding_function=embed_fn,
         metadata={"source": COLLECTION_NAME},
     )
+    arabic_collection = get_chroma_collection(
+        client=chroma_client,
+        embedding_function=embed_fn,
+        collection_name=ARABIC_COLLECTION_NAME,
+        metadata={"source": ARABIC_COLLECTION_NAME, "language": "ar"},
+    )
     print(f"CHROMA_DIR env: {get_chroma_dir_env()}")
     print(f"Collection name: {COLLECTION_NAME}")
+    print(f"Arabic collection name: {ARABIC_COLLECTION_NAME}")
     print(f"Ingest start; resolved_chroma_dir: {get_resolved_chroma_dir()}")
     print(f"Collection count before ingest: {int(collection.count())}")
+    print(f"Arabic collection count: {int(arabic_collection.count())}")
 
     oai_client = OpenAI(api_key=api_key)
     debug_info = _collect_chroma_debug_info()
     print(f"Resolved Chroma dir: {debug_info['resolved_chroma_dir']}")
     print(f"Chroma dir exists: {debug_info['directory_exists']}")
-    print(f"Chroma document count: {debug_info['document_count']}")
+    print(f"English Chroma document count: {debug_info['english']['document_count']}")
+    print(f"Arabic Chroma document count: {debug_info['arabic']['document_count']}")
     try:
         print(f"SAINTS_LOADED_COUNT: {len(_build_saint_name_index())}")
     except Exception as exc:
@@ -1503,6 +1565,7 @@ def health():
     return {
         "status": "ok",
         "collection_ready": collection is not None,
+        "arabic_collection_ready": arabic_collection is not None,
         "openai_ready": oai_client is not None,
     }
 
@@ -1512,18 +1575,41 @@ def root():
     return {
         "status": "alive",
         "service": "orthodox-api",
-        "routes": ["/", "/health", "/debug/chroma", "/debug/saints", "/chat", "/saints", "/saint-suggestions"],
+        "routes": ["/", "/health", "/debug/chroma", "/debug/chroma/en", "/debug/chroma/ar", "/debug/saints", "/chat", "/saints", "/saint-suggestions"],
     }
 
 
 @app.get("/debug/chroma")
 def debug_chroma():
+    global collection, arabic_collection, oai_client
+
+    if collection is None or arabic_collection is None or oai_client is None:
+        startup()
+
+    return _collect_chroma_debug_info()
+
+
+@app.get("/debug/chroma/en")
+def debug_chroma_en():
     global collection, oai_client
 
     if collection is None or oai_client is None:
         startup()
 
-    return _collect_chroma_debug_info()
+    return _collect_collection_debug_info(collection, COLLECTION_NAME)
+
+
+@app.get("/debug/chroma/ar")
+def debug_chroma_ar():
+    global arabic_collection, oai_client
+
+    if arabic_collection is None or oai_client is None:
+        startup()
+
+    return {
+        **_collect_collection_debug_info(arabic_collection, ARABIC_COLLECTION_NAME),
+        "source_files_found": _arabic_source_files_found(),
+    }
 
 
 def _is_probable_saint_heading_line(value: str) -> bool:
@@ -1886,16 +1972,16 @@ def _saint_missing_response(raw_query: str, language: str = "en") -> Dict[str, A
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
-    global last_list, collection, oai_client
+    global last_list, collection, arabic_collection, oai_client
 
     try:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise HTTPException(status_code=500, detail="Missing OPENAI_API_KEY env var on server")
 
-        if collection is None or oai_client is None:
+        if collection is None or arabic_collection is None or oai_client is None:
             startup()
-            if collection is None or oai_client is None:
+            if collection is None or arabic_collection is None or oai_client is None:
                 raise HTTPException(status_code=500, detail="Server not initialized")
 
         original_question = (req.question or "").strip()
@@ -1922,23 +2008,118 @@ def chat(req: ChatRequest):
             question, history_resolved_entity = _rewrite_question_with_history(original_question, req.history)
             question = _canonicalize_saint_text(question)
 
-        english_retrieval_query = (
-            _build_english_retrieval_query(original_question, mode)
-            if detected_language == "ar"
-            else question
-        )
-        retrieval_question = english_retrieval_query if detected_language == "ar" else question
+        english_retrieval_query = "" if detected_language == "ar" else question
+        retrieval_question = original_question if detected_language == "ar" else question
         entity = manual_saint_match["record_name"] if manual_saint_match else None
         clean_entities = []
 
         print("\n--- NEW REQUEST ---")
         print("ORIGINAL_QUESTION:", original_question)
-        print("DETECTED_LANGUAGE:", detected_language)
+        print("LANGUAGE:", detected_language)
+        print("MODE:", mode)
+        print("ENGLISH_DOC_COUNT:", _collection_count_safe(collection))
+        print("ARABIC_DOC_COUNT:", _collection_count_safe(arabic_collection))
         print("ENGLISH_RETRIEVAL_QUERY:", english_retrieval_query)
         print("MATCHED_SAINT_ALIAS:", matched_saint_alias)
-        print("Detected mode:", mode)
         print("History-resolved entity:", history_resolved_entity)
         print("History:", req.history)
+
+        if detected_language == "ar":
+            metadata_filter = _arabic_metadata_filter_for_mode(mode)
+            top_k = max(1, min(req.top_k, 12))
+            retrieval_top_k = min(16, max(top_k, 10))
+            retrieval_queries = [retrieval_question]
+
+            docs, metas = _retrieve_documents(
+                retrieval_queries,
+                top_k=retrieval_top_k,
+                target_collection=arabic_collection,
+                metadata_filter=metadata_filter,
+            )
+            filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
+                docs,
+                metas,
+                retrieval_question,
+                entity=None,
+            )
+            docs, metas = filtered_docs, filtered_metas
+
+            print("COLLECTION_USED:", ARABIC_COLLECTION_NAME)
+            print("METADATA_FILTER_USED:", metadata_filter)
+            print("RETRIEVED_CHUNK_COUNT:", len(docs))
+            print("TOP_SOURCE_TITLES:", [_source_context_label(meta) for meta in metas[:3]])
+            print("TOP_CHUNK_PREVIEWS:", [re.sub(r"\s+", " ", (doc or "")[:180]).strip() for doc in docs[:3]])
+            print("RELEVANCE_REJECTED_COUNT:", rejected_count)
+
+            if not docs or not metas:
+                print("Response grounding status: no-source")
+                return {
+                    "answer": _no_source_answer("ar"),
+                    "sources": [],
+                    "entities": [],
+                    "options": [],
+                }
+
+            sources = [_source_from_metadata(m) for m in metas]
+            seen = set()
+            unique_sources = []
+            for source in sources:
+                key = _source_key(source)
+                if key in seen:
+                    continue
+                seen.add(key)
+                unique_sources.append(source)
+
+            context = "\n\n".join(
+                f"[Source: {_source_context_label(meta)}]\n{doc}"
+                for doc, meta in zip(docs, metas)
+            )
+
+            system_prompt = """
+أنت مساعد للتعليم الأرثوذكسي.
+
+القواعد:
+- أجب باللغة العربية فقط.
+- أجب فقط من سياق المصادر العربية المرفق.
+- هذه المصادر العربية هي المصدر الوحيد المسموح به في هذا الطلب.
+- لا تستخدم مصادر إنجليزية ولا تترجم إجابات من مصادر إنجليزية.
+- إذا لم تجد في سياق المصادر العربية معلومات كافية، قل بالضبط:
+  "لم أجد معلومات كافية عن هذا في المصادر العربية المتاحة."
+- لا تخترع معلومات غير موجودة في المصادر.
+- لا تضف قسمًا للمصادر في نهاية الإجابة.
+"""
+
+            user_prompt = f"""
+السؤال:
+{original_question}
+
+السياق من المصادر العربية:
+{context}
+"""
+
+            resp = oai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                temperature=0.2,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+
+            answer = resp.choices[0].message.content or ""
+            followup_options: List[str] = []
+            if mode == "catechism":
+                followup_options = _catechism_followup_options(answer, original_question, language="ar")
+
+            print("Answer generated successfully.")
+            print("Response grounding status:", _response_grounding_status(answer, docs))
+
+            return {
+                "answer": answer,
+                "sources": unique_sources[:6],
+                "entities": [],
+                "options": followup_options,
+            }
 
         saint_intent = _extract_saint_chat_intent(question)
         if saint_intent:
@@ -2014,6 +2195,8 @@ def chat(req: ChatRequest):
         # Retrieval
         retrieval_queries = _build_retrieval_queries(retrieval_question, entity=entity)
         docs, metas = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
+        print("COLLECTION_USED:", COLLECTION_NAME)
+        print("METADATA_FILTER_USED:", None)
         print("Retrieval queries:", retrieval_queries)
         filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
             docs,

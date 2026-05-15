@@ -135,6 +135,36 @@ textarea {
   gap: 1.15rem;
 }
 
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  border: 1px solid rgba(58, 38, 22, 0.16);
+  border-radius: 999px;
+  padding: 0.18rem;
+  background: rgba(255, 255, 255, 0.55);
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.language-toggle-btn {
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft);
+  padding: 0.32rem 0.7rem;
+  cursor: pointer;
+  font-family: "Merriweather", serif;
+  font-size: 0.82rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.language-toggle-btn-active {
+  background: var(--accent);
+  color: white;
+}
+
 /* HOME */
 
 .home-page {
@@ -1500,6 +1530,11 @@ html[dir="rtl"] .navbar-sidebar-toggle {
   margin-left: 0.2rem;
 }
 
+html[dir="rtl"] .language-toggle {
+  margin-left: 1rem;
+  margin-right: auto;
+}
+
 /* MOBILE */
 
 @media (max-width: 768px) {
@@ -1519,6 +1554,23 @@ html[dir="rtl"] .navbar-sidebar-toggle {
 
   .nav-links {
     display: none;
+  }
+
+  .language-toggle {
+    position: absolute;
+    right: 0.75rem;
+    margin: 0;
+  }
+
+  html[dir="rtl"] .language-toggle {
+    right: auto;
+    left: 0.75rem;
+    margin: 0;
+  }
+
+  .language-toggle-btn {
+    padding: 0.28rem 0.52rem;
+    font-size: 0.76rem;
   }
 
   .nav-cross {
@@ -1845,6 +1897,19 @@ html[dir="rtl"] .navbar-sidebar-toggle {
 
   .nav-links {
     display: none;
+  }
+
+  .language-toggle {
+    right: 0.45rem;
+  }
+
+  html[dir="rtl"] .language-toggle {
+    left: 0.45rem;
+  }
+
+  .language-toggle-btn {
+    padding: 0.24rem 0.42rem;
+    font-size: 0.7rem;
   }
 
   .mobile-sidebar-toggle {

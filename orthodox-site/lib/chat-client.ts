@@ -11,7 +11,7 @@ type ConversationResponse = {
 
 type ChatResponse = {
   conversation: ConversationSummary;
-  userMessage: ChatMessage;
+  userMessage: ChatMessage | null;
   assistantMessage: ChatMessage;
 };
 
@@ -60,6 +60,7 @@ export async function sendChatRequest(payload: {
   conversationId?: string;
   mode?: "chat" | "saints" | "catechism";
   language?: Language;
+  hideUserMessage?: boolean;
 }) {
   const response = await fetch("/api/chat", {
     method: "POST",

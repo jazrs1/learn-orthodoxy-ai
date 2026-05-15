@@ -1,9 +1,11 @@
 "use client";
 
-import { createContext, type ReactNode, useContext, useEffect, useMemo } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import {
   directionForLanguage,
+  LANGUAGE_STORAGE_KEY,
   Language,
+  normalizeLanguage,
   TranslationKey,
   translations,
 } from "../lib/i18n";
@@ -18,7 +20,21 @@ type LanguageContextValue = {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const language: Language = "en";
+  const [language, setLanguageState] = useState<Language>("en");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedLanguage = normalizeLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY));
+    if (storedLanguage === language) return;
+
+    const timer = window.setTimeout(() => {
+      setLanguageState(storedLanguage);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [language]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -34,14 +50,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return {
       language,
       dir,
-      setLanguage() {
-        // The full Arabic UI toggle is intentionally disabled for now.
+      setLanguage(nextLanguage) {
+        const normalized = normalizeLanguage(nextLanguage);
+        setLanguageState(normalized);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(LANGUAGE_STORAGE_KEY, normalized);
+        }
       },
       t(key) {
-        return translations.en[key];
+        return translations[language][key] || translations.en[key];
       },
     };
-  }, []);
+  }, [language]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

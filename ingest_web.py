@@ -117,6 +117,8 @@ def build_chunks(url: str, title: str, text: str) -> List[Dict[str, Any]]:
                     "url": url,
                     "title": title,
                     "chunk_index": idx,
+                    "language": "en",
+                    "source_group": "english",
                 },
             }
         )
