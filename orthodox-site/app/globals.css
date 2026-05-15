@@ -586,15 +586,9 @@ textarea {
 .message-actions {
   display: flex;
   align-items: center;
-  opacity: 0;
-  transition: opacity 0.18s ease;
+  opacity: 1;
   margin-top: -0.05rem;
   padding: 0 0.15rem;
-}
-
-.message-row:hover .message-actions,
-.message-row:focus-within .message-actions {
-  opacity: 1;
 }
 
 .user-actions {
@@ -638,8 +632,8 @@ textarea {
 }
 
 .user-actions .message-copy-icon {
-  filter: brightness(0) invert(1);
-  opacity: 0.9;
+  filter: brightness(0) saturate(100%) invert(27%) sepia(17%) saturate(1467%) hue-rotate(344deg) brightness(92%) contrast(89%);
+  opacity: 0.85;
 }
 
 .assistant-actions .message-copy-icon {
