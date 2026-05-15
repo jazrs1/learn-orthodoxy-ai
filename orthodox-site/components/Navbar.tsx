@@ -97,6 +97,9 @@ export default function Navbar() {
           >
             {t("saintsSearch")}
           </Link>
+          <Link href="/sources" className={navLinkClass(pathname === "/sources")}>
+            {t("credits")}
+          </Link>
           <Link href="/contact" className={navLinkClass(pathname === "/contact")}>
             {t("contact")}
           </Link>
