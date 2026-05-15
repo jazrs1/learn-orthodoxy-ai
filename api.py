@@ -536,6 +536,256 @@ def _no_source_answer(language: str) -> str:
     return "I could not find enough about that in the loaded sources."
 
 
+ARABIC_LEXICAL_STOPWORDS = {
+    "من",
+    "ما",
+    "ماذا",
+    "هو",
+    "هي",
+    "هم",
+    "عن",
+    "في",
+    "على",
+    "الى",
+    "إلى",
+    "هذا",
+    "هذه",
+    "ذلك",
+    "التي",
+    "الذي",
+    "الذين",
+    "كيف",
+    "هل",
+    "معنى",
+    "معني",
+    "شرح",
+    "القديس",
+    "القديسه",
+    "القديسة",
+    "شهيد",
+    "شهيده",
+    "شهيدة",
+    "الشهيد",
+    "الشهيده",
+    "الشهيدة",
+    "الانبا",
+    "البابا",
+    "السيده",
+    "السيدة",
+    "مار",
+    "الكنيسه",
+    "الكنيسة",
+    "القبطيه",
+    "القبطية",
+    "الارثوذكسيه",
+    "الأرثوذكسية",
+}
+
+
+def _normalize_arabic_context_text(value: str) -> str:
+    text = unicodedata.normalize("NFKC", value or "")
+    text = text.replace("ی", "ي").replace("ک", "ك").replace("ھ", "ه")
+    text = text.replace("\u0640", "")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def _arabic_search_text(value: str) -> str:
+    return _normalize_arabic_alias_key(_normalize_arabic_context_text(value))
+
+
+def _strip_arabic_query_titles(value: str) -> str:
+    removable = {
+        *ARABIC_LEXICAL_STOPWORDS,
+        "انبا",
+        "الانبا",
+        "قديس",
+        "القديس",
+        "قديسه",
+        "قديسة",
+        "القديسه",
+        "القديسة",
+        "بابا",
+        "البابا",
+        "سيده",
+        "السيده",
+        "السيدة",
+        "مار",
+    }
+    return " ".join(word for word in _arabic_search_text(value).split() if word not in removable)
+
+
+def _arabic_query_terms(question: str) -> List[str]:
+    key = _arabic_search_text(question)
+    terms: List[str] = []
+
+    def add(value: str):
+        normalized = _arabic_search_text(value)
+        if len(normalized) >= 3 and normalized not in ARABIC_LEXICAL_STOPWORDS and normalized not in terms:
+            terms.append(normalized)
+
+    for word in key.split():
+        add(word)
+
+    if "معمود" in key:
+        for value in ["معموديه", "المعموديه", "المعمودية", "عماد", "الميرون", "ولاده جديده"]:
+            add(value)
+    if "ميرون" in key:
+        for value in ["الميرون", "المسحه", "مسحه", "الروح القدس"]:
+            add(value)
+    if "رسول" in key or "الاباء" in key:
+        for value in ["الاباء", "الرسل", "رسولي", "رسوليون", "رسوليين", "تلاميذ الرسل"]:
+            add(value)
+    if "ارثوذكس" in key and re.search(r"(اتحول|انضم|اصبح|ادخل|اكون)", key):
+        for value in ["الموعوظ", "الموعوظين", "الايمان", "المعموديه", "الميرون", "الكنيسه"]:
+            add(value)
+
+    try:
+        for saint_name in _find_arabic_saint_index_matches(question, limit=3):
+            for word in _arabic_search_text(saint_name).split():
+                add(word)
+    except Exception as exc:
+        print("ARABIC_SAINT_TERM_EXPANSION_FAILED:", repr(exc))
+
+    return terms
+
+
+def _arabic_query_phrases(question: str) -> List[str]:
+    phrases: List[str] = []
+
+    def add(value: str):
+        normalized = _arabic_search_text(value)
+        if len(normalized) >= 3 and normalized not in ARABIC_LEXICAL_STOPWORDS and normalized not in phrases:
+            phrases.append(normalized)
+
+    add(question)
+    add(_strip_arabic_query_titles(question))
+    try:
+        for saint_name in _find_arabic_saint_index_matches(question, limit=4):
+            add(saint_name)
+    except Exception as exc:
+        print("ARABIC_SAINT_PHRASE_EXPANSION_FAILED:", repr(exc))
+
+    return phrases
+
+
+def _retrieve_arabic_lexical_documents(
+    question: str,
+    top_k: int,
+    metadata_filter: Dict[str, Any] | None = None,
+) -> Tuple[List[str], List[Dict[str, Any]]]:
+    if arabic_collection is None:
+        return [], []
+
+    terms = _arabic_query_terms(question)
+    phrases = _arabic_query_phrases(question)
+    if not terms:
+        return [], []
+
+    scored: List[Tuple[int, int, str, Dict[str, Any]]] = []
+    offset = 0
+    page_size = 500
+
+    while True:
+        get_kwargs: Dict[str, Any] = {
+            "include": ["documents", "metadatas"],
+            "limit": page_size,
+            "offset": offset,
+        }
+        if metadata_filter:
+            get_kwargs["where"] = metadata_filter
+        batch = arabic_collection.get(**get_kwargs)
+        docs = batch.get("documents", []) or []
+        metadatas = batch.get("metadatas", []) or []
+        if not docs:
+            break
+
+        for doc, meta in zip(docs, metadatas):
+            metadata = meta or {}
+            searchable = _arabic_search_text(
+                " ".join(
+                    [
+                        doc or "",
+                        str(metadata.get("title", "") or ""),
+                        str(metadata.get("pdf", "") or ""),
+                    ]
+                )
+            )
+            if not searchable:
+                continue
+            hits = sum(1 for term in terms if term in searchable)
+            phrase_hits = sum(1 for phrase in phrases if phrase in searchable)
+            if hits <= 0 and phrase_hits <= 0:
+                continue
+            score = hits * 10 + phrase_hits * 120
+            if len(terms) >= 2 and all(term in searchable for term in terms[:2]):
+                score += 25
+            if " ".join(terms[:2]) and " ".join(terms[:2]) in searchable:
+                score += 40
+            scored.append((score, int(metadata.get("page") or 0), doc or "", metadata))
+
+        if len(docs) < page_size:
+            break
+        offset += len(docs)
+
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    docs: List[str] = []
+    metas: List[Dict[str, Any]] = []
+    seen: Set[Tuple[Any, ...]] = set()
+    for _, _, doc, meta in scored:
+        key = (
+            meta.get("title"),
+            meta.get("pdf"),
+            meta.get("page"),
+            meta.get("chunk_index"),
+            doc[:80],
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        docs.append(doc)
+        metas.append(meta)
+        if len(docs) >= max(1, min(top_k, 16)):
+            break
+
+    print("ARABIC_LEXICAL_TERMS:", terms[:12])
+    print("ARABIC_LEXICAL_PHRASES:", phrases[:8])
+    print("ARABIC_LEXICAL_MATCH_COUNT:", len(docs))
+    return docs, metas
+
+
+def _merge_document_batches(
+    primary_docs: List[str],
+    primary_metas: List[Dict[str, Any]],
+    secondary_docs: List[str],
+    secondary_metas: List[Dict[str, Any]],
+    top_k: int,
+) -> Tuple[List[str], List[Dict[str, Any]]]:
+    merged_docs: List[str] = []
+    merged_metas: List[Dict[str, Any]] = []
+    seen: Set[Tuple[Any, ...]] = set()
+
+    for doc, meta in [*zip(primary_docs, primary_metas), *zip(secondary_docs, secondary_metas)]:
+        metadata = meta or {}
+        key = (
+            metadata.get("source_type"),
+            metadata.get("title"),
+            metadata.get("pdf"),
+            metadata.get("page"),
+            metadata.get("chunk_index"),
+            (doc or "")[:100],
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        merged_docs.append(doc or "")
+        merged_metas.append(metadata)
+        if len(merged_docs) >= top_k:
+            break
+
+    return merged_docs, merged_metas
+
+
 def _arabic_retrieval_hints(question: str) -> List[str]:
     hints: List[str] = []
     q = question or ""
@@ -1879,9 +2129,7 @@ def _arabic_saint_query_keys(query: str) -> List[str]:
             keys.append(key)
 
     add(query)
-    stripped = re.sub(r"\b(?:القديس|القديسة|الانبا|البابا|السيدة)\b", " ", query or "")
-    stripped = re.sub(r"\bمار\s*", "", stripped)
-    add(stripped)
+    add(_strip_arabic_query_titles(query))
 
     if "العذراء" in _normalize_arabic_alias_key(query):
         add("مريم العذراء")
@@ -2187,6 +2435,19 @@ def chat(req: ChatRequest):
                 target_collection=arabic_collection,
                 metadata_filter=metadata_filter,
             )
+            lexical_docs, lexical_metas = _retrieve_arabic_lexical_documents(
+                retrieval_question,
+                top_k=retrieval_top_k,
+                metadata_filter=metadata_filter,
+            )
+            if lexical_docs:
+                docs, metas = _merge_document_batches(
+                    lexical_docs,
+                    lexical_metas,
+                    docs,
+                    metas,
+                    retrieval_top_k,
+                )
             filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
                 docs,
                 metas,
@@ -2199,7 +2460,7 @@ def chat(req: ChatRequest):
             print("METADATA_FILTER_USED:", metadata_filter)
             print("RETRIEVED_CHUNK_COUNT:", len(docs))
             print("TOP_SOURCE_TITLES:", [_source_context_label(meta) for meta in metas[:3]])
-            print("TOP_CHUNK_PREVIEWS:", [re.sub(r"\s+", " ", (doc or "")[:180]).strip() for doc in docs[:3]])
+            print("TOP_CHUNK_PREVIEWS:", [_normalize_arabic_context_text(doc)[:180] for doc in docs[:3]])
             print("RELEVANCE_REJECTED_COUNT:", rejected_count)
 
             if not docs or not metas:
@@ -2222,7 +2483,7 @@ def chat(req: ChatRequest):
                 unique_sources.append(source)
 
             context = "\n\n".join(
-                f"[Source: {_source_context_label(meta)}]\n{doc}"
+                f"[Source: {_source_context_label(meta)}]\n{_normalize_arabic_context_text(doc)}"
                 for doc, meta in zip(docs, metas)
             )
 

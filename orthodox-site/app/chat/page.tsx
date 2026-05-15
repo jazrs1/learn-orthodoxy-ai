@@ -319,6 +319,7 @@ function ChatPageContent() {
   const chatMessagesRef = useRef<HTMLDivElement | null>(null);
   const saintsListRef = useRef<HTMLDivElement>(null);
   const saintsLoadingRef = useRef(false);
+  const saintsRequestIdRef = useRef(0);
   const submittingRef = useRef(false);
   const pendingScrollToUserMessageRef = useRef(false);
   const pendingScrollToMessageIdRef = useRef("");
@@ -424,10 +425,12 @@ function ChatPageContent() {
       query?: string;
       offset?: number;
     } = {}) => {
-      if (saintsLoadingRef.current) return;
+      if (saintsLoadingRef.current && !reset) return;
 
       const normalizedQuery = (query ?? saintSearch).trim();
       const nextOffset = typeof offset === "number" ? offset : 0;
+      const requestId = saintsRequestIdRef.current + 1;
+      saintsRequestIdRef.current = requestId;
 
       saintsLoadingRef.current = true;
       setSaintsLoading(true);
@@ -450,6 +453,8 @@ function ChatPageContent() {
         });
         if (!response.ok) throw new Error("Failed to load saints list");
         const data = (await response.json()) as SaintsListResponse;
+        if (requestId !== saintsRequestIdRef.current) return;
+
         const nextNames = Array.isArray(data.saints)
           ? data.saints.filter((name) => typeof name === "string" && name.trim())
           : [];
@@ -458,10 +463,13 @@ function ChatPageContent() {
         setSaintsTotal(typeof data.total === "number" ? data.total : nextNames.length);
         setSaintsError("");
       } catch (error) {
+        if (requestId !== saintsRequestIdRef.current) return;
         setSaintsError(error instanceof Error ? error.message : t("unableToLoadChats"));
       } finally {
-        saintsLoadingRef.current = false;
-        setSaintsLoading(false);
+        if (requestId === saintsRequestIdRef.current) {
+          saintsLoadingRef.current = false;
+          setSaintsLoading(false);
+        }
       }
     },
     [language, saintSearch, t]
