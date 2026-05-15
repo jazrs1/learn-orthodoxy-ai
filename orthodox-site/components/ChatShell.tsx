@@ -33,7 +33,7 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
   const [message, setMessage] = useState(initialValue);
   const pathname = usePathname();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { dir, t } = useLanguage();
+  const { t } = useLanguage();
 
   useEffect(() => {
     setMessage(initialValue);
@@ -108,7 +108,7 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
           placeholder={t("askPlaceholder")}
           rows={1}
           disabled={isSubmitting}
-          dir={dir}
+          dir="auto"
         />
         <button
           type="button"

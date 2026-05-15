@@ -63,16 +63,84 @@ AMBIGUOUS_SAINT_FALLBACKS = {
 
 SAINT_QUERY_PREFIX_PATTERN = r"^(?:(?:who is|tell me about|about)\s+)?(?:(?:st\.?|saint|pope|patriarch|abba|anba)\s+)*"
 
-SAINT_CANONICAL_ALIASES: Dict[str, List[str]] = {
-    "St. Anthony, Father of the Monks": [
-        "St. Anthony the Great",
-        "Saint Anthony the Great",
-        "St. Abba Anthony the Great",
-        "St. Abba Anthony",
-        "Abba Anthony",
-        "Anthony the Great",
-    ],
-}
+SAINT_ALIAS_RECORDS: List[Dict[str, Any]] = [
+    {
+        "canonical": "St. Mary",
+        "english_aliases": [
+            "Saint Mary",
+            "St. Mary Theotokos",
+            "St. Mary, the Virgin Theotokos",
+            "St. Mary the Virgin",
+            "Virgin Mary",
+            "Holy Virgin Mary",
+            "Theotokos",
+            "Mother of God",
+        ],
+        "arabic_aliases": [
+            "السيدة العذراء مريم",
+            "العذراء مريم",
+        ],
+    },
+    {
+        "canonical": "St. Mark",
+        "english_aliases": [
+            "Saint Mark",
+            "St. Mark the Evangelist",
+            "Saint Mark the Evangelist",
+            "Mark the Evangelist",
+            "St. Mark the Apostle",
+            "Saint Mark the Apostle",
+        ],
+        "arabic_aliases": [
+            "مارمرقس",
+            "القديس مارمرقس الرسول",
+        ],
+    },
+    {
+        "canonical": "St. Anthony the Great",
+        "english_aliases": [
+            "Saint Anthony the Great",
+            "St. Anthony, Father of the Monks",
+            "Saint Anthony, Father of the Monks",
+            "St. Abba Anthony the Great",
+            "St. Abba Anthony",
+            "Abba Anthony",
+            "Anthony the Great",
+        ],
+        "arabic_aliases": [
+            "الأنبا أنطونيوس",
+            "الأنبا أنطونيوس الكبير",
+        ],
+    },
+    {
+        "canonical": "St. Athanasius",
+        "english_aliases": [
+            "Saint Athanasius",
+            "St. Athanasius the Apostolic",
+            "Saint Athanasius the Apostolic",
+            "St. Athanasius of Alexandria",
+            "Athanasius the Apostolic",
+        ],
+        "arabic_aliases": [
+            "أثناسيوس الرسولي",
+            "البابا أثناسيوس",
+        ],
+    },
+    {
+        "canonical": "St. Cyril",
+        "english_aliases": [
+            "Saint Cyril",
+            "St. Cyril of Alexandria",
+            "Saint Cyril of Alexandria",
+            "St. Cyril the Great",
+            "Pope Cyril",
+        ],
+        "arabic_aliases": [
+            "كيرلس",
+            "البابا كيرلس",
+        ],
+    },
+]
 
 SAINT_ORDERING_TITLES = {
     "apostle",
@@ -108,6 +176,14 @@ def _canonicalize_saint_text(value: str) -> str:
     )
 
 
+def _manual_saint_alias_values(record: Dict[str, Any]) -> List[str]:
+    return [
+        str(record.get("canonical", "")),
+        *[str(value) for value in record.get("english_aliases", [])],
+        *[str(value) for value in record.get("arabic_aliases", [])],
+    ]
+
+
 def _normalize_saint_match_key(value: str) -> str:
     text = _canonicalize_saint_text(value).lower()
     text = re.sub(r"\bmarys\b", "mary", text)
@@ -117,6 +193,15 @@ def _normalize_saint_match_key(value: str) -> str:
     text = text.replace("\u2019", "").replace("'", "").replace("`", "")
     text = re.sub(r"\b(?:st|saint|saints|abba|anba)\b", " ", text)
     text = re.sub(r"\bthe\b", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _normalize_arabic_alias_key(value: str) -> str:
+    text = value or ""
+    text = re.sub(r"[\u064b-\u065f\u0670\u0640]", "", text)
+    text = text.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
+    text = text.replace("ى", "ي").replace("ة", "ه")
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -150,17 +235,104 @@ def _saint_aliases_for_name(name: str) -> List[str]:
         aliases.append(normalized)
 
     add(name)
-    for canonical, values in SAINT_CANONICAL_ALIASES.items():
-        if _normalize_saint_match_key(canonical) == _normalize_saint_match_key(name):
-            add(canonical)
-            for value in values:
+    name_key = _normalize_saint_match_key(name)
+    for record in SAINT_ALIAS_RECORDS:
+        english_keys = {
+            _normalize_saint_match_key(str(record.get("canonical", ""))),
+            *[
+                _normalize_saint_match_key(str(value))
+                for value in record.get("english_aliases", [])
+            ],
+        }
+        if name_key and name_key in {key for key in english_keys if key}:
+            for value in _manual_saint_alias_values(record):
                 add(value)
 
     return aliases
 
 
+def _matched_manual_arabic_alias(query: str) -> Dict[str, str] | None:
+    query_key = _normalize_arabic_alias_key(query)
+    if not query_key:
+        return None
+
+    best: Dict[str, str] | None = None
+    best_length = 0
+    for record in SAINT_ALIAS_RECORDS:
+        for alias in record.get("arabic_aliases", []):
+            alias_text = str(alias)
+            alias_key = _normalize_arabic_alias_key(alias_text)
+            if not alias_key:
+                continue
+            if query_key == alias_key or alias_key in query_key:
+                if len(alias_key) > best_length:
+                    best_length = len(alias_key)
+                    best = {
+                        "canonical": str(record.get("canonical", "")),
+                        "alias": alias_text,
+                    }
+    return best
+
+
+def _manual_saint_record_names(manual_canonical: str) -> List[str]:
+    manual_key = _normalize_saint_match_key(manual_canonical)
+    manual_record = next(
+        (
+            record
+            for record in SAINT_ALIAS_RECORDS
+            if _normalize_saint_match_key(str(record.get("canonical", ""))) == manual_key
+        ),
+        None,
+    )
+    if not manual_record:
+        return []
+
+    candidate_keys = {
+        _normalize_saint_match_key(value)
+        for value in _manual_saint_alias_values(manual_record)
+    }
+    candidate_keys = {key for key in candidate_keys if key}
+    matches = []
+    for record in _build_saint_record_index():
+        record_keys = set()
+        for alias in record.get("aliases", []):
+            record_keys.update(_saint_match_keys(str(alias)))
+        if candidate_keys.intersection(record_keys):
+            matches.append(str(record.get("name", "")))
+    return matches
+
+
+def _resolve_manual_saint_alias(query: str) -> Dict[str, str] | None:
+    matched = _matched_manual_arabic_alias(query)
+    if not matched:
+        return None
+
+    record_names = _manual_saint_record_names(matched["canonical"])
+    if not record_names:
+        return None
+
+    return {
+        "alias": matched["alias"],
+        "manual_canonical": matched["canonical"],
+        "record_name": record_names[0],
+    }
+
+
 def _find_saint_record_matches(query: str, limit: int = 12) -> List[Dict[str, Any]]:
     saint_records = _build_saint_record_index()
+    manual_match = _matched_manual_arabic_alias(query)
+    if manual_match:
+        manual_names = _manual_saint_record_names(manual_match["canonical"])
+        if manual_names:
+            manual_name_keys = {_normalize_saint_match_key(name) for name in manual_names}
+            manual_records = [
+                record
+                for record in saint_records
+                if _normalize_saint_match_key(str(record.get("name", ""))) in manual_name_keys
+            ]
+            if manual_records:
+                return manual_records[:max(1, min(limit, 400))]
+
     query_keys = _saint_match_keys(query)
     if not query_keys:
         return []
@@ -331,7 +503,7 @@ def _contains_arabic(value: str) -> bool:
 
 
 def _detect_language(selected_language: str | None, question: str) -> str:
-    if (selected_language or "").strip().lower() == "ar" or _contains_arabic(question):
+    if _contains_arabic(question):
         return "ar"
     return "en"
 
@@ -345,6 +517,12 @@ def _no_source_answer(language: str) -> str:
 def _arabic_retrieval_hints(question: str) -> List[str]:
     hints: List[str] = []
     q = question or ""
+
+    manual_match = _matched_manual_arabic_alias(q)
+    if manual_match:
+        manual_names = _manual_saint_record_names(manual_match["canonical"])
+        saint_name = manual_names[0] if manual_names else manual_match["canonical"]
+        hints.append(f"{saint_name} Orthodox saint biography life feast teachings")
 
     if "الآباء الرسول" in q or "اباء رسول" in q:
         hints.append(
@@ -367,6 +545,16 @@ def _fallback_english_retrieval_query(question: str) -> str:
     if hints:
         return " ".join(hints)
     return question
+
+
+def _manual_arabic_saint_alias_prompt() -> str:
+    lines = []
+    for record in SAINT_ALIAS_RECORDS:
+        canonical = str(record.get("canonical", "")).strip()
+        aliases = [str(alias).strip() for alias in record.get("arabic_aliases", []) if str(alias).strip()]
+        if canonical and aliases:
+            lines.append(f"- {canonical}: {', '.join(aliases)}")
+    return "\n".join(lines)
 
 
 def _build_english_retrieval_query(question: str, mode: str) -> str:
@@ -723,6 +911,7 @@ def _log_retrieval_debug(
     rewritten_question: str,
     detected_language: str,
     english_retrieval_query: str,
+    matched_saint_alias: str,
     entity: str | None,
     docs: List[str],
     metas: List[Dict[str, Any]],
@@ -732,6 +921,7 @@ def _log_retrieval_debug(
     print("ORIGINAL_QUESTION:", original_question)
     print("DETECTED_LANGUAGE:", detected_language)
     print("ENGLISH_RETRIEVAL_QUERY:", english_retrieval_query)
+    print("MATCHED_SAINT_ALIAS:", matched_saint_alias)
     print("REWRITTEN_QUESTION:", rewritten_question)
     print("RESOLVED_ENTITY:", entity)
     print("RETRIEVED_CHUNK_COUNT:", len(docs))
@@ -1715,6 +1905,16 @@ def chat(req: ChatRequest):
 
         mode = _normalize_chat_mode(req.mode)
         detected_language = _detect_language(req.language, original_question)
+        manual_saint_match = (
+            _resolve_manual_saint_alias(original_question)
+            if detected_language == "ar"
+            else None
+        )
+        matched_saint_alias = (
+            f"{manual_saint_match['alias']} -> {manual_saint_match['record_name']}"
+            if manual_saint_match
+            else ""
+        )
         if detected_language == "ar":
             question = original_question
             history_resolved_entity = None
@@ -1728,13 +1928,14 @@ def chat(req: ChatRequest):
             else question
         )
         retrieval_question = english_retrieval_query if detected_language == "ar" else question
-        entity = None
+        entity = manual_saint_match["record_name"] if manual_saint_match else None
         clean_entities = []
 
         print("\n--- NEW REQUEST ---")
         print("ORIGINAL_QUESTION:", original_question)
         print("DETECTED_LANGUAGE:", detected_language)
         print("ENGLISH_RETRIEVAL_QUERY:", english_retrieval_query)
+        print("MATCHED_SAINT_ALIAS:", matched_saint_alias)
         print("Detected mode:", mode)
         print("History-resolved entity:", history_resolved_entity)
         print("History:", req.history)
@@ -1827,6 +2028,7 @@ def chat(req: ChatRequest):
                 question,
                 detected_language,
                 english_retrieval_query,
+                matched_saint_alias,
                 entity,
                 docs,
                 metas,
@@ -1864,6 +2066,7 @@ def chat(req: ChatRequest):
             question,
             detected_language,
             english_retrieval_query,
+            matched_saint_alias,
             entity,
             docs,
             metas,
@@ -1898,6 +2101,7 @@ def chat(req: ChatRequest):
         context = "\n\n".join(context_blocks)
 
         history_text = _recent_history_text(req.history) if history_resolved_entity else ""
+        manual_arabic_saint_aliases = _manual_arabic_saint_alias_prompt()
 
         language_rules = """
 - Answer in English.
@@ -1907,6 +2111,8 @@ def chat(req: ChatRequest):
 - Answer in Arabic.
 - Use clear Modern Standard Arabic suitable for Coptic Orthodox users in Egypt.
 - Use only the provided English source context.
+- Do not translate or transliterate saint names unless the exact saint is listed in the manual Arabic saint aliases below.
+- If a saint does not have a manual Arabic alias below, keep the canonical English saint name.
 - If the sources contain no relevant information, say exactly:
   "لم أجد معلومات كافية عن هذا في المصادر المتاحة."
 - If the relevant sources partially answer the question, give a cautious partial answer and use wording like:
@@ -1952,6 +2158,12 @@ ORIGINAL USER QUESTION:
 
 ENGLISH RETRIEVAL QUERY:
 {english_retrieval_query}
+
+MATCHED MANUAL SAINT ALIAS:
+{matched_saint_alias or "None"}
+
+MANUAL ARABIC SAINT ALIASES:
+{manual_arabic_saint_aliases or "None"}
 
 SOURCES:
 {context}
