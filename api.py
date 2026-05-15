@@ -990,33 +990,33 @@ def _build_catechism_followups(question: str, answer: str, language: str = "en")
 
     if re.search(r"\bconvert|conversion|become orthodox|join\b", text):
         followups = [
-            "Would you like to know what a catechumen is?",
-            "Would you like to know what baptism and chrismation mean?",
-            "Would you like help with how to start attending an Orthodox church?",
+            "I would like to know what a catechumen is",
+            "I would like to know what baptism and chrismation mean",
+            "I would like help with how to start attending an Orthodox church",
         ]
     elif re.search(r"\bbaptism|chrismation\b", text):
         followups = [
-            "Would you like to know why baptism is part of entering the Church?",
-            "Would you like to know what chrismation means?",
-            "Would you like to ask how a catechumen prepares for baptism?",
+            "I would like to know why baptism is part of entering the Church",
+            "I would like to know what chrismation means",
+            "I would like to ask how a catechumen prepares for baptism",
         ]
     elif re.search(r"\bfast|fasting\b", text):
         followups = [
-            "Would you like to know how fasting is joined to prayer?",
-            "Would you like to ask about repentance during fasting?",
-            "Would you like to know why the Church has fasting seasons?",
+            "I would like to know how fasting is joined to prayer",
+            "I would like to ask about repentance during fasting",
+            "I would like to know why the Church has fasting seasons",
         ]
     elif re.search(r"\bprayer|pray\b", text):
         followups = [
-            "Would you like to ask about daily prayer?",
-            "Would you like to know how prayer connects with repentance?",
-            "Would you like to ask about praying with the Church?",
+            "I would like to ask about daily prayer",
+            "I would like to know how prayer connects with repentance",
+            "I would like to ask about praying with the Church",
         ]
     else:
         followups = [
-            "Would you like to ask how this is practiced in Church life?",
-            "Would you like to know which catechism topic this connects to?",
-            "Would you like to ask what terms in this answer mean?",
+            "I would like to ask how this is practiced in Church life",
+            "I would like to know which catechism topic this connects to",
+            "I would like to ask what terms in this answer mean",
         ]
 
     return followups[:2]

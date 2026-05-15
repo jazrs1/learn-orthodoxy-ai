@@ -163,15 +163,6 @@ const CATECHISM_TOPICS_AR: CatechismTopic[] = [
   },
 ];
 
-function sendTextToInputAndSubmit(text: string) {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(
-    new CustomEvent("chat:insertAndSubmitText", {
-      detail: text.trim(),
-    })
-  );
-}
-
 function optimisticMessage(id: string, role: "user" | "assistant", content: string): ChatMessage {
   return {
     id,
@@ -220,7 +211,7 @@ function looksLikeQuestionOption(option: string) {
     option.includes("?") ||
     option.includes("؟") ||
     /^(هل|كيف|لماذا|ما|ماذا|متى|أين|من)\b/i.test(option) ||
-    /^(would|how|why|what|when|where|who|which|can|should|do|does|is|are)\b/i.test(option)
+    /^(i\s+(?:would\s+like|want)|would|how|why|what|when|where|who|which|can|should|do|does|is|are)\b/i.test(option)
   );
 }
 
@@ -240,6 +231,21 @@ function followUpToUserMessage(option: string) {
   }
 
   return cleaned;
+}
+
+function compactFollowUpContext(answer: string) {
+  return answer
+    .replace(/\s+/g, " ")
+    .replace(/\bWould you like to\b.*$/i, "")
+    .trim()
+    .slice(0, 1200);
+}
+
+function followUpBackendQuestion(displayQuestion: string, answerContext: string) {
+  const context = compactFollowUpContext(answerContext);
+  if (!context) return displayQuestion;
+
+  return `${displayQuestion}\n\nPrevious answer context for resolving this follow-up:\n${context}`;
 }
 
 function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<string>) {
@@ -793,14 +799,16 @@ function ChatPageContent() {
   }, [handleSendMessage, language]);
 
   const submitMessageOption = useCallback(
-    (option: string) => {
+    (option: string, answerContext = "") => {
       if (isValidSaintName(option, saintLookup)) {
         submitSaintLookup(option);
         return;
       }
-      sendTextToInputAndSubmit(followUpToUserMessage(option));
+      const displayQuestion = followUpToUserMessage(option);
+      const backendQuestion = followUpBackendQuestion(displayQuestion, answerContext);
+      void handleSendMessage(backendQuestion, { displayMessage: displayQuestion });
     },
-    [saintLookup, submitSaintLookup]
+    [handleSendMessage, saintLookup, submitSaintLookup]
   );
 
   const selectSaint = useCallback(
@@ -878,9 +886,11 @@ function ChatPageContent() {
                                           key={option}
                                           type="button"
                                           className="message-option-chip"
-                                          onClick={() => submitMessageOption(option)}
+                                          onClick={() => submitMessageOption(option, message.content)}
                                         >
-                                          {displaySaintName(option, language)}
+                                          {isValidSaintName(option, saintLookup)
+                                            ? displaySaintName(option, language)
+                                            : followUpToUserMessage(option)}
                                         </button>
                                       ))}
                                     </div>
