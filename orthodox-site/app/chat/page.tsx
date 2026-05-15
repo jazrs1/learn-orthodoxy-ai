@@ -262,10 +262,10 @@ function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<s
       seen.add(normalized.toLowerCase());
       saintOptions.push(normalized);
     } else if (looksLikeQuestionOption(normalized)) {
-      const followUp = followUpToUserMessage(normalized);
-      if (seen.has(followUp.toLowerCase())) continue;
-      seen.add(followUp.toLowerCase());
-      questionOptions.push(followUp);
+      const dedupeKey = followUpToUserMessage(normalized).toLowerCase();
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      questionOptions.push(normalized);
     }
   }
 
