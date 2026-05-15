@@ -13,7 +13,7 @@ export default function Navbar() {
   const [hash, setHash] = useState("");
 
   const hasSidebarOffset = pathname === "/" || pathname === "/chat";
-  const showsMobileSidebarToggle = hasSidebarOffset || pathname === "/sources" || pathname === "/contact";
+  const showsMobileSidebarToggle = hasSidebarOffset || pathname === "/credits" || pathname === "/contact";
   const chatModeHash = hash || "#chat";
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function Navbar() {
           >
             {t("saintsSearch")}
           </Link>
-          <Link href="/sources" className={navLinkClass(pathname === "/sources")}>
+          <Link href="/credits" className={navLinkClass(pathname === "/credits")}>
             {t("credits")}
           </Link>
           <Link href="/contact" className={navLinkClass(pathname === "/contact")}>

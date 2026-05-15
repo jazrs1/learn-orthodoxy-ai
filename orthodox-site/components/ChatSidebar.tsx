@@ -88,9 +88,9 @@ export default function ChatSidebar({
               ))}
               <Link
                 className="chat-sidebar-nav-btn"
-                href="/sources"
+                href="/credits"
                 onClick={() => {
-                  if (pathname === "/sources") {
+                  if (pathname === "/credits") {
                     onClose?.();
                   }
                 }}
