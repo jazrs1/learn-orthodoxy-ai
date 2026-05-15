@@ -236,7 +236,7 @@ function followUpToUserMessage(option: string) {
 function compactFollowUpContext(answer: string) {
   return answer
     .replace(/\s+/g, " ")
-    .replace(/\bWould you like to\b.*$/i, "")
+    .replace(/\b(?:Would you like to|I would like to|I would like|I want to)\b.*$/i, "")
     .trim()
     .slice(0, 1200);
 }
@@ -255,13 +255,17 @@ function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<s
 
   for (const option of options || []) {
     const normalized = normalizeOptionText(option);
-    if (!normalized || seen.has(normalized.toLowerCase())) continue;
-    seen.add(normalized.toLowerCase());
+    if (!normalized) continue;
 
     if (isValidSaintName(normalized, saintLookup)) {
+      if (seen.has(normalized.toLowerCase())) continue;
+      seen.add(normalized.toLowerCase());
       saintOptions.push(normalized);
     } else if (looksLikeQuestionOption(normalized)) {
-      questionOptions.push(normalized);
+      const followUp = followUpToUserMessage(normalized);
+      if (seen.has(followUp.toLowerCase())) continue;
+      seen.add(followUp.toLowerCase());
+      questionOptions.push(followUp);
     }
   }
 
@@ -548,7 +552,7 @@ function ChatPageContent() {
 
   const handleSendMessage = useCallback(
     async (rawQuestion: string, options?: { displayMessage?: string; mode?: ChatMode }) => {
-      const question = rawQuestion.trim();
+      const question = followUpToUserMessage(rawQuestion.trim());
       if (!question || submittingRef.current) return;
       const displayQuestion = options?.displayMessage?.trim() || question;
 
@@ -890,7 +894,7 @@ function ChatPageContent() {
                                         >
                                           {isValidSaintName(option, saintLookup)
                                             ? displaySaintName(option, language)
-                                            : followUpToUserMessage(option)}
+                                            : option}
                                         </button>
                                       ))}
                                     </div>
