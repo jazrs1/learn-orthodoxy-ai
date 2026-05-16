@@ -221,7 +221,12 @@ CORS_ALLOW_ORIGIN_REGEX=https://.*\.vercel\.app
 
 ### Important backend note
 
-Your local `chroma_db/` is intentionally not committed. On Railway, `start_backend.py` checks the configured Chroma collection before starting FastAPI. If the collection has fewer than `MIN_CHROMA_DOCUMENTS` documents and `AUTO_INGEST_ON_START=1`, it ingests the PDFs from `data/pdfs`, attempts website ingestion, writes Chroma data to `CHROMA_DIR`, verifies documents exist, and then starts the API.
+Your local `chroma_db/` is intentionally not committed. On Railway, `start_backend.py` checks both configured Chroma collections before starting FastAPI:
+
+- English/current sources: `orthodox_pdfs`
+- Arabic-only sources: `orthodox_arabic_pdfs`
+
+If the English collection has fewer than `MIN_CHROMA_DOCUMENTS` documents and `AUTO_INGEST_ON_START=1`, it ingests the English PDFs from `data/pdfs`, attempts website ingestion, writes Chroma data to `CHROMA_DIR`, verifies documents exist, and then starts the API. If the Arabic collection has fewer than `MIN_ARABIC_CHROMA_DOCUMENTS` documents, default `1`, it separately ingests `full arabic catechism.pdf` and `full saints arabic.pdf` into `orthodox_arabic_pdfs`.
 
 Use a Railway volume mounted at `/app/chroma_db` so the first ingestion survives redeploys and restarts. Without a volume, Railway can still ingest at startup, but the generated Chroma database is ephemeral.
 
@@ -230,6 +235,7 @@ Use a Railway volume mounted at `/app/chroma_db` so the first ingestion survives
 The backend reads from the existing Chroma collection:
 
 - `COLLECTION_NAME=orthodox_pdfs`
+- `CHROMA_ARABIC_COLLECTION=orthodox_arabic_pdfs`
 - `CHROMA_DIR` from env if present, otherwise `/app/chroma_db`
 
 The Railway start command runs:
@@ -240,13 +246,13 @@ python start_backend.py
 
 This command will:
 
-1. Check the current Chroma collection count
-2. Skip ingestion when at least `MIN_CHROMA_DOCUMENTS` documents already exist
-3. Ingest all PDFs from `data/pdfs` when the collection is missing or underpopulated
-4. Attempt all configured website URLs from [`website_sources.py`](/Users/johnazer/orthodox-ai/website_sources.py)
+1. Check the English Chroma collection count
+2. Ingest English PDFs and configured website URLs when `orthodox_pdfs` is missing or underpopulated
+3. Check the Arabic Chroma collection count
+4. Ingest `full arabic catechism.pdf` and `full saints arabic.pdf` when `orthodox_arabic_pdfs` is empty or underpopulated
 5. Embed chunks with the existing OpenAI embedding setup
-6. Write them into the Chroma collection `orthodox_pdfs`
-7. Print the final document count
+6. Write English chunks into `orthodox_pdfs` and Arabic chunks into `orthodox_arabic_pdfs`
+7. Print final English and Arabic document counts
 8. Start FastAPI on Railway's `$PORT`
 
 ### Required env vars for ingestion
@@ -256,6 +262,7 @@ OPENAI_API_KEY=sk-your-openai-key
 CHROMA_DIR=/app/chroma_db
 AUTO_INGEST_ON_START=1
 MIN_CHROMA_DOCUMENTS=1000
+MIN_ARABIC_CHROMA_DOCUMENTS=1
 ```
 
 The ingestion scripts are designed to be rerun safely:
@@ -284,8 +291,29 @@ Arabic mode uses a separate Arabic Chroma collection, `orthodox_arabic_pdfs`, fo
 Run these commands locally or on Railway when rebuilding source data:
 
 ```bash
+python ingest_arabic_sources.py
 python ingest_all_sources.py
 python build_arabic_saints_index.py
+```
+
+For the current Railway production volume, run the Arabic ingestion command once from a Railway shell or temporary pre-deploy command:
+
+```bash
+CHROMA_DIR=/app/chroma_db python ingest_arabic_sources.py
+```
+
+Expected Arabic ingestion logs include:
+
+- `Arabic collection: orthodox_arabic_pdfs`
+- `Arabic PDFs found: ['full arabic catechism.pdf', 'full saints arabic.pdf']`
+- For each Arabic PDF: file path, file exists, file size, page count, pages with extracted text, pages with Arabic characters, total extracted characters, chunks created
+- `Arabic chunks upserted: <number>`
+- `Final Arabic document count: <number greater than 0>`
+
+If pypdf returns no usable Arabic text, the command exits nonzero with:
+
+```text
+Arabic PDF text extraction returned 0 usable text. OCR or another extractor is needed.
 ```
 
 Verify Arabic source state:
@@ -296,6 +324,14 @@ curl "https://your-railway-service.up.railway.app/debug/saints?language=ar"
 curl "https://your-railway-service.up.railway.app/saints?language=ar&limit=200"
 curl "https://your-railway-service.up.railway.app/saints?language=ar&search=انطونيوس"
 ```
+
+Also check the combined debug endpoint:
+
+```bash
+curl https://your-railway-service.up.railway.app/debug/chroma
+```
+
+The `/debug/chroma` response should report an Arabic `document_count` greater than `0` for `orthodox_arabic_pdfs`.
 
 Expected Arabic saints diagnostics:
 

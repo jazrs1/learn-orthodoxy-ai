@@ -1,5 +1,6 @@
 import os
 import re
+import traceback
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -61,19 +62,31 @@ def arabic_pdf_paths(pdf_dir: str = PDF_DIR) -> List[Path]:
 
 
 def extract_pages(pdf_path: Path) -> List[Dict[str, Any]]:
+    print(f"\nArabic PDF diagnostics: {pdf_path.name}")
+    print(f"  File path: {pdf_path}")
+    print(f"  File exists: {pdf_path.exists()}")
+    print(f"  File size bytes: {pdf_path.stat().st_size if pdf_path.exists() else 0}")
+    if not pdf_path.exists():
+        raise FileNotFoundError(f"Arabic PDF not found: {pdf_path}")
+
     reader = PdfReader(str(pdf_path))
     pages: List[Dict[str, Any]] = []
     title = pdf_path.stem
+    pages_with_text = 0
+    pages_with_arabic = 0
+    total_extracted_characters = 0
 
-    print(f"Extracting Arabic PDF: {pdf_path.name}")
-    print(f"  Total PDF pages: {len(reader.pages)}")
+    print(f"  Page count: {len(reader.pages)}")
 
     for index, page in enumerate(reader.pages):
         text = (page.extract_text() or "").replace("\x00", " ").strip()
         if not text:
             continue
+        pages_with_text += 1
+        total_extracted_characters += len(text)
         if not contains_arabic(text):
             continue
+        pages_with_arabic += 1
         pages.append(
             {
                 "pdf": pdf_path.name,
@@ -83,10 +96,14 @@ def extract_pages(pdf_path: Path) -> List[Dict[str, Any]]:
             }
         )
 
-    print(f"  Pages extracted with Arabic text: {len(pages)}")
+    print(f"  Pages with extracted text: {pages_with_text}")
+    print(f"  Pages with Arabic characters: {pages_with_arabic}")
+    print(f"  Total extracted characters: {total_extracted_characters}")
     if pages:
         preview = re.sub(r"\s+", " ", pages[0]["text"][:180]).strip()
         print(f"  First Arabic text preview: {preview}")
+    else:
+        print("Arabic PDF text extraction returned 0 usable text. OCR or another extractor is needed.")
     return pages
 
 
@@ -141,8 +158,22 @@ def ingest_arabic_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
         raise RuntimeError(f"No Arabic PDFs found in {pdf_dir}. Expected: {sorted(ARABIC_SOURCE_TITLES)}")
 
     all_pages: List[Dict[str, Any]] = []
+    chunks: List[Dict[str, Any]] = []
     for path in paths:
-        all_pages.extend(extract_pages(path))
+        pages = extract_pages(path)
+        if not pages:
+            raise RuntimeError(
+                f"Arabic PDF text extraction returned 0 usable text for {path.name}. "
+                "OCR or another extractor is needed."
+            )
+        pdf_chunks = build_chunks(pages)
+        print(f"  Chunks created for {path.name}: {len(pdf_chunks)}")
+        if not pdf_chunks:
+            raise RuntimeError(
+                f"Arabic chunking produced 0 chunks for {path.name}. OCR or another extractor is needed."
+            )
+        all_pages.extend(pages)
+        chunks.extend(pdf_chunks)
 
     print(f"Total Arabic pages extracted: {len(all_pages)}")
     if not all_pages:
@@ -150,7 +181,6 @@ def ingest_arabic_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
             "Arabic PDF extraction returned no Arabic text. OCR or a different extraction pipeline is required."
         )
 
-    chunks = build_chunks(all_pages)
     print(f"Arabic chunks created: {len(chunks)}")
     if not chunks:
         raise RuntimeError(
@@ -160,32 +190,44 @@ def ingest_arabic_sources(pdf_dir: str = PDF_DIR) -> Dict[str, int]:
     client, collection = get_arabic_collection()
     print(f"Collection count before Arabic ingest: {get_collection_count(collection=collection)}")
 
-    upsert_chunks_with_embeddings(
+    chunks_upserted = upsert_chunks_with_embeddings(
         collection=collection,
         chunks=chunks,
         progress_label="Arabic PDF ingestion",
     )
+    print(f"Arabic chunks upserted: {chunks_upserted}")
 
     persist_chroma_client(client)
     final_count = get_collection_count(collection=collection)
     print(f"Final Arabic document count: {final_count}")
+    if final_count <= 0:
+        raise RuntimeError(
+            f"Arabic ingestion completed but {ARABIC_COLLECTION_NAME} still has 0 documents."
+        )
 
     return {
         "pdf_count": len(paths),
         "page_count": len(all_pages),
         "chunk_count": len(chunks),
+        "chunks_upserted": chunks_upserted,
         "document_count": final_count,
     }
 
 
 def main() -> None:
-    stats = ingest_arabic_sources()
+    try:
+        stats = ingest_arabic_sources()
 
-    print("\nArabic ingestion complete.")
-    print(f"Chroma DB saved to: {get_chroma_dir_env()}")
-    print(f"Collection: {ARABIC_COLLECTION_NAME}")
-    print(f"Arabic chunks inserted: {stats['chunk_count']}")
-    print(f"Final Arabic document count: {stats['document_count']}")
+        print("\nArabic ingestion complete.")
+        print(f"Chroma DB saved to: {get_chroma_dir_env()}")
+        print(f"Collection: {ARABIC_COLLECTION_NAME}")
+        print(f"Arabic chunks inserted: {stats['chunk_count']}")
+        print(f"Arabic chunks upserted: {stats['chunks_upserted']}")
+        print(f"Final Arabic document count: {stats['document_count']}")
+    except Exception as exc:
+        print(f"\nArabic ingestion failed: {exc!r}")
+        traceback.print_exc()
+        raise SystemExit(1) from exc
 
 
 if __name__ == "__main__":

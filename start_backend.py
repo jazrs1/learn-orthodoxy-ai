@@ -5,6 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from chroma_store import (
+    ARABIC_COLLECTION_NAME,
     COLLECTION_NAME,
     get_chroma_collection,
     get_collection_count,
@@ -15,6 +16,8 @@ from chroma_store import (
 
 TRUTHY = {"1", "true", "yes", "on"}
 DEFAULT_MIN_CHROMA_DOCUMENTS = 1000
+DEFAULT_MIN_ARABIC_CHROMA_DOCUMENTS = 1
+ARABIC_PDF_NAMES = {"full arabic catechism.pdf", "full saints arabic.pdf"}
 
 
 def _auto_ingest_enabled() -> bool:
@@ -33,12 +36,33 @@ def _min_chroma_documents() -> int:
         return DEFAULT_MIN_CHROMA_DOCUMENTS
 
 
+def _min_arabic_chroma_documents() -> int:
+    raw_value = os.getenv(
+        "MIN_ARABIC_CHROMA_DOCUMENTS",
+        str(DEFAULT_MIN_ARABIC_CHROMA_DOCUMENTS),
+    ).strip()
+    try:
+        return max(0, int(raw_value))
+    except ValueError:
+        return DEFAULT_MIN_ARABIC_CHROMA_DOCUMENTS
+
+
 def _pdf_sources_available() -> bool:
     return any(Path("data/pdfs").glob("*.pdf"))
 
 
-def _collection_count() -> int:
-    collection = get_chroma_collection()
+def _arabic_pdf_sources_available() -> bool:
+    pdf_dir = Path("data/pdfs")
+    found = {path.name for path in pdf_dir.glob("*.pdf")}
+    missing = sorted(ARABIC_PDF_NAMES - found)
+    if missing:
+        print(f"[start_backend] Missing Arabic PDFs: {missing}")
+        return False
+    return True
+
+
+def _collection_count(collection_name: str = COLLECTION_NAME) -> int:
+    collection = get_chroma_collection(collection_name=collection_name)
     return get_collection_count(collection=collection)
 
 
@@ -57,38 +81,67 @@ def _ingest_sources() -> None:
         print(f"[start_backend] Website ingestion failed; continuing with PDF sources. Error: {exc!r}")
 
 
+def _ingest_arabic_sources() -> None:
+    from ingest_arabic_sources import ingest_arabic_sources
+
+    ingest_arabic_sources()
+
+
 def ensure_chroma_populated() -> None:
     log_chroma_configuration("start_backend")
     print(f"[start_backend] collection_name: {COLLECTION_NAME}")
+    print(f"[start_backend] arabic_collection_name: {ARABIC_COLLECTION_NAME}")
     print(f"[start_backend] resolved_chroma_dir: {get_resolved_chroma_dir()}")
 
     count = _collection_count()
+    arabic_count = _collection_count(ARABIC_COLLECTION_NAME)
     min_documents = _min_chroma_documents()
+    min_arabic_documents = _min_arabic_chroma_documents()
     print(f"[start_backend] collection_count_before_start: {count}")
+    print(f"[start_backend] arabic_collection_count_before_start: {arabic_count}")
     print(f"[start_backend] min_chroma_documents: {min_documents}")
-    if count >= min_documents:
-        return
+    print(f"[start_backend] min_arabic_chroma_documents: {min_arabic_documents}")
 
-    if not _auto_ingest_enabled():
-        print("[start_backend] AUTO_INGEST_ON_START is disabled; starting with empty Chroma collection.")
-        return
+    if count < min_documents:
+        if not _auto_ingest_enabled():
+            print("[start_backend] AUTO_INGEST_ON_START is disabled; starting with underpopulated English Chroma collection.")
+        else:
+            if not os.getenv("OPENAI_API_KEY"):
+                raise RuntimeError("OPENAI_API_KEY is required to ingest sources into an empty Chroma collection.")
 
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("OPENAI_API_KEY is required to ingest sources into an empty Chroma collection.")
+            if not _pdf_sources_available():
+                raise RuntimeError("No PDFs found in data/pdfs; cannot populate Chroma collection.")
 
-    if not _pdf_sources_available():
-        raise RuntimeError("No PDFs found in data/pdfs; cannot populate Chroma collection.")
+            print("[start_backend] Chroma collection is missing or underpopulated; ingesting source documents.")
+            _ingest_sources()
 
-    print("[start_backend] Chroma collection is missing or underpopulated; ingesting source documents.")
-    _ingest_sources()
+            final_count = _collection_count()
+            print(f"[start_backend] collection_count_after_ingest: {final_count}")
+            if final_count < min_documents:
+                raise RuntimeError(
+                    "Ingestion completed but Chroma collection is still underpopulated "
+                    f"({final_count} < {min_documents})."
+                )
 
-    final_count = _collection_count()
-    print(f"[start_backend] collection_count_after_ingest: {final_count}")
-    if final_count < min_documents:
-        raise RuntimeError(
-            "Ingestion completed but Chroma collection is still underpopulated "
-            f"({final_count} < {min_documents})."
-        )
+    if arabic_count < min_arabic_documents:
+        if not _auto_ingest_enabled():
+            print("[start_backend] AUTO_INGEST_ON_START is disabled; starting with underpopulated Arabic Chroma collection.")
+            return
+        if not os.getenv("OPENAI_API_KEY"):
+            raise RuntimeError("OPENAI_API_KEY is required to ingest Arabic sources into Chroma.")
+        if not _arabic_pdf_sources_available():
+            raise RuntimeError("Arabic PDFs are missing from data/pdfs; cannot populate Arabic Chroma collection.")
+
+        print("[start_backend] Arabic Chroma collection is empty or underpopulated; ingesting Arabic PDFs.")
+        _ingest_arabic_sources()
+
+        final_arabic_count = _collection_count(ARABIC_COLLECTION_NAME)
+        print(f"[start_backend] arabic_collection_count_after_ingest: {final_arabic_count}")
+        if final_arabic_count < min_arabic_documents:
+            raise RuntimeError(
+                "Arabic ingestion completed but Arabic Chroma collection is still underpopulated "
+                f"({final_arabic_count} < {min_arabic_documents})."
+            )
 
 
 def start_server() -> None:
