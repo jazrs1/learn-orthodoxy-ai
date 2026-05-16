@@ -621,6 +621,8 @@ def _strip_arabic_query_titles(value: str) -> str:
     }
     cleaned_words: List[str] = []
     for word in _arabic_search_text(value).split():
+        if not _contains_arabic(word):
+            continue
         if word in removable:
             continue
         if word.startswith("مار") and len(word) > 3:
@@ -635,7 +637,9 @@ def _arabic_query_terms(question: str) -> List[str]:
     terms: List[str] = []
 
     def add(value: str):
-        normalized = _arabic_search_text(value)
+        normalized = " ".join(
+            word for word in _arabic_search_text(value).split() if _contains_arabic(word)
+        )
         if len(normalized) >= 3 and normalized not in ARABIC_LEXICAL_STOPWORDS and normalized not in terms:
             terms.append(normalized)
 
@@ -669,7 +673,9 @@ def _arabic_query_phrases(question: str) -> List[str]:
     phrases: List[str] = []
 
     def add(value: str):
-        normalized = _arabic_search_text(value)
+        normalized = " ".join(
+            word for word in _arabic_search_text(value).split() if _contains_arabic(word)
+        )
         if len(normalized) >= 3 and normalized not in ARABIC_LEXICAL_STOPWORDS and normalized not in phrases:
             phrases.append(normalized)
 
@@ -2649,6 +2655,17 @@ def chat(req: ChatRequest):
             metadata_filter = _arabic_metadata_filter_for_mode(mode)
             top_k = max(1, min(req.top_k, 12))
             retrieval_top_k = min(16, max(top_k, 10))
+            arabic_selected_saint = ""
+            if mode == "saints":
+                try:
+                    saint_matches = _find_arabic_saint_index_matches(original_question, limit=1)
+                    arabic_selected_saint = saint_matches[0] if saint_matches else ""
+                except Exception as exc:
+                    print("AR_SAINT_INDEX_MATCH_FAILED:", repr(exc))
+                if arabic_selected_saint:
+                    retrieval_question = arabic_selected_saint
+                print("AR_SAINT_SELECTED_NAME:", arabic_selected_saint)
+                print("AR_SAINT_DETAIL_QUERY:", retrieval_question)
             retrieval_queries = [retrieval_question]
 
             docs, metas = _retrieve_documents(
@@ -2688,8 +2705,13 @@ def chat(req: ChatRequest):
 
             if not docs or not metas:
                 print("Response grounding status: no-source")
+                answer = (
+                    "وجدت اسم القديس في فهرس القديسين، لكن لم أجد معلومات كافية عنه في المصادر العربية المتاحة."
+                    if mode == "saints" and arabic_selected_saint
+                    else _no_source_answer("ar")
+                )
                 return {
-                    "answer": _no_source_answer("ar"),
+                    "answer": answer,
                     "sources": [],
                     "entities": [],
                     "options": [],

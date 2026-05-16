@@ -345,6 +345,10 @@ function ChatPageContent() {
     console.log("ACTIVE_LANGUAGE", language);
   }, [language]);
 
+  useEffect(() => {
+    console.log("ACTIVE_MODE", activeTab);
+  }, [activeTab]);
+
   const loadConversationList = useCallback(async () => {
     try {
       setConversationsLoading(true);
@@ -454,6 +458,7 @@ function ChatPageContent() {
         }
         const saintsEndpoint = `/api/saints?${params.toString()}`;
         console.log("SAINTS_ENDPOINT_CALLED", saintsEndpoint);
+        console.log("SAINTS_REQUEST_URL", saintsEndpoint);
 
         const response = await fetch(saintsEndpoint, {
           signal: AbortSignal.timeout(15000),
@@ -638,6 +643,14 @@ function ChatPageContent() {
         console.log("SAVE_CHAT_TURN", { conversationId, hideUserMessage });
         console.log("CALL_BACKEND", { conversationId, question, displayQuestion, mode: requestMode, language });
         console.log("CHAT_LANGUAGE_SENT", language);
+        console.log("CHAT_PAYLOAD", {
+          question,
+          displayQuestion,
+          conversationId,
+          mode: requestMode,
+          language,
+          hideUserMessage,
+        });
         const result = await sendChatRequest({
           question,
           displayQuestion,
@@ -809,6 +822,8 @@ function ChatPageContent() {
     setSaintDetail(null);
     setSaintDetailError("");
     setSaintDetailLoading(true);
+    console.log("SAINT_SELECTED_NAME", trimmed);
+    console.log("SAINT_DETAIL_PAYLOAD", { name: trimmed, language });
 
     try {
       const response = await fetch("/api/saint-detail", {
@@ -829,7 +844,11 @@ function ChatPageContent() {
   const submitSaintLookup = useCallback((name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    void handleSendMessage(`search saint: ${trimmed}`, { displayMessage: displaySaintName(trimmed, language) });
+    const question = language === "ar" ? `من هو ${trimmed}؟` : `search saint: ${trimmed}`;
+    void handleSendMessage(question, {
+      displayMessage: displaySaintName(trimmed, language),
+      mode: "saints",
+    });
   }, [handleSendMessage, language]);
 
   const submitMessageOption = useCallback(
@@ -1043,7 +1062,11 @@ function ChatPageContent() {
                                 window.dispatchEvent(new HashChangeEvent("hashchange"));
                                 window.dispatchEvent(new CustomEvent("chat:setMode", { detail: { mode: "chat" } }));
                               }
-                              void handleSendMessage(`I want to learn more about ${saintName}`, { mode: "saints" });
+                              const question =
+                                language === "ar"
+                                  ? `أريد أن أعرف المزيد عن ${saintName}`
+                                  : `I want to learn more about ${saintName}`;
+                              void handleSendMessage(question, { mode: "saints" });
                             }}
                           >
                             Learn more

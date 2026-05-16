@@ -41,11 +41,14 @@ export async function POST(request: Request) {
   }
 
   try {
+    const backendQuestion = language === "ar" ? `من هو ${name}؟` : `search saint: ${name}`;
+    console.log("SAINT_DETAIL_PAYLOAD", { name, language, question: backendQuestion });
+
     const backendResponse = await fetch(`${apiBaseUrl}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        question: `search saint: ${name}`,
+        question: backendQuestion,
         history: [],
         top_k: 8,
         mode: "saints",

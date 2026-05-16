@@ -1187,6 +1187,8 @@ textarea {
 
 .credits-page {
   max-width: 880px;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .credits-content {
@@ -1196,10 +1198,15 @@ textarea {
   font-size: 0.98rem;
   line-height: 1.72;
   color: var(--text);
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
 }
 
 .credits-mobile-sidebar {
   display: none;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .credits-content p {
@@ -1508,6 +1515,19 @@ html[dir="rtl"] .catechism-tab-panel {
 
 html[dir="rtl"] .message-options-list {
   align-items: flex-end;
+}
+
+html[dir="rtl"] .credits-page,
+html[dir="rtl"] .credits-content,
+html[dir="rtl"] .credits-mobile-sidebar {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+html[dir="rtl"] .credits-portrait,
+html[dir="rtl"] .credits-portrait figcaption {
+  text-align: center;
 }
 
 /* MOBILE */
