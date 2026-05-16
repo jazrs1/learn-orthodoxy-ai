@@ -369,6 +369,10 @@ textarea {
   color: var(--text);
 }
 
+.chat-sidebar-home-link {
+  display: none;
+}
+
 .chat-sidebar-panel {
   flex: 1 1 auto;
   min-height: 0;
@@ -1532,6 +1536,20 @@ html[dir="rtl"] .catechism-prompt-card {
   align-items: flex-end;
 }
 
+html[dir="rtl"] .catechism-prompt-grid {
+  direction: rtl;
+}
+
+html[dir="rtl"] .catechism-prompt-label,
+html[dir="rtl"] .catechism-prompt-text {
+  align-self: flex-end;
+}
+
+html[dir="rtl"] .catechism-prompt-text {
+  display: block;
+  margin-left: auto;
+}
+
 html[dir="rtl"] .credits-page,
 html[dir="rtl"] .credits-content,
 html[dir="rtl"] .credits-mobile-sidebar {
@@ -1576,12 +1594,17 @@ html[dir="rtl"] .credits-portrait figcaption {
     min-height: 70px;
     padding: 0.75rem;
     position: relative;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    justify-content: stretch;
+    column-gap: 0.5rem;
   }
 
   .nav-brand {
     flex: 0 1 auto;
     gap: 0.5rem;
+    justify-self: center;
+    min-width: 0;
   }
 
   .nav-links {
@@ -1589,8 +1612,8 @@ html[dir="rtl"] .credits-portrait figcaption {
   }
 
   .language-toggle {
-    position: absolute;
-    right: 0.75rem;
+    position: static;
+    justify-self: end;
     margin: 0;
   }
 
@@ -1774,8 +1797,8 @@ html[dir="rtl"] .credits-portrait figcaption {
   }
 
   .navbar-sidebar-toggle {
-    position: absolute;
-    left: 1rem;
+    position: static;
+    justify-self: start;
     margin-right: 0.05rem;
   }
 
@@ -1866,11 +1889,31 @@ html[dir="rtl"] .credits-portrait figcaption {
   }
 
   .chat-sidebar-header {
-    justify-content: flex-end;
+    justify-content: space-between;
+    min-height: 56px;
   }
 
   .chat-sidebar-title {
     display: none;
+  }
+
+  .chat-sidebar-home-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+  }
+
+  .chat-sidebar-home-link:hover {
+    background: rgba(58, 38, 22, 0.08);
+  }
+
+  .chat-sidebar-home-cross {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
   }
 
   html[dir="rtl"] .chat-sidebar-details {
@@ -1909,6 +1952,8 @@ html[dir="rtl"] .credits-portrait figcaption {
 @media (max-width: 380px) {
   .navbar {
     padding: 0.68rem 0.45rem;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    column-gap: 0.35rem;
   }
 
   html[dir="rtl"] .navbar-sidebar-offset {
@@ -1932,7 +1977,7 @@ html[dir="rtl"] .credits-portrait figcaption {
   }
 
   .language-toggle {
-    right: 0.45rem;
+    justify-self: end;
   }
 
   .language-toggle-btn {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type { MouseEvent } from "react";
 import { ConversationSummary } from "../lib/chat-types";
@@ -59,6 +60,9 @@ export default function ChatSidebar({
     <aside className={`chat-sidebar ${isMobileOpen ? "chat-sidebar-mobile-open" : ""}`}>
       <div className="chat-sidebar-details">
         <div className="chat-sidebar-header">
+          <Link href="/" className="chat-sidebar-home-link" onClick={onClose} aria-label={t("home")}>
+            <Image src="/cross.png" alt="" width={28} height={28} className="chat-sidebar-home-cross" />
+          </Link>
           <div className="chat-sidebar-title">{t("chats")}</div>
           {onClose ? (
             <button type="button" className="chat-sidebar-close-btn" onClick={onClose} aria-label={t("closeChatsPanel")}>
