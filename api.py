@@ -145,6 +145,44 @@ SAINT_ALIAS_RECORDS: List[Dict[str, Any]] = [
     },
 ]
 
+ARABIC_SAINT_INDEX_ALIASES: List[Dict[str, Any]] = [
+    {
+        "name_ar": "مريم العذراء",
+        "aliases_ar": ["السيدة العذراء مريم", "العذراء مريم", "مريم"],
+        "source_title": "full saints arabic",
+    },
+    {
+        "name_ar": "مرقس الرسول",
+        "aliases_ar": ["مارمرقس", "القديس مارمرقس الرسول", "مرقس", "مار مرقس"],
+        "source_title": "full saints arabic",
+    },
+    {
+        "name_ar": "أنطونيوس القديس",
+        "aliases_ar": ["الأنبا أنطونيوس", "الأنبا أنطونيوس الكبير", "أنطونيوس"],
+        "source_title": "full saints arabic",
+    },
+    {
+        "name_ar": "أثناسيوس الرسولي",
+        "aliases_ar": ["أثناسيوس", "البابا أثناسيوس", "أثناسيوس الرسولي"],
+        "source_title": "full saints arabic",
+    },
+    {
+        "name_ar": "شنودة رئيس المتوحدين",
+        "aliases_ar": ["الأنبا شنودة", "الأنبا شنودة رئيس المتوحدين", "شنودة"],
+        "source_title": "full saints arabic",
+    },
+    {
+        "name_ar": "بيشوي الأب",
+        "aliases_ar": ["الأنبا بيشوي", "بيشوي"],
+        "source_title": "full saints arabic",
+    },
+    {
+        "name_ar": "بولا القديس",
+        "aliases_ar": ["الأنبا بولا", "بولا أول السواح", "الأنبا بولا أول السواح", "بولا"],
+        "source_title": "full saints arabic",
+    },
+]
+
 SAINT_ORDERING_TITLES = {
     "apostle",
     "disciple",
@@ -612,7 +650,15 @@ def _strip_arabic_query_titles(value: str) -> str:
         "السيدة",
         "مار",
     }
-    return " ".join(word for word in _arabic_search_text(value).split() if word not in removable)
+    cleaned_words: List[str] = []
+    for word in _arabic_search_text(value).split():
+        if word in removable:
+            continue
+        if word.startswith("مار") and len(word) > 3:
+            word = word[3:]
+        if word and word not in removable:
+            cleaned_words.append(word)
+    return " ".join(cleaned_words)
 
 
 def _arabic_query_terms(question: str) -> List[str]:
@@ -1212,6 +1258,19 @@ def _collection_count_safe(target_collection: Any | None) -> int:
         return int(target_collection.count())
     except Exception:
         return 0
+
+
+def _preview_language(value: str) -> str:
+    text = value or ""
+    has_arabic = _contains_arabic(text)
+    has_latin = bool(re.search(r"[A-Za-z]", text))
+    if has_arabic and has_latin:
+        return "mixed"
+    if has_arabic:
+        return "ar"
+    if has_latin:
+        return "en"
+    return "unknown"
 
 
 def _arabic_metadata_filter_for_mode(mode: str) -> Dict[str, Any] | None:
@@ -2143,7 +2202,39 @@ def _arabic_saint_descriptor_rank(query_key: str, name_key: str) -> int:
         return 0 if any(descriptor in name_key for descriptor in preferred_descriptors) else 1
     if query_key in {"مريم", "مرقس", "اثناسيوس"}:
         return 0 if any(descriptor in name_key for descriptor in preferred_descriptors) else 1
+    if query_key in {"انطونيوس", "بولا"}:
+        return 0 if "القديس" in name_key else 1
+    if query_key == "شنوده":
+        return 0 if "رئيس المتوحدين" in name_key else 1
     return 0
+
+
+def _manual_arabic_saint_index_matches(query: str) -> List[str]:
+    query_keys = set(_arabic_saint_query_keys(query))
+    if not query_keys:
+        return []
+
+    available_names = {
+        _normalize_arabic_alias_key(name): name
+        for name in _build_arabic_saint_name_index()
+    }
+    matches: List[str] = []
+    for record in ARABIC_SAINT_INDEX_ALIASES:
+        alias_keys = {
+            _normalize_arabic_alias_key(str(record.get("name_ar", ""))),
+            *[
+                _normalize_arabic_alias_key(str(alias))
+                for alias in record.get("aliases_ar", [])
+            ],
+        }
+        alias_keys = {key for key in alias_keys if key}
+        if not any(query_key == alias_key or alias_key in query_key or query_key in alias_key for query_key in query_keys for alias_key in alias_keys):
+            continue
+        source_name_key = _normalize_arabic_alias_key(str(record.get("name_ar", "")))
+        source_name = available_names.get(source_name_key)
+        if source_name and source_name not in matches:
+            matches.append(source_name)
+    return matches
 
 
 def _find_arabic_saint_index_matches(query: str, limit: int = 12) -> List[str]:
@@ -2151,8 +2242,11 @@ def _find_arabic_saint_index_matches(query: str, limit: int = 12) -> List[str]:
     if not query_keys:
         return []
 
+    manual_matches = _manual_arabic_saint_index_matches(query)
     matches: List[Tuple[int, int, int, str]] = []
     for name in _build_arabic_saint_name_index():
+        if name in manual_matches:
+            continue
         name_key = _normalize_arabic_alias_key(name)
         if not name_key:
             continue
@@ -2177,7 +2271,8 @@ def _find_arabic_saint_index_matches(query: str, limit: int = 12) -> List[str]:
             matches.append((best[0], best[1], len(name), name))
 
     matches.sort(key=lambda item: (item[0], item[1], item[2], item[3]))
-    return [name for _, _, _, name in matches[:max(1, min(limit, 400))]]
+    limit = max(1, min(limit, 400))
+    return [*manual_matches, *[name for _, _, _, name in matches if name not in manual_matches]][:limit]
 
 
 def _find_weak_saint_mentions(query: str, limit: int = 12) -> List[Dict[str, Any]]:
@@ -2414,6 +2509,8 @@ def chat(req: ChatRequest):
 
         print("\n--- NEW REQUEST ---")
         print("ORIGINAL_QUESTION:", original_question)
+        print("LANGUAGE_RECEIVED:", req.language)
+        print("MODE_RECEIVED:", req.mode)
         print("LANGUAGE:", detected_language)
         print("MODE:", mode)
         print("ENGLISH_DOC_COUNT:", _collection_count_safe(collection))
@@ -2461,6 +2558,7 @@ def chat(req: ChatRequest):
             print("RETRIEVED_CHUNK_COUNT:", len(docs))
             print("TOP_SOURCE_TITLES:", [_source_context_label(meta) for meta in metas[:3]])
             print("TOP_CHUNK_PREVIEWS:", [_normalize_arabic_context_text(doc)[:180] for doc in docs[:3]])
+            print("TOP_CHUNK_PREVIEW_LANGUAGE:", [_preview_language(_normalize_arabic_context_text(doc)) for doc in docs[:3]])
             print("RELEVANCE_REJECTED_COUNT:", rejected_count)
 
             if not docs or not metas:
@@ -2614,6 +2712,8 @@ def chat(req: ChatRequest):
         print("COLLECTION_USED:", COLLECTION_NAME)
         print("METADATA_FILTER_USED:", None)
         print("Retrieval queries:", retrieval_queries)
+        print("TOP_SOURCE_TITLES:", [_source_context_label(meta) for meta in metas[:3]])
+        print("TOP_CHUNK_PREVIEW_LANGUAGE:", [_preview_language(doc) for doc in docs[:3]])
         filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
             docs,
             metas,

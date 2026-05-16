@@ -341,6 +341,10 @@ function ChatPageContent() {
   }, [messages]);
   const hasMoreSaints = saints.length < saintsTotal;
 
+  useEffect(() => {
+    console.log("ACTIVE_LANGUAGE", language);
+  }, [language]);
+
   const loadConversationList = useCallback(async () => {
     try {
       setConversationsLoading(true);
@@ -439,6 +443,7 @@ function ChatPageContent() {
       }
 
       try {
+        console.log("SAINTS_LANGUAGE_USED", language);
         const params = new URLSearchParams({
           limit: String(SAINTS_PAGE_SIZE),
           offset: String(nextOffset),
@@ -629,6 +634,7 @@ function ChatPageContent() {
 
         console.log("SAVE_CHAT_TURN", { conversationId, hideUserMessage });
         console.log("CALL_BACKEND", { conversationId, question, displayQuestion, mode: requestMode, language });
+        console.log("CHAT_LANGUAGE_SENT", language);
         const result = await sendChatRequest({
           question,
           displayQuestion,
