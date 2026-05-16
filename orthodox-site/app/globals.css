@@ -1508,6 +1508,7 @@ html[dir="rtl"] .contact-heading,
 html[dir="rtl"] .contact-form,
 html[dir="rtl"] .chat-empty-state,
 html[dir="rtl"] .saint-detail-answer,
+html[dir="rtl"] .catechism-page-panel,
 html[dir="rtl"] .catechism-tab-panel {
   direction: rtl;
   text-align: start;
@@ -1517,12 +1518,48 @@ html[dir="rtl"] .message-options-list {
   align-items: flex-end;
 }
 
+html[dir="rtl"] .catechism-page-panel,
+html[dir="rtl"] .catechism-panel-copy,
+html[dir="rtl"] .catechism-topic-summary,
+html[dir="rtl"] .catechism-topic-summary-copy,
+html[dir="rtl"] .catechism-prompt-card,
+html[dir="rtl"] .catechism-prompt-text {
+  text-align: right;
+}
+
+html[dir="rtl"] .catechism-topic-summary-copy,
+html[dir="rtl"] .catechism-prompt-card {
+  align-items: flex-end;
+}
+
 html[dir="rtl"] .credits-page,
 html[dir="rtl"] .credits-content,
 html[dir="rtl"] .credits-mobile-sidebar {
   direction: ltr;
   unicode-bidi: isolate;
   text-align: left;
+}
+
+html[dir="rtl"] .credits-page-ar,
+html[dir="rtl"] .credits-page-ar .credits-content {
+  direction: rtl;
+  unicode-bidi: isolate;
+  text-align: right;
+}
+
+html[dir="rtl"] .credits-page-ar .credits-dash-list,
+html[dir="rtl"] .credits-page-ar .credits-number-list {
+  padding-right: 1.45rem;
+  padding-left: 0;
+}
+
+html[dir="rtl"] .credits-page-ar .credits-dash-list {
+  padding-right: 1.25rem;
+}
+
+html[dir="rtl"] .credits-page-ar .credits-dash-list li::before {
+  right: -1.25rem;
+  left: auto;
 }
 
 html[dir="rtl"] .credits-portrait,
@@ -1676,6 +1713,21 @@ html[dir="rtl"] .credits-portrait figcaption {
 
   .credits-dash-list li::before {
     left: -1rem;
+  }
+
+  html[dir="rtl"] .credits-page-ar .credits-dash-list,
+  html[dir="rtl"] .credits-page-ar .credits-number-list {
+    padding-right: 1.2rem;
+    padding-left: 0;
+  }
+
+  html[dir="rtl"] .credits-page-ar .credits-dash-list {
+    padding-right: 1rem;
+  }
+
+  html[dir="rtl"] .credits-page-ar .credits-dash-list li::before {
+    right: -1rem;
+    left: auto;
   }
 
   .chat-shell-inner {
