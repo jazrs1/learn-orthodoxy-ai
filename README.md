@@ -274,6 +274,36 @@ PDF files included in the repo:
 - `data/pdfs/saints4.pdf`
 - `data/pdfs/catechism1.pdf`
 - `data/pdfs/catechism2.pdf`
+- `data/pdfs/full arabic catechism.pdf`
+- `data/pdfs/full saints arabic.pdf`
+
+### Arabic source ingestion and saint index
+
+Arabic mode uses a separate Arabic Chroma collection, `orthodox_arabic_pdfs`, for Arabic answers. It also uses a generated Arabic saints list derived from `data/pdfs/full saints arabic.pdf`, with `arabic_saints_index.py` as a small reviewed fallback only.
+
+Run these commands locally or on Railway when rebuilding source data:
+
+```bash
+python ingest_all_sources.py
+python build_arabic_saints_index.py
+```
+
+Verify Arabic source state:
+
+```bash
+curl https://your-railway-service.up.railway.app/debug/chroma/ar
+curl "https://your-railway-service.up.railway.app/debug/saints?language=ar"
+curl "https://your-railway-service.up.railway.app/saints?language=ar&limit=200"
+curl "https://your-railway-service.up.railway.app/saints?language=ar&search=انطونيوس"
+```
+
+Expected Arabic saints diagnostics:
+
+- `arabic_seed_count` should be the small reviewed fallback count.
+- `arabic_generated_count` should be much larger than the seed count when `data/saints_ar_generated.json` is present.
+- `arabic_total_count` should include the generated index and optional Chroma headings.
+- `full_saints_arabic_pdf.file_exists` should be `true` when the PDF is present in the deployed source files.
+- `full_saints_arabic_was_parsed` should be `true` when the generated index is present.
 
 Configured website URLs included in the repo:
 

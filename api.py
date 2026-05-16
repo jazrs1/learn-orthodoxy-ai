@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import unicodedata
@@ -26,6 +27,9 @@ from saint_index_overrides import (
 from arabic_saints_index import ARABIC_SAINTS_INDEX
 
 load_dotenv()
+
+ARABIC_SAINTS_PDF_PATH = Path("data/pdfs/full saints arabic.pdf")
+GENERATED_ARABIC_SAINTS_PATH = Path("data/saints_ar_generated.json")
 
 NON_PERSON_ENTITY_TERMS = {
     "birth",
@@ -1693,6 +1697,8 @@ last_list = {}
 saint_name_index: List[str] = []
 saint_record_index: List[Dict[str, Any]] = []
 arabic_saint_name_index: List[str] = []
+generated_arabic_saint_records: List[Dict[str, Any]] | None = None
+generated_arabic_saint_stats: Dict[str, Any] | None = None
 
 
 def _collect_collection_debug_info(target_collection: Any, collection_name: str) -> Dict[str, Any]:
@@ -2116,6 +2122,45 @@ def _seed_arabic_saint_names() -> List[str]:
     return names
 
 
+def _load_generated_arabic_saint_records() -> List[Dict[str, Any]]:
+    global generated_arabic_saint_records, generated_arabic_saint_stats
+
+    if generated_arabic_saint_records is not None:
+        return generated_arabic_saint_records
+
+    generated_arabic_saint_records = []
+    generated_arabic_saint_stats = {}
+    if not GENERATED_ARABIC_SAINTS_PATH.exists():
+        return generated_arabic_saint_records
+
+    try:
+        payload = json.loads(GENERATED_ARABIC_SAINTS_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        generated_arabic_saint_stats = {"warnings": [f"Failed to load generated Arabic saints index: {exc!r}"]}
+        return generated_arabic_saint_records
+
+    generated_arabic_saint_stats = dict(payload.get("stats") or {})
+    records = payload.get("saints") or []
+    if isinstance(records, list):
+        generated_arabic_saint_records = [
+            record for record in records if isinstance(record, dict) and str(record.get("name_ar", "")).strip()
+        ]
+    return generated_arabic_saint_records
+
+
+def _generated_arabic_saint_names() -> List[str]:
+    names: List[str] = []
+    seen: Set[str] = set()
+    for record in _load_generated_arabic_saint_records():
+        name = _normalize_arabic_display_text(str(record.get("name_ar", "")))
+        key = _normalize_arabic_alias_key(name)
+        if not name or not key or key in seen:
+            continue
+        seen.add(key)
+        names.append(name)
+    return names
+
+
 def _build_arabic_saint_name_index() -> List[str]:
     global arabic_saint_name_index, arabic_collection
 
@@ -2124,10 +2169,17 @@ def _build_arabic_saint_name_index() -> List[str]:
 
     names: List[str] = _seed_arabic_saint_names()
     seen: Set[str] = {_normalize_arabic_alias_key(name) for name in names}
+    for generated_name in _generated_arabic_saint_names():
+        generated_key = _normalize_arabic_alias_key(generated_name)
+        if not generated_key or generated_key in seen:
+            continue
+        seen.add(generated_key)
+        names.append(generated_name)
+
     if arabic_collection is None or _collection_count_safe(arabic_collection) == 0:
         arabic_saint_name_index = names
         print(f"ARABIC_SAINT_INDEX_COUNT: {len(arabic_saint_name_index)}")
-        print("ARABIC_SAINT_INDEX_SOURCE: seed")
+        print("ARABIC_SAINT_INDEX_SOURCE: seed+generated")
         return arabic_saint_name_index
 
     offset = 0
@@ -2158,7 +2210,7 @@ def _build_arabic_saint_name_index() -> List[str]:
 
     arabic_saint_name_index = names
     print(f"ARABIC_SAINT_INDEX_COUNT: {len(arabic_saint_name_index)}")
-    print("ARABIC_SAINT_INDEX_SOURCE: seed+chroma")
+    print("ARABIC_SAINT_INDEX_SOURCE: seed+generated+chroma")
     return arabic_saint_name_index
 
 
@@ -2194,6 +2246,7 @@ def _arabic_saint_descriptor_rank(query_key: str, name_key: str) -> int:
 
 def _manual_arabic_saint_index_matches(query: str) -> List[str]:
     query_keys = set(_arabic_saint_query_keys(query))
+    query_latin = (query or "").strip().lower()
     if not query_keys:
         return []
 
@@ -2202,7 +2255,7 @@ def _manual_arabic_saint_index_matches(query: str) -> List[str]:
         for name in _build_arabic_saint_name_index()
     }
     matches: List[str] = []
-    for record in ARABIC_SAINT_INDEX_ALIASES:
+    for record in [*ARABIC_SAINT_INDEX_ALIASES, *_load_generated_arabic_saint_records()]:
         alias_keys = {
             _normalize_arabic_alias_key(str(record.get("name_ar", ""))),
             *[
@@ -2211,7 +2264,14 @@ def _manual_arabic_saint_index_matches(query: str) -> List[str]:
             ],
         }
         alias_keys = {key for key in alias_keys if key}
-        if not any(query_key == alias_key or alias_key in query_key or query_key in alias_key for query_key in query_keys for alias_key in alias_keys):
+        name_en = str(record.get("name_en", "") or "").strip().lower()
+        latin_match = bool(query_latin and name_en and (query_latin == name_en or query_latin in name_en))
+        arabic_match = any(
+            query_key == alias_key or alias_key in query_key or query_key in alias_key
+            for query_key in query_keys
+            for alias_key in alias_keys
+        )
+        if not latin_match and not arabic_match:
             continue
         source_name_key = _normalize_arabic_alias_key(str(record.get("name_ar", "")))
         source_name = available_names.get(source_name_key)
@@ -2372,20 +2432,76 @@ def _collect_saint_debug_info(q: str = "") -> Dict[str, Any]:
     return info
 
 
+def _arabic_saints_chroma_chunk_count() -> int:
+    if arabic_collection is None:
+        return 0
+    count = 0
+    offset = 0
+    page_size = 500
+    while True:
+        batch = arabic_collection.get(
+            include=["metadatas"],
+            where={"title": "full saints arabic"},
+            limit=page_size,
+            offset=offset,
+        )
+        metadatas = batch.get("metadatas", []) or []
+        count += len(metadatas)
+        if len(metadatas) < page_size:
+            break
+        offset += len(metadatas)
+    return count
+
+
+def _arabic_saints_pdf_diagnostics(generated_stats: Dict[str, Any]) -> Dict[str, Any]:
+    diagnostics: Dict[str, Any] = {
+        "expected_path": str(ARABIC_SAINTS_PDF_PATH),
+        "file_exists": ARABIC_SAINTS_PDF_PATH.exists(),
+        "file_size_bytes": ARABIC_SAINTS_PDF_PATH.stat().st_size if ARABIC_SAINTS_PDF_PATH.exists() else 0,
+        "page_count": generated_stats.get("page_count"),
+        "pages_with_extracted_arabic_text": generated_stats.get("pages_with_arabic_text"),
+        "arabic_character_count": generated_stats.get("arabic_character_count"),
+        "safe_previews": generated_stats.get("previews", []),
+    }
+    if not diagnostics["file_exists"]:
+        diagnostics["warning"] = "full saints arabic PDF is not present in the deployed source files."
+    elif not generated_stats:
+        diagnostics["warning"] = "Generated Arabic saints index stats are missing. Run python build_arabic_saints_index.py."
+    return diagnostics
+
+
 def _collect_arabic_saint_debug_info(q: str = "") -> Dict[str, Any]:
     saints = _build_arabic_saint_name_index()
     arabic_doc_count = _collection_count_safe(arabic_collection)
     source_files_found = _arabic_source_files_found()
+    generated_records = _load_generated_arabic_saint_records()
+    generated_stats = generated_arabic_saint_stats or {}
+    pdf_diagnostics = _arabic_saints_pdf_diagnostics(generated_stats)
+    arabic_saints_chunk_count = _arabic_saints_chroma_chunk_count()
+    source_parts = ["seed"]
+    if generated_records:
+        source_parts.append("generated_pdf_index")
+    if arabic_saints_chunk_count:
+        source_parts.append("chroma_headings")
     info: Dict[str, Any] = {
         "language": "ar",
+        "arabic_seed_count": len(ARABIC_SAINTS_INDEX),
+        "arabic_generated_count": len(generated_records),
+        "arabic_extracted_count": len(generated_records),
+        "arabic_total_count": len(saints),
         "total_arabic_saint_index_count": len(saints),
+        "source_used_for_arabic_saints_list": "+".join(source_parts),
         "sample_arabic_saint_names": saints[:20],
         "seed_index_count": len(ARABIC_SAINTS_INDEX),
         "full_saints_arabic_ingested": arabic_doc_count > 0 and "full saints arabic.pdf" in source_files_found,
         "arabic_chroma_document_count": arabic_doc_count,
+        "arabic_saints_pdf_chunk_count": arabic_saints_chunk_count,
         "source_files_found": source_files_found,
         "source_title": "full saints arabic",
-        "loading_note": "Arabic saint list uses the reviewed seed index first, then appends headings extracted from the Arabic saints Chroma collection when available.",
+        "full_saints_arabic_pdf": pdf_diagnostics,
+        "full_saints_arabic_was_parsed": bool(generated_records),
+        "parse_extraction_warnings": generated_stats.get("warnings", []),
+        "loading_note": "Arabic saint list uses the reviewed seed index first, then the generated index built from full saints arabic.pdf, then optional headings extracted from the Arabic saints Chroma collection.",
     }
 
     if q:
