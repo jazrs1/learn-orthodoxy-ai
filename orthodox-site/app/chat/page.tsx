@@ -452,8 +452,10 @@ function ChatPageContent() {
         if (normalizedQuery) {
           params.set("q", normalizedQuery);
         }
+        const saintsEndpoint = `/api/saints?${params.toString()}`;
+        console.log("SAINTS_ENDPOINT_CALLED", saintsEndpoint);
 
-        const response = await fetch(`/api/saints?${params.toString()}`, {
+        const response = await fetch(saintsEndpoint, {
           signal: AbortSignal.timeout(15000),
         });
         if (!response.ok) throw new Error("Failed to load saints list");
@@ -463,6 +465,7 @@ function ChatPageContent() {
         const nextNames = Array.isArray(data.saints)
           ? data.saints.filter((name) => typeof name === "string" && name.trim())
           : [];
+        console.log("SAINTS_RESULTS_COUNT", nextNames.length);
 
         setSaints((prev) => (reset ? nextNames : mergeUniqueSaints(prev, nextNames)));
         setSaintsTotal(typeof data.total === "number" ? data.total : nextNames.length);

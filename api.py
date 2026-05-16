@@ -23,6 +23,7 @@ from saint_index_overrides import (
     MANUAL_SAINT_NAME_EXCLUSIONS,
     MANUAL_SAINT_NAME_REPLACEMENTS,
 )
+from arabic_saints_index import ARABIC_SAINTS_INDEX
 
 load_dotenv()
 
@@ -145,43 +146,7 @@ SAINT_ALIAS_RECORDS: List[Dict[str, Any]] = [
     },
 ]
 
-ARABIC_SAINT_INDEX_ALIASES: List[Dict[str, Any]] = [
-    {
-        "name_ar": "مريم العذراء",
-        "aliases_ar": ["السيدة العذراء مريم", "العذراء مريم", "مريم"],
-        "source_title": "full saints arabic",
-    },
-    {
-        "name_ar": "مرقس الرسول",
-        "aliases_ar": ["مارمرقس", "القديس مارمرقس الرسول", "مرقس", "مار مرقس"],
-        "source_title": "full saints arabic",
-    },
-    {
-        "name_ar": "أنطونيوس القديس",
-        "aliases_ar": ["الأنبا أنطونيوس", "الأنبا أنطونيوس الكبير", "أنطونيوس"],
-        "source_title": "full saints arabic",
-    },
-    {
-        "name_ar": "أثناسيوس الرسولي",
-        "aliases_ar": ["أثناسيوس", "البابا أثناسيوس", "أثناسيوس الرسولي"],
-        "source_title": "full saints arabic",
-    },
-    {
-        "name_ar": "شنودة رئيس المتوحدين",
-        "aliases_ar": ["الأنبا شنودة", "الأنبا شنودة رئيس المتوحدين", "شنودة"],
-        "source_title": "full saints arabic",
-    },
-    {
-        "name_ar": "بيشوي الأب",
-        "aliases_ar": ["الأنبا بيشوي", "بيشوي"],
-        "source_title": "full saints arabic",
-    },
-    {
-        "name_ar": "بولا القديس",
-        "aliases_ar": ["الأنبا بولا", "بولا أول السواح", "الأنبا بولا أول السواح", "بولا"],
-        "source_title": "full saints arabic",
-    },
-]
+ARABIC_SAINT_INDEX_ALIASES: List[Dict[str, Any]] = ARABIC_SAINTS_INDEX
 
 SAINT_ORDERING_TITLES = {
     "apostle",
@@ -2138,16 +2103,33 @@ def _extract_arabic_saint_headings(document: str) -> List[str]:
     return headings
 
 
+def _seed_arabic_saint_names() -> List[str]:
+    names: List[str] = []
+    seen: Set[str] = set()
+    for record in ARABIC_SAINTS_INDEX:
+        name = _normalize_arabic_display_text(str(record.get("name_ar", "")))
+        key = _normalize_arabic_alias_key(name)
+        if not name or not key or key in seen:
+            continue
+        seen.add(key)
+        names.append(name)
+    return names
+
+
 def _build_arabic_saint_name_index() -> List[str]:
     global arabic_saint_name_index, arabic_collection
 
     if arabic_saint_name_index:
         return arabic_saint_name_index
-    if arabic_collection is None:
-        return []
 
-    names: List[str] = []
-    seen: Set[str] = set()
+    names: List[str] = _seed_arabic_saint_names()
+    seen: Set[str] = {_normalize_arabic_alias_key(name) for name in names}
+    if arabic_collection is None or _collection_count_safe(arabic_collection) == 0:
+        arabic_saint_name_index = names
+        print(f"ARABIC_SAINT_INDEX_COUNT: {len(arabic_saint_name_index)}")
+        print("ARABIC_SAINT_INDEX_SOURCE: seed")
+        return arabic_saint_name_index
+
     offset = 0
     page_size = 500
 
@@ -2176,6 +2158,7 @@ def _build_arabic_saint_name_index() -> List[str]:
 
     arabic_saint_name_index = names
     print(f"ARABIC_SAINT_INDEX_COUNT: {len(arabic_saint_name_index)}")
+    print("ARABIC_SAINT_INDEX_SOURCE: seed+chroma")
     return arabic_saint_name_index
 
 
@@ -2389,14 +2372,40 @@ def _collect_saint_debug_info(q: str = "") -> Dict[str, Any]:
     return info
 
 
-@app.get("/debug/saints")
-def debug_saints(q: str = ""):
-    global collection, oai_client
+def _collect_arabic_saint_debug_info(q: str = "") -> Dict[str, Any]:
+    saints = _build_arabic_saint_name_index()
+    arabic_doc_count = _collection_count_safe(arabic_collection)
+    source_files_found = _arabic_source_files_found()
+    info: Dict[str, Any] = {
+        "language": "ar",
+        "total_arabic_saint_index_count": len(saints),
+        "sample_arabic_saint_names": saints[:20],
+        "seed_index_count": len(ARABIC_SAINTS_INDEX),
+        "full_saints_arabic_ingested": arabic_doc_count > 0 and "full saints arabic.pdf" in source_files_found,
+        "arabic_chroma_document_count": arabic_doc_count,
+        "source_files_found": source_files_found,
+        "source_title": "full saints arabic",
+        "loading_note": "Arabic saint list uses the reviewed seed index first, then appends headings extracted from the Arabic saints Chroma collection when available.",
+    }
 
-    if collection is None or oai_client is None:
+    if q:
+        info["query"] = q
+        info["matches"] = _find_arabic_saint_index_matches(q, limit=20)
+
+    return info
+
+
+@app.get("/debug/saints")
+def debug_saints(q: str = "", language: str = "en"):
+    global collection, arabic_collection, oai_client
+
+    if collection is None or arabic_collection is None or oai_client is None:
         startup()
-        if collection is None:
+        if collection is None or arabic_collection is None:
             raise HTTPException(status_code=500, detail="Server not initialized")
+
+    if _detect_language(language, q) == "ar":
+        return _collect_arabic_saint_debug_info(q=q)
 
     return _collect_saint_debug_info(q=q)
 
