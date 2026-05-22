@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Learn Orthodoxy",
   description: siteDescription,
+  verification: {
+    google: "qSkr64BCs0d2ya1fOEyD6AmupuD7UhMKVqu_Vxb_wu0",
+  },
   alternates: {
     canonical: "/",
   },
