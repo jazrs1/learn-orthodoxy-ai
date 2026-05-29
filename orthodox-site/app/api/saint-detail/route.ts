@@ -14,6 +14,7 @@ type BackendChatResponse = {
   entities?: string[];
   options?: string[];
   sources?: SourceRef[];
+  can_learn_more?: boolean;
 };
 
 function backendUrl() {
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       entities: Array.isArray(data.entities) ? data.entities : [],
       options: Array.isArray(data.options) ? data.options : [],
       sources: Array.isArray(data.sources) ? data.sources : [],
+      canLearnMore: data.can_learn_more === true,
     });
   } catch (error) {
     return NextResponse.json(

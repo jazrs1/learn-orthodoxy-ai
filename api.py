@@ -1279,6 +1279,25 @@ def _response_grounding_status(answer: str, docs: List[str]) -> str:
     return "full"
 
 
+def _has_viable_saint_learn_more(answer: str, docs: List[str], metas: List[Dict[str, Any]], mode: str) -> bool:
+    if mode != "saints":
+        return False
+    if not answer.strip() or not docs or not metas:
+        return False
+    if _response_grounding_status(answer, docs) == "no-source":
+        return False
+
+    answer_words = len(re.findall(r"\w+", answer))
+    context_words = sum(len(re.findall(r"\w+", doc or "")) for doc in docs)
+    source_keys = {_source_key(_source_from_metadata(meta or {})) for meta in metas}
+
+    return (
+        len(docs) >= 2
+        or len(source_keys) >= 2
+        or (context_words >= 180 and context_words >= max(120, answer_words + 60))
+    )
+
+
 def _build_catechism_followups(question: str, answer: str, language: str = "en") -> List[str]:
     if language == "ar":
         text = f"{question} {answer}"
@@ -1371,6 +1390,7 @@ class ChatResponse(BaseModel):
     sources: List[Source]
     entities: List[str] = []
     options: List[str] = []
+    can_learn_more: bool = False
 
 
 class SaintSuggestionResponse(BaseModel):
@@ -2539,6 +2559,8 @@ def _extract_saint_chat_intent(question: str) -> Dict[str, str] | None:
 
     patterns = [
         ("lookup", r"^search\s+saints?\s*:\s*(.+)$"),
+        ("lookup", r"^(?:i\s+(?:want|would\s+like)\s+to\s+)?learn\s+more\s+about\s+(.+)$"),
+        ("lookup", r"^(?:tell\s+me\s+)?more\s+about\s+(.+)$"),
         ("lookup", r"^(?:look\s+up|lookup|find)\s+(.+)$"),
         ("lookup", r"^(?:who\s+is|who\s+was|tell\s+me\s+about|about)\s+(.+)$"),
         ("list", r"^(?:list|show)\s+saints?\s+named\s+(.+)$"),
@@ -2579,6 +2601,7 @@ def _saint_options_response(raw_query: str, matches: List[str], mode: str, langu
         "sources": [],
         "entities": [],
         "options": last_options,
+        "can_learn_more": False,
     }
 
 
@@ -2592,6 +2615,7 @@ def _saint_missing_response(raw_query: str, language: str = "en") -> Dict[str, A
         "sources": [],
         "entities": [],
         "options": [],
+        "can_learn_more": False,
     }
 
 
@@ -2715,6 +2739,7 @@ def chat(req: ChatRequest):
                     "sources": [],
                     "entities": [],
                     "options": [],
+                    "can_learn_more": False,
                 }
 
             sources = [_source_from_metadata(m) for m in metas]
@@ -2776,6 +2801,7 @@ def chat(req: ChatRequest):
                 "sources": unique_sources[:6],
                 "entities": [],
                 "options": followup_options,
+                "can_learn_more": _has_viable_saint_learn_more(answer, docs, metas, mode),
             }
 
         saint_intent = _extract_saint_chat_intent(question)
@@ -2885,7 +2911,9 @@ def chat(req: ChatRequest):
             return {
                 "answer": _no_source_answer(detected_language),
                 "sources": [],
-                "entities": []
+                "entities": [],
+                "options": [],
+                "can_learn_more": False,
             }
 
         if not filtered_docs:
@@ -2925,7 +2953,9 @@ def chat(req: ChatRequest):
             return {
                 "answer": _no_source_answer(detected_language),
                 "sources": [],
-                "entities": []
+                "entities": [],
+                "options": [],
+                "can_learn_more": False,
             }
 
         docs, metas = filtered_docs, filtered_metas
@@ -3063,7 +3093,8 @@ SOURCES:
             "answer": answer,
             "sources": unique_sources[:6],
             "entities": clean_entities,
-            "options": followup_options
+            "options": followup_options,
+            "can_learn_more": _has_viable_saint_learn_more(answer, docs, metas, mode),
         }
 
     except HTTPException:

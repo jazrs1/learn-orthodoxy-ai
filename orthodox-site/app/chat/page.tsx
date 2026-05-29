@@ -28,6 +28,7 @@ type SaintDetailResponse = {
   entities?: string[];
   options?: string[];
   sources?: SourceRef[];
+  canLearnMore?: boolean;
   error?: string;
 };
 
@@ -275,12 +276,15 @@ function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<s
 function hasSourceBackedSaintDetail(detail: SaintDetailResponse | null) {
   const answer = detail?.answer?.trim() || "";
   if (!answer) return false;
+  if (detail?.canLearnMore !== true) return false;
   if (!Array.isArray(detail?.sources) || detail.sources.length === 0) return false;
 
   const lowerAnswer = answer.toLowerCase();
   return !(
     lowerAnswer.includes("i don't have enough information") ||
     lowerAnswer.includes("i could not find enough information") ||
+    lowerAnswer.includes("i could not find enough about") ||
+    lowerAnswer.includes("could not find a dedicated saint entry") ||
     lowerAnswer.includes("i found multiple saints") ||
     lowerAnswer.includes("choose one option") ||
     answer.includes("لم أجد معلومات كافية") ||
@@ -1037,7 +1041,15 @@ function ChatPageContent() {
                       {t("close")}
                     </button>
                   </div>
-                  {saintDetailLoading ? <div className="chat-empty-state">{t("loading")}...</div> : null}
+                  {saintDetailLoading ? (
+                    <div className="chat-empty-state">
+                      <div className="typing-dots" aria-label={t("loading")} role="status">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                    </div>
+                  ) : null}
                   {saintDetailError ? <div className="chat-empty-state">{saintDetailError}</div> : null}
                   {!saintDetailLoading && !saintDetailError && saintDetail?.answer ? (
                     <>
@@ -1065,7 +1077,7 @@ function ChatPageContent() {
                               const question =
                                 language === "ar"
                                   ? `أريد أن أعرف المزيد عن ${saintName}`
-                                  : `I want to learn more about ${saintName}`;
+                                  : `Tell me more about ${saintName}`;
                               void handleSendMessage(question, { mode: "saints" });
                             }}
                           >
