@@ -879,7 +879,11 @@ function ChatPageContent() {
       }
       const displayQuestion = followUpToUserMessage(option);
       const backendQuestion = followUpBackendQuestion(displayQuestion, answerContext);
-      void handleSendMessage(backendQuestion, { displayMessage: displayQuestion, hideUserMessage: true });
+      void handleSendMessage(backendQuestion, {
+        displayMessage: displayQuestion,
+        hideUserMessage: true,
+        mode: "catechism",
+      });
     },
     [handleSendMessage, saintLookup, submitSaintLookup]
   );

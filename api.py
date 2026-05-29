@@ -2697,6 +2697,9 @@ def chat(req: ChatRequest):
         if detected_language == "ar":
             question = original_question
             history_resolved_entity = None
+        elif mode == "catechism":
+            question = original_question
+            history_resolved_entity = None
         else:
             question, history_resolved_entity = _rewrite_question_with_history(original_question, req.history)
             question = _canonicalize_saint_text(question)
@@ -2848,7 +2851,7 @@ def chat(req: ChatRequest):
                 "can_learn_more": _has_viable_saint_learn_more(answer, docs, metas, mode),
             }
 
-        saint_intent = _extract_saint_chat_intent(question)
+        saint_intent = _extract_saint_chat_intent(question) if mode != "catechism" else None
         if saint_intent:
             raw_saint_query = saint_intent["query"]
             saint_matches = _find_saint_index_matches(raw_saint_query, limit=12)
@@ -2879,7 +2882,7 @@ def chat(req: ChatRequest):
         print("RESOLVED_ENTITY:", entity)
         print("Current last_list:", last_list)
 
-        ambiguous_query = _extract_ambiguous_saint_query(question)
+        ambiguous_query = _extract_ambiguous_saint_query(question) if mode != "catechism" else ""
         if ambiguous_query and entity is None:
             core_name = _core_name_from_query(ambiguous_query)
             if core_name in AMBIGUOUS_SAINT_FALLBACKS:
