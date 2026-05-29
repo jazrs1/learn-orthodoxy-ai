@@ -292,6 +292,22 @@ function hasSourceBackedSaintDetail(detail: SaintDetailResponse | null) {
   );
 }
 
+function saintDetailOptions(detail: SaintDetailResponse | null) {
+  const seen = new Set<string>();
+  const options: string[] = [];
+
+  for (const option of detail?.options || []) {
+    const normalized = normalizeOptionText(option);
+    if (!normalized) continue;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    options.push(normalized);
+  }
+
+  return options;
+}
+
 function ChatPageContent() {
   const { language, t } = useLanguage();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -1060,6 +1076,25 @@ function ChatPageContent() {
                           saintLookup={saintLookup}
                         />
                       </div>
+                      {(() => {
+                        const options = saintDetailOptions(saintDetail);
+                        return options.length > 0 ? (
+                          <div className="saint-detail-options">
+                            <div className="message-options-list">
+                              {options.map((option) => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  className="message-option-chip"
+                                  onClick={() => void loadSaintDetail(option)}
+                                >
+                                  {displaySaintName(option, language)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
                       {hasSourceBackedSaintDetail(saintDetail) ? (
                         <div className="saint-detail-actions">
                           <button

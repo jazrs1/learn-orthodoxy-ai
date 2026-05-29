@@ -1199,6 +1199,33 @@ def _filter_relevant_documents(
     return accepted_docs, accepted_metas, rejected_count
 
 
+def _prepend_saint_record_context(
+    docs: List[str],
+    metas: List[Dict[str, Any]],
+    entity: str | None,
+) -> Tuple[List[str], List[Dict[str, Any]]]:
+    if not entity:
+        return docs, metas
+
+    record = _find_saint_record_by_name(entity)
+    body = str((record or {}).get("body", "") or "").strip()
+    metadata = (record or {}).get("metadata") or {}
+    if not body or not metadata:
+        return docs, metas
+
+    source_key = _source_key(_source_from_metadata(metadata))
+    merged_docs = [body]
+    merged_metas = [metadata]
+
+    for doc, meta in zip(docs, metas):
+        if _source_key(_source_from_metadata(meta or {})) == source_key and (doc or "").strip() == body:
+            continue
+        merged_docs.append(doc)
+        merged_metas.append(meta)
+
+    return merged_docs, merged_metas
+
+
 def _log_retrieval_debug(
     original_question: str,
     rewritten_question: str,
@@ -2070,7 +2097,9 @@ def _build_saint_record_index() -> List[Dict[str, Any]]:
                     "aliases": aliases,
                     "raw_heading": heading,
                     "is_real_record": True,
+                    "body": body,
                     "body_preview": body[:300],
+                    "metadata": metadata,
                     "source": _source_from_metadata(metadata),
                 }
 
@@ -2089,6 +2118,21 @@ def _build_saint_name_index() -> List[str]:
     if saint_name_index:
         return saint_name_index
     return [str(record.get("name", "")) for record in _build_saint_record_index()]
+
+
+def _find_saint_record_by_name(name: str) -> Dict[str, Any] | None:
+    target_keys = _saint_match_keys(name)
+    if not target_keys:
+        return None
+
+    for record in _build_saint_record_index():
+        record_keys = _saint_match_keys(str(record.get("name", "")))
+        for alias in record.get("aliases") or []:
+            record_keys.update(_saint_match_keys(str(alias)))
+        if target_keys & record_keys:
+            return record
+
+    return None
 
 
 def _normalize_arabic_display_text(value: str) -> str:
@@ -2882,6 +2926,8 @@ def chat(req: ChatRequest):
         # Retrieval
         retrieval_queries = _build_retrieval_queries(retrieval_question, entity=entity)
         docs, metas = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
+        if mode == "saints":
+            docs, metas = _prepend_saint_record_context(docs, metas, entity)
         print("COLLECTION_USED:", COLLECTION_NAME)
         print("METADATA_FILTER_USED:", None)
         print("Retrieval queries:", retrieval_queries)
@@ -2920,6 +2966,8 @@ def chat(req: ChatRequest):
             retry_seed = english_retrieval_query if detected_language == "ar" else original_question
             retry_queries = _build_retrieval_queries(retry_seed, entity=entity)
             retry_docs, retry_metas = _retrieve_documents(retry_queries, top_k=16, entity=entity)
+            if mode == "saints":
+                retry_docs, retry_metas = _prepend_saint_record_context(retry_docs, retry_metas, entity)
             retry_filtered_docs, retry_filtered_metas, retry_rejected_count = _filter_relevant_documents(
                 retry_docs,
                 retry_metas,

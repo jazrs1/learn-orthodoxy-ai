@@ -875,6 +875,10 @@ textarea {
   line-height: 1.65;
 }
 
+.saint-detail-options {
+  margin-top: 0.9rem;
+}
+
 .saint-detail-actions {
   display: flex;
   align-items: center;
