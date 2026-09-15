@@ -12,12 +12,12 @@ This project has:
 - Browser -> Next.js frontend
 - Next.js API routes -> Postgres for chat persistence
 - Next.js API routes -> FastAPI `/chat` for retrieval + answer generation
-- Browser -> FastAPI `/saints` for saint search and list loading
+- Next.js API routes -> FastAPI `/saints` and `/saint-suggestions` for saint search and list loading
 
-The frontend uses:
-
-- `ORTHODOX_API_URL` on the server
-- `NEXT_PUBLIC_API_URL` in the browser
+The browser never calls the FastAPI backend directly. Every backend call goes through a
+Next.js server route, which attaches the shared secret header `X-Internal-Key`
+(`ORTHODOX_API_KEY` on Vercel, `INTERNAL_API_KEY` on Railway) and forwards the user's IP
+in `X-Client-IP` for rate limiting.
 
 Do not hardcode localhost URLs in app code. Use environment variables in each environment.
 
@@ -30,14 +30,14 @@ Local `.env.local` or Vercel project env vars:
 ```env
 POSTGRES_URL=postgres://USER:PASSWORD@HOST:5432/DATABASE
 ORTHODOX_API_URL=https://learn-orthodoxy-api-production.up.railway.app
-NEXT_PUBLIC_API_URL=https://learn-orthodoxy-api-production.up.railway.app
+ORTHODOX_API_KEY=<same value as INTERNAL_API_KEY on Railway>
 ```
 
 Notes:
 
 - `POSTGRES_URL` can be replaced with `DATABASE_URL` if your provider uses that name.
-- `ORTHODOX_API_URL` is used by Next server routes.
-- `NEXT_PUBLIC_API_URL` is used by browser-side saint search requests.
+- `ORTHODOX_API_URL` and `ORTHODOX_API_KEY` are used only by Next server routes.
+- `NEXT_PUBLIC_API_URL` is no longer used and can be deleted from Vercel.
 
 ### Backend (repo root / Railway)
 
@@ -50,10 +50,18 @@ AUTO_INGEST_ON_START=1
 MIN_CHROMA_DOCUMENTS=1000
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://your-project.vercel.app
 CORS_ALLOW_ORIGIN_REGEX=https://.*\.vercel\.app
+INTERNAL_API_KEY=<random secret, e.g. openssl rand -hex 32>
+ENABLE_DEBUG=0
 ```
 
 Notes:
 
+- `INTERNAL_API_KEY` is required. Every endpoint except `/health` returns 401 without a
+  matching `X-Internal-Key` header, and 503 if the variable is unset.
+- `ENABLE_DEBUG=1` exposes `/debug/*`; leave it off in production.
+- Optional tuning: `MAX_QUESTION_CHARS` (1000), `ANSWER_MAX_TOKENS` (1200),
+  `OPENAI_TIMEOUT_SECONDS` (25), `OPENAI_MAX_RETRIES` (1), `OPENAI_CHAT_MODEL` (gpt-4o-mini),
+  `CHAT_RATE_LIMIT_PER_MINUTE` (20 per user IP), `CHAT_GLOBAL_RATE_LIMIT_PER_MINUTE` (300).
 - `ALLOWED_ORIGINS` is a comma-separated list for exact origins.
 - `CORS_ALLOW_ORIGIN_REGEX` is optional and useful for Vercel preview deployments.
 - `CHROMA_DIR` defaults to `chroma_db` locally. On Railway, prefer a persistent volume and set `CHROMA_DIR` to the volume-backed path.
@@ -99,7 +107,7 @@ Set:
 ```env
 POSTGRES_URL=postgres://USER:PASSWORD@HOST:5432/DATABASE
 ORTHODOX_API_URL=http://127.0.0.1:8001
-NEXT_PUBLIC_API_URL=http://127.0.0.1:8001
+ORTHODOX_API_KEY=<same value as INTERNAL_API_KEY in the root .env>
 ```
 
 Run the Postgres migration:
@@ -161,7 +169,7 @@ git push
 6. Add environment variables:
    - `POSTGRES_URL`
    - `ORTHODOX_API_URL`
-   - `NEXT_PUBLIC_API_URL`
+   - `ORTHODOX_API_KEY`
 7. Deploy.
 
 ### Recommended Vercel env values
@@ -169,7 +177,7 @@ git push
 ```env
 POSTGRES_URL=postgres://USER:PASSWORD@HOST:5432/DATABASE
 ORTHODOX_API_URL=https://your-railway-service.up.railway.app
-NEXT_PUBLIC_API_URL=https://your-railway-service.up.railway.app
+ORTHODOX_API_KEY=<same value as INTERNAL_API_KEY on Railway>
 ```
 
 ### After deploy
@@ -198,6 +206,7 @@ Copy the Vercel production URL. You will use it in Railway CORS settings.
    - `MIN_CHROMA_DOCUMENTS`
    - `ALLOWED_ORIGINS`
    - `CORS_ALLOW_ORIGIN_REGEX`
+   - `INTERNAL_API_KEY`
 8. Ensure the start command is:
 
 ```bash
@@ -217,6 +226,8 @@ AUTO_INGEST_ON_START=1
 MIN_CHROMA_DOCUMENTS=1000
 ALLOWED_ORIGINS=https://your-production-site.vercel.app,http://localhost:3000,http://127.0.0.1:3000
 CORS_ALLOW_ORIGIN_REGEX=https://.*\.vercel\.app
+INTERNAL_API_KEY=<random secret>
+ENABLE_DEBUG=0
 ```
 
 ### Important backend note
@@ -319,16 +330,18 @@ Arabic PDF text extraction returned 0 usable text. OCR or another extractor is n
 Verify Arabic source state:
 
 ```bash
-curl https://your-railway-service.up.railway.app/debug/chroma/ar
-curl "https://your-railway-service.up.railway.app/debug/saints?language=ar"
-curl "https://your-railway-service.up.railway.app/saints?language=ar&limit=200"
-curl "https://your-railway-service.up.railway.app/saints?language=ar&search=انطونيوس"
+curl -H "X-Internal-Key: $INTERNAL_API_KEY" https://your-railway-service.up.railway.app/debug/chroma/ar
+curl -H "X-Internal-Key: $INTERNAL_API_KEY" "https://your-railway-service.up.railway.app/debug/saints?language=ar"
+curl -H "X-Internal-Key: $INTERNAL_API_KEY" "https://your-railway-service.up.railway.app/saints?language=ar&limit=200"
+curl -H "X-Internal-Key: $INTERNAL_API_KEY" "https://your-railway-service.up.railway.app/saints?language=ar&search=انطونيوس"
 ```
+
+The `/debug/*` endpoints only exist while `ENABLE_DEBUG=1` is set on the service.
 
 Also check the combined debug endpoint:
 
 ```bash
-curl https://your-railway-service.up.railway.app/debug/chroma
+curl -H "X-Internal-Key: $INTERNAL_API_KEY" https://your-railway-service.up.railway.app/debug/chroma
 ```
 
 The `/debug/chroma` response should report an Arabic `document_count` greater than `0` for `orthodox_arabic_pdfs`.
@@ -365,7 +378,7 @@ For production, set the frontend to the deployed Railway backend:
 
 ```env
 ORTHODOX_API_URL=https://your-railway-service.up.railway.app
-NEXT_PUBLIC_API_URL=https://your-railway-service.up.railway.app
+ORTHODOX_API_KEY=<same value as INTERNAL_API_KEY on Railway>
 ```
 
 This removes all localhost assumptions from production.

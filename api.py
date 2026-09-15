@@ -1,16 +1,22 @@
+import hmac
 import json
+import logging
 import os
 import re
+import threading
+import time
 import unicodedata
+from collections import deque
 from pathlib import Path
-from typing import List, Dict, Any, Set, Tuple
+from typing import List, Dict, Any, Deque, Set, Tuple
 
 from dotenv import load_dotenv
 from chromadb.utils import embedding_functions
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from openai import OpenAI
+from openai import OpenAI, APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
 from chroma_store import (
     ARABIC_COLLECTION_NAME,
     COLLECTION_NAME,
@@ -27,6 +33,170 @@ from saint_index_overrides import (
 from arabic_saints_index import ARABIC_SAINTS_INDEX
 
 load_dotenv()
+
+logger = logging.getLogger("orthodox.api")
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+
+TRUTHY_VALUES = {"1", "true", "yes", "on"}
+
+
+def _env_flag(name: str, default: str = "0") -> bool:
+    return os.getenv(name, default).strip().lower() in TRUTHY_VALUES
+
+
+def _env_int(name: str, default: int, minimum: int = 0) -> int:
+    try:
+        return max(minimum, int(os.getenv(name, str(default)).strip()))
+    except ValueError:
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, str(default)).strip())
+    except ValueError:
+        return default
+
+
+# --- Hardening configuration (see DECISIONS.md, Security section) ---
+# Shared secret that the Next.js server routes must send as X-Internal-Key.
+INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "").strip()
+INTERNAL_KEY_HEADER = "x-internal-key"
+# Header the Next.js proxy uses to forward the end user's IP for rate limiting.
+CLIENT_IP_HEADER = "x-client-ip"
+# Paths that never require the internal key (platform health checks).
+AUTH_EXEMPT_PATHS = {"/health"}
+ENABLE_DEBUG = _env_flag("ENABLE_DEBUG")
+
+MAX_QUESTION_CHARS = _env_int("MAX_QUESTION_CHARS", 1000, minimum=1)
+MAX_TOP_K = 12
+MAX_HISTORY_MESSAGES = 12
+MAX_HISTORY_MESSAGE_CHARS = 4000
+ANSWER_MAX_TOKENS = _env_int("ANSWER_MAX_TOKENS", 1200, minimum=64)
+OPENAI_TIMEOUT_SECONDS = _env_float("OPENAI_TIMEOUT_SECONDS", 25.0)
+OPENAI_MAX_RETRIES = _env_int("OPENAI_MAX_RETRIES", 1)
+CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
+
+CHAT_RATE_LIMIT_PER_MINUTE = _env_int("CHAT_RATE_LIMIT_PER_MINUTE", 20)
+CHAT_GLOBAL_RATE_LIMIT_PER_MINUTE = _env_int("CHAT_GLOBAL_RATE_LIMIT_PER_MINUTE", 300)
+RATE_LIMIT_WINDOW_SECONDS = 60
+
+GENERIC_SERVER_ERROR = "The assistant could not generate a response right now. Please try again."
+GENERIC_BUSY_ERROR = "The assistant is busy right now. Please try again in a moment."
+GENERIC_TIMEOUT_ERROR = "The assistant took too long to respond. Please try again."
+
+
+class SlidingWindowRateLimiter:
+    """In-memory sliding-window counter keyed by an arbitrary string (usually an IP).
+
+    Good enough for a single-process backend; not shared across processes or hosts.
+    """
+
+    def __init__(self, limit: int, window_seconds: int):
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self._events: Dict[str, Deque[float]] = {}
+        self._lock = threading.Lock()
+
+    def check(self, key: str) -> Tuple[bool, int]:
+        """Record one hit for `key`. Returns (allowed, retry_after_seconds)."""
+        if self.limit <= 0:
+            return True, 0
+        now = time.monotonic()
+        cutoff = now - self.window_seconds
+        with self._lock:
+            events = self._events.setdefault(key, deque())
+            while events and events[0] <= cutoff:
+                events.popleft()
+            if len(events) >= self.limit:
+                retry_after = int(events[0] + self.window_seconds - now) + 1
+                return False, max(1, retry_after)
+            events.append(now)
+            # Opportunistic cleanup so idle keys do not accumulate forever.
+            if len(self._events) > 10000:
+                for stale_key in [k for k, v in self._events.items() if not v or v[-1] <= cutoff]:
+                    self._events.pop(stale_key, None)
+        return True, 0
+
+
+chat_ip_limiter = SlidingWindowRateLimiter(CHAT_RATE_LIMIT_PER_MINUTE, RATE_LIMIT_WINDOW_SECONDS)
+chat_global_limiter = SlidingWindowRateLimiter(CHAT_GLOBAL_RATE_LIMIT_PER_MINUTE, RATE_LIMIT_WINDOW_SECONDS)
+
+
+def _client_ip(request: Request) -> str:
+    """Best-effort end-user IP.
+
+    Requests reach this service through the Next.js server on Vercel, so the socket
+    peer is Vercel, not the user. The Next.js proxy forwards the user's IP in
+    X-Client-IP; that header is only trusted because every non-health request has
+    already presented the internal key.
+    """
+    forwarded = (request.headers.get(CLIENT_IP_HEADER) or "").strip()
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    xff = (request.headers.get("x-forwarded-for") or "").strip()
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _enforce_chat_rate_limit(request: Request) -> None:
+    ip = _client_ip(request)
+    allowed, retry_after = chat_ip_limiter.check(ip)
+    if not allowed:
+        logger.warning("rate_limited scope=ip ip=%s retry_after=%s", ip, retry_after)
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please wait a moment and try again.",
+            headers={"Retry-After": str(retry_after)},
+        )
+    allowed, retry_after = chat_global_limiter.check("global")
+    if not allowed:
+        logger.warning("rate_limited scope=global retry_after=%s", retry_after)
+        raise HTTPException(
+            status_code=429,
+            detail=GENERIC_BUSY_ERROR,
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
+def _require_debug_enabled() -> None:
+    if not ENABLE_DEBUG:
+        # 404 rather than 403 so the endpoints are not discoverable in production.
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+def _sanitize_history(history: Any) -> List[Dict[str, str]]:
+    """Keep only well-formed {role, content} messages, bounded in count and size."""
+    if not isinstance(history, list):
+        return []
+    cleaned: List[Dict[str, str]] = []
+    for item in history:
+        if not isinstance(item, dict):
+            continue
+        role = str(item.get("role", "")).strip().lower()
+        if role not in {"user", "assistant"}:
+            continue
+        content = str(item.get("content", "") or "").strip()
+        if not content:
+            continue
+        cleaned.append({"role": role, "content": content[:MAX_HISTORY_MESSAGE_CHARS]})
+    return cleaned[-MAX_HISTORY_MESSAGES:]
+
+
+def _openai_error_to_http(error: Exception) -> HTTPException:
+    """Map OpenAI SDK failures to generic client-safe HTTP errors. Details go to the log only."""
+    if isinstance(error, RateLimitError):
+        return HTTPException(status_code=503, detail=GENERIC_BUSY_ERROR, headers={"Retry-After": "10"})
+    if isinstance(error, APITimeoutError):
+        return HTTPException(status_code=504, detail=GENERIC_TIMEOUT_ERROR)
+    if isinstance(error, APIConnectionError):
+        return HTTPException(status_code=503, detail=GENERIC_BUSY_ERROR, headers={"Retry-After": "10"})
+    if isinstance(error, APIStatusError) and error.status_code >= 500:
+        return HTTPException(status_code=503, detail=GENERIC_BUSY_ERROR, headers={"Retry-After": "10"})
+    return HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
+
 
 ARABIC_SAINTS_PDF_PATH = Path("data/pdfs/full saints arabic.pdf")
 GENERATED_ARABIC_SAINTS_PATH = Path("data/saints_ar_generated.json")
@@ -1733,6 +1903,29 @@ def _extract_ambiguous_saint_query(question: str) -> str:
 
 app = FastAPI(title="Orthodox PDF Chat API")
 
+
+@app.middleware("http")
+async def require_internal_key(request: Request, call_next):
+    """Reject every request that does not carry the shared internal key.
+
+    Only /health (platform health checks) and CORS preflights are exempt. If the key
+    is not configured at all we fail closed: a misconfigured deployment should be
+    visibly broken rather than silently open to the internet.
+    """
+    if request.method == "OPTIONS" or request.url.path in AUTH_EXEMPT_PATHS:
+        return await call_next(request)
+
+    if not INTERNAL_API_KEY:
+        logger.error("INTERNAL_API_KEY is not set; refusing request to %s", request.url.path)
+        return JSONResponse(status_code=503, content={"detail": "Server is not configured."})
+
+    presented = (request.headers.get(INTERNAL_KEY_HEADER) or "").strip()
+    if not presented or not hmac.compare_digest(presented, INTERNAL_API_KEY):
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
+    return await call_next(request)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins(),
@@ -1746,7 +1939,6 @@ chroma_client = None
 collection = None
 arabic_collection = None
 oai_client = None
-last_list = {}
 saint_name_index: List[str] = []
 saint_record_index: List[Dict[str, Any]] = []
 arabic_saint_name_index: List[str] = []
@@ -1884,7 +2076,13 @@ def startup():
     print(f"Collection count before ingest: {int(collection.count())}")
     print(f"Arabic collection count: {int(arabic_collection.count())}")
 
-    oai_client = OpenAI(api_key=api_key)
+    # timeout + max_retries: the SDK retries once on 408/409/429/5xx/connection errors
+    # and timeouts, with backoff, so a transient OpenAI blip does not become a 500.
+    oai_client = OpenAI(api_key=api_key, timeout=OPENAI_TIMEOUT_SECONDS, max_retries=OPENAI_MAX_RETRIES)
+    if not INTERNAL_API_KEY:
+        logger.error("INTERNAL_API_KEY is not set. All endpoints except /health will return 503.")
+    if ENABLE_DEBUG:
+        logger.warning("ENABLE_DEBUG is on: /debug/* endpoints are exposed.")
     debug_info = _collect_chroma_debug_info()
     print(f"Resolved Chroma dir: {debug_info['resolved_chroma_dir']}")
     print(f"Chroma dir exists: {debug_info['directory_exists']}")
@@ -1919,6 +2117,7 @@ def root():
 @app.get("/debug/chroma")
 def debug_chroma():
     global collection, arabic_collection, oai_client
+    _require_debug_enabled()
 
     if collection is None or arabic_collection is None or oai_client is None:
         startup()
@@ -1929,6 +2128,7 @@ def debug_chroma():
 @app.get("/debug/chroma/en")
 def debug_chroma_en():
     global collection, oai_client
+    _require_debug_enabled()
 
     if collection is None or oai_client is None:
         startup()
@@ -1939,6 +2139,7 @@ def debug_chroma_en():
 @app.get("/debug/chroma/ar")
 def debug_chroma_ar():
     global arabic_collection, oai_client
+    _require_debug_enabled()
 
     if arabic_collection is None or oai_client is None:
         startup()
@@ -2584,6 +2785,7 @@ def _collect_arabic_saint_debug_info(q: str = "") -> Dict[str, Any]:
 @app.get("/debug/saints")
 def debug_saints(q: str = "", language: str = "en"):
     global collection, arabic_collection, oai_client
+    _require_debug_enabled()
 
     if collection is None or arabic_collection is None or oai_client is None:
         startup()
@@ -2664,23 +2866,34 @@ def _saint_missing_response(raw_query: str, language: str = "en") -> Dict[str, A
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
-    global last_list, collection, arabic_collection, oai_client
+def chat(req: ChatRequest, request: Request):
+    global collection, arabic_collection, oai_client
+
+    _enforce_chat_rate_limit(request)
 
     try:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise HTTPException(status_code=500, detail="Missing OPENAI_API_KEY env var on server")
+            logger.error("OPENAI_API_KEY is missing; cannot serve /chat")
+            raise HTTPException(status_code=503, detail="Server is not configured.")
 
         if collection is None or arabic_collection is None or oai_client is None:
             startup()
             if collection is None or arabic_collection is None or oai_client is None:
-                raise HTTPException(status_code=500, detail="Server not initialized")
+                logger.error("Server not initialized (collections or OpenAI client missing)")
+                raise HTTPException(status_code=503, detail="Server is not configured.")
 
         original_question = (req.question or "").strip()
-        original_question = _canonicalize_saint_text(original_question)
         if not original_question:
             raise HTTPException(status_code=400, detail="Question cannot be empty")
+        if len(original_question) > MAX_QUESTION_CHARS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Question is too long. Please keep it under {MAX_QUESTION_CHARS} characters.",
+            )
+        original_question = _canonicalize_saint_text(original_question)
+        history = _sanitize_history(req.history)
+        requested_top_k = max(1, min(int(req.top_k or 8), MAX_TOP_K))
 
         mode = _normalize_chat_mode(req.mode)
         detected_language = _detect_language(req.language, original_question)
@@ -2701,7 +2914,7 @@ def chat(req: ChatRequest):
             question = original_question
             history_resolved_entity = None
         else:
-            question, history_resolved_entity = _rewrite_question_with_history(original_question, req.history)
+            question, history_resolved_entity = _rewrite_question_with_history(original_question, history)
             question = _canonicalize_saint_text(question)
 
         english_retrieval_query = "" if detected_language == "ar" else question
@@ -2720,11 +2933,11 @@ def chat(req: ChatRequest):
         print("ENGLISH_RETRIEVAL_QUERY:", english_retrieval_query)
         print("MATCHED_SAINT_ALIAS:", matched_saint_alias)
         print("History-resolved entity:", history_resolved_entity)
-        print("History:", req.history)
+        print("History message count:", len(history))
 
         if detected_language == "ar":
             metadata_filter = _arabic_metadata_filter_for_mode(mode)
-            top_k = max(1, min(req.top_k, 12))
+            top_k = requested_top_k
             retrieval_top_k = min(16, max(top_k, 10))
             arabic_selected_saint = ""
             if mode == "saints":
@@ -2827,8 +3040,9 @@ def chat(req: ChatRequest):
 """
 
             resp = oai_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=CHAT_MODEL,
                 temperature=0.2,
+                max_tokens=ANSWER_MAX_TOKENS,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -2861,7 +3075,6 @@ def chat(req: ChatRequest):
                 return _saint_missing_response(raw_saint_query, language=detected_language)
 
             if saint_intent["mode"] == "list" or len(saint_matches) > 1:
-                last_list = {str(i + 1): name for i, name in enumerate(saint_matches[:12])}
                 return _saint_options_response(raw_saint_query, saint_matches, saint_intent["mode"], language=detected_language)
 
             entity = saint_matches[0]
@@ -2870,17 +3083,15 @@ def chat(req: ChatRequest):
         elif history_resolved_entity:
             entity = history_resolved_entity
 
-        # Numbered follow-up resolution
-        q_lower = question.lower()
-        match = re.search(r"(?:the\s*)?(\d+)(?:st|nd|rd|th)?\s*(?:one|saint|mary|john)?", q_lower)
-        if match and match.group(1) in last_list:
-            entity = last_list[match.group(1)]
-            question = f"{entity} Orthodox saint biography life feast teachings martyr monk bishop"
-            retrieval_question = question
+        # TODO(per-conversation follow-ups): numbered follow-ups ("the 2nd one") used to be
+        # resolved against a process-global `last_list` shared by every user, keyed off any
+        # digit in the question (AUDIT.md C16). That was removed. When rebuilt, resolve
+        # against the *previous assistant message of this conversation* (the frontend already
+        # stores `options`/`entities` per message) and only when the question is clearly an
+        # ordinal selection, not any question that happens to contain a number.
 
         print("REWRITTEN_QUESTION:", question)
         print("RESOLVED_ENTITY:", entity)
-        print("Current last_list:", last_list)
 
         ambiguous_query = _extract_ambiguous_saint_query(question) if mode != "catechism" else ""
         if ambiguous_query and entity is None:
@@ -2888,7 +3099,6 @@ def chat(req: ChatRequest):
             if core_name in AMBIGUOUS_SAINT_FALLBACKS:
                 clean_entities = _filter_sourced_saint_options(AMBIGUOUS_SAINT_FALLBACKS[core_name])
                 if len(clean_entities) > 1:
-                    last_list = {str(i + 1): name for i, name in enumerate(clean_entities)}
                     ambiguous_answer = (
                         f"وجدت أكثر من قديس يطابق '{ambiguous_query}'. اختر واحدًا من الخيارات أدناه."
                         if detected_language == "ar"
@@ -2908,7 +3118,6 @@ def chat(req: ChatRequest):
             )
             if len(suggestion_options) > 1:
                 clean_entities = suggestion_options
-                last_list = {str(i + 1): name for i, name in enumerate(clean_entities)}
                 ambiguous_answer = (
                     f"وجدت أكثر من قديس يطابق '{ambiguous_query}'. اختر واحدًا من الخيارات أدناه."
                     if detected_language == "ar"
@@ -2923,7 +3132,7 @@ def chat(req: ChatRequest):
 
         broad_list = _is_broad_list_question(retrieval_question)
         definition_question = _is_definition_question(retrieval_question)
-        top_k = max(1, min(req.top_k, 12))
+        top_k = requested_top_k
         retrieval_top_k = min(16, max(top_k, 12 if broad_list else 10 if definition_question else top_k))
 
         # Retrieval
@@ -3027,7 +3236,7 @@ def chat(req: ChatRequest):
 
         context = "\n\n".join(context_blocks)
 
-        history_text = _recent_history_text(req.history) if history_resolved_entity else ""
+        history_text = _recent_history_text(history) if history_resolved_entity else ""
         manual_arabic_saint_aliases = _manual_arabic_saint_alias_prompt()
 
         language_rules = """
@@ -3097,8 +3306,9 @@ SOURCES:
 """
 
         resp = oai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=CHAT_MODEL,
             temperature=0.2,
+            max_tokens=ANSWER_MAX_TOKENS,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -3134,8 +3344,6 @@ SOURCES:
                     seen_entities.add(item)
                     clean_entities.append(item)
 
-                last_list = {str(i + 1): item for i, item in enumerate(clean_entities)}
-
         print("Answer generated successfully.")
         print("Extracted entities:", clean_entities)
         print("Response grounding status:", _response_grounding_status(answer, docs))
@@ -3150,9 +3358,12 @@ SOURCES:
 
     except HTTPException:
         raise
-    except Exception as e:
-        print("ERROR IN /chat:", repr(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    except (RateLimitError, APITimeoutError, APIConnectionError, APIStatusError) as e:
+        logger.exception("OpenAI call failed in /chat")
+        raise _openai_error_to_http(e) from e
+    except Exception:
+        logger.exception("Unhandled error in /chat")
+        raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
 
 
 @app.get("/saint-suggestions", response_model=SaintSuggestionResponse)
@@ -3166,7 +3377,7 @@ def saint_suggestions(q: str, limit: int = 8, language: str = "en"):
     if collection is None or arabic_collection is None or oai_client is None:
         startup()
         if collection is None or arabic_collection is None or oai_client is None:
-            raise HTTPException(status_code=500, detail="Server not initialized")
+            raise HTTPException(status_code=503, detail="Server is not configured.")
 
     try:
         if _detect_language(language, query) == "ar":
@@ -3176,9 +3387,9 @@ def saint_suggestions(q: str, limit: int = 8, language: str = "en"):
             suggestions = _find_saint_suggestions(query, limit=limit)
             _log_saint_query(query, _normalize_saint_search_query(query), suggestions)
         return {"suggestions": suggestions}
-    except Exception as e:
-        print("ERROR IN /saint-suggestions:", repr(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Unhandled error in /saint-suggestions")
+        raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
 
 
 @app.get("/saints", response_model=SaintsListResponse)
@@ -3188,7 +3399,7 @@ def saints_list(q: str = "", search: str = "", limit: int = 400, offset: int = 0
     if collection is None or arabic_collection is None or oai_client is None:
         startup()
         if collection is None or arabic_collection is None or oai_client is None:
-            raise HTTPException(status_code=500, detail="Server not initialized")
+            raise HTTPException(status_code=503, detail="Server is not configured.")
 
     try:
         raw_query = q or search
@@ -3215,6 +3426,6 @@ def saints_list(q: str = "", search: str = "", limit: int = 400, offset: int = 0
             "offset": safe_offset,
             "limit": safe_limit,
         }
-    except Exception as e:
-        print("ERROR IN /saints:", repr(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Unhandled error in /saints")
+        raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)

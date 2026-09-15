@@ -1,32 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { backendConfigError, backendFetch, backendUrl } from "../../../lib/backend";
 
 export const runtime = "nodejs";
 
-function backendUrl() {
-  const value = process.env.ORTHODOX_API_URL || process.env.NEXT_PUBLIC_API_URL || "";
-  return value.trim().replace(/\/+$/, "");
-}
-
 export async function GET(request: NextRequest) {
-  const apiBaseUrl = backendUrl();
-  if (!apiBaseUrl) {
-    return NextResponse.json(
-      {
-        error: "The backend API URL is not configured. Set ORTHODOX_API_URL or NEXT_PUBLIC_API_URL.",
-      },
-      { status: 500 }
-    );
+  const configError = backendConfigError();
+  if (configError) {
+    return NextResponse.json({ error: configError }, { status: 500 });
   }
 
-  const upstreamUrl = new URL(`${apiBaseUrl}/saints`);
+  const upstreamUrl = new URL(`${backendUrl()}/saints`);
   request.nextUrl.searchParams.forEach((value, key) => {
     upstreamUrl.searchParams.set(key, value);
   });
 
   try {
-    const response = await fetch(upstreamUrl, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(15000),
+    const response = await backendFetch(upstreamUrl.toString(), {
+      request,
+      timeoutMs: 15000,
     });
 
     const data = await response.json().catch(() => ({}));

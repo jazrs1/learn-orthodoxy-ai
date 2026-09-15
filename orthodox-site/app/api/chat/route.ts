@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { backendConfigError, backendFetch } from "../../../lib/backend";
 import { getOrCreateAnonymousSessionId } from "../../../lib/chat-auth";
 import { getRecentHistory, saveChatTurn } from "../../../lib/conversations";
 import { getDatabaseConfigError } from "../../../lib/db";
@@ -6,6 +7,10 @@ import { ChatMessage, SourceRef } from "../../../lib/chat-types";
 import { Language, normalizeLanguage } from "../../../lib/i18n";
 
 export const runtime = "nodejs";
+
+// Mirrors MAX_QUESTION_CHARS on the backend so the user gets a clear message
+// before a network round-trip.
+const MAX_QUESTION_CHARS = 1000;
 
 type BackendChatResponse = {
   answer?: string;
@@ -24,11 +29,6 @@ type ChatRequestBody = {
 };
 
 type ChatMode = "chat" | "saints" | "catechism";
-
-function backendUrl() {
-  const value = process.env.ORTHODOX_API_URL || process.env.NEXT_PUBLIC_API_URL || "";
-  return value.trim().replace(/\/+$/, "");
-}
 
 function normalizeAssistantMessage(data: BackendChatResponse): Omit<ChatMessage, "role"> {
   return {
@@ -66,24 +66,28 @@ export async function POST(request: Request) {
       return badRequest;
     }
 
+    if (question.length > MAX_QUESTION_CHARS) {
+      const tooLong = NextResponse.json(
+        { error: `Question is too long. Please keep it under ${MAX_QUESTION_CHARS} characters.` },
+        { status: 400 }
+      );
+      await getOrCreateAnonymousSessionId(tooLong, sessionId);
+      return tooLong;
+    }
+
     const history = body.conversationId
       ? await getRecentHistory(sessionId, body.conversationId, 6)
       : [];
 
-    const apiBaseUrl = backendUrl();
-    if (!apiBaseUrl) {
-      const missingConfig = NextResponse.json(
-        {
-          error:
-            "The backend API URL is not configured. Set ORTHODOX_API_URL or NEXT_PUBLIC_API_URL.",
-        },
-        { status: 500 }
-      );
+    const configError = backendConfigError();
+    if (configError) {
+      const missingConfig = NextResponse.json({ error: configError }, { status: 500 });
       await getOrCreateAnonymousSessionId(missingConfig, sessionId);
       return missingConfig;
     }
 
-    const backendResponse = await fetch(`${apiBaseUrl}/chat`, {
+    const backendResponse = await backendFetch("/chat", {
+      request,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -95,8 +99,7 @@ export async function POST(request: Request) {
         mode,
         language,
       }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(20000),
+      timeoutMs: 20000,
     });
 
     let assistantPayload: BackendChatResponse;
