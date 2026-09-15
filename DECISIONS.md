@@ -2,14 +2,14 @@
 
 This file records the engineering decisions made while working through the
 [AUDIT.md](AUDIT.md) action plan on the `audit-phase-1` branch (Parts A–C) and the
-`audit-phase-2` branch (Steps 0–3). It is written for
+`audit-phase-2` branch (Steps 0–3) and the `audit-phase-3` branch (Steps 1–5). It is written for
 someone who reads code comfortably but may be new to RAG systems, backend security,
 or evaluation methodology. Every entry explains what problem was being solved, which
 alternatives were realistic, what was chosen and why, and a short "concept to learn"
 with a search term to go deeper.
 
 Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
-`EVAL-001`, ...). Commit hashes: Part A `9989d1f`, Part B `9a4e345`, Part C `ab1cd8d`; Phase 2 Step 0 `7c90db7`, Step 1 `f1e6f0c`, Step 2 `124c744`, Step 3 `9fcf9dd`.
+`EVAL-001`, ...). Commit hashes: Part A `9989d1f`, Part B `9a4e345`, Part C `ab1cd8d`; Phase 2 Step 0 `7c90db7`, Step 1 `f1e6f0c`, Step 2 `124c744`, Step 3 `9fcf9dd`; Phase 3 Step 1 `a849b17`, Step 2 `5c17620`, Step 3 `3f0cb4c`, Step 4 `24c5ee7`.
 
 ## Table of contents
 
@@ -43,6 +43,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [EVAL-010: Coverage replaces the holistic score as the headline quality metric](#eval-010-coverage-replaces-the-holistic-score-as-the-headline-quality-metric)
   - [EVAL-011: Faithfulness — every claim is checked against the passage it cites](#eval-011-faithfulness--every-claim-is-checked-against-the-passage-it-cites)
   - [EVAL-012: Near-miss out-of-corpus questions and a sticky tune/holdout split](#eval-012-near-miss-out-of-corpus-questions-and-a-sticky-tuneholdout-split)
+  - [EVAL-013: Phase 3 before/after on tune and holdout](#eval-013-phase-3-beforeafter-on-tune-and-holdout)
 - [Retrieval](#retrieval)
   - [RET-001: A saint-index miss falls through to retrieval instead of refusing](#ret-001-a-saint-index-miss-falls-through-to-retrieval-instead-of-refusing)
   - [RET-002: The keyword relevance filter is deleted; results are merged by vector distance](#ret-002-the-keyword-relevance-filter-is-deleted-results-are-merged-by-vector-distance)
@@ -347,7 +348,7 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Revisit if:** the human check sheet disagrees with the judge; then re-read this table with the corrected scores.
 
 ### EVAL-009: Judge vs human on the 10-question check sheet
-- **Date / Part:** 2026-09-15, Phase 3 Step 1
+- **Date / Part:** 2026-09-15, Phase 3 Step 1 (commit a849b17)
 - **Audit ref:** EVAL-003, EVAL-007, open question 5
 - **Context:** The project owner hand-graded the 10 answers in `eval/human_check.md` (answers from the phase-2 baseline run `20260915-170734`, old prompt, gpt-4.1 judge) and reported: judge mean 4.6 vs human 3.8, exact agreement 4/10, judge never below the human, with three failure patterns (misses omitted halves/sources, credits absent facts, rewards unverifiable extras), worst on long answers.
 - **Verification against the files:** all three numbers are exactly right (judge 4.60, human 3.80, 4/10 exact, 0/10 judge-below-human; the six disagreements are +1 ×4 and +2 ×2). The three patterns hold on inspection:
@@ -361,7 +362,7 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Revisit if:** after EVAL-010 the new metrics still disagree with these ten human grades.
 
 ### EVAL-010: Coverage replaces the holistic score as the headline quality metric
-- **Date / Part:** 2026-09-15, Phase 3 Step 2
+- **Date / Part:** 2026-09-15, Phase 3 Step 2 (commit 5c17620)
 - **Audit ref:** EVAL-009 (patterns 1 and 2), A9
 - **Context:** The 1–5 judge credited facts that were not in the answer and missed omitted halves of multi-part questions. A number that cannot be traced back to specific facts cannot be argued with.
 - **Options considered:**
@@ -376,7 +377,7 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Revisit if:** reference answers are extended (add facts, never remove), or if partial credit is systematically over-used (then require quotes for `partial` too).
 
 ### EVAL-011: Faithfulness — every claim is checked against the passage it cites
-- **Date / Part:** Phase 3 Step 2
+- **Date / Part:** 2026-09-15, Phase 3 Step 2 (commit 5c17620)
 - **Audit ref:** EVAL-009 (pattern 3), GEN-002 revisit, open question 7
 - **Context:** The old judge rewarded plausible extra details that nobody checked against the sources; citations were parsed but never verified.
 - **Decision:** `scoring.faithfulness_judge` splits the answer into atomic claims with the `[n]` markers attached to each, and asks the judge for a verdict per claim with a verbatim evidence span from a named passage. Claim status: `supported` (the cited passage, or any passage for an uncited claim, states it), `bad_citation` (the citation number does not exist, or the cited passage does not support it but another passage does), `unsupported` (no passage states it). The harness verifies every evidence span: if it is not in the named passage it searches all passages and re-attributes the citation; if it occurs nowhere, the judge invented the evidence and the claim becomes `unsupported`. The backend's `debug` payload now includes the passage texts (never logged; only for authenticated debug callers), and older results files fall back to reading chunk text from the local Chroma store by id. Reported as claim-weighted rates: % supported, % unsupported, % bad citation, % uncited.
@@ -389,7 +390,7 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Revisit if:** the pipeline starts returning shorter chunks (then per-claim evidence spans get easier and the ±3-word tolerance can shrink), or when a reranker changes which passages are shown (re-run the 10-answer validation).
 
 ### EVAL-012: Near-miss out-of-corpus questions and a sticky tune/holdout split
-- **Date / Part:** 2026-09-15, Phase 3 Step 3
+- **Date / Part:** 2026-09-15, Phase 3 Step 3 (commit 3f0cb4c)
 - **Audit ref:** RET-003 revisit, open question 8
 - **Context:** The refusal threshold had been chosen on nine easy negatives (sourdough, iPhone…). Those tell you nothing about the failure that matters for this product: confident answers about saints who are not in these books, doctrines the books do not discuss, or premises that are false. And every metric so far was measured on the same questions used to make decisions, so improvements could be over-fitted to the set.
 - **Decision:**
@@ -401,6 +402,27 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Files changed:** `eval/questions.jsonl`, `eval/make_split.py`, `eval/run_eval.py`, `eval/compare_results.py`, `eval/threshold_analysis.py`.
 - **Concept to learn:** *Train/validation/test discipline applied to evals.* Every time you look at a number and change the system, that number stops being an unbiased estimate; keeping a slice you never look at while tuning gives you one that still is. *Hard negatives* (near misses) are the examples that define where a classifier's boundary really is. Search: "holdout set overfitting evaluation", "hard negative mining".
 - **Revisit if:** the holdout ever drives a decision (then it is burnt: create a new one), or when the set grows past ~150 questions (then a 20 % holdout is enough).
+
+### EVAL-013: Phase 3 before/after on tune and holdout
+- **Date / Part:** 2026-09-15, Phase 3 Step 5
+- **Context:** "Before" is the phase-2 end state (`20260915-172546`, 62 questions, no pipeline change since) re-scored with the new judges and the new split labels (`20260915-194608`); "after" is the phase-3 step-4 run on the hardened 86-question set (`20260915-192113`). The retrieval and generation code did not change during phase 3, so answerable-question differences are run-to-run generation noise; the phase-3 work changed *what is measured* and *what is asked*.
+
+| metric | tune before | tune after | holdout before | holdout after |
+|---|---|---|---|---|
+| coverage (all answerable) | 61.7% | 60.8% | 74.0% | 79.0% |
+| faithful: supported | 88.1% | 86.1% | 85.6% | 90.6% |
+| faithful: unsupported | 9.2% | 10.7% | 13.3% | 6.8% |
+| faithful: bad citation | 2.7% | 3.2% | 1.1% | 2.6% |
+| off-target (coverage ≤ 25 %) | 8.3% | 8.1% | 6.2% | 6.2% |
+| answerable refused | 0.0% | 0.0% | 0.0% | 0.0% |
+| out-of-corpus refused | 100% (5 easy) | 82.6% (23 incl. near-miss) | 100% (5 easy) | 80.0% (10 incl. near-miss) |
+| recall@8 | 70.8% | 71.6% | 78.1% | 78.1% |
+| mean answer length (chars) | 1831 | 1829 | 1681 | 1699 |
+
+- **Reading:** the honest headline is that the pipeline is unchanged and now measured properly: about 61 % of the key facts appear in answers on tune (79 % on the easier holdout), 86–91 % of claims are supported by the cited passages, 7–11 % are unsupported (mostly generic embellishment: "a significant figure in the Coptic tradition"), 2–3 % carry a wrong citation number, and roughly 8 % of answerable questions are answered off-target. The out-of-corpus column is the one real change: the near-miss questions cut correct refusals from 100 % to ~82 % and the failures are doctrine positions invented from general knowledge plus one merged biography (RET-004). The before-column's 100 % is over five easy negatives per split and is not comparable.
+- **Five worst faithfulness failures (after run):** SNT-03 (47 % unsupported: "a significant figure in the Coptic Orthodox tradition", "celebrated for her transformation from a life of sin", the Jerusalem pilgrimage which is not on the retrieved pages); AR-03 (57 %: generic "greatest saints… founder of asceticism in Egypt" filler, retrieval missed his entry); CAT-05 (50 %: "faith… encompasses belief, trust, and spiritual insight", a paraphrased Cyril quote about "all things accomplished by faith" not in the passage); FU-03 (50 %: interpretive glosses on why he was called the Jeremian); AR-07 (42 %: an outline of the Lord's Prayer's petitions that the passage does not contain).
+- **Concept to learn:** an eval upgrade usually makes numbers *look* worse; that is the point. Search: "measurement validity", "Goodhart's law".
+- **Revisit if:** phase 4 changes the pipeline; then this table is the baseline.
 
 ## Retrieval
 
@@ -454,7 +476,7 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Revisit if:** re-ingestion changes the embedding text (thresholds must be re-derived: cleaner chunks generally give *smaller* distances for true hits), the embedding model changes, or Arabic is re-embedded from normalised text (then enable the Arabic threshold).
 
 ### RET-004: The distance threshold stays at 1.0; near-miss refusals need a different mechanism
-- **Date / Part:** 2026-09-15, Phase 3 Step 3
+- **Date / Part:** 2026-09-15, Phase 3 Step 3 (commit 3f0cb4c)
 - **Audit ref:** RET-003, EVAL-012
 - **Context:** RET-003 chose 1.0 on nine easy negatives. The hardened set adds 23 near-miss negatives; the threshold had to be re-derived on the tune split only (`eval/threshold_analysis.py`, results `20260915-190224.json`).
 - **What the tune split shows (English, 29 answerable, 21 out-of-corpus):** answerable best distances 0.434–0.971 (median 0.691); out-of-corpus best distances 0.454–1.741 (median 0.999). The two populations now overlap heavily: "Who was St. Anthony of Padua?" sits at 0.454 (its nearest chunks are St. Anthony the Great's pages), "St. Anthony on Mount Athos" at 0.744, "Cyril's brother Methodius" at 0.751, "Ignatius of Loyola" at 0.763. No threshold separates them: the minimum-error value is 0.99 with 10 errors (0 answerable blocked, 10 of 21 negatives passed); 0.90 would already block 3 answerable questions while still passing 9 negatives. Holdout check at 0.99: 0/13 answerable blocked, 4/9 negatives passed, consistent with tune.
@@ -504,7 +526,7 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 _(See also SEC-003, SEC-005, SEC-006 for the Next.js route changes.)_
 
 ### FE-001: Follow-up chips are ordinary user turns in the conversation's own mode
-- **Date / Part:** 2026-09-15, Phase 3 Step 4
+- **Date / Part:** 2026-09-15, Phase 3 Step 4 (commit 24c5ee7)
 - **Audit ref:** C14, C31, open question 10
 - **Context:** Clicking a follow-up chip used to (1) append up to 1,200 characters of the previous answer to the question before sending it, (2) hide the user turn so it was never stored, and (3) force `mode: "catechism"` whatever the conversation was doing. (1) polluted the retrieval query and the keyword filter (the audit's C14); (2) meant the server-side history never contained the follow-up itself; (3) sent saints-tab follow-ups down the catechism path. Since GEN-003 the backend receives the last six stored turns as real messages, so none of this is needed.
 - **Options considered:** keep pasting but shorter; send the chip as a hidden turn but include the previous answer id; or make the chip a normal message.
@@ -547,4 +569,7 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 10. **Frontend still pastes the previous answer into follow-up questions** (`orthodox-site/app/chat/page.tsx`, `followUpBackendQuestion`). Now that history goes to the model as messages, that hack pollutes the retrieval query and should be removed in the frontend part. (Phase 2)
 11. **Answer length and cost.** v2 answers average ~1,700 characters and ~380 completion tokens; if that is too long for the chat UI, add a length target to the prompt rather than a token cap. (Phase 2)
 12. **Near-miss refusals (Phase 3).** Four doctrine questions and one same-name question were answered from general knowledge although the corpus never discusses them; the distance threshold cannot catch them (RET-004). Candidate fixes: an entity/term-presence check on the retrieved passages before generation, a prompt instruction to state explicitly when the passages do not mention the subject asked about, or using the faithfulness judge's unsupported-claim signal at request time.
-13. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
+13. **Coverage vs recall gap (Phase 3).** CAT-13 and CAT-15 retrieve their expected page at rank 1–4 yet score 10–17 % coverage: the model writes from neighbouring pages. Options: rerank so the best page is passage [1], tell the prompt to prefer passages that answer the question directly, or shrink chunks so the relevant paragraph dominates.
+14. **Unsupported claims are mostly filler (Phase 3).** The unsupported 7–11 % of claims are generic characterisations rather than invented facts; a prompt line "do not add general characterisations that the passages do not state" is the cheapest experiment.
+15. **Judge cost and rate limits (Phase 3).** Faithfulness sends the full context per answer (~10k tokens); a full run needs ~40 minutes under the 30k tokens-per-minute limit and two runs must not overlap. Consider gpt-4.1-mini for faithfulness after checking agreement with gpt-4.1 on the 10-answer sheet.
+16. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
