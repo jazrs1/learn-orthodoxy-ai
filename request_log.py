@@ -177,6 +177,28 @@ class RequestTrace:
 
     # --- output ----------------------------------------------------------
 
+    def debug_payload(self) -> Dict[str, Any]:
+        """Subset of the trace that is safe to return to an authenticated caller.
+
+        Used by the evaluation harness (``debug: true`` on /chat) to measure
+        retrieval recall without parsing server logs. No chunk text is included.
+        """
+        keys = (
+            "outcome", "refusal", "refusal_reason", "grounding", "retrieval_queries", "retry",
+            "retry_queries", "entity", "rewritten_question", "filter_rejected", "context_chunks",
+            "prompt_tokens", "completion_tokens", "model",
+        )
+        payload: Dict[str, Any] = {"request_id": self.request_id}
+        for key in keys:
+            if key in self.fields:
+                payload[key] = self.fields[key]
+        payload["retrieval"] = self.retrieval
+        payload["retrieved_ids"] = self.retrieved_ids
+        payload["merged_ids"] = self.fields.get("merged_ids", [])
+        payload["kept_ids"] = self.kept_ids
+        payload["stages_ms"] = self.stages_ms
+        return payload
+
     def to_dict(self) -> Dict[str, Any]:
         record: Dict[str, Any] = {
             "event": "request",

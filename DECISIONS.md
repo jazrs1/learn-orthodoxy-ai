@@ -30,6 +30,12 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [LOG-003: Refusal detection reuses the existing phrase heuristic, extended to Arabic](#log-003-refusal-detection-reuses-the-existing-phrase-heuristic-extended-to-arabic)
   - [LOG-004: Per-stage latency via "laps" rather than nested timers](#log-004-per-stage-latency-via-laps-rather-than-nested-timers)
 - [Evaluation](#evaluation)
+  - [EVAL-001: A hand-verified question set with page-level expected sources](#eval-001-a-hand-verified-question-set-with-page-level-expected-sources)
+  - [EVAL-002: Retrieval recall measured at four points in the pipeline](#eval-002-retrieval-recall-measured-at-four-points-in-the-pipeline)
+  - [EVAL-003: LLM-as-judge with a 1–5 rubric against the reference answer](#eval-003-llm-as-judge-with-a-15-rubric-against-the-reference-answer)
+  - [EVAL-004: Retrieval debug data returned in the response instead of scraped from logs](#eval-004-retrieval-debug-data-returned-in-the-response-instead-of-scraped-from-logs)
+  - [EVAL-005: Baseline run committed under eval/results/](#eval-005-baseline-run-committed-under-evalresults)
+  - [EVAL-006: What the baseline run showed (and where it corrects AUDIT.md)](#eval-006-what-the-baseline-run-showed-and-where-it-corrects-auditmd)
 - [Retrieval](#retrieval)
 - [Prompting & Generation](#prompting--generation)
 - [Frontend](#frontend)
@@ -210,7 +216,76 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 
 ## Evaluation
 
-_(Part C entries will be added here.)_
+### EVAL-001: A hand-verified question set with page-level expected sources
+- **Date / Part:** 2026-09-15, Part C
+- **Audit ref:** A9
+- **Context:** Nothing measured answer quality; every pipeline change so far has been judged by feel. An evaluation set needs questions whose answers demonstrably exist on known pages, so that retrieval can be scored mechanically and answers can be scored against a reference.
+- **Options considered:**
+  1. *Generate questions with an LLM from random chunks.* Fast and scalable, but the questions inherit the extractor's artefacts, tend to be unnaturally specific, and the "expected page" is whatever chunk was sampled rather than where a real reader would look.
+  2. *Hand-write questions from the product's own prompts and the books' structure, then verify each expected page by opening it.* Slower, but the questions look like what users type, and every expected page is confirmed.
+  3. *Collect real user questions from Postgres.* Best realism, but there are no ground-truth pages and no consent process for reusing them; worth adding later as an unlabelled "smoke" set.
+- **Decision:** Option 2. `eval/questions.jsonl` has 62 entries: 20 catechism (seeded from the prompt cards in `orthodox-site/app/chat/page.tsx` plus the numbered Q&A headings), 13 saints, 4 multi-part, 5 follow-ups (with the prior turn in `history`), 10 Arabic, and 10 out-of-corpus questions that must be refused. Expected pages were located by searching the local Chroma store (read-only) and the PDF bookmarks, then confirmed by extracting the page with pypdf; each entry stores an `evidence` quote from that page. The two on-topic-sounding refusal questions (cryptocurrency, a 2024 papal message) test "false answers" specifically.
+- **Why:** Page numbers are the unit the pipeline can be scored on today (a chunk is a page). Storing the evidence quote lets you hand-check an entry in seconds and makes the set robust to re-chunking: after re-ingestion the expected *pages* stay valid even if chunk ids change.
+- **Files changed:** `eval/questions.jsonl`.
+- **Concept to learn:** A *golden set* (or ground-truth set) is a fixed list of inputs with known correct outputs; it turns "does it feel better?" into a number you can compare across commits. Keep it small enough to verify by hand and stable enough that scores are comparable over time; add new cases when you find a real failure. Search: "evaluation golden dataset", "RAG evaluation ground truth".
+- **Revisit if:** the corpus changes (re-verify pages), or when you have real user questions to add as a second, unlabelled set.
+
+### EVAL-002: Retrieval recall measured at four points in the pipeline
+- **Date / Part:** Part C
+- **Audit ref:** A9, C11, C12
+- **Context:** "Retrieval recall@k" is ambiguous in this pipeline because a chunk can be found by one of up to eight queries, then dropped by the merge/truncation, then dropped again by the keyword relevance filter, and finally not shown because only six sources are returned. The audit claims the filter throws away correct chunks; the eval should be able to prove or disprove that.
+- **Decision:** `eval/run_eval.py` reports, for every answerable question, the fraction of expected pages found in: `merged_ids[:k]` (**recall@k**, the ordered list that entered the filter, k = 8 to match the frontend's `top_k`), the union of all query hits (**recall_any**), the chunks that survived the filter (**recall_kept**), and the `sources` returned to the user (**recall_shown**). A ±1-page variant is also reported because saint entries span page boundaries. Chunk ids are parsed (`saints1.pdf::p329::c0` → page 329) so the metric survives the coming re-chunking as long as ids keep encoding pages.
+- **Why:** The gap between consecutive metrics localises the loss: `recall_any − recall@k` is what truncation/merge order costs, `recall@k − recall_kept` is what the keyword filter costs, `recall_kept − recall_shown` is the six-source cap.
+- **Files changed:** `eval/run_eval.py`, `request_log.py` (`debug_payload`), `api.py` (`debug: true` request flag).
+- **Concept to learn:** *Recall@k* = fraction of relevant items that appear in the top k results. In RAG, retrieval recall is an upper bound on answer quality: the model cannot cite what it never saw. Measuring recall at each stage is an *ablation*: you learn which stage to fix first. Search: "recall@k information retrieval", "RAG evaluation retrieval vs generation".
+- **Revisit if:** chunk ids stop encoding page numbers (then store `page` in the debug payload directly), or once a reranker exists (add a recall-after-rerank point).
+
+### EVAL-003: LLM-as-judge with a 1–5 rubric against the reference answer
+- **Date / Part:** Part C
+- **Audit ref:** A9
+- **Context:** Retrieval metrics do not say whether the final answer is right. Human grading of 50+ answers per run is not sustainable.
+- **Options considered:** string overlap metrics (ROUGE/BLEU: penalise paraphrase, meaningless for Arabic vs English); exact-fact checklists per question (accurate, but expensive to author); an LLM judge comparing the system answer to the reference (cheap, correlates reasonably with human judgement, but has biases).
+- **Decision:** An LLM judge (`gpt-4o-mini` by default, `EVAL_JUDGE_MODEL` to override) scores answered questions 1–5 for factual agreement and completeness against the reference, with an instruction not to reward length; refusals and clarifications on answerable questions score 1 automatically and are also reported separately so that "refused" is never hidden inside an average. Both `judge_mean_answered` and `judge_mean_all` are printed.
+- **Why:** The reference answers are short and page-grounded, so the judge's job is closer to "does this contain these facts?" than to open-ended grading, which is where LLM judges are most reliable. Using the same model family as the generator is a known bias (it may like its own style); the default keeps cost low and can be swapped by env var.
+- **Files changed:** `eval/run_eval.py`.
+- **Concept to learn:** *LLM-as-a-judge* uses a model to grade outputs against a rubric. It is fast and cheap but can prefer longer answers, its own phrasing, or the first option shown, so keep rubrics concrete, fix `temperature=0`, and spot-check a sample by hand. Search: "LLM as a judge bias", "G-Eval".
+- **Revisit if:** judge scores disagree with your spot checks (switch judge model or add per-question fact checklists), or when you start comparing two prompts (use pairwise judging instead of absolute scores).
+
+### EVAL-004: Retrieval debug data returned in the response instead of scraped from logs
+- **Date / Part:** Part C
+- **Audit ref:** A8/A9
+- **Context:** The eval needs chunk ids/distances per question. Part B logs them, but tying a log line back to an HTTP response requires log access, which does not exist for a remote deployment.
+- **Options considered:** parse the server log; add a separate `/debug/retrieve` endpoint (duplicates the pipeline); add an opt-in `debug: true` flag to `/chat` that attaches the trace's safe subset to the response.
+- **Decision:** The opt-in flag. `ChatRequest.debug` (default false) makes `/chat` include `debug` with request id, retrieval hits, merged/kept ids, stages and token counts. No chunk text is included, and the flag is only reachable by callers holding the internal key (SEC-001).
+- **Why:** One code path, works against any deployment, and the payload is exactly what the log line already contains.
+- **Files changed:** `api.py`, `request_log.py`.
+- **Concept to learn:** *Observability hooks for testing*: exposing internal decisions in a controlled, authenticated way lets tests assert on behaviour without coupling to log formats. Search: "debug endpoints authentication", "testability observability".
+- **Revisit if:** the frontend ever proxies user-controlled flags to the backend (it currently does not send `debug`; keep it that way or strip it in `route.ts`).
+
+### EVAL-005: Baseline run committed under eval/results/
+- **Date / Part:** Part C
+- **Context:** Later parts change retrieval, prompting and ingestion; each needs a "before" number.
+- **Decision:** `run_eval.py` writes `eval/results/<timestamp>.json` (config, summary, and every record including the answer text) and the baseline file is committed. Future runs are compared by summary; results files are small (~200 KB).
+- **Why:** Committing the baseline makes the improvement claims in later commits reproducible and reviewable in a diff.
+- **Files changed:** `eval/results/`.
+- **Concept to learn:** *Regression testing for quality*: keep the artefacts, not just the numbers, so you can inspect exactly which questions regressed. Search: "evaluation-driven development".
+- **Revisit if:** the results directory grows large (then keep only tagged baselines and gitignore the rest).
+
+### EVAL-006: What the baseline run showed (and where it corrects AUDIT.md)
+- **Date / Part:** Part C, results file `eval/results/20260915-165311.json`
+- **Audit ref:** C12, C15, C17
+- **Context:** First run of the harness against the unchanged retrieval/prompt pipeline (after the Part A/B hardening, which does not touch ranking).
+- **Findings:**
+  - Out-of-corpus: 10/10 correctly refused, including the two on-topic-sounding traps. The refusal machinery is not the problem for off-topic input.
+  - Answerable: 13.5 % refused (7 of 52). **Six of the seven** are natural saint questions ("Who was St. Bishoy?", "Who was St. Demiana and how was she martyred?") that never reach retrieval: the saint-intent regex (`_extract_saint_chat_intent`) captures everything after "who was", looks it up in the runtime saint index, and on a miss returns "I could not find a dedicated saint entry". AUDIT.md C17 described this as an edge case; the eval shows it is the **dominant** refusal cause and it fires even on a bare canonical name. This is the first thing to fix in the retrieval part.
+  - The keyword relevance filter (C12) caused one refusal (FU-01: the correct page was retrieved at rank 3 and then rejected) and starved one answer (FU-02). Real, but smaller than C17 on this set.
+  - Follow-ups: history resolution (C15) only works when the previous assistant message contains a `**bold**` name; FU-02 (no bold) retrieved unrelated pages and scored 2/5.
+  - Retrieval recall@8 is 62 % exact / 75 % within one page; recall_any equals recall@8, i.e. multi-query fan-out currently adds nothing that survives truncation. Judge scores are high (4.3 answered-only) even when the expected page was missed, because neighbouring pages of the same section often contain the same teaching; expected pages in the set are therefore *sufficient*, not *necessary*, and recall should be read together with the judge score.
+  - Arabic: 10/10 answered, mean judge 4.4, but recall@8 only 50 %; consistent with C2 (embedding mismatch) being masked by the lexical scan.
+- **Decision:** Record these as the baseline; no pipeline changes in this phase. Priority order for the next phase, based on evidence rather than the audit's ordering: (1) remove/soften the saint-intent short-circuit, (2) replace the keyword filter with score thresholds, (3) LLM history rewriting, (4) re-ingestion.
+- **Files changed:** none (analysis only).
+- **Concept to learn:** *Error analysis*: after measuring, read the failures one by one and group them by cause before optimising anything; the largest bucket is usually not the one you expected. Search: "error analysis machine learning Andrew Ng".
+- **Revisit if:** the question set changes (re-baseline first).
 
 ## Retrieval
 
@@ -248,4 +323,6 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 2. **Vercel function duration.** The proxy aborts backend calls at 20 s. I could not confirm the Vercel plan's maximum function duration; if it is 10 s, the abort never fires and the user sees a platform error instead. Check the project settings and consider exporting `maxDuration` from the chat route.
 3. **`chat.html`.** The legacy single-file frontend calls the backend directly from the browser and is now broken by the shared secret (it cannot hold the key safely). It should be deleted in the cleanup phase; left untouched here because cleanup was out of scope.
 4. **CORS.** Since browsers no longer call the backend, the CORS middleware could be removed or narrowed. Left as is (S3 was not in this part).
-5. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
+5. **Judge model.** The judge defaults to `gpt-4o-mini`, the same model that writes the answers. For decisions between two prompts or models, run the judge with a stronger, different model (`EVAL_JUDGE_MODEL`) and spot-check ~10 answers by hand; I did not verify the judge's scores against a human pass.
+6. **Expected pages are sufficient, not exhaustive.** Several catechism topics are treated on more than one page; a run can "miss" the expected page and still answer correctly from a neighbour. If recall numbers look too harsh, add the neighbouring pages to `expected_sources` rather than loosening the metric.
+7. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.

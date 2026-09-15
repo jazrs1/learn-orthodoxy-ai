@@ -1579,6 +1579,9 @@ class ChatRequest(BaseModel):
     top_k: int = 8
     mode: str | None = None
     language: str | None = None
+    # When true, the response carries a `debug` object with retrieval ids/distances
+    # (used by eval/run_eval.py). Only reachable by callers holding the internal key.
+    debug: bool = False
 
 
 class Source(BaseModel):
@@ -1595,6 +1598,7 @@ class ChatResponse(BaseModel):
     entities: List[str] = []
     options: List[str] = []
     can_learn_more: bool = False
+    debug: Dict[str, Any] | None = None
 
 
 class SaintSuggestionResponse(BaseModel):
@@ -2884,7 +2888,10 @@ def chat(req: ChatRequest, request: Request, response: Response):
             client_ip=_client_ip(request),
         )
         _enforce_chat_rate_limit(request)
-        return _chat_impl(req, trace)
+        payload = _chat_impl(req, trace)
+        if req.debug:
+            payload = {**payload, "debug": trace.debug_payload()}
+        return payload
 
 
 def _chat_impl(req: ChatRequest, trace: RequestTrace):
