@@ -8,7 +8,7 @@ alternatives were realistic, what was chosen and why, and a short "concept to le
 with a search term to go deeper.
 
 Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
-`EVAL-001`, ...). Commit hashes are filled in after each part is committed.
+`EVAL-001`, ...). Commit hashes: Part A `9989d1f`, Part B `9a4e345`, Part C `ab1cd8d`.
 
 ## Table of contents
 
@@ -49,7 +49,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 ## Security
 
 ### SEC-001: Shared-secret header between Next.js and FastAPI
-- **Date / Part:** 2026-09-15, Part A (commit: see git log for "Part A")
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** S1, A10
 - **Context:** The FastAPI backend on Railway was reachable by anyone on the internet. Its URL was even shipped in the browser bundle. Anyone could `POST /chat` and spend the project's OpenAI credit, and nothing distinguished the real frontend from a script.
 - **Options considered:**
@@ -63,7 +63,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** more than one caller needs different permissions (then move to per-caller keys or JWTs); or if the key has to be rotated without downtime (support two valid keys during rotation).
 
 ### SEC-002: Fail closed when the internal key is missing
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** S1
 - **Context:** What should the backend do if `INTERNAL_API_KEY` is simply not set on Railway?
 - **Options considered:**
@@ -76,7 +76,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** you add a local-dev mode where setting a key is annoying; even then prefer a dev-only default key over disabling the check.
 
 ### SEC-003: Stop shipping the backend URL to the browser
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** S1 (and the "stop exposing" instruction)
 - **Context:** `NEXT_PUBLIC_API_URL` was read as a fallback in four server routes. Anything prefixed `NEXT_PUBLIC_` is inlined into the client JavaScript bundle, so the Railway URL was public even though no browser code used it. `chat.html`, the legacy page, called the backend directly from the browser.
 - **Options considered:**
@@ -89,7 +89,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** a truly client-side feature needs the backend (it should not; add a Next.js route instead).
 
 ### SEC-004: Hide /debug/* behind ENABLE_DEBUG
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** S4
 - **Context:** `/debug/chroma`, `/debug/chroma/{en,ar}` and `/debug/saints` returned sample documents, paths and counts, and `/debug/saints` scans the whole collection.
 - **Options considered:** delete the endpoints; keep them but require the internal key (already true after SEC-001); additionally gate them by an env flag.
@@ -100,7 +100,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** you build real observability (LOG-* entries); most of these endpoints then become redundant and can be deleted.
 
 ### SEC-005: Per-user rate limiting via a forwarded client IP
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** S1, S2, A10
 - **Context:** Nothing limited how fast `/chat` could be called. Each call costs an embedding plus a ~10k-token completion.
 - **Options considered:**
@@ -114,7 +114,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the backend runs more than one process or instance (counters are per process; move to Redis), or if legitimate classroom use from one NAT IP hits the per-IP cap (raise `CHAT_RATE_LIMIT_PER_MINUTE` or key on the anonymous session cookie instead).
 
 ### SEC-006: Input caps: question length, history size, top_k
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** S2, C26
 - **Context:** A 50,000-character question would be embedded (failing at the embedding limit) and pasted into the prompt; history was an untyped list of arbitrary size; `top_k` was client-controlled.
 - **Options considered:** validate in Pydantic (returns 422 with a schema error), or validate in code with a plain 400 message; cap only the question vs also history.
@@ -125,7 +125,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the product wants long pasted passages as questions (raise the cap and truncate the retrieval query separately).
 
 ### SEC-007: Generic error messages to clients
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** C27, S5
 - **Context:** Every `except Exception` returned `str(e)` to the browser; OpenAI and Chroma error strings leaked implementation details.
 - **Options considered:** keep raw messages in dev only; always generic; generic plus an error id the user can quote.
@@ -138,7 +138,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 ## Reliability & Error Handling
 
 ### REL-001: OpenAI timeout and single retry via the SDK
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** C24, C30
 - **Context:** Completions had no timeout and no retry; a stalled OpenAI request held the worker until Vercel gave up at 20 s.
 - **Options considered:** hand-written retry loop around each call (like `ingest_embeddings.py` does); use the OpenAI SDK's built-in `timeout` and `max_retries`; a generic library such as `tenacity`.
@@ -149,7 +149,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** streaming is added (per-token timeouts differ), or the proxy timeout changes.
 
 ### REL-002: max_tokens on every completion
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** S2, C24
 - **Context:** No completion had `max_tokens`; the model could in theory run to its maximum output length.
 - **Decision:** `ANSWER_MAX_TOKENS` (default 1200, env-configurable) on both answer completions; the dead query-rewrite helper already had 90.
@@ -159,7 +159,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** answers get truncated mid-sentence (raise it, or ask the model for a length target in the prompt).
 
 ### REL-003: Remove the process-global `last_list` and digit regex
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** C16
 - **Context:** A module-level dict remembered the last numbered list produced by *any* user; any question containing a digit 1–12 could be rewritten into a saint biography from another user's list.
 - **Options considered:** rebuild per-conversation resolution now (frontend already stores `options`/`entities` per message); remove and leave a TODO.
@@ -172,7 +172,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 ## Logging & Observability
 
 ### LOG-001: One JSON line per request, emitted from a request-scoped trace object
-- **Date / Part:** 2026-09-15, Part B
+- **Date / Part:** 2026-09-15, Part B (commit 9a4e345)
 - **Audit ref:** A8, C13 (latency visibility), S5 (history in logs)
 - **Context:** The request path had ~60 `print()` calls that dumped the full conversation history, chunk previews and internal state as free text. You could not answer "why did request X refuse?" after the fact, and the lines could not be indexed or filtered.
 - **Options considered:**
@@ -186,7 +186,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** you want span-level timing inside retrieval or multi-service traces; then wrap the same fields in OpenTelemetry spans.
 
 ### LOG-002: Chunk ids and distances are logged; chunk text and history are not
-- **Date / Part:** Part B
+- **Date / Part:** 2026-09-15, Part B (commit 9a4e345)
 - **Audit ref:** A8, S5
 - **Context:** The task requires retrieved chunk ids with distances and which chunks survived filtering, but forbids logging chunk text or the full history.
 - **Options considered:** change `_retrieve_documents` to return ids/distances (touches every caller and the merge/filter helpers, risking a behaviour change in a "logging only" part); or reconstruct ids from metadata and record hits inside the retrieval functions via a context variable.
@@ -197,7 +197,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** ingestion id formats change (update `chunk_id_from_metadata` in lockstep, or store the id in metadata at ingest time, which is the cleaner long-term fix).
 
 ### LOG-003: Refusal detection reuses the existing phrase heuristic, extended to Arabic
-- **Date / Part:** Part B
+- **Date / Part:** 2026-09-15, Part B (commit 9a4e345)
 - **Audit ref:** C23
 - **Context:** The log needs a "was this a refusal?" flag. The only signal today is `_response_grounding_status`, which sniffs English phrases in the answer; the Arabic refusal sentence was not detected, so an Arabic refusal was logged as `answered`.
 - **Decision:** Added the Arabic no-source marker to the heuristic and log `refusal` + `grounding` + a `refusal_reason` for pipeline-level refusals (`nothing_retrieved`, `no_source_after_filter`, `saint_not_in_index`). Did not build a structured "grounded/refused" model output yet (AUDIT C23) because that changes prompting, which is a later part.
@@ -206,7 +206,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the prompt is rewritten to return a structured grounding field; then replace the phrase sniffing entirely.
 
 ### LOG-004: Per-stage latency via "laps" rather than nested timers
-- **Date / Part:** Part B
+- **Date / Part:** 2026-09-15, Part B (commit 9a4e345)
 - **Context:** Per-stage timing (prepare, retrieval, filter, retry, generation, postprocess) was required. The handler is one long function with early returns, so wrapping each stage in a `with` block would have meant re-indenting hundreds of lines.
 - **Decision:** `trace.lap("name")` records the time since the previous lap. A `stage()` context manager also exists for new code.
 - **Why:** Minimal diff, and laps naturally sum to `total_ms`. Windows' clock resolution (~15 ms) makes sub-millisecond stages show as `0.0`; on Linux (Railway) they will be accurate.
@@ -217,7 +217,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 ## Evaluation
 
 ### EVAL-001: A hand-verified question set with page-level expected sources
-- **Date / Part:** 2026-09-15, Part C
+- **Date / Part:** 2026-09-15, Part C (commit ab1cd8d)
 - **Audit ref:** A9
 - **Context:** Nothing measured answer quality; every pipeline change so far has been judged by feel. An evaluation set needs questions whose answers demonstrably exist on known pages, so that retrieval can be scored mechanically and answers can be scored against a reference.
 - **Options considered:**
@@ -231,7 +231,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the corpus changes (re-verify pages), or when you have real user questions to add as a second, unlabelled set.
 
 ### EVAL-002: Retrieval recall measured at four points in the pipeline
-- **Date / Part:** Part C
+- **Date / Part:** 2026-09-15, Part C (commit ab1cd8d)
 - **Audit ref:** A9, C11, C12
 - **Context:** "Retrieval recall@k" is ambiguous in this pipeline because a chunk can be found by one of up to eight queries, then dropped by the merge/truncation, then dropped again by the keyword relevance filter, and finally not shown because only six sources are returned. The audit claims the filter throws away correct chunks; the eval should be able to prove or disprove that.
 - **Decision:** `eval/run_eval.py` reports, for every answerable question, the fraction of expected pages found in: `merged_ids[:k]` (**recall@k**, the ordered list that entered the filter, k = 8 to match the frontend's `top_k`), the union of all query hits (**recall_any**), the chunks that survived the filter (**recall_kept**), and the `sources` returned to the user (**recall_shown**). A ±1-page variant is also reported because saint entries span page boundaries. Chunk ids are parsed (`saints1.pdf::p329::c0` → page 329) so the metric survives the coming re-chunking as long as ids keep encoding pages.
@@ -241,7 +241,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** chunk ids stop encoding page numbers (then store `page` in the debug payload directly), or once a reranker exists (add a recall-after-rerank point).
 
 ### EVAL-003: LLM-as-judge with a 1–5 rubric against the reference answer
-- **Date / Part:** Part C
+- **Date / Part:** 2026-09-15, Part C (commit ab1cd8d)
 - **Audit ref:** A9
 - **Context:** Retrieval metrics do not say whether the final answer is right. Human grading of 50+ answers per run is not sustainable.
 - **Options considered:** string overlap metrics (ROUGE/BLEU: penalise paraphrase, meaningless for Arabic vs English); exact-fact checklists per question (accurate, but expensive to author); an LLM judge comparing the system answer to the reference (cheap, correlates reasonably with human judgement, but has biases).
@@ -252,7 +252,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** judge scores disagree with your spot checks (switch judge model or add per-question fact checklists), or when you start comparing two prompts (use pairwise judging instead of absolute scores).
 
 ### EVAL-004: Retrieval debug data returned in the response instead of scraped from logs
-- **Date / Part:** Part C
+- **Date / Part:** 2026-09-15, Part C (commit ab1cd8d)
 - **Audit ref:** A8/A9
 - **Context:** The eval needs chunk ids/distances per question. Part B logs them, but tying a log line back to an HTTP response requires log access, which does not exist for a remote deployment.
 - **Options considered:** parse the server log; add a separate `/debug/retrieve` endpoint (duplicates the pipeline); add an opt-in `debug: true` flag to `/chat` that attaches the trace's safe subset to the response.
@@ -263,7 +263,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the frontend ever proxies user-controlled flags to the backend (it currently does not send `debug`; keep it that way or strip it in `route.ts`).
 
 ### EVAL-005: Baseline run committed under eval/results/
-- **Date / Part:** Part C
+- **Date / Part:** 2026-09-15, Part C (commit ab1cd8d)
 - **Context:** Later parts change retrieval, prompting and ingestion; each needs a "before" number.
 - **Decision:** `run_eval.py` writes `eval/results/<timestamp>.json` (config, summary, and every record including the answer text) and the baseline file is committed. Future runs are compared by summary; results files are small (~200 KB).
 - **Why:** Committing the baseline makes the improvement claims in later commits reproducible and reviewable in a diff.
@@ -272,7 +272,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the results directory grows large (then keep only tagged baselines and gitignore the rest).
 
 ### EVAL-006: What the baseline run showed (and where it corrects AUDIT.md)
-- **Date / Part:** Part C, results file `eval/results/20260915-165311.json`
+- **Date / Part:** 2026-09-15, Part C (commit ab1cd8d), results file `eval/results/20260915-165311.json`
 - **Audit ref:** C12, C15, C17
 - **Context:** First run of the harness against the unchanged retrieval/prompt pipeline (after the Part A/B hardening, which does not touch ranking).
 - **Findings:**
@@ -306,7 +306,7 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 ## Deployment & Config
 
 ### DEP-001: Model name and tuning knobs moved to environment variables
-- **Date / Part:** Part A
+- **Date / Part:** 2026-09-15, Part A (commit 9989d1f)
 - **Audit ref:** C24 (model hard-coded in three places)
 - **Context:** `gpt-4o-mini` was hard-coded at every call site; timeouts, limits and caps did not exist.
 - **Decision:** `OPENAI_CHAT_MODEL`, `ANSWER_MAX_TOKENS`, `OPENAI_TIMEOUT_SECONDS`, `OPENAI_MAX_RETRIES`, `MAX_QUESTION_CHARS`, `CHAT_RATE_LIMIT_PER_MINUTE`, `CHAT_GLOBAL_RATE_LIMIT_PER_MINUTE`, `INTERNAL_API_KEY`, `ENABLE_DEBUG`, all read once at import with safe defaults (`_env_int`/`_env_float`/`_env_flag` helpers ignore malformed values instead of crashing).
