@@ -12,11 +12,12 @@ from typing import List, Dict, Any, Deque, Set, Tuple
 
 from dotenv import load_dotenv
 from chromadb.utils import embedding_functions
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from openai import OpenAI, APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
+from request_log import RequestTrace, chunk_id_from_metadata, configure_request_logging, current_trace
 from chroma_store import (
     ARABIC_COLLECTION_NAME,
     COLLECTION_NAME,
@@ -37,6 +38,9 @@ load_dotenv()
 logger = logging.getLogger("orthodox.api")
 if not logging.getLogger().handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+configure_request_logging()
+# httpx logs every OpenAI HTTP call at INFO; the request trace already records them.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 TRUTHY_VALUES = {"1", "true", "yes", "on"}
 
@@ -571,10 +575,16 @@ def _find_saint_index_matches(query: str, limit: int = 12) -> List[str]:
 
 
 def _log_saint_query(raw: str, normalized: str, matches: List[str]) -> None:
-    print(f"SAINT_QUERY_RAW: {raw}")
-    print(f"SAINT_QUERY_NORMALIZED: {normalized}")
-    print(f"SAINT_MATCH_COUNT: {len(matches)}")
-    print(f"SAINT_MATCH_NAMES: {matches[:12]}")
+    trace = current_trace()
+    if trace is not None:
+        trace.set(
+            saint_query=(raw or "")[:120],
+            saint_query_normalized=(normalized or "")[:120],
+            saint_match_count=len(matches),
+            saint_matches=matches[:12],
+        )
+    else:
+        logger.debug("saint_query raw=%r normalized=%r matches=%d", raw, normalized, len(matches))
 
 
 def _saint_query_variants(saint_name: str) -> List[str]:
@@ -646,6 +656,13 @@ def _retrieve_documents(
 
     aggregated: List[tuple[str, Dict[str, Any]]] = []
     seen_docs = set()
+    trace = current_trace()
+    collection_label = None
+    if trace is not None:
+        try:
+            collection_label = str(getattr(search_collection, "name", "") or "")
+        except Exception:
+            collection_label = None
 
     for query in deduped_queries[:8]:
         query_kwargs: Dict[str, Any] = {"query_texts": [query], "n_results": top_k}
@@ -654,6 +671,18 @@ def _retrieve_documents(
         retrieved = search_collection.query(**query_kwargs)
         docs = retrieved.get("documents", [[]])[0]
         metas = retrieved.get("metadatas", [[]])[0]
+
+        if trace is not None:
+            ids = (retrieved.get("ids") or [[]])[0]
+            distances = (retrieved.get("distances") or [[]])[0]
+            trace.add_retrieval(
+                "vector",
+                query,
+                [{"id": chunk_id, "distance": dist} for chunk_id, dist in zip(ids, distances)],
+                collection=collection_label,
+                where=metadata_filter,
+                n_results=top_k,
+            )
 
         for doc, meta in zip(docs, metas):
             if not doc or not meta:
@@ -833,8 +862,8 @@ def _arabic_query_terms(question: str) -> List[str]:
         for saint_name in _find_arabic_saint_index_matches(question, limit=3):
             for word in _arabic_search_text(saint_name).split():
                 add(word)
-    except Exception as exc:
-        print("ARABIC_SAINT_TERM_EXPANSION_FAILED:", repr(exc))
+    except Exception:
+        logger.warning("Arabic saint term expansion failed", exc_info=True)
 
     return terms
 
@@ -854,8 +883,8 @@ def _arabic_query_phrases(question: str) -> List[str]:
     try:
         for saint_name in _find_arabic_saint_index_matches(question, limit=4):
             add(saint_name)
-    except Exception as exc:
-        print("ARABIC_SAINT_PHRASE_EXPANSION_FAILED:", repr(exc))
+    except Exception:
+        logger.warning("Arabic saint phrase expansion failed", exc_info=True)
 
     return phrases
 
@@ -922,8 +951,9 @@ def _retrieve_arabic_lexical_documents(
     scored.sort(key=lambda item: (-item[0], item[1]))
     docs: List[str] = []
     metas: List[Dict[str, Any]] = []
+    hit_scores: List[int] = []
     seen: Set[Tuple[Any, ...]] = set()
-    for _, _, doc, meta in scored:
+    for score, _, doc, meta in scored:
         key = (
             meta.get("title"),
             meta.get("pdf"),
@@ -936,12 +966,22 @@ def _retrieve_arabic_lexical_documents(
         seen.add(key)
         docs.append(doc)
         metas.append(meta)
+        hit_scores.append(score)
         if len(docs) >= max(1, min(top_k, 16)):
             break
 
-    print("ARABIC_LEXICAL_TERMS:", terms[:12])
-    print("ARABIC_LEXICAL_PHRASES:", phrases[:8])
-    print("ARABIC_LEXICAL_MATCH_COUNT:", len(docs))
+    trace = current_trace()
+    if trace is not None:
+        trace.add_retrieval(
+            "lexical",
+            question,
+            [{"id": chunk_id_from_metadata(meta), "score": score} for meta, score in zip(metas, hit_scores)],
+            collection=ARABIC_COLLECTION_NAME,
+            where=metadata_filter,
+            terms=terms[:12],
+            phrase_count=len(phrases),
+            candidates_scored=len(scored),
+        )
     return docs, metas
 
 
@@ -1045,8 +1085,8 @@ def _build_english_retrieval_query(question: str, mode: str) -> str:
             ],
         )
         query = (resp.choices[0].message.content or "").strip()
-    except Exception as error:
-        print("ENGLISH_RETRIEVAL_QUERY_REWRITE_FAILED:", repr(error))
+    except Exception:
+        logger.warning("English retrieval query rewrite failed", exc_info=True)
         query = ""
 
     if not query:
@@ -1396,33 +1436,6 @@ def _prepend_saint_record_context(
     return merged_docs, merged_metas
 
 
-def _log_retrieval_debug(
-    original_question: str,
-    rewritten_question: str,
-    detected_language: str,
-    english_retrieval_query: str,
-    matched_saint_alias: str,
-    entity: str | None,
-    docs: List[str],
-    metas: List[Dict[str, Any]],
-    accepted_count: int,
-    rejected_count: int,
-) -> None:
-    print("ORIGINAL_QUESTION:", original_question)
-    print("DETECTED_LANGUAGE:", detected_language)
-    print("ENGLISH_RETRIEVAL_QUERY:", english_retrieval_query)
-    print("MATCHED_SAINT_ALIAS:", matched_saint_alias)
-    print("REWRITTEN_QUESTION:", rewritten_question)
-    print("RESOLVED_ENTITY:", entity)
-    print("RETRIEVED_CHUNK_COUNT:", len(docs))
-    top_sources = [_source_context_label(meta) for meta in metas[:3]]
-    print("TOP_CHUNK_TITLES_OR_SOURCES:", top_sources)
-    previews = [re.sub(r"\s+", " ", (doc or "")[:180]).strip() for doc in docs[:3]]
-    print("TOP_CHUNK_PREVIEWS:", previews)
-    print("RELEVANCE_ACCEPTED_COUNT:", accepted_count)
-    print("RELEVANCE_REJECTED_COUNT:", rejected_count)
-
-
 def _collection_count_safe(target_collection: Any | None) -> int:
     if target_collection is None:
         return 0
@@ -1432,25 +1445,18 @@ def _collection_count_safe(target_collection: Any | None) -> int:
         return 0
 
 
-def _preview_language(value: str) -> str:
-    text = value or ""
-    has_arabic = _contains_arabic(text)
-    has_latin = bool(re.search(r"[A-Za-z]", text))
-    if has_arabic and has_latin:
-        return "mixed"
-    if has_arabic:
-        return "ar"
-    if has_latin:
-        return "en"
-    return "unknown"
-
-
 def _arabic_metadata_filter_for_mode(mode: str) -> Dict[str, Any] | None:
     if mode == "catechism":
         return {"title": "full arabic catechism"}
     if mode == "saints":
         return {"title": "full saints arabic"}
     return None
+
+
+ARABIC_REFUSAL_MARKERS = (
+    "لم أجد معلومات كافية",
+    "لم اجد معلومات كافية",
+)
 
 
 def _response_grounding_status(answer: str, docs: List[str]) -> str:
@@ -1462,6 +1468,7 @@ def _response_grounding_status(answer: str, docs: List[str]) -> str:
         or "do not contain" in lowered
         or "does not say" in lowered
         or "no relevant" in lowered
+        or any(marker in (answer or "") for marker in ARABIC_REFUSAL_MARKERS)
     ):
         return "no-source"
     if (
@@ -2046,10 +2053,10 @@ def startup():
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        print("OPENAI_API_KEY missing at startup")
+        logger.error("OPENAI_API_KEY missing at startup")
         return
 
-    print("Starting up API...")
+    logger.info("Starting up API...")
     log_chroma_configuration("api.startup")
 
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
@@ -2069,12 +2076,15 @@ def startup():
         collection_name=ARABIC_COLLECTION_NAME,
         metadata={"source": ARABIC_COLLECTION_NAME, "language": "ar"},
     )
-    print(f"CHROMA_DIR env: {get_chroma_dir_env()}")
-    print(f"Collection name: {COLLECTION_NAME}")
-    print(f"Arabic collection name: {ARABIC_COLLECTION_NAME}")
-    print(f"Ingest start; resolved_chroma_dir: {get_resolved_chroma_dir()}")
-    print(f"Collection count before ingest: {int(collection.count())}")
-    print(f"Arabic collection count: {int(arabic_collection.count())}")
+    logger.info(
+        "chroma_dir=%s resolved=%s english_collection=%s (%d docs) arabic_collection=%s (%d docs)",
+        get_chroma_dir_env(),
+        get_resolved_chroma_dir(),
+        COLLECTION_NAME,
+        int(collection.count()),
+        ARABIC_COLLECTION_NAME,
+        int(arabic_collection.count()),
+    )
 
     # timeout + max_retries: the SDK retries once on 408/409/429/5xx/connection errors
     # and timeouts, with backoff, so a transient OpenAI blip does not become a 500.
@@ -2083,16 +2093,11 @@ def startup():
         logger.error("INTERNAL_API_KEY is not set. All endpoints except /health will return 503.")
     if ENABLE_DEBUG:
         logger.warning("ENABLE_DEBUG is on: /debug/* endpoints are exposed.")
-    debug_info = _collect_chroma_debug_info()
-    print(f"Resolved Chroma dir: {debug_info['resolved_chroma_dir']}")
-    print(f"Chroma dir exists: {debug_info['directory_exists']}")
-    print(f"English Chroma document count: {debug_info['english']['document_count']}")
-    print(f"Arabic Chroma document count: {debug_info['arabic']['document_count']}")
     try:
-        print(f"SAINTS_LOADED_COUNT: {len(_build_saint_name_index())}")
-    except Exception as exc:
-        print(f"SAINTS_LOADED_COUNT_ERROR: {repr(exc)}")
-    print("Startup complete.")
+        logger.info("saints_loaded_count=%d", len(_build_saint_name_index()))
+    except Exception:
+        logger.exception("Failed to build saint name index at startup")
+    logger.info("Startup complete. model=%s", CHAT_MODEL)
 
 
 @app.get("/health")
@@ -2449,8 +2454,7 @@ def _build_arabic_saint_name_index() -> List[str]:
 
     if arabic_collection is None or _collection_count_safe(arabic_collection) == 0:
         arabic_saint_name_index = names
-        print(f"ARABIC_SAINT_INDEX_COUNT: {len(arabic_saint_name_index)}")
-        print("ARABIC_SAINT_INDEX_SOURCE: seed+generated")
+        logger.info("arabic_saint_index_count=%d source=seed+generated", len(arabic_saint_name_index))
         return arabic_saint_name_index
 
     offset = 0
@@ -2480,8 +2484,7 @@ def _build_arabic_saint_name_index() -> List[str]:
         offset += len(docs)
 
     arabic_saint_name_index = names
-    print(f"ARABIC_SAINT_INDEX_COUNT: {len(arabic_saint_name_index)}")
-    print("ARABIC_SAINT_INDEX_SOURCE: seed+generated+chroma")
+    logger.info("arabic_saint_index_count=%d source=seed+generated+chroma", len(arabic_saint_name_index))
     return arabic_saint_name_index
 
 
@@ -2866,10 +2869,26 @@ def _saint_missing_response(raw_query: str, language: str = "en") -> Dict[str, A
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest, request: Request):
-    global collection, arabic_collection, oai_client
+def chat(req: ChatRequest, request: Request, response: Response):
+    """Entry point: opens a request trace, applies rate limiting, delegates to `_chat_impl`.
 
-    _enforce_chat_rate_limit(request)
+    The trace context manager emits exactly one JSON log line when the request ends,
+    whether it returned normally or raised (see request_log.py / DECISIONS.md LOG-*).
+    """
+    with RequestTrace("chat") as trace:
+        response.headers["X-Request-ID"] = trace.request_id
+        trace.set(
+            language_requested=req.language,
+            mode_requested=req.mode,
+            history_messages=len(req.history) if isinstance(req.history, list) else 0,
+            client_ip=_client_ip(request),
+        )
+        _enforce_chat_rate_limit(request)
+        return _chat_impl(req, trace)
+
+
+def _chat_impl(req: ChatRequest, trace: RequestTrace):
+    global collection, arabic_collection, oai_client
 
     try:
         api_key = os.getenv("OPENAI_API_KEY")
@@ -2922,18 +2941,14 @@ def chat(req: ChatRequest, request: Request):
         entity = manual_saint_match["record_name"] if manual_saint_match else None
         clean_entities = []
 
-        print("\n--- NEW REQUEST ---")
-        print("ORIGINAL_QUESTION:", original_question)
-        print("LANGUAGE_RECEIVED:", req.language)
-        print("MODE_RECEIVED:", req.mode)
-        print("LANGUAGE:", detected_language)
-        print("MODE:", mode)
-        print("ENGLISH_DOC_COUNT:", _collection_count_safe(collection))
-        print("ARABIC_DOC_COUNT:", _collection_count_safe(arabic_collection))
-        print("ENGLISH_RETRIEVAL_QUERY:", english_retrieval_query)
-        print("MATCHED_SAINT_ALIAS:", matched_saint_alias)
-        print("History-resolved entity:", history_resolved_entity)
-        print("History message count:", len(history))
+        trace.set_question(original_question)
+        trace.set(
+            language=detected_language,
+            mode=mode,
+            matched_saint_alias=matched_saint_alias or None,
+            history_resolved_entity=history_resolved_entity,
+            history_messages_used=len(history),
+        )
 
         if detected_language == "ar":
             metadata_filter = _arabic_metadata_filter_for_mode(mode)
@@ -2944,13 +2959,19 @@ def chat(req: ChatRequest, request: Request):
                 try:
                     saint_matches = _find_arabic_saint_index_matches(original_question, limit=1)
                     arabic_selected_saint = saint_matches[0] if saint_matches else ""
-                except Exception as exc:
-                    print("AR_SAINT_INDEX_MATCH_FAILED:", repr(exc))
+                except Exception:
+                    logger.warning("Arabic saint index match failed", exc_info=True)
                 if arabic_selected_saint:
                     retrieval_question = arabic_selected_saint
-                print("AR_SAINT_SELECTED_NAME:", arabic_selected_saint)
-                print("AR_SAINT_DETAIL_QUERY:", retrieval_question)
             retrieval_queries = [retrieval_question]
+            trace.set(
+                collection=ARABIC_COLLECTION_NAME,
+                metadata_filter=metadata_filter,
+                retrieval_top_k=retrieval_top_k,
+                retrieval_queries=retrieval_queries,
+                arabic_selected_saint=arabic_selected_saint or None,
+            )
+            trace.lap("prepare")
 
             docs, metas = _retrieve_documents(
                 retrieval_queries,
@@ -2971,6 +2992,8 @@ def chat(req: ChatRequest, request: Request):
                     metas,
                     retrieval_top_k,
                 )
+            trace.lap("retrieval")
+            trace.set(retrieved_count=len(docs), merged_ids=[chunk_id_from_metadata(m) for m in metas])
             filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
                 docs,
                 metas,
@@ -2978,17 +3001,11 @@ def chat(req: ChatRequest, request: Request):
                 entity=None,
             )
             docs, metas = filtered_docs, filtered_metas
-
-            print("COLLECTION_USED:", ARABIC_COLLECTION_NAME)
-            print("METADATA_FILTER_USED:", metadata_filter)
-            print("RETRIEVED_CHUNK_COUNT:", len(docs))
-            print("TOP_SOURCE_TITLES:", [_source_context_label(meta) for meta in metas[:3]])
-            print("TOP_CHUNK_PREVIEWS:", [_normalize_arabic_context_text(doc)[:180] for doc in docs[:3]])
-            print("TOP_CHUNK_PREVIEW_LANGUAGE:", [_preview_language(_normalize_arabic_context_text(doc)) for doc in docs[:3]])
-            print("RELEVANCE_REJECTED_COUNT:", rejected_count)
+            trace.set_kept(filtered_metas, rejected_count)
+            trace.lap("filter")
 
             if not docs or not metas:
-                print("Response grounding status: no-source")
+                trace.set(outcome="refused", refusal=True, refusal_reason="no_source_after_filter")
                 answer = (
                     "وجدت اسم القديس في فهرس القديسين، لكن لم أجد معلومات كافية عنه في المصادر العربية المتاحة."
                     if mode == "saints" and arabic_selected_saint
@@ -3038,6 +3055,7 @@ def chat(req: ChatRequest, request: Request):
 السياق من المصادر العربية:
 {context}
 """
+            trace.set(context_chunks=len(docs), context_chars=len(context), prompt_chars=len(system_prompt) + len(user_prompt))
 
             resp = oai_client.chat.completions.create(
                 model=CHAT_MODEL,
@@ -3048,14 +3066,23 @@ def chat(req: ChatRequest, request: Request):
                     {"role": "user", "content": user_prompt},
                 ],
             )
+            trace.set_generation(resp, CHAT_MODEL)
+            trace.lap("generation")
 
             answer = resp.choices[0].message.content or ""
             followup_options: List[str] = []
             if mode == "catechism":
                 followup_options = _catechism_followup_options(answer, original_question, language="ar")
 
-            print("Answer generated successfully.")
-            print("Response grounding status:", _response_grounding_status(answer, docs))
+            grounding = _response_grounding_status(answer, docs)
+            trace.set(
+                outcome="refused" if grounding == "no-source" else "answered",
+                refusal=grounding == "no-source",
+                grounding=grounding,
+                answer_chars=len(answer),
+                sources_returned=len(unique_sources[:6]),
+            )
+            trace.lap("postprocess")
 
             return {
                 "answer": answer,
@@ -3071,10 +3098,13 @@ def chat(req: ChatRequest, request: Request):
             saint_matches = _find_saint_index_matches(raw_saint_query, limit=12)
             _log_saint_query(raw_saint_query, _normalize_saint_search_query(raw_saint_query), saint_matches)
 
+            trace.set(saint_intent=saint_intent["mode"])
             if not saint_matches:
+                trace.set(outcome="not_found", refusal=True, refusal_reason="saint_not_in_index")
                 return _saint_missing_response(raw_saint_query, language=detected_language)
 
             if saint_intent["mode"] == "list" or len(saint_matches) > 1:
+                trace.set(outcome="options", refusal=False, options_count=min(12, len(saint_matches)))
                 return _saint_options_response(raw_saint_query, saint_matches, saint_intent["mode"], language=detected_language)
 
             entity = saint_matches[0]
@@ -3090,8 +3120,7 @@ def chat(req: ChatRequest, request: Request):
         # stores `options`/`entities` per message) and only when the question is clearly an
         # ordinal selection, not any question that happens to contain a number.
 
-        print("REWRITTEN_QUESTION:", question)
-        print("RESOLVED_ENTITY:", entity)
+        trace.set(rewritten_question=question[:300], entity=entity)
 
         ambiguous_query = _extract_ambiguous_saint_query(question) if mode != "catechism" else ""
         if ambiguous_query and entity is None:
@@ -3099,6 +3128,7 @@ def chat(req: ChatRequest, request: Request):
             if core_name in AMBIGUOUS_SAINT_FALLBACKS:
                 clean_entities = _filter_sourced_saint_options(AMBIGUOUS_SAINT_FALLBACKS[core_name])
                 if len(clean_entities) > 1:
+                    trace.set(outcome="options", refusal=False, options_count=len(clean_entities), ambiguous_query=ambiguous_query)
                     ambiguous_answer = (
                         f"وجدت أكثر من قديس يطابق '{ambiguous_query}'. اختر واحدًا من الخيارات أدناه."
                         if detected_language == "ar"
@@ -3118,6 +3148,7 @@ def chat(req: ChatRequest, request: Request):
             )
             if len(suggestion_options) > 1:
                 clean_entities = suggestion_options
+                trace.set(outcome="options", refusal=False, options_count=len(clean_entities), ambiguous_query=ambiguous_query)
                 ambiguous_answer = (
                     f"وجدت أكثر من قديس يطابق '{ambiguous_query}'. اختر واحدًا من الخيارات أدناه."
                     if detected_language == "ar"
@@ -3137,35 +3168,31 @@ def chat(req: ChatRequest, request: Request):
 
         # Retrieval
         retrieval_queries = _build_retrieval_queries(retrieval_question, entity=entity)
+        trace.set(
+            collection=COLLECTION_NAME,
+            metadata_filter=None,
+            retrieval_top_k=retrieval_top_k,
+            retrieval_queries=[q[:300] for q in retrieval_queries],
+            broad_list=broad_list,
+            definition_question=definition_question,
+        )
+        trace.lap("prepare")
         docs, metas = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
         if mode == "saints":
             docs, metas = _prepend_saint_record_context(docs, metas, entity)
-        print("COLLECTION_USED:", COLLECTION_NAME)
-        print("METADATA_FILTER_USED:", None)
-        print("Retrieval queries:", retrieval_queries)
-        print("TOP_SOURCE_TITLES:", [_source_context_label(meta) for meta in metas[:3]])
-        print("TOP_CHUNK_PREVIEW_LANGUAGE:", [_preview_language(doc) for doc in docs[:3]])
+        trace.lap("retrieval")
+        trace.set(retrieved_count=len(docs), merged_ids=[chunk_id_from_metadata(m) for m in metas])
         filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
             docs,
             metas,
             retrieval_question,
             entity=entity,
         )
+        trace.set_kept(filtered_metas, rejected_count)
+        trace.lap("filter")
 
         if not docs or not metas:
-            _log_retrieval_debug(
-                original_question,
-                question,
-                detected_language,
-                english_retrieval_query,
-                matched_saint_alias,
-                entity,
-                docs,
-                metas,
-                0,
-                0,
-            )
-            print("Response grounding status: no-source")
+            trace.set(outcome="refused", refusal=True, refusal_reason="nothing_retrieved")
             return {
                 "answer": _no_source_answer(detected_language),
                 "sources": [],
@@ -3177,6 +3204,7 @@ def chat(req: ChatRequest, request: Request):
         if not filtered_docs:
             retry_seed = english_retrieval_query if detected_language == "ar" else original_question
             retry_queries = _build_retrieval_queries(retry_seed, entity=entity)
+            trace.set(retry=True, retry_queries=[q[:300] for q in retry_queries])
             retry_docs, retry_metas = _retrieve_documents(retry_queries, top_k=16, entity=entity)
             if mode == "saints":
                 retry_docs, retry_metas = _prepend_saint_record_context(retry_docs, retry_metas, entity)
@@ -3190,26 +3218,17 @@ def chat(req: ChatRequest, request: Request):
                 docs, metas = retry_docs, retry_metas
                 filtered_docs, filtered_metas = retry_filtered_docs, retry_filtered_metas
                 rejected_count = retry_rejected_count
-                print("Retry retrieval queries:", retry_queries)
+                trace.set(retry_succeeded=True)
             else:
                 docs, metas = retry_docs or docs, retry_metas or metas
                 rejected_count = retry_rejected_count if retry_docs else rejected_count
-
-        _log_retrieval_debug(
-            original_question,
-            question,
-            detected_language,
-            english_retrieval_query,
-            matched_saint_alias,
-            entity,
-            docs,
-            metas,
-            len(filtered_docs),
-            rejected_count,
-        )
+                trace.set(retry_succeeded=False)
+            trace.set(retrieved_count=len(docs), merged_ids=[chunk_id_from_metadata(m) for m in metas])
+            trace.set_kept(filtered_metas, rejected_count)
+            trace.lap("retry")
 
         if not filtered_docs or not filtered_metas:
-            print("Response grounding status: no-source")
+            trace.set(outcome="refused", refusal=True, refusal_reason="no_source_after_filter")
             return {
                 "answer": _no_source_answer(detected_language),
                 "sources": [],
@@ -3304,6 +3323,7 @@ MANUAL ARABIC SAINT ALIASES:
 SOURCES:
 {context}
 """
+        trace.set(context_chunks=len(docs), context_chars=len(context), prompt_chars=len(system_prompt) + len(user_prompt))
 
         resp = oai_client.chat.completions.create(
             model=CHAT_MODEL,
@@ -3314,6 +3334,8 @@ SOURCES:
                 {"role": "user", "content": user_prompt},
             ],
         )
+        trace.set_generation(resp, CHAT_MODEL)
+        trace.lap("generation")
 
         answer = resp.choices[0].message.content or ""
         followup_options: List[str] = []
@@ -3344,9 +3366,16 @@ SOURCES:
                     seen_entities.add(item)
                     clean_entities.append(item)
 
-        print("Answer generated successfully.")
-        print("Extracted entities:", clean_entities)
-        print("Response grounding status:", _response_grounding_status(answer, docs))
+        grounding = _response_grounding_status(answer, docs)
+        trace.set(
+            outcome="refused" if grounding == "no-source" else "answered",
+            refusal=grounding == "no-source",
+            grounding=grounding,
+            answer_chars=len(answer),
+            entities_extracted=len(clean_entities),
+            sources_returned=len(unique_sources[:6]),
+        )
+        trace.lap("postprocess")
 
         return {
             "answer": answer,
@@ -3359,10 +3388,12 @@ SOURCES:
     except HTTPException:
         raise
     except (RateLimitError, APITimeoutError, APIConnectionError, APIStatusError) as e:
-        logger.exception("OpenAI call failed in /chat")
+        logger.exception("OpenAI call failed in /chat request_id=%s", trace.request_id)
+        trace.set(error_type=type(e).__name__)
         raise _openai_error_to_http(e) from e
-    except Exception:
-        logger.exception("Unhandled error in /chat")
+    except Exception as e:
+        logger.exception("Unhandled error in /chat request_id=%s", trace.request_id)
+        trace.set(error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
 
 
@@ -3370,62 +3401,72 @@ SOURCES:
 def saint_suggestions(q: str, limit: int = 8, language: str = "en"):
     global collection, arabic_collection, oai_client
 
-    query = (q or "").strip()
-    if len(query) < 2:
-        return {"suggestions": []}
+    with RequestTrace("saint-suggestions") as trace:
+        query = (q or "").strip()
+        trace.set(language_requested=language, query_chars=len(query), limit=limit)
+        if len(query) < 2:
+            trace.set(outcome="empty", result_count=0)
+            return {"suggestions": []}
 
-    if collection is None or arabic_collection is None or oai_client is None:
-        startup()
         if collection is None or arabic_collection is None or oai_client is None:
-            raise HTTPException(status_code=503, detail="Server is not configured.")
+            startup()
+            if collection is None or arabic_collection is None or oai_client is None:
+                raise HTTPException(status_code=503, detail="Server is not configured.")
 
-    try:
-        if _detect_language(language, query) == "ar":
-            suggestions = _find_arabic_saint_index_matches(query, limit=limit)
-            _log_saint_query(query, _normalize_arabic_alias_key(query), suggestions)
-        else:
-            suggestions = _find_saint_suggestions(query, limit=limit)
-            _log_saint_query(query, _normalize_saint_search_query(query), suggestions)
-        return {"suggestions": suggestions}
-    except Exception:
-        logger.exception("Unhandled error in /saint-suggestions")
-        raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
+        try:
+            detected = _detect_language(language, query)
+            trace.set(language=detected)
+            if detected == "ar":
+                suggestions = _find_arabic_saint_index_matches(query, limit=limit)
+                _log_saint_query(query, _normalize_arabic_alias_key(query), suggestions)
+            else:
+                suggestions = _find_saint_suggestions(query, limit=limit)
+                _log_saint_query(query, _normalize_saint_search_query(query), suggestions)
+            trace.set(outcome="answered", result_count=len(suggestions))
+            return {"suggestions": suggestions}
+        except Exception as e:
+            logger.exception("Unhandled error in /saint-suggestions request_id=%s", trace.request_id)
+            trace.set(error_type=type(e).__name__)
+            raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
 
 
 @app.get("/saints", response_model=SaintsListResponse)
 def saints_list(q: str = "", search: str = "", limit: int = 400, offset: int = 0, language: str = "en"):
     global collection, arabic_collection, oai_client
 
-    if collection is None or arabic_collection is None or oai_client is None:
-        startup()
+    with RequestTrace("saints") as trace:
         if collection is None or arabic_collection is None or oai_client is None:
-            raise HTTPException(status_code=503, detail="Server is not configured.")
+            startup()
+            if collection is None or arabic_collection is None or oai_client is None:
+                raise HTTPException(status_code=503, detail="Server is not configured.")
 
-    try:
-        raw_query = q or search
-        if _detect_language(language, raw_query) == "ar":
-            saints = _build_arabic_saint_name_index()
-            query = _normalize_arabic_alias_key(raw_query)
-            if query:
-                saints = _find_arabic_saint_index_matches(raw_query, limit=400)
-                _log_saint_query(raw_query, query, saints)
-            print(f"SAINT_QUERY_LANGUAGE: ar")
-        else:
-            saints = _build_saint_name_index()
-            query = _normalize_saint_search_query(raw_query)
-            if query:
-                saints = _find_saint_index_matches(raw_query, limit=400)
-                _log_saint_query(raw_query, query, saints)
-            print(f"SAINT_QUERY_LANGUAGE: en")
-        safe_limit = max(1, min(limit, 400))
-        safe_offset = max(0, offset)
-        paged_saints = saints[safe_offset:safe_offset + safe_limit]
-        return {
-            "saints": paged_saints,
-            "total": len(saints),
-            "offset": safe_offset,
-            "limit": safe_limit,
-        }
-    except Exception:
-        logger.exception("Unhandled error in /saints")
-        raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
+        try:
+            raw_query = q or search
+            detected = _detect_language(language, raw_query)
+            trace.set(language_requested=language, language=detected, query_chars=len(raw_query), limit=limit, offset=offset)
+            if detected == "ar":
+                saints = _build_arabic_saint_name_index()
+                query = _normalize_arabic_alias_key(raw_query)
+                if query:
+                    saints = _find_arabic_saint_index_matches(raw_query, limit=400)
+                    _log_saint_query(raw_query, query, saints)
+            else:
+                saints = _build_saint_name_index()
+                query = _normalize_saint_search_query(raw_query)
+                if query:
+                    saints = _find_saint_index_matches(raw_query, limit=400)
+                    _log_saint_query(raw_query, query, saints)
+            safe_limit = max(1, min(limit, 400))
+            safe_offset = max(0, offset)
+            paged_saints = saints[safe_offset:safe_offset + safe_limit]
+            trace.set(outcome="answered", result_count=len(paged_saints), total=len(saints))
+            return {
+                "saints": paged_saints,
+                "total": len(saints),
+                "offset": safe_offset,
+                "limit": safe_limit,
+            }
+        except Exception as e:
+            logger.exception("Unhandled error in /saints request_id=%s", trace.request_id)
+            trace.set(error_type=type(e).__name__)
+            raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
