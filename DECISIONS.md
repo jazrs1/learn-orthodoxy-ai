@@ -9,7 +9,7 @@ alternatives were realistic, what was chosen and why, and a short "concept to le
 with a search term to go deeper.
 
 Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
-`EVAL-001`, ...). Commit hashes: Part A `9989d1f`, Part B `9a4e345`, Part C `ab1cd8d`.
+`EVAL-001`, ...). Commit hashes: Part A `9989d1f`, Part B `9a4e345`, Part C `ab1cd8d`; Phase 2 Step 0 `7c90db7`, Step 1 `f1e6f0c`, Step 2 `124c744`, Step 3 `9fcf9dd`.
 
 ## Table of contents
 
@@ -38,6 +38,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [EVAL-005: Baseline run committed under eval/results/](#eval-005-baseline-run-committed-under-evalresults)
   - [EVAL-006: What the baseline run showed (and where it corrects AUDIT.md)](#eval-006-what-the-baseline-run-showed-and-where-it-corrects-auditmd)
   - [EVAL-007: Judge moved to a stronger, different model (gpt-4.1) with a human-check sheet](#eval-007-judge-moved-to-a-stronger-different-model-gpt-41-with-a-human-check-sheet)
+  - [EVAL-008: Phase 2 results, step by step](#eval-008-phase-2-results-step-by-step)
 - [Retrieval](#retrieval)
   - [RET-001: A saint-index miss falls through to retrieval instead of refusing](#ret-001-a-saint-index-miss-falls-through-to-retrieval-instead-of-refusing)
   - [RET-002: The keyword relevance filter is deleted; results are merged by vector distance](#ret-002-the-keyword-relevance-filter-is-deleted-results-are-merged-by-vector-distance)
@@ -296,7 +297,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the question set changes (re-baseline first).
 
 ### EVAL-007: Judge moved to a stronger, different model (gpt-4.1) with a human-check sheet
-- **Date / Part:** 2026-09-15, Phase 2 Step 0
+- **Date / Part:** 2026-09-15, Phase 2 Step 0 (commit 7c90db7)
 - **Audit ref:** EVAL-003 revisit, open question 5
 - **Context:** The baseline judge was `gpt-4o-mini`, the same model that writes the answers. A model grading its own output tends to like its own phrasing, and a weaker judge misses subtle errors.
 - **Options considered:**
@@ -309,10 +310,40 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Concept to learn:** *Judge calibration.* Before trusting an automatic grader, measure its agreement with a human on a sample (Cohen's kappa or simple "within one point" agreement). A judge can be consistently generous or strict; that is harmless for *comparing* two runs with the same judge, but it matters for absolute claims like "4.7 out of 5". Search: "LLM judge calibration inter-rater agreement", "Cohen's kappa".
 - **Revisit if:** your hand scores on `human_check.md` differ from the judge by more than one point on several questions (then try a gpt-5.x judge or add per-question fact checklists).
 
+### EVAL-008: Phase 2 results, step by step
+- **Date / Part:** 2026-09-15, Phase 2 Step 4
+- **Audit ref:** summary of RET-001..003, GEN-001..003, EVAL-007
+- **Context:** Every step in phase 2 was followed by a full eval run so each change has its own before/after numbers. `eval/compare_results.py` prints the table below from the results files.
+
+| metric | phase1 (4o-mini judge) | baseline (4.1 judge) | step1 routing | step2 prompts | step3 ranking |
+|---|---|---|---|---|---|
+| answerable refused | 13.5% | 13.5% | 1.9% | 0.0% | 0.0% |
+| out-of-corpus refused | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| recall@8 | 62.2% | 62.2% | 73.1% | 73.1% | 73.1% |
+| recall@8 (±1 page) | 75.3% | 75.3% | 86.9% | 86.9% | 86.9% |
+| recall kept | 60.3% | 60.3% | 71.2% | 71.2% | 74.0% |
+| recall shown | 57.4% | 57.4% | 68.3% | 66.3% | 69.6% |
+| judge answered-only | 4.31 | 4.64 | 4.61 | 4.67 | 4.77 |
+| judge all-answerable | 3.87 | 4.15 | 4.54 | 4.67 | 4.77 |
+| saints refused | 30.8% | 30.8% | 0.0% | 0.0% | 0.0% |
+| saints recall@8 | 53.8% | 53.8% | 82.1% | 82.1% | 82.1% |
+| saints judge (all) | 3.15 | 3.77 | 4.77 | 4.77 | 4.92 |
+| follow-up judge (all) | 3.60 | 3.60 | 3.60 | 3.60 | 4.60 |
+| arabic judge (all) | 4.40 | 4.50 | 4.50 | 4.80 | 4.80 |
+| prompt tokens (mean) | 6260 | 6260 | 5843 | 5908 | 6900 |
+| latency s (mean) | 2.4 | 2.4 | 2.5 | 3.3 | 3.1 |
+
+Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `20260915-171939`, step 3 `20260915-172546`; the phase-1 column is `20260915-165311` (same answers re-judged in `20260915-170358`).
+- **Reading the table:** Step 1 removed almost all wrongful refusals and lifted retrieval recall, because saints questions finally reached retrieval. Step 2 changed *how* answers are written (citations, depth) and did not touch retrieval; its judge gain is modest because most answers were already scored high. Step 3 fixed the ordering problem that had produced a confidently wrong follow-up answer.
+- **What got worse:** (1) Step 2 turned FU-01 from a refusal into a wrong-entity answer (fixed by Step 3). (2) Step 2 raised latency from 2.5 s to 3.3 s and answer length roughly doubled, which is the intended depth but costs output tokens. (3) Step 3 raised mean prompt tokens by 17 % because no chunk is filtered any more. (4) "recall shown" dipped in Step 2 (68.3 % → 66.3 %) because sources are now the cited passages only; it recovered in Step 3. (5) Retrieval recall is flat at 73.1 % after Step 1: the remaining misses (CAT-01, CAT-03, CAT-08, CAT-14, AR-03/04/06/08) are pages the embedding search does not rank in the top 8; they need the re-ingestion (cleaner, smaller chunks) and query rewriting, not more routing changes.
+- **Files changed:** `eval/compare_results.py`.
+- **Concept to learn:** *Ablation by steps.* Changing one thing per run and re-measuring is the only way to attribute an improvement (or a regression) to a specific change; the phase-1 column shows why the judge had to be fixed first, so that later columns are comparable. Search: "ablation study", "A/B evaluation offline".
+- **Revisit if:** the human check sheet disagrees with the judge; then re-read this table with the corrected scores.
+
 ## Retrieval
 
 ### RET-001: A saint-index miss falls through to retrieval instead of refusing
-- **Date / Part:** 2026-09-15, Phase 2 Step 1
+- **Date / Part:** 2026-09-15, Phase 2 Step 1 (commit f1e6f0c)
 - **Audit ref:** C17, EVAL-006
 - **Context:** Six of the seven answerable refusals in the baseline came from `_extract_saint_chat_intent`. Tracing the six showed two separate faults:
   1. The regex captured everything after "who was", so the index was asked for `"St. Demiana and how was she martyred"` or `"St. Abanoub, and how old was he when his parents died"`, which can never match.
@@ -335,7 +366,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the saint index is rebuilt at ingestion with proper names and aliases; then strong matches become reliable and the menu thresholds can be simplified.
 
 ### RET-002: The keyword relevance filter is deleted; results are merged by vector distance
-- **Date / Part:** 2026-09-15, Phase 2 Step 3
+- **Date / Part:** 2026-09-15, Phase 2 Step 3 (commit 9fcf9dd)
 - **Audit ref:** C11, C12
 - **Context:** After vector search, `_is_relevant_chunk` required two raw-substring keyword hits from the question in each chunk (no stemming, tiny stopword list), and `_retrieve_documents` concatenated the results of up to eight queries in *query order*, truncating to `top_k` without ever looking at the similarity scores Chroma returned. The filter caused the one remaining refusal (FU-01: correct page retrieved, then rejected) and starved FU-02; the ordering meant multi-query expansion could not improve the top-k (recall_any equalled recall@k in every run).
 - **Options considered:**
@@ -349,7 +380,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** a lexical/BM25 retriever is added for English (then use RRF), or a reranker is added (then distance only shortlists candidates).
 
 ### RET-003: "No relevant source" is decided by a distance threshold chosen from the eval data
-- **Date / Part:** Phase 2 Step 3
+- **Date / Part:** 2026-09-15, Phase 2 Step 3 (commit 9fcf9dd)
 - **Audit ref:** C11
 - **Context:** With the keyword filter gone, something has to stop the pipeline from handing eight unrelated chunks to the model for an off-topic question and relying on the model to refuse.
 - **How the threshold was chosen:** From the Step 1 results file (`20260915-171208.json`, which stores every vector hit with its distance), I computed for each question the *best* distance across all its queries. Distances are Chroma's squared L2 between unit vectors (0 identical, 2 opposite; equal to `2 − 2·cosine`). Distribution: expected-page hits ranged 0.434–1.155 (median 0.766); the best distance for every answerable English question was ≤ 0.971; the best distance for every English out-of-corpus question was ≥ 1.053 (the two on-topic-sounding traps, cryptocurrency and the papal message, sat exactly at 1.053; the rest were 1.45–1.84). A sweep showed 1.0 blocks 0 of 42 answerable questions and lets 0 of 9 out-of-corpus questions through, while 0.9 would block 5 answerable ones and 1.1 would pass 2 traps. So `VECTOR_DISTANCE_THRESHOLD = 1.0`, applied to the best distance only (individual weaker chunks are still passed to the model, which cites only what it uses).
@@ -363,7 +394,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 ## Prompting & Generation
 
 ### GEN-001: System prompts live in versioned files under prompts/
-- **Date / Part:** 2026-09-15, Phase 2 Step 2
+- **Date / Part:** 2026-09-15, Phase 2 Step 2 (commit 124c744)
 - **Audit ref:** C21, C22, A7
 - **Context:** Both system prompts were inline f-strings in `api.py`, with a dead Arabic branch inside the English prompt and per-request padding (`MATCHED MANUAL SAINT ALIAS`, an Arabic alias table) that never affected English answers.
 - **Options considered:** keep them inline but tidy; a Python constants module; Markdown files selected by a `PROMPT_VERSION` env var.
@@ -374,7 +405,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** you want per-mode prompts (saints vs catechism); add `prompts/<mode>_<version>.md` and a lookup.
 
 ### GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations
-- **Date / Part:** Phase 2 Step 2
+- **Date / Part:** 2026-09-15, Phase 2 Step 2 (commit 124c744)
 - **Audit ref:** C19, C21, C22, A4, A7
 - **Context:** The old prompt forbade citations, forced numbered lists ("ALWAYS use numbered format"), repeated the refusal instruction three times, and never asked for depth or synthesis; answers were terse lists. The Arabic prompt had no partial-answer rule at all.
 - **Decision:** The v2 prompts describe the reader (a learner of the Coptic Orthodox faith), ask for explanation with brief definitions, synthesis across passages, short quotations where wording matters, paragraphs by default with lists only for list-shaped content, an explicit partial-answer behaviour, and *one* refusal sentence used only when no passage is relevant. Context is passed as numbered passages (`[3] Encyclopedia of the Saints and Fathers of the Church, Volume 1, p. 329`) and the model must cite `[n]` inline. `_cited_sources()` parses the citations and the response's `sources` now lists only the cited passages, in first-citation order, each with `n` and a human `label` (falling back to the first six retrieved sources if the model cited nothing, so the UI is never empty). The Arabic prompt is the same design in Arabic.
@@ -384,7 +415,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Revisit if:** the model over-cites or cites wrong numbers; then validate citations against the passage text, or ask for a structured JSON answer with claims and supporting passage ids.
 
 ### GEN-003: Conversation history is sent as real messages
-- **Date / Part:** Phase 2 Step 2
+- **Date / Part:** 2026-09-15, Phase 2 Step 2 (commit 124c744)
 - **Audit ref:** C20, A5
 - **Context:** History was pasted as text into the prompt only when a regex found a bolded name in the previous answer; otherwise the model saw an empty `CONVERSATION SO FAR:`. The frontend compensated by appending the previous answer to the question.
 - **Options considered:** keep text-pasting but always include it; send the last N turns as `user`/`assistant` messages; summarise history with a separate model call.
@@ -425,4 +456,9 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 4. **CORS.** Since browsers no longer call the backend, the CORS middleware could be removed or narrowed. Left as is (S3 was not in this part).
 5. **Judge model.** The judge defaults to `gpt-4o-mini`, the same model that writes the answers. For decisions between two prompts or models, run the judge with a stronger, different model (`EVAL_JUDGE_MODEL`) and spot-check ~10 answers by hand; I did not verify the judge's scores against a human pass.
 6. **Expected pages are sufficient, not exhaustive.** Several catechism topics are treated on more than one page; a run can "miss" the expected page and still answer correctly from a neighbour. If recall numbers look too harsh, add the neighbouring pages to `expected_sources` rather than loosening the metric.
-7. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
+7. **Citations are not verified.** The model's `[n]` markers are parsed and trusted; nothing checks that passage n actually supports the sentence. A cheap guard would be to reject citations whose passage shares no content words with the sentence, or to ask the judge model to spot-check a sample. (Phase 2)
+8. **Threshold margin is thin.** 1.0 sits 0.03 above the hardest answerable question and 0.05 below the two hardest out-of-corpus traps; nine negatives is a small sample. Add more on-topic-sounding out-of-corpus questions before trusting it in production, and re-derive it after re-ingestion. (Phase 2)
+9. **Arabic distance check is off.** Until Arabic is re-embedded from normalised text, an off-topic Arabic question reaches the model with ten irrelevant chunks and relies on the prompt to refuse. (Phase 2)
+10. **Frontend still pastes the previous answer into follow-up questions** (`orthodox-site/app/chat/page.tsx`, `followUpBackendQuestion`). Now that history goes to the model as messages, that hack pollutes the retrieval query and should be removed in the frontend part. (Phase 2)
+11. **Answer length and cost.** v2 answers average ~1,700 characters and ~380 completion tokens; if that is too long for the chat UI, add a length target to the prompt rather than a token cap. (Phase 2)
+12. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
