@@ -36,6 +36,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [EVAL-004: Retrieval debug data returned in the response instead of scraped from logs](#eval-004-retrieval-debug-data-returned-in-the-response-instead-of-scraped-from-logs)
   - [EVAL-005: Baseline run committed under eval/results/](#eval-005-baseline-run-committed-under-evalresults)
   - [EVAL-006: What the baseline run showed (and where it corrects AUDIT.md)](#eval-006-what-the-baseline-run-showed-and-where-it-corrects-auditmd)
+  - [EVAL-007: Judge moved to a stronger, different model (gpt-4.1) with a human-check sheet](#eval-007-judge-moved-to-a-stronger-different-model-gpt-41-with-a-human-check-sheet)
 - [Retrieval](#retrieval)
 - [Prompting & Generation](#prompting--generation)
 - [Frontend](#frontend)
@@ -287,9 +288,23 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Concept to learn:** *Error analysis*: after measuring, read the failures one by one and group them by cause before optimising anything; the largest bucket is usually not the one you expected. Search: "error analysis machine learning Andrew Ng".
 - **Revisit if:** the question set changes (re-baseline first).
 
+### EVAL-007: Judge moved to a stronger, different model (gpt-4.1) with a human-check sheet
+- **Date / Part:** 2026-09-15, Phase 2 Step 0
+- **Audit ref:** EVAL-003 revisit, open question 5
+- **Context:** The baseline judge was `gpt-4o-mini`, the same model that writes the answers. A model grading its own output tends to like its own phrasing, and a weaker judge misses subtle errors.
+- **Options considered:**
+  1. *gpt-4.1*: newer non-reasoning model, supports `temperature=0` and JSON mode, cheap, different from the generator. 
+  2. *gpt-5.x reasoning models*: strongest available, but they reject `temperature` and `max_tokens`, run slower, and cost more per call; fine for a final check, heavy for every step.
+  3. *Two judges and take the average*: more robust, double cost.
+- **Decision:** Default `DEFAULT_JUDGE_MODEL = "gpt-4.1"`, overridable with `EVAL_JUDGE_MODEL`. `judge_answer()` now retries without `temperature`/`max_tokens` so a gpt-5.x judge also works. Added `--rejudge <results.json>` to re-score existing answers without calling the backend, so two judges can be compared on identical answers, and `eval/make_human_check.py`, which writes `eval/human_check.md` with 10 answered questions spread across categories for hand grading.
+- **Why:** Re-judging the same 45 baseline answers showed the two judges agree exactly 64 % of the time and within one point 98 %; gpt-4.1 was on average **0.38 points more generous** (answered-only 4.69 vs 4.31). So the old judge was not inflating scores; if anything it was stricter. The judge change therefore does not manufacture an improvement, but all phase-2 numbers use gpt-4.1 and are compared only to the gpt-4.1 re-run of the baseline. The human sheet is the only way to know which judge is *right*; that is left to you.
+- **Files changed:** `eval/run_eval.py`, `eval/make_human_check.py`, `eval/human_check.md` (generated), `eval/results/20260915-170358.json` (re-judged baseline).
+- **Concept to learn:** *Judge calibration.* Before trusting an automatic grader, measure its agreement with a human on a sample (Cohen's kappa or simple "within one point" agreement). A judge can be consistently generous or strict; that is harmless for *comparing* two runs with the same judge, but it matters for absolute claims like "4.7 out of 5". Search: "LLM judge calibration inter-rater agreement", "Cohen's kappa".
+- **Revisit if:** your hand scores on `human_check.md` differ from the judge by more than one point on several questions (then try a gpt-5.x judge or add per-question fact checklists).
+
 ## Retrieval
 
-_(No changes yet; re-ingestion and ranking are out of scope for this phase.)_
+_(Entries for phase 2 are added below as the steps land.)_
 
 ## Prompting & Generation
 
