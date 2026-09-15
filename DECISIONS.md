@@ -42,15 +42,18 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [EVAL-009: Judge vs human on the 10-question check sheet](#eval-009-judge-vs-human-on-the-10-question-check-sheet)
   - [EVAL-010: Coverage replaces the holistic score as the headline quality metric](#eval-010-coverage-replaces-the-holistic-score-as-the-headline-quality-metric)
   - [EVAL-011: Faithfulness — every claim is checked against the passage it cites](#eval-011-faithfulness--every-claim-is-checked-against-the-passage-it-cites)
+  - [EVAL-012: Near-miss out-of-corpus questions and a sticky tune/holdout split](#eval-012-near-miss-out-of-corpus-questions-and-a-sticky-tuneholdout-split)
 - [Retrieval](#retrieval)
   - [RET-001: A saint-index miss falls through to retrieval instead of refusing](#ret-001-a-saint-index-miss-falls-through-to-retrieval-instead-of-refusing)
   - [RET-002: The keyword relevance filter is deleted; results are merged by vector distance](#ret-002-the-keyword-relevance-filter-is-deleted-results-are-merged-by-vector-distance)
   - [RET-003: "No relevant source" is decided by a distance threshold chosen from the eval data](#ret-003-no-relevant-source-is-decided-by-a-distance-threshold-chosen-from-the-eval-data)
+  - [RET-004: The distance threshold stays at 1.0; near-miss refusals need a different mechanism](#ret-004-the-distance-threshold-stays-at-10-near-miss-refusals-need-a-different-mechanism)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
   - [GEN-003: Conversation history is sent as real messages](#gen-003-conversation-history-is-sent-as-real-messages)
 - [Frontend](#frontend)
+  - [FE-001: Follow-up chips are ordinary user turns in the conversation's own mode](#fe-001-follow-up-chips-are-ordinary-user-turns-in-the-conversations-own-mode)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -385,6 +388,20 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Concept to learn:** *Faithfulness / attribution evaluation.* In RAG the model can be wrong in two independent ways: retrieve the wrong text (coverage drops) or say things the retrieved text does not support (faithfulness drops). Judging support requires the grader to point at evidence; verifying that the evidence really exists in the source is what keeps the grader honest. Search: "RAG faithfulness metric", "attributable to identified sources (AIS)", "citation verification".
 - **Revisit if:** the pipeline starts returning shorter chunks (then per-claim evidence spans get easier and the ±3-word tolerance can shrink), or when a reranker changes which passages are shown (re-run the 10-answer validation).
 
+### EVAL-012: Near-miss out-of-corpus questions and a sticky tune/holdout split
+- **Date / Part:** 2026-09-15, Phase 3 Step 3
+- **Audit ref:** RET-003 revisit, open question 8
+- **Context:** The refusal threshold had been chosen on nine easy negatives (sourdough, iPhone…). Those tell you nothing about the failure that matters for this product: confident answers about saints who are not in these books, doctrines the books do not discuss, or premises that are false. And every metric so far was measured on the same questions used to make decisions, so improvements could be over-fitted to the set.
+- **Decision:**
+  - 23 new out-of-corpus questions (OOC-11…33), each verified absent by corpus search: 10 saints not in the books that share a first name or a near-miss token with saints who are (Anthony of Padua, Ignatius of Loyola, John of the Cross, Gregory Palamas, Francis of Assisi where only a bishop *of* Assisi exists, Herman of Alaska who appears only as a footnote publisher…); 6 non-Coptic doctrines (purgatory, papal infallibility where the book speaks once of the *Church's* infallibility, sola scriptura, Immaculate Conception, filioque, and the Arabic purgatory); 4 false premises (St. Anthony on Mount Athos, St. Paul the Hermit's wife, St. Bishoy's commentary on Revelation, St. Demiana's father "the pope"); 3 same-name confusions (Cyril's brother Methodius, Moses the Black's "sister Sarah" who belongs to a different St. Moses on saints3 p.240, St. Barbara "moving to Egypt" when only her relics did). Each entry records a `subtype` and the search evidence.
+  - `eval/make_split.py` assigns `split: tune | holdout` (30 % holdout), stratified by category and, for out-of-corpus, by subtype; deterministic seed; *sticky* so questions keep their split when new ones are added. Result: 59 tune / 26 holdout (out-of-corpus 23/10, catechism 14/6, saints 9/4, Arabic 7/3, follow-up 3/2, multi-part 3/1). `run_eval.py` reports every metric per split; `compare_results.py --split holdout` prints one split.
+  - Rule: thresholds, prompts and routing rules are tuned on `tune` only; `holdout` numbers are reported but never used to choose.
+- **Why:** Near-miss negatives are what a distance threshold actually has to separate; the easy ones were all ≥ 1.45 away. A holdout split is the only defence against the eval quietly becoming a training set for the pipeline; 26 questions is small, so treat holdout deltas under ~10 points as noise.
+- **First run on the hardened set (`20260915-190224.json`):** out-of-corpus refusal fell from 100 % (10 easy negatives) to 81.8 % (33 negatives; tune 82.6 %, holdout 80.0 %): the near misses do their job. Answerable metrics are unchanged in substance (coverage 68.7 % overall; tune 62.9 %, holdout 81.6 %; the holdout happens to hold easier questions, which is why both splits are always reported).
+- **Files changed:** `eval/questions.jsonl`, `eval/make_split.py`, `eval/run_eval.py`, `eval/compare_results.py`, `eval/threshold_analysis.py`.
+- **Concept to learn:** *Train/validation/test discipline applied to evals.* Every time you look at a number and change the system, that number stops being an unbiased estimate; keeping a slice you never look at while tuning gives you one that still is. *Hard negatives* (near misses) are the examples that define where a classifier's boundary really is. Search: "holdout set overfitting evaluation", "hard negative mining".
+- **Revisit if:** the holdout ever drives a decision (then it is burnt: create a new one), or when the set grows past ~150 questions (then a 20 % holdout is enough).
+
 ## Retrieval
 
 ### RET-001: A saint-index miss falls through to retrieval instead of refusing
@@ -436,6 +453,17 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Result of Step 3 (eval `20260915-172546.json` vs Step 2 `20260915-171939.json`):** judge all-answerable 4.67 → 4.77; FU-01 fixed (1 → 5: with distance ranking the correct St. Moses the Black page outranks the other St. Moses), FU-02 2 → 3; follow-up category 3.60 → 4.60; recall_kept 71.2 % → 74.0 % (nothing is filtered any more), recall_shown 66.3 % → 69.6 %; refusals stayed at 0 % and all 10 out-of-corpus questions were still refused, now by the threshold (best distances 1.05–1.83, all above 1.0) before any model call, which also saves the generation cost on off-topic input. **Costs:** mean prompt tokens rose 5,908 → 6,900 because every retrieved chunk is now passed through; four catechism answers moved 5 → 4 and four others 4 → 5, which is within run-to-run generation noise at temperature 0.2 rather than a ranking effect (their retrieved pages did not change). recall@8 itself is unchanged at 73.1 %: the expected pages were already in the top 8; ranking changed their order, not their presence.
 - **Revisit if:** re-ingestion changes the embedding text (thresholds must be re-derived: cleaner chunks generally give *smaller* distances for true hits), the embedding model changes, or Arabic is re-embedded from normalised text (then enable the Arabic threshold).
 
+### RET-004: The distance threshold stays at 1.0; near-miss refusals need a different mechanism
+- **Date / Part:** 2026-09-15, Phase 3 Step 3
+- **Audit ref:** RET-003, EVAL-012
+- **Context:** RET-003 chose 1.0 on nine easy negatives. The hardened set adds 23 near-miss negatives; the threshold had to be re-derived on the tune split only (`eval/threshold_analysis.py`, results `20260915-190224.json`).
+- **What the tune split shows (English, 29 answerable, 21 out-of-corpus):** answerable best distances 0.434–0.971 (median 0.691); out-of-corpus best distances 0.454–1.741 (median 0.999). The two populations now overlap heavily: "Who was St. Anthony of Padua?" sits at 0.454 (its nearest chunks are St. Anthony the Great's pages), "St. Anthony on Mount Athos" at 0.744, "Cyril's brother Methodius" at 0.751, "Ignatius of Loyola" at 0.763. No threshold separates them: the minimum-error value is 0.99 with 10 errors (0 answerable blocked, 10 of 21 negatives passed); 0.90 would already block 3 answerable questions while still passing 9 negatives. Holdout check at 0.99: 0/13 answerable blocked, 4/9 negatives passed, consistent with tune.
+- **Decision:** keep `VECTOR_DISTANCE_THRESHOLD = 1.0` (0.99 vs 1.0 is noise); it remains the guard against genuinely off-topic input (all ten original negatives are still refused before any model call) and is *not* a guard against near misses. The six near-miss questions that were answered (18 % of all negatives, 17 % tune / 20 % holdout) fall into two kinds: (a) four doctrine questions (purgatory, sola scriptura, Immaculate Conception, filioque) answered from the model's general knowledge with a Coptic framing, i.e. hallucinated positions; (b) two entity questions, one of which correctly corrected the premise ("St. Paul the First Hermit did not have a wife…", counted as a false answer by the classifier but arguably right) and one which merged two different saints Moses into one biography (OOC-30, the exact failure the set was built to catch).
+- **Why not tune further now:** a vector distance measures topical closeness, not whether the *specific entity or doctrine* is in the books; a question about Anthony of Padua is topically as close to the corpus as a question about Anthony the Great. The fix belongs to the entity/doctrine layer: e.g. checking that the named saint or term actually occurs in the retrieved passages before answering, or asking the model to state explicitly whether the passages mention the subject. That is a Phase 4 item (open question 13); changing the prompt or routing now would contaminate this step's before/after numbers.
+- **Files changed:** `eval/threshold_analysis.py`, `eval/questions.jsonl` (splits), `DECISIONS.md`.
+- **Concept to learn:** *Topical similarity vs entity grounding.* Embedding distance answers "is this about the same subject?", not "is this fact in the corpus?"; near-miss negatives expose the difference. Refusal needs an *entity-level* check (does the retrieved text mention the thing asked about?) or an answer-level check (faithfulness flags claims with no support). Search: "hallucination near-miss negatives RAG", "entity linking grounding check".
+- **Revisit if:** re-ingestion changes distances (re-run the analysis on tune), or once an entity-presence check exists (then the threshold can be raised to reduce false refusals of paraphrased questions).
+
 ## Prompting & Generation
 
 ### GEN-001: System prompts live in versioned files under prompts/
@@ -473,7 +501,18 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 
 ## Frontend
 
-_(See SEC-003, SEC-005, SEC-006 for the Next.js route changes.)_
+_(See also SEC-003, SEC-005, SEC-006 for the Next.js route changes.)_
+
+### FE-001: Follow-up chips are ordinary user turns in the conversation's own mode
+- **Date / Part:** 2026-09-15, Phase 3 Step 4
+- **Audit ref:** C14, C31, open question 10
+- **Context:** Clicking a follow-up chip used to (1) append up to 1,200 characters of the previous answer to the question before sending it, (2) hide the user turn so it was never stored, and (3) force `mode: "catechism"` whatever the conversation was doing. (1) polluted the retrieval query and the keyword filter (the audit's C14); (2) meant the server-side history never contained the follow-up itself; (3) sent saints-tab follow-ups down the catechism path. Since GEN-003 the backend receives the last six stored turns as real messages, so none of this is needed.
+- **Options considered:** keep pasting but shorter; send the chip as a hidden turn but include the previous answer id; or make the chip a normal message.
+- **Decision:** A chip click now calls `handleSendMessage(option, { mode: conversationMode })`: the chip text ("I would like to know what chrismation means") is stored as a real user turn, nothing from the previous answer is pasted, and the request uses `conversationMode`, a new piece of state set to the mode of the most recent request in that conversation (catechism cards set it to `catechism`, saint lookups to `saints`, typed questions to the tab's mode). `followUpBackendQuestion` and `compactFollowUpContext` are deleted. The `hideUserMessage` plumbing stays in the API but is no longer used by chips.
+- **Eval:** `FU-06` in `eval/questions.jsonl` has exactly the request shape the frontend now sends for a catechism chip: the previous user/assistant turns (assistant text with `[n]` markers) as `history`, the chip text as `question`, `mode: catechism`, expected pages catechism1 p.553–554, three key facts. There is no JS test runner in the project, so the production request shape is asserted through the eval rather than a unit test.
+- **Files changed:** `orthodox-site/app/chat/page.tsx`, `eval/questions.jsonl`.
+- **Concept to learn:** *Single source of truth for conversation state.* Once the server stores the turns and replays them to the model, the client must not smuggle context through the question text; two channels for the same information drift apart and the model gets duplicated or stale context. Search: "stateless client stateful server chat history".
+- **Revisit if:** the UI adds threads that mix modes in one conversation; then the mode should be stored per message and chosen per request explicitly.
 
 ## Code Cleanup
 
@@ -506,4 +545,5 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 9. **Arabic distance check is off.** Until Arabic is re-embedded from normalised text, an off-topic Arabic question reaches the model with ten irrelevant chunks and relies on the prompt to refuse. (Phase 2)
 10. **Frontend still pastes the previous answer into follow-up questions** (`orthodox-site/app/chat/page.tsx`, `followUpBackendQuestion`). Now that history goes to the model as messages, that hack pollutes the retrieval query and should be removed in the frontend part. (Phase 2)
 11. **Answer length and cost.** v2 answers average ~1,700 characters and ~380 completion tokens; if that is too long for the chat UI, add a length target to the prompt rather than a token cap. (Phase 2)
-12. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
+12. **Near-miss refusals (Phase 3).** Four doctrine questions and one same-name question were answered from general knowledge although the corpus never discusses them; the distance threshold cannot catch them (RET-004). Candidate fixes: an entity/term-presence check on the retrieved passages before generation, a prompt instruction to state explicitly when the passages do not mention the subject asked about, or using the faithfulness judge's unsupported-claim signal at request time.
+13. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
