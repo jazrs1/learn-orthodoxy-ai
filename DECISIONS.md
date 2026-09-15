@@ -329,7 +329,38 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 
 ## Prompting & Generation
 
-_(No changes yet.)_
+### GEN-001: System prompts live in versioned files under prompts/
+- **Date / Part:** 2026-09-15, Phase 2 Step 2
+- **Audit ref:** C21, C22, A7
+- **Context:** Both system prompts were inline f-strings in `api.py`, with a dead Arabic branch inside the English prompt and per-request padding (`MATCHED MANUAL SAINT ALIAS`, an Arabic alias table) that never affected English answers.
+- **Options considered:** keep them inline but tidy; a Python constants module; Markdown files selected by a `PROMPT_VERSION` env var.
+- **Decision:** `prompts/english_v2.md` and `prompts/arabic_v2.md`, loaded once at import; `PROMPT_VERSION` (default `v2`) picks the file set, so an experiment is a new file plus an env var and a prompt diff shows up as a readable text diff in git. The generation model, temperature and number of history turns are env vars (`OPENAI_CHAT_MODEL`, `OPENAI_CHAT_TEMPERATURE`, `HISTORY_TURNS_FOR_MODEL`).
+- **Why:** Prompts are product copy and behaviour specification at once; they change more often than code and deserve their own review history and A/B switch.
+- **Files changed:** `prompts/english_v2.md`, `prompts/arabic_v2.md`, `api.py`.
+- **Concept to learn:** *Prompt versioning.* Treat a prompt like a schema: version it, keep the old one runnable, and pair every change with an eval run. Search: "prompt versioning", "prompt management".
+- **Revisit if:** you want per-mode prompts (saints vs catechism); add `prompts/<mode>_<version>.md` and a lookup.
+
+### GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations
+- **Date / Part:** Phase 2 Step 2
+- **Audit ref:** C19, C21, C22, A4, A7
+- **Context:** The old prompt forbade citations, forced numbered lists ("ALWAYS use numbered format"), repeated the refusal instruction three times, and never asked for depth or synthesis; answers were terse lists. The Arabic prompt had no partial-answer rule at all.
+- **Decision:** The v2 prompts describe the reader (a learner of the Coptic Orthodox faith), ask for explanation with brief definitions, synthesis across passages, short quotations where wording matters, paragraphs by default with lists only for list-shaped content, an explicit partial-answer behaviour, and *one* refusal sentence used only when no passage is relevant. Context is passed as numbered passages (`[3] Encyclopedia of the Saints and Fathers of the Church, Volume 1, p. 329`) and the model must cite `[n]` inline. `_cited_sources()` parses the citations and the response's `sources` now lists only the cited passages, in first-citation order, each with `n` and a human `label` (falling back to the first six retrieved sources if the model cited nothing, so the UI is never empty). The Arabic prompt is the same design in Arabic.
+- **Why:** Citations make the answer checkable and let the UI link to pages later without changing the backend again; a single refusal rule reduces the model's bias toward refusing when only part of the context is on-topic; the list ban was the visible cause of shallow answers.
+- **Files changed:** `prompts/*.md`, `api.py` (`_build_numbered_context`, `_parse_citations`, `_cited_sources`, `Source.n/label`).
+- **Concept to learn:** *Grounded generation with attribution.* Numbering the evidence and requiring inline references gives a cheap, automatic way to know which retrieved chunk actually supported each claim; it is the basis for later hallucination checks (a claim with no citation, or a citation that does not support it). Search: "attributed question answering", "citation grounding RAG".
+- **Revisit if:** the model over-cites or cites wrong numbers; then validate citations against the passage text, or ask for a structured JSON answer with claims and supporting passage ids.
+
+### GEN-003: Conversation history is sent as real messages
+- **Date / Part:** Phase 2 Step 2
+- **Audit ref:** C20, A5
+- **Context:** History was pasted as text into the prompt only when a regex found a bolded name in the previous answer; otherwise the model saw an empty `CONVERSATION SO FAR:`. The frontend compensated by appending the previous answer to the question.
+- **Options considered:** keep text-pasting but always include it; send the last N turns as `user`/`assistant` messages; summarise history with a separate model call.
+- **Decision:** The last `HISTORY_TURNS_FOR_MODEL` (default 6) sanitised turns are sent as real chat messages before the final user message that holds the numbered passages and the question. The retrieval query still uses the regex rewrite from Phase 1 (an LLM rewrite is a later step). Applies to the Arabic path too, which had no history at all.
+- **Why:** Chat models are trained on multi-turn message structure; pronoun resolution and "as I said before" work without any regex. It also removes the frontend's answer-pasting hack as a requirement (that code is still there and harmless; removing it is a frontend task).
+- **Result of Step 2 as a whole (eval `20260915-171939.json` vs Step 1 `20260915-171208.json`):** answerable refusals 1.9 % → 0 %; judge all-answerable 4.54 → 4.67 (answered-only 4.61 → 4.67); every one of the 52 answers carries citations (mean 3.3 distinct passages cited); answers are longer (mean 1,743 chars, 381 completion tokens) and latency rose 2.5 s → 3.3 s. Retrieval metrics are unchanged by design. **Regression to note:** FU-01 ("How did he die?" after a St. Moses the Black turn) moved from a refusal to a confident wrong answer about a *different* St. Moses (a martyr under Decius) whose page ranks first for the rewritten query; the keyword filter used to block that page. Score 1 either way, but a wrong answer is worse than a refusal; Step 3's distance ranking and the later LLM query rewrite are the fixes, and a citation-consistency check is a candidate guard.
+- **Files changed:** `api.py` (`_build_chat_messages`).
+- **Concept to learn:** *Conversation state in stateless APIs.* Each request must carry the history it needs; bounding it (turn count and per-message size, SEC-006) keeps cost predictable. Search: "chat completions message roles", "context window management".
+- **Revisit if:** history dominates the prompt (add summarisation), or when the retrieval rewrite moves to an LLM (then the rewritten standalone question can also be shown to the model).
 
 ## Frontend
 

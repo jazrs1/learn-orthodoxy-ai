@@ -81,6 +81,39 @@ ANSWER_MAX_TOKENS = _env_int("ANSWER_MAX_TOKENS", 1200, minimum=64)
 OPENAI_TIMEOUT_SECONDS = _env_float("OPENAI_TIMEOUT_SECONDS", 25.0)
 OPENAI_MAX_RETRIES = _env_int("OPENAI_MAX_RETRIES", 1)
 CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
+CHAT_TEMPERATURE = _env_float("OPENAI_CHAT_TEMPERATURE", 0.2)
+# Number of prior conversation turns passed to the model as real messages.
+HISTORY_TURNS_FOR_MODEL = _env_int("HISTORY_TURNS_FOR_MODEL", 6)
+
+# --- Prompts are versioned files under prompts/ (DECISIONS.md GEN-001) ---
+PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
+PROMPT_VERSION = os.getenv("PROMPT_VERSION", "v2").strip() or "v2"
+
+
+def _load_prompt(name: str) -> str:
+    path = PROMPTS_DIR / f"{name}_{PROMPT_VERSION}.md"
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        raise RuntimeError(f"Prompt file missing: {path}") from exc
+
+
+ENGLISH_SYSTEM_PROMPT = _load_prompt("english")
+ARABIC_SYSTEM_PROMPT = _load_prompt("arabic")
+
+# Human-readable titles for the source files, used in the numbered context blocks and
+# in the `label` of each returned source.
+SOURCE_TITLES = {
+    "catechism1.pdf": "Catechism of the Coptic Orthodox Church, Volume 1",
+    "catechism2.pdf": "Catechism of the Coptic Orthodox Church, Volume 2",
+    "saints1.pdf": "Encyclopedia of the Saints and Fathers of the Church, Volume 1",
+    "saints2.pdf": "Encyclopedia of the Saints and Fathers of the Church, Volume 2",
+    "saints3.pdf": "Encyclopedia of the Saints and Fathers of the Church, Volume 3",
+    "saints4.pdf": "Encyclopedia of the Saints and Fathers of the Church, Volume 4",
+    "full arabic catechism.pdf": "كاتيكيزم الكنيسة القبطية الأرثوذكسية",
+    "full saints arabic.pdf": "قاموس آباء الكنيسة وقديسيها",
+}
+CITATION_RE = re.compile(r"\[(\d+(?:\s*[,;]\s*\d+)*)\]")
 
 CHAT_RATE_LIMIT_PER_MINUTE = _env_int("CHAT_RATE_LIMIT_PER_MINUTE", 20)
 CHAT_GLOBAL_RATE_LIMIT_PER_MINUTE = _env_int("CHAT_GLOBAL_RATE_LIMIT_PER_MINUTE", 300)
@@ -1077,16 +1110,6 @@ def _fallback_english_retrieval_query(question: str) -> str:
     return question
 
 
-def _manual_arabic_saint_alias_prompt() -> str:
-    lines = []
-    for record in SAINT_ALIAS_RECORDS:
-        canonical = str(record.get("canonical", "")).strip()
-        aliases = [str(alias).strip() for alias in record.get("arabic_aliases", []) if str(alias).strip()]
-        if canonical and aliases:
-            lines.append(f"- {canonical}: {', '.join(aliases)}")
-    return "\n".join(lines)
-
-
 def _build_english_retrieval_query(question: str, mode: str) -> str:
     fallback = _fallback_english_retrieval_query(question)
 
@@ -1125,14 +1148,6 @@ def _build_english_retrieval_query(question: str, mode: str) -> str:
 
     query = re.sub(r"\s+", " ", query).strip()
     return query or fallback or question
-
-
-def _recent_history_text(history: list, limit: int = 6) -> str:
-    return "\n".join(
-        f"{m['role'].upper()}: {m['content']}"
-        for m in history[-limit:]
-        if isinstance(m, dict) and "role" in m and "content" in m
-    )
 
 
 def _history_messages(history: list, role: str | None = None) -> List[str]:
@@ -1617,6 +1632,9 @@ class Source(BaseModel):
     page: int | None = None
     url: str | None = None
     title: str | None = None
+    # Citation number used in the answer text ([n]) and a human-readable label.
+    n: int | None = None
+    label: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -1701,6 +1719,101 @@ def _source_context_label(metadata: Dict[str, Any]) -> str:
     pdf_name = str((metadata or {}).get("pdf", "unknown.pdf"))
     page_num = (metadata or {}).get("page", 0)
     return f"{pdf_name} p.{page_num}"
+
+
+def _friendly_source_label(metadata: Dict[str, Any]) -> str:
+    """Citation label shown to the model and returned to the client, e.g.
+    'Catechism of the Coptic Orthodox Church, Volume 2, p. 31'."""
+    source_type = str((metadata or {}).get("source_type", "pdf"))
+    if source_type == "website":
+        return _source_context_label(metadata)
+    pdf_name = str((metadata or {}).get("pdf", "unknown.pdf"))
+    page_num = (metadata or {}).get("page", 0)
+    title = SOURCE_TITLES.get(pdf_name, pdf_name)
+    return f"{title}, p. {page_num}"
+
+
+def _build_numbered_context(
+    docs: List[str],
+    metas: List[Dict[str, Any]],
+    normalize=None,
+) -> Tuple[str, List[Dict[str, Any]]]:
+    """Format the retrieved chunks as numbered passages the model can cite as [n].
+
+    Returns the context text and the per-passage source dicts (with `n` and `label`).
+    """
+    blocks: List[str] = []
+    numbered: List[Dict[str, Any]] = []
+    for index, (doc, meta) in enumerate(zip(docs, metas), start=1):
+        text = normalize(doc) if normalize else (doc or "")
+        label = _friendly_source_label(meta or {})
+        blocks.append(f"[{index}] {label}\n{text.strip()}")
+        numbered.append({**_source_from_metadata(meta or {}), "n": index, "label": label})
+    return "\n\n".join(blocks), numbered
+
+
+def _parse_citations(answer: str) -> List[int]:
+    """Ordered, de-duplicated passage numbers cited as [n], [n, m] or [n][m]."""
+    seen: List[int] = []
+    for group in CITATION_RE.findall(answer or ""):
+        for token in re.split(r"[,;]", group):
+            token = token.strip()
+            if token.isdigit():
+                number = int(token)
+                if number not in seen:
+                    seen.append(number)
+    return seen
+
+
+def _cited_sources(answer: str, numbered: List[Dict[str, Any]], fallback_limit: int = 6) -> Tuple[List[Dict[str, Any]], int]:
+    """Sources the answer actually cited, in first-citation order, one per page/url.
+
+    If the model cited nothing (or cited only numbers that do not exist) fall back to
+    the first `fallback_limit` distinct retrieved sources so the UI still shows where
+    the context came from. Returns (sources, cited_count).
+    """
+    by_number = {source["n"]: source for source in numbered}
+    chosen: List[Dict[str, Any]] = []
+    seen_keys: Set[Tuple[Any, ...]] = set()
+    for number in _parse_citations(answer):
+        source = by_number.get(number)
+        if not source:
+            continue
+        key = _source_key(source)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        chosen.append(source)
+    cited_count = len(chosen)
+    if not chosen:
+        for source in numbered:
+            key = _source_key(source)
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            chosen.append(source)
+            if len(chosen) >= fallback_limit:
+                break
+    return chosen, cited_count
+
+
+def _build_chat_messages(
+    system_prompt: str,
+    history: List[Dict[str, str]],
+    question: str,
+    context: str,
+    language: str,
+) -> List[Dict[str, str]]:
+    """System prompt, then the last few real turns, then the question with its numbered passages."""
+    messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
+    for turn in history[-HISTORY_TURNS_FOR_MODEL:]:
+        messages.append({"role": turn["role"], "content": turn["content"]})
+    if language == "ar":
+        user_content = f"المقاطع المصدرية\n\n{context}\n\nالسؤال\n{question}"
+    else:
+        user_content = f"SOURCE PASSAGES\n\n{context}\n\nQUESTION\n{question}"
+    messages.append({"role": "user", "content": user_content})
+    return messages
 
 
 def _extract_entity_candidate(list_item: str) -> str:
@@ -3057,52 +3170,21 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                     "can_learn_more": False,
                 }
 
-            sources = [_source_from_metadata(m) for m in metas]
-            seen = set()
-            unique_sources = []
-            for source in sources:
-                key = _source_key(source)
-                if key in seen:
-                    continue
-                seen.add(key)
-                unique_sources.append(source)
-
-            context = "\n\n".join(
-                f"[Source: {_source_context_label(meta)}]\n{_normalize_arabic_context_text(doc)}"
-                for doc, meta in zip(docs, metas)
+            context, numbered_sources = _build_numbered_context(docs, metas, normalize=_normalize_arabic_context_text)
+            messages = _build_chat_messages(ARABIC_SYSTEM_PROMPT, history, original_question, context, "ar")
+            trace.set(
+                context_chunks=len(docs),
+                context_chars=len(context),
+                prompt_chars=sum(len(m["content"]) for m in messages),
+                prompt_version=PROMPT_VERSION,
+                history_turns_sent=min(len(history), HISTORY_TURNS_FOR_MODEL),
             )
-
-            system_prompt = """
-أنت مساعد للتعليم الأرثوذكسي.
-
-القواعد:
-- أجب باللغة العربية فقط.
-- أجب فقط من سياق المصادر العربية المرفق.
-- هذه المصادر العربية هي المصدر الوحيد المسموح به في هذا الطلب.
-- لا تستخدم مصادر إنجليزية ولا تترجم إجابات من مصادر إنجليزية.
-- إذا لم تجد في سياق المصادر العربية معلومات كافية، قل بالضبط:
-  "لم أجد معلومات كافية عن هذا في المصادر العربية المتاحة."
-- لا تخترع معلومات غير موجودة في المصادر.
-- لا تضف قسمًا للمصادر في نهاية الإجابة.
-"""
-
-            user_prompt = f"""
-السؤال:
-{original_question}
-
-السياق من المصادر العربية:
-{context}
-"""
-            trace.set(context_chunks=len(docs), context_chars=len(context), prompt_chars=len(system_prompt) + len(user_prompt))
 
             resp = oai_client.chat.completions.create(
                 model=CHAT_MODEL,
-                temperature=0.2,
+                temperature=CHAT_TEMPERATURE,
                 max_tokens=ANSWER_MAX_TOKENS,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=messages,
             )
             trace.set_generation(resp, CHAT_MODEL)
             trace.lap("generation")
@@ -3113,18 +3195,21 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 followup_options = _catechism_followup_options(answer, original_question, language="ar")
 
             grounding = _response_grounding_status(answer, docs)
+            refused = grounding == "no-source"
+            response_sources, cited_count = ([], 0) if refused else _cited_sources(answer, numbered_sources)
             trace.set(
-                outcome="refused" if grounding == "no-source" else "answered",
-                refusal=grounding == "no-source",
+                outcome="refused" if refused else "answered",
+                refusal=refused,
                 grounding=grounding,
                 answer_chars=len(answer),
-                sources_returned=len(unique_sources[:6]),
+                citations=cited_count,
+                sources_returned=len(response_sources),
             )
             trace.lap("postprocess")
 
             return {
                 "answer": answer,
-                "sources": unique_sources[:6],
+                "sources": response_sources,
                 "entities": [],
                 "options": followup_options,
                 "can_learn_more": _has_viable_saint_learn_more(answer, docs, metas, mode),
@@ -3306,100 +3391,23 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
 
         docs, metas = filtered_docs, filtered_metas
 
-        sources = [_source_from_metadata(m) for m in metas]
-
-        seen = set()
-        unique_sources = []
-        for s in sources:
-            key = _source_key(s)
-            if key not in seen:
-                seen.add(key)
-                unique_sources.append(s)
-
-        context_blocks = []
-        for d, m in zip(docs, metas):
-            context_blocks.append(f"[Source: {_source_context_label(m)}]\n{d}")
-
-        context = "\n\n".join(context_blocks)
-
-        history_text = _recent_history_text(history) if history_resolved_entity else ""
-        manual_arabic_saint_aliases = _manual_arabic_saint_alias_prompt()
-
-        language_rules = """
-- Answer in English.
-- If the sources contain no relevant information, say exactly:
-  "I could not find enough about that in the loaded sources."
-""" if detected_language == "en" else """
-- Answer in Arabic.
-- Use clear Modern Standard Arabic suitable for Coptic Orthodox users in Egypt.
-- Use only the provided English source context.
-- Do not translate or transliterate saint names unless the exact saint is listed in the manual Arabic saint aliases below.
-- If a saint does not have a manual Arabic alias below, keep the canonical English saint name.
-- If the sources contain no relevant information, say exactly:
-  "لم أجد معلومات كافية عن هذا في المصادر المتاحة."
-- If the relevant sources partially answer the question, give a cautious partial answer and use wording like:
-  "بحسب المصادر المتاحة..."
-"""
-
-        system_prompt = f"""
-You are an Orthodox theology assistant.
-
-Rules:
-{language_rules}
-- Answer ONLY using the provided sources.
-- Use conversation history to resolve pronouns and short follow-up references, but only answer from the provided source context.
-- Use only context that is relevant to the user's question. If provided context is unrelated to the user question, do not answer from it.
-- If the sources contain no relevant information, use the no-source wording specified above for the selected answer language.
-- If the relevant sources partially answer the question, provide a cautious partial answer instead of refusing.
-- Do not say "I don't know" when the context supports a partial answer.
-- If the user asks for a list, extract all relevant entities found in the context. If the context may not be exhaustive, say "From the loaded sources, I found..." or "This may not be exhaustive."
-- If the sources mention a related fact but not enough for a complete answer, say what the sources mention and what they do not establish.
-- Do not introduce saints, people, or places that are not relevant to the user's question.
-- Do not explain why an unrelated saint or entity is not part of the answer unless the user asked about that saint or entity.
-- Do not include inline citations in the answer body.
-- Do not add a Sources section or raw source list at the bottom.
-- When listing items, ALWAYS use numbered format exactly like:
-  1. Name
-  2. Name
-  3. Name
-- Do not invent facts not found in the sources.
-"""
-
-        user_prompt = f"""
-CONVERSATION SO FAR:
-{history_text}
-
-SELECTED ENTITY:
-{entity if entity else "None"}
-
-NEW QUESTION:
-{original_question if detected_language == "ar" else question}
-
-ORIGINAL USER QUESTION:
-{original_question}
-
-ENGLISH RETRIEVAL QUERY:
-{english_retrieval_query}
-
-MATCHED MANUAL SAINT ALIAS:
-{matched_saint_alias or "None"}
-
-MANUAL ARABIC SAINT ALIASES:
-{manual_arabic_saint_aliases or "None"}
-
-SOURCES:
-{context}
-"""
-        trace.set(context_chunks=len(docs), context_chars=len(context), prompt_chars=len(system_prompt) + len(user_prompt))
+        # Numbered passages the model cites as [n]; the last few turns go in as real messages
+        # so pronouns and follow-ups resolve naturally (DECISIONS.md GEN-001..003).
+        context, numbered_sources = _build_numbered_context(docs, metas)
+        messages = _build_chat_messages(ENGLISH_SYSTEM_PROMPT, history, original_question, context, "en")
+        trace.set(
+            context_chunks=len(docs),
+            context_chars=len(context),
+            prompt_chars=sum(len(m["content"]) for m in messages),
+            prompt_version=PROMPT_VERSION,
+            history_turns_sent=min(len(history), HISTORY_TURNS_FOR_MODEL),
+        )
 
         resp = oai_client.chat.completions.create(
             model=CHAT_MODEL,
-            temperature=0.2,
+            temperature=CHAT_TEMPERATURE,
             max_tokens=ANSWER_MAX_TOKENS,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            messages=messages,
         )
         trace.set_generation(resp, CHAT_MODEL)
         trace.lap("generation")
@@ -3434,19 +3442,22 @@ SOURCES:
                     clean_entities.append(item)
 
         grounding = _response_grounding_status(answer, docs)
+        refused = grounding == "no-source"
+        response_sources, cited_count = ([], 0) if refused else _cited_sources(answer, numbered_sources)
         trace.set(
-            outcome="refused" if grounding == "no-source" else "answered",
-            refusal=grounding == "no-source",
+            outcome="refused" if refused else "answered",
+            refusal=refused,
             grounding=grounding,
             answer_chars=len(answer),
             entities_extracted=len(clean_entities),
-            sources_returned=len(unique_sources[:6]),
+            citations=cited_count,
+            sources_returned=len(response_sources),
         )
         trace.lap("postprocess")
 
         return {
             "answer": answer,
-            "sources": unique_sources[:6],
+            "sources": response_sources,
             "entities": clean_entities,
             "options": followup_options,
             "can_learn_more": _has_viable_saint_learn_more(answer, docs, metas, mode),
