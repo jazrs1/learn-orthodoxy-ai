@@ -1,7 +1,8 @@
-# Decision Log — audit-phase-1
+# Decision Log — audit-phase-1 and audit-phase-2
 
 This file records the engineering decisions made while working through the
-[AUDIT.md](AUDIT.md) action plan on the `audit-phase-1` branch. It is written for
+[AUDIT.md](AUDIT.md) action plan on the `audit-phase-1` branch (Parts A–C) and the
+`audit-phase-2` branch (Steps 0–3). It is written for
 someone who reads code comfortably but may be new to RAG systems, backend security,
 or evaluation methodology. Every entry explains what problem was being solved, which
 alternatives were realistic, what was chosen and why, and a short "concept to learn"
@@ -38,7 +39,13 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [EVAL-006: What the baseline run showed (and where it corrects AUDIT.md)](#eval-006-what-the-baseline-run-showed-and-where-it-corrects-auditmd)
   - [EVAL-007: Judge moved to a stronger, different model (gpt-4.1) with a human-check sheet](#eval-007-judge-moved-to-a-stronger-different-model-gpt-41-with-a-human-check-sheet)
 - [Retrieval](#retrieval)
+  - [RET-001: A saint-index miss falls through to retrieval instead of refusing](#ret-001-a-saint-index-miss-falls-through-to-retrieval-instead-of-refusing)
+  - [RET-002: The keyword relevance filter is deleted; results are merged by vector distance](#ret-002-the-keyword-relevance-filter-is-deleted-results-are-merged-by-vector-distance)
+  - [RET-003: "No relevant source" is decided by a distance threshold chosen from the eval data](#ret-003-no-relevant-source-is-decided-by-a-distance-threshold-chosen-from-the-eval-data)
 - [Prompting & Generation](#prompting--generation)
+  - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
+  - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
+  - [GEN-003: Conversation history is sent as real messages](#gen-003-conversation-history-is-sent-as-real-messages)
 - [Frontend](#frontend)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
@@ -326,6 +333,32 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - **Files changed:** `api.py`.
 - **Concept to learn:** *Fail-soft routing / graceful degradation.* When a fast path (a regex + lookup table) cannot decide confidently, hand the request to the general path rather than answering from the fast path's ignorance. Also *precision vs recall of a classifier*: the intent regex had high recall (it fired on every "who was") and low precision (it decided wrongly), so its decisions must not be terminal. Search: "graceful degradation", "intent classification confidence threshold fallback".
 - **Revisit if:** the saint index is rebuilt at ingestion with proper names and aliases; then strong matches become reliable and the menu thresholds can be simplified.
+
+### RET-002: The keyword relevance filter is deleted; results are merged by vector distance
+- **Date / Part:** 2026-09-15, Phase 2 Step 3
+- **Audit ref:** C11, C12
+- **Context:** After vector search, `_is_relevant_chunk` required two raw-substring keyword hits from the question in each chunk (no stemming, tiny stopword list), and `_retrieve_documents` concatenated the results of up to eight queries in *query order*, truncating to `top_k` without ever looking at the similarity scores Chroma returned. The filter caused the one remaining refusal (FU-01: correct page retrieved, then rejected) and starved FU-02; the ordering meant multi-query expansion could not improve the top-k (recall_any equalled recall@k in every run).
+- **Options considered:**
+  1. *Improve the filter* (stemming, bigger stopword list). Still a second, cruder relevance model competing with the embedding model.
+  2. *Delete the filter, keep query-order merge.* Fixes the refusals but leaves ranking arbitrary.
+  3. *Delete the filter and rank by distance.* Uses the signal the retriever already computes; each unique chunk keeps its best distance across queries; the entity-based "saints PDF first" boost is dropped because distance is now the single ranking key.
+- **Decision:** Option 3. `_retrieve_documents` returns `(docs, metas, distances)` sorted ascending by best distance; `_filter_relevant_documents`, `_is_relevant_chunk`, `_relevance_terms`, `_question_keywords`, `RELEVANCE_STOPWORDS` and the retry-on-empty-filter block are deleted; the "kept" ids in logs and eval now equal the merged list.
+- **Why:** The embedding similarity *is* the relevance estimate; a substring gate on top of it removed correct chunks far more often than it removed noise. With distance ranking, a chunk found by a secondary query can outrank a weak hit from the primary query, which is the whole point of issuing several queries.
+- **Files changed:** `api.py`.
+- **Concept to learn:** *Rank fusion.* When several queries (or several retrievers) each return a ranked list, merge them by a comparable score, never by list order. With one embedding model the raw distance is comparable across queries; with mixed retrievers (BM25 + vectors) you need reciprocal-rank fusion instead. Search: "reciprocal rank fusion", "multi-query retrieval".
+- **Revisit if:** a lexical/BM25 retriever is added for English (then use RRF), or a reranker is added (then distance only shortlists candidates).
+
+### RET-003: "No relevant source" is decided by a distance threshold chosen from the eval data
+- **Date / Part:** Phase 2 Step 3
+- **Audit ref:** C11
+- **Context:** With the keyword filter gone, something has to stop the pipeline from handing eight unrelated chunks to the model for an off-topic question and relying on the model to refuse.
+- **How the threshold was chosen:** From the Step 1 results file (`20260915-171208.json`, which stores every vector hit with its distance), I computed for each question the *best* distance across all its queries. Distances are Chroma's squared L2 between unit vectors (0 identical, 2 opposite; equal to `2 − 2·cosine`). Distribution: expected-page hits ranged 0.434–1.155 (median 0.766); the best distance for every answerable English question was ≤ 0.971; the best distance for every English out-of-corpus question was ≥ 1.053 (the two on-topic-sounding traps, cryptocurrency and the papal message, sat exactly at 1.053; the rest were 1.45–1.84). A sweep showed 1.0 blocks 0 of 42 answerable questions and lets 0 of 9 out-of-corpus questions through, while 0.9 would block 5 answerable ones and 1.1 would pass 2 traps. So `VECTOR_DISTANCE_THRESHOLD = 1.0`, applied to the best distance only (individual weaker chunks are still passed to the model, which cites only what it uses).
+- **Arabic:** the Arabic collection's distances do not separate at all (answerable best distances 1.34–1.75, the Arabic off-topic question 1.75) because the stored text is un-normalised glyph soup (AUDIT C2). `ARABIC_VECTOR_DISTANCE_THRESHOLD` defaults to 0 (off); Arabic refuses only when nothing is retrieved, and otherwise relies on the prompt's refusal rule, which handled the Arabic trap correctly in every run.
+- **Why:** The margin is thin (0.03 on each side), so this is a first setting, not a law: it is an env var, it is logged (`best_distance`, `distance_threshold`) on every request, and the eval reports it, so drift will be visible.
+- **Files changed:** `api.py`, `request_log.py` (debug fields).
+- **Concept to learn:** *Threshold selection from a labelled set.* Plot the score of true positives against the score of known negatives and pick the cut that maximises separation; report both error types (answerable questions wrongly refused vs off-topic questions wrongly answered) rather than one accuracy number. With only nine negatives the estimate is noisy; more out-of-corpus questions would tighten it. Search: "ROC curve threshold selection", "cosine similarity threshold retrieval".
+- **Result of Step 3 (eval `20260915-172546.json` vs Step 2 `20260915-171939.json`):** judge all-answerable 4.67 → 4.77; FU-01 fixed (1 → 5: with distance ranking the correct St. Moses the Black page outranks the other St. Moses), FU-02 2 → 3; follow-up category 3.60 → 4.60; recall_kept 71.2 % → 74.0 % (nothing is filtered any more), recall_shown 66.3 % → 69.6 %; refusals stayed at 0 % and all 10 out-of-corpus questions were still refused, now by the threshold (best distances 1.05–1.83, all above 1.0) before any model call, which also saves the generation cost on off-topic input. **Costs:** mean prompt tokens rose 5,908 → 6,900 because every retrieved chunk is now passed through; four catechism answers moved 5 → 4 and four others 4 → 5, which is within run-to-run generation noise at temperature 0.2 rather than a ranking effect (their retrieved pages did not change). recall@8 itself is unchanged at 73.1 %: the expected pages were already in the top 8; ranking changed their order, not their presence.
+- **Revisit if:** re-ingestion changes the embedding text (thresholds must be re-derived: cleaner chunks generally give *smaller* distances for true hits), the embedding model changes, or Arabic is re-embedded from normalised text (then enable the Arabic threshold).
 
 ## Prompting & Generation
 

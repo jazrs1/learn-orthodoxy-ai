@@ -82,6 +82,17 @@ OPENAI_TIMEOUT_SECONDS = _env_float("OPENAI_TIMEOUT_SECONDS", 25.0)
 OPENAI_MAX_RETRIES = _env_int("OPENAI_MAX_RETRIES", 1)
 CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
 CHAT_TEMPERATURE = _env_float("OPENAI_CHAT_TEMPERATURE", 0.2)
+
+# --- Retrieval scoring (DECISIONS.md RET-002/RET-003) ---
+# Chroma returns squared L2 distance between unit-length embeddings (0 = identical,
+# 2 = opposite). If the best chunk across all queries is farther than this, the
+# question is treated as having no relevant source. 1.0 was chosen from the eval
+# data: every answerable English question had a best distance <= 0.971 and every
+# out-of-corpus question >= 1.053. 0 disables the check.
+VECTOR_DISTANCE_THRESHOLD = _env_float("VECTOR_DISTANCE_THRESHOLD", 1.0)
+# Arabic embeddings were built from un-normalised glyph text (AUDIT C2); their
+# distances do not separate relevant from irrelevant, so the check is off by default.
+ARABIC_VECTOR_DISTANCE_THRESHOLD = _env_float("ARABIC_VECTOR_DISTANCE_THRESHOLD", 0.0)
 # Number of prior conversation turns passed to the model as real messages.
 HISTORY_TURNS_FOR_MODEL = _env_int("HISTORY_TURNS_FOR_MODEL", 6)
 
@@ -700,7 +711,7 @@ def _retrieve_documents(
     global collection
     search_collection = target_collection or collection
     if search_collection is None:
-        return [], []
+        return [], [], []
 
     deduped_queries = []
     seen_queries = set()
@@ -714,8 +725,9 @@ def _retrieve_documents(
         seen_queries.add(key)
         deduped_queries.append(normalized)
 
-    aggregated: List[tuple[str, Dict[str, Any]]] = []
-    seen_docs = set()
+    # Best (smallest) distance per unique chunk across all queries; the final list is
+    # ordered by that distance, not by which query happened to run first (RET-002).
+    best: Dict[tuple, Tuple[float, str, Dict[str, Any]]] = {}
     trace = current_trace()
     collection_label = None
     if trace is not None:
@@ -731,10 +743,10 @@ def _retrieve_documents(
         retrieved = search_collection.query(**query_kwargs)
         docs = retrieved.get("documents", [[]])[0]
         metas = retrieved.get("metadatas", [[]])[0]
+        ids = (retrieved.get("ids") or [[]])[0]
+        distances = (retrieved.get("distances") or [[]])[0]
 
         if trace is not None:
-            ids = (retrieved.get("ids") or [[]])[0]
-            distances = (retrieved.get("distances") or [[]])[0]
             trace.add_retrieval(
                 "vector",
                 query,
@@ -744,9 +756,10 @@ def _retrieve_documents(
                 n_results=top_k,
             )
 
-        for doc, meta in zip(docs, metas):
+        for position, (doc, meta) in enumerate(zip(docs, metas)):
             if not doc or not meta:
                 continue
+            distance = float(distances[position]) if position < len(distances) and distances[position] is not None else float("inf")
             key = (
                 meta.get("source_type", "pdf"),
                 meta.get("pdf"),
@@ -755,25 +768,15 @@ def _retrieve_documents(
                 meta.get("chunk_index"),
                 doc[:120],
             )
-            if key in seen_docs:
-                continue
-            seen_docs.add(key)
-            aggregated.append((doc, meta))
+            current = best.get(key)
+            if current is None or distance < current[0]:
+                best[key] = (distance, doc, meta)
 
-    if entity:
-        saint_docs = [
-            (doc, meta)
-            for doc, meta in aggregated
-            if str((meta or {}).get("pdf", "")).startswith("saints")
-        ]
-        if saint_docs:
-            aggregated = saint_docs + [
-                (doc, meta) for doc, meta in aggregated if not str((meta or {}).get("pdf", "")).startswith("saints")
-            ]
-
-    docs = [doc for doc, _ in aggregated[:top_k]]
-    metas = [meta for _, meta in aggregated[:top_k]]
-    return docs, metas
+    ranked = sorted(best.values(), key=lambda item: item[0])[:top_k]
+    docs = [doc for _, doc, _ in ranked]
+    metas = [meta for _, _, meta in ranked]
+    distances_out = [dist for dist, _, _ in ranked]
+    return docs, metas, distances_out
 
 
 def _normalize_chat_mode(value: str | None) -> str:
@@ -1285,170 +1288,6 @@ def _build_retrieval_queries(question: str, entity: str | None = None) -> List[s
         queries.extend(_saint_query_variants(entity))
 
     return queries
-
-
-RELEVANCE_STOPWORDS = {
-    "a",
-    "an",
-    "and",
-    "are",
-    "as",
-    "at",
-    "be",
-    "by",
-    "for",
-    "from",
-    "give",
-    "how",
-    "in",
-    "is",
-    "it",
-    "list",
-    "me",
-    "of",
-    "on",
-    "or",
-    "show",
-    "tell",
-    "that",
-    "the",
-    "there",
-    "these",
-    "this",
-    "to",
-    "was",
-    "were",
-    "what",
-    "which",
-    "who",
-    "with",
-}
-
-
-def _normalized_match_text(value: str) -> str:
-    text = (value or "").lower()
-    text = re.sub(r"[^a-z0-9\s]", " ", text)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def _question_keywords(question: str) -> List[str]:
-    normalized = _normalized_match_text(question)
-    words = [
-        word
-        for word in normalized.split()
-        if len(word) >= 3 and word not in RELEVANCE_STOPWORDS
-    ]
-    seen = set()
-    keywords: List[str] = []
-    for word in words:
-        if word in seen:
-            continue
-        seen.add(word)
-        keywords.append(word)
-    return keywords
-
-
-def _relevance_terms(question: str, entity: str | None = None) -> Tuple[List[str], List[str]]:
-    q_lower = question.lower()
-    phrases: List[str] = []
-    keywords = _question_keywords(question)
-
-    if entity:
-        phrases.append(entity)
-        keywords.extend(_question_keywords(entity))
-
-    if "apostolic father" in q_lower or "apostolic fathers" in q_lower:
-        phrases.extend(
-            [
-                "apostolic fathers",
-                "apostolic father",
-                "disciples of the apostles",
-                "early church fathers",
-                "first generations after the apostles",
-                "early christian writers",
-            ]
-        )
-        keywords.extend(["apostolic", "ignatius", "polycarp", "clement", "barnabas", "hermas"])
-
-    if "upper egypt" in q_lower and re.search(r"\bmonaster", q_lower):
-        phrases.extend(["upper egypt", "monasteries in upper egypt", "monastery in upper egypt"])
-        keywords.extend(["upper", "egypt", "monastery", "monasteries"])
-
-    seen_phrases = set()
-    clean_phrases: List[str] = []
-    for phrase in phrases:
-        normalized = _normalized_match_text(phrase)
-        if not normalized or normalized in seen_phrases:
-            continue
-        seen_phrases.add(normalized)
-        clean_phrases.append(normalized)
-
-    seen_keywords = set()
-    clean_keywords: List[str] = []
-    for keyword in keywords:
-        normalized = _normalized_match_text(keyword)
-        if not normalized or normalized in seen_keywords:
-            continue
-        seen_keywords.add(normalized)
-        clean_keywords.append(normalized)
-
-    return clean_phrases, clean_keywords
-
-
-def _is_relevant_chunk(doc: str, metadata: Dict[str, Any], question: str, entity: str | None = None) -> bool:
-    text = _normalized_match_text(
-        " ".join(
-            [
-                doc or "",
-                str((metadata or {}).get("title", "") or ""),
-                str((metadata or {}).get("pdf", "") or ""),
-            ]
-        )
-    )
-    if not text:
-        return False
-
-    phrases, keywords = _relevance_terms(question, entity=entity)
-    if any(phrase and phrase in text for phrase in phrases):
-        return True
-
-    q_lower = question.lower()
-    if "apostolic father" in q_lower or "apostolic fathers" in q_lower:
-        apostolic_hits = sum(1 for term in ["ignatius", "polycarp", "clement", "barnabas", "hermas"] if term in text)
-        return apostolic_hits >= 1 or ("apostolic" in text and "father" in text)
-
-    if "upper egypt" in q_lower and re.search(r"\bmonaster", q_lower):
-        return ("monaster" in text) and ("egypt" in text or "upper" in text)
-
-    if "abu fana" in q_lower:
-        return "abu fana" in text or "abu fam" in text or ("epiphanius" in text and "theodosius" in text)
-
-    if not keywords:
-        return True
-
-    hits = sum(1 for keyword in keywords if keyword in text)
-    required_hits = 1 if len(keywords) == 1 else 2
-    return hits >= required_hits
-
-
-def _filter_relevant_documents(
-    docs: List[str],
-    metas: List[Dict[str, Any]],
-    question: str,
-    entity: str | None = None,
-) -> Tuple[List[str], List[Dict[str, Any]], int]:
-    accepted_docs: List[str] = []
-    accepted_metas: List[Dict[str, Any]] = []
-    rejected_count = 0
-
-    for doc, meta in zip(docs, metas):
-        if _is_relevant_chunk(doc, meta, question, entity=entity):
-            accepted_docs.append(doc)
-            accepted_metas.append(meta)
-        else:
-            rejected_count += 1
-
-    return accepted_docs, accepted_metas, rejected_count
 
 
 def _prepend_saint_record_context(
@@ -3124,12 +2963,13 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             )
             trace.lap("prepare")
 
-            docs, metas = _retrieve_documents(
+            docs, metas, distances = _retrieve_documents(
                 retrieval_queries,
                 top_k=retrieval_top_k,
                 target_collection=arabic_collection,
                 metadata_filter=metadata_filter,
             )
+            best_distance = min(distances) if distances else None
             lexical_docs, lexical_metas = _retrieve_arabic_lexical_documents(
                 retrieval_question,
                 top_k=retrieval_top_k,
@@ -3144,19 +2984,24 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                     retrieval_top_k,
                 )
             trace.lap("retrieval")
-            trace.set(retrieved_count=len(docs), merged_ids=[chunk_id_from_metadata(m) for m in metas])
-            filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
-                docs,
-                metas,
-                retrieval_question,
-                entity=None,
+            trace.set(
+                retrieved_count=len(docs),
+                merged_ids=[chunk_id_from_metadata(m) for m in metas],
+                best_distance=best_distance,
+                distance_threshold=ARABIC_VECTOR_DISTANCE_THRESHOLD or None,
+                lexical_hits=len(lexical_docs),
             )
-            docs, metas = filtered_docs, filtered_metas
-            trace.set_kept(filtered_metas, rejected_count)
-            trace.lap("filter")
+            trace.set_kept(metas, 0)
 
-            if not docs or not metas:
-                trace.set(outcome="refused", refusal=True, refusal_reason="no_source_after_filter")
+            # No keyword filter any more (RET-002). Refuse only when nothing came back, or
+            # when the lexical search found nothing and the vector distance check is on and fails.
+            no_relevant_source = not docs or (
+                not lexical_docs
+                and ARABIC_VECTOR_DISTANCE_THRESHOLD > 0
+                and (best_distance is None or best_distance > ARABIC_VECTOR_DISTANCE_THRESHOLD)
+            )
+            if no_relevant_source:
+                trace.set(outcome="refused", refusal=True, refusal_reason="no_relevant_source")
                 answer = (
                     "وجدت اسم القديس في فهرس القديسين، لكن لم أجد معلومات كافية عنه في المصادر العربية المتاحة."
                     if mode == "saints" and arabic_selected_saint
@@ -3329,22 +3174,27 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             definition_question=definition_question,
         )
         trace.lap("prepare")
-        docs, metas = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
+        docs, metas, distances = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
+        best_distance = min(distances) if distances else None
         if mode == "saints":
             docs, metas = _prepend_saint_record_context(docs, metas, entity)
         trace.lap("retrieval")
-        trace.set(retrieved_count=len(docs), merged_ids=[chunk_id_from_metadata(m) for m in metas])
-        filtered_docs, filtered_metas, rejected_count = _filter_relevant_documents(
-            docs,
-            metas,
-            retrieval_question,
-            entity=entity,
+        trace.set(
+            retrieved_count=len(docs),
+            merged_ids=[chunk_id_from_metadata(m) for m in metas],
+            best_distance=best_distance,
+            distance_threshold=VECTOR_DISTANCE_THRESHOLD or None,
         )
-        trace.set_kept(filtered_metas, rejected_count)
-        trace.lap("filter")
+        # The keyword relevance filter is gone (RET-002); every retrieved chunk is kept and the
+        # model is trusted to cite only what it uses. "No relevant source" is decided by the
+        # best vector distance across all queries (RET-003).
+        trace.set_kept(metas, 0)
 
-        if not docs or not metas:
-            trace.set(outcome="refused", refusal=True, refusal_reason="nothing_retrieved")
+        no_relevant_source = not docs or (
+            VECTOR_DISTANCE_THRESHOLD > 0 and (best_distance is None or best_distance > VECTOR_DISTANCE_THRESHOLD)
+        )
+        if no_relevant_source:
+            trace.set(outcome="refused", refusal=True, refusal_reason="nothing_retrieved" if not docs else "distance_above_threshold")
             return {
                 "answer": _no_source_answer(detected_language),
                 "sources": [],
@@ -3352,44 +3202,6 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 "options": [],
                 "can_learn_more": False,
             }
-
-        if not filtered_docs:
-            retry_seed = english_retrieval_query if detected_language == "ar" else original_question
-            retry_queries = _build_retrieval_queries(retry_seed, entity=entity)
-            trace.set(retry=True, retry_queries=[q[:300] for q in retry_queries])
-            retry_docs, retry_metas = _retrieve_documents(retry_queries, top_k=16, entity=entity)
-            if mode == "saints":
-                retry_docs, retry_metas = _prepend_saint_record_context(retry_docs, retry_metas, entity)
-            retry_filtered_docs, retry_filtered_metas, retry_rejected_count = _filter_relevant_documents(
-                retry_docs,
-                retry_metas,
-                retry_seed if not entity else retrieval_question,
-                entity=entity,
-            )
-            if retry_filtered_docs:
-                docs, metas = retry_docs, retry_metas
-                filtered_docs, filtered_metas = retry_filtered_docs, retry_filtered_metas
-                rejected_count = retry_rejected_count
-                trace.set(retry_succeeded=True)
-            else:
-                docs, metas = retry_docs or docs, retry_metas or metas
-                rejected_count = retry_rejected_count if retry_docs else rejected_count
-                trace.set(retry_succeeded=False)
-            trace.set(retrieved_count=len(docs), merged_ids=[chunk_id_from_metadata(m) for m in metas])
-            trace.set_kept(filtered_metas, rejected_count)
-            trace.lap("retry")
-
-        if not filtered_docs or not filtered_metas:
-            trace.set(outcome="refused", refusal=True, refusal_reason="no_source_after_filter")
-            return {
-                "answer": _no_source_answer(detected_language),
-                "sources": [],
-                "entities": [],
-                "options": [],
-                "can_learn_more": False,
-            }
-
-        docs, metas = filtered_docs, filtered_metas
 
         # Numbered passages the model cites as [n]; the last few turns go in as real messages
         # so pronouns and follow-ups resolve naturally (DECISIONS.md GEN-001..003).
