@@ -1,0 +1,3634 @@
+{
+  "label": "phase-3 step 2: the 10 hand-graded baseline answers re-scored with coverage + faithfulness",
+  "backend": "http://127.0.0.1:8001",
+  "backend_health": {
+    "status": "ok",
+    "collection_ready": true,
+    "arabic_collection_ready": true,
+    "openai_ready": true
+  },
+  "questions_file": "C:\\Users\\johnb\\Projects\\learn-orthodoxy-ai\\eval\\questions.jsonl",
+  "k": 8,
+  "judge_model": "gpt-4.1",
+  "summary": {
+    "k": 8,
+    "overall": {
+      "n": 10,
+      "n_answerable": 10,
+      "n_out_of_corpus": 0,
+      "answered_rate": 1.0,
+      "refusal_rate": 0.0,
+      "clarification_rate": 0.0,
+      "ooc_correct_refusal_rate": NaN,
+      "ooc_false_answer_rate": NaN,
+      "recall_at_k": 0.7,
+      "recall_at_k_tol1": 0.8,
+      "recall_any": 0.7,
+      "recall_kept": 0.7,
+      "recall_shown": 0.7,
+      "hit_rate_at_k": 0.8,
+      "coverage_answered": 0.6389285714285714,
+      "coverage_all": 0.6389285714285714,
+      "off_target_rate": 0.2,
+      "faith_supported": 0.9830508474576272,
+      "faith_unsupported": 0.01694915254237288,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 0.4915254237288136,
+      "faith_n_claims": 59,
+      "faith_supported_per_answer": 0.9895833333333334,
+      "judge_mean_answered": 4.7,
+      "judge_mean_all": 4.7,
+      "judge_prev_mean_all": 4.6,
+      "answer_chars_mean": 841.3,
+      "latency_s_mean": 2.674,
+      "prompt_tokens_mean": 6544.9
+    },
+    "by_category": {
+      "arabic": {
+        "n": 2,
+        "n_answerable": 2,
+        "n_out_of_corpus": 0,
+        "answered_rate": 1.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": NaN,
+        "ooc_false_answer_rate": NaN,
+        "recall_at_k": 0.5,
+        "recall_at_k_tol1": 0.5,
+        "recall_any": 0.5,
+        "recall_kept": 0.5,
+        "recall_shown": 0.5,
+        "hit_rate_at_k": 0.5,
+        "coverage_answered": 0.5625,
+        "coverage_all": 0.5625,
+        "off_target_rate": 0.5,
+        "faith_supported": NaN,
+        "faith_unsupported": NaN,
+        "faith_bad_citation": NaN,
+        "faith_uncited": NaN,
+        "faith_n_claims": 0,
+        "faith_supported_per_answer": NaN,
+        "judge_mean_answered": 5,
+        "judge_mean_all": 5,
+        "judge_prev_mean_all": 4.5,
+        "answer_chars_mean": 433.5,
+        "latency_s_mean": 2.185,
+        "prompt_tokens_mean": 7852.5
+      },
+      "catechism": {
+        "n": 2,
+        "n_answerable": 2,
+        "n_out_of_corpus": 0,
+        "answered_rate": 1.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": NaN,
+        "ooc_false_answer_rate": NaN,
+        "recall_at_k": 0.75,
+        "recall_at_k_tol1": 1.0,
+        "recall_any": 0.75,
+        "recall_kept": 0.75,
+        "recall_shown": 0.75,
+        "hit_rate_at_k": 1.0,
+        "coverage_answered": 0.775,
+        "coverage_all": 0.775,
+        "off_target_rate": 0.0,
+        "faith_supported": 1.0,
+        "faith_unsupported": 0.0,
+        "faith_bad_citation": 0.0,
+        "faith_uncited": 0.0625,
+        "faith_n_claims": 16,
+        "faith_supported_per_answer": 1.0,
+        "judge_mean_answered": 5,
+        "judge_mean_all": 5,
+        "judge_prev_mean_all": 5,
+        "answer_chars_mean": 1047,
+        "latency_s_mean": 2.1950000000000003,
+        "prompt_tokens_mean": 6475.5
+      },
+      "follow_up": {
+        "n": 2,
+        "n_answerable": 2,
+        "n_out_of_corpus": 0,
+        "answered_rate": 1.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": NaN,
+        "ooc_false_answer_rate": NaN,
+        "recall_at_k": 0.5,
+        "recall_at_k_tol1": 0.5,
+        "recall_any": 0.5,
+        "recall_kept": 0.5,
+        "recall_shown": 0.5,
+        "hit_rate_at_k": 0.5,
+        "coverage_answered": 0.5,
+        "coverage_all": 0.5,
+        "off_target_rate": 0.5,
+        "faith_supported": 1.0,
+        "faith_unsupported": 0.0,
+        "faith_bad_citation": 0.0,
+        "faith_uncited": 0.42857142857142855,
+        "faith_n_claims": 7,
+        "faith_supported_per_answer": 1.0,
+        "judge_mean_answered": 3.5,
+        "judge_mean_all": 3.5,
+        "judge_prev_mean_all": 3.5,
+        "answer_chars_mean": 449,
+        "latency_s_mean": 2.075,
+        "prompt_tokens_mean": 4892.5
+      },
+      "multi_part": {
+        "n": 2,
+        "n_answerable": 2,
+        "n_out_of_corpus": 0,
+        "answered_rate": 1.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": NaN,
+        "ooc_false_answer_rate": NaN,
+        "recall_at_k": 1.0,
+        "recall_at_k_tol1": 1.0,
+        "recall_any": 1.0,
+        "recall_kept": 1.0,
+        "recall_shown": 1.0,
+        "hit_rate_at_k": 1.0,
+        "coverage_answered": 0.7142857142857143,
+        "coverage_all": 0.7142857142857143,
+        "off_target_rate": 0.0,
+        "faith_supported": 1.0,
+        "faith_unsupported": 0.0,
+        "faith_bad_citation": 0.0,
+        "faith_uncited": 1.0,
+        "faith_n_claims": 15,
+        "faith_supported_per_answer": 1.0,
+        "judge_mean_answered": 5,
+        "judge_mean_all": 5,
+        "judge_prev_mean_all": 5,
+        "answer_chars_mean": 1083.5,
+        "latency_s_mean": 2.36,
+        "prompt_tokens_mean": 7571
+      },
+      "saints": {
+        "n": 2,
+        "n_answerable": 2,
+        "n_out_of_corpus": 0,
+        "answered_rate": 1.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": NaN,
+        "ooc_false_answer_rate": NaN,
+        "recall_at_k": 0.75,
+        "recall_at_k_tol1": 1.0,
+        "recall_any": 0.75,
+        "recall_kept": 0.75,
+        "recall_shown": 0.75,
+        "hit_rate_at_k": 1.0,
+        "coverage_answered": 0.6428571428571428,
+        "coverage_all": 0.6428571428571428,
+        "off_target_rate": 0.0,
+        "faith_supported": 0.9523809523809523,
+        "faith_unsupported": 0.047619047619047616,
+        "faith_bad_citation": 0.0,
+        "faith_uncited": 0.47619047619047616,
+        "faith_n_claims": 21,
+        "faith_supported_per_answer": 0.9583333333333333,
+        "judge_mean_answered": 5,
+        "judge_mean_all": 5,
+        "judge_prev_mean_all": 5,
+        "answer_chars_mean": 1193.5,
+        "latency_s_mean": 4.555,
+        "prompt_tokens_mean": 5933
+      }
+    },
+    "by_split": {},
+    "errors": 0
+  },
+  "records": [
+    {
+      "id": "CAT-05",
+      "category": "catechism",
+      "language": "en",
+      "mode": "catechism",
+      "should_refuse": false,
+      "verified": true,
+      "question": "What is faith, according to the Coptic catechism?",
+      "http_status": 200,
+      "latency_s": 2.2,
+      "outcome": "answered",
+      "answer": "According to the Coptic catechism, faith is described as \"the substance of things hoped for, the evidence of things not seen\" (Heb. 11:1). It is a present reality that, although not physically tangible, is experienced spiritually, bringing peace, joy, and rejoicing to the soul. St. Cyril of Jerusalem characterizes faith as an enlightening eye that imparts understanding, while St. Augustine emphasizes that faith involves believing in what is not seen, with the ultimate reward being the ability to see what one believes in. \n\nFaith is also portrayed as essential not only for believers but for all aspects of life, as it underpins various human endeavors, such as marriage and agriculture. St. Clement of Alexandria states that faith is a power of God and the strength of truth, leading to blessings and divine gifts. Furthermore, faith is foundational for virtues and is intertwined with love, hope, and godliness, as articulated by various Church Fathers. \n\nIn summary, faith is a profound spiritual conviction that connects believers to God and is essential for understanding, hope, and the practice of virtues.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 35,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 710,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 15,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 46,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 51,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 47,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [
+        "Would you like to ask how this is practiced in Church life?",
+        "Would you like to know which catechism topic this connects to?"
+      ],
+      "error": null,
+      "request_id": "ecf89dbbb4e04c0e837f0cfde1a77793",
+      "retrieval_queries": [
+        "What is faith, according to the Coptic catechism?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "What is faith, according to the Coptic catechism?",
+          "hits": [
+            {
+              "id": "catechism1.pdf::p35::c0",
+              "distance": 0.5976
+            },
+            {
+              "id": "catechism1.pdf::p710::c0",
+              "distance": 0.6872
+            },
+            {
+              "id": "catechism1.pdf::p15::c0",
+              "distance": 0.6927
+            },
+            {
+              "id": "catechism1.pdf::p46::c0",
+              "distance": 0.7288
+            },
+            {
+              "id": "catechism1.pdf::p51::c0",
+              "distance": 0.7367
+            },
+            {
+              "id": "catechism1.pdf::p47::c0",
+              "distance": 0.7416
+            },
+            {
+              "id": "catechism1.pdf::p50::c0",
+              "distance": 0.7658
+            },
+            {
+              "id": "catechism2.pdf::p328::c0",
+              "distance": 0.7758
+            },
+            {
+              "id": "catechism1.pdf::p36::c0",
+              "distance": 0.7816
+            },
+            {
+              "id": "catechism2.pdf::p124::c0",
+              "distance": 0.7826
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 10
+        }
+      ],
+      "merged_ids": [
+        "catechism1.pdf::p35::c0",
+        "catechism1.pdf::p710::c0",
+        "catechism1.pdf::p15::c0",
+        "catechism1.pdf::p46::c0",
+        "catechism1.pdf::p51::c0",
+        "catechism1.pdf::p47::c0",
+        "catechism1.pdf::p50::c0",
+        "catechism2.pdf::p328::c0",
+        "catechism1.pdf::p36::c0",
+        "catechism2.pdf::p124::c0"
+      ],
+      "kept_ids": [
+        "catechism1.pdf::p35::c0",
+        "catechism1.pdf::p710::c0",
+        "catechism1.pdf::p15::c0",
+        "catechism1.pdf::p46::c0",
+        "catechism1.pdf::p51::c0",
+        "catechism1.pdf::p47::c0",
+        "catechism1.pdf::p50::c0",
+        "catechism2.pdf::p328::c0",
+        "catechism1.pdf::p36::c0",
+        "catechism2.pdf::p124::c0"
+      ],
+      "retrieved_count": 10,
+      "filter_rejected": 0,
+      "best_distance": null,
+      "prompt_tokens": 6572,
+      "completion_tokens": 223,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 187.0,
+        "filter": 0.0,
+        "generation": 2016.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "catechism1.pdf:p35"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "The system answer accurately covers the key facts from the reference, including the biblical definition, spiritual experience, peace and joy, and the teachings of St. Cyril and St. Augustine, while adding correct extra detail.",
+      "judge_score_prev": 5,
+      "judge_rationale_prev": "The system answer accurately covers all key points from the reference, including the biblical definition, spiritual experience, quotes from St. Cyril and St. Augustine, and adds correct extra detail without contradiction.",
+      "split": null,
+      "coverage": {
+        "score": 0.8,
+        "present": 3,
+        "partial": 2,
+        "absent": 0,
+        "total": 5,
+        "details": [
+          {
+            "i": 1,
+            "fact": "Faith is 'the substance of things hoped for, the evidence of things not seen' (Heb 11:1).",
+            "status": "present",
+            "quote": "faith is described as \"the substance of things hoped for, the evidence of things not seen\" (Heb. 11:1)",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "What we hope for in faith is a present reality experienced spiritually.",
+            "status": "present",
+            "quote": "It is a present reality that, although not physically tangible, is experienced spiritually",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "Faith generates peace and joy.",
+            "status": "present",
+            "quote": "bringing peace, joy, and rejoicing to the soul",
+            "note": ""
+          },
+          {
+            "i": 4,
+            "fact": "St. Cyril of Jerusalem calls faith an eye that enlightens every conscience.",
+            "status": "partial",
+            "quote": "St. Cyril of Jerusalem characterizes faith as an enlightening eye that imparts understanding",
+            "note": ""
+          },
+          {
+            "i": 5,
+            "fact": "St. Augustine says 'believe that you may understand'.",
+            "status": "partial",
+            "quote": "St. Augustine emphasizes that faith involves believing in what is not seen, with the ultimate reward being the ability to see what one believes in",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "",
+        "claims": [
+          {
+            "claim": "According to the Coptic catechism, faith is described as 'the substance of things hoped for, the evidence of things not seen' (Heb. 11:1).",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "“Now faith is the substance of things hoped for, the evidence of things not seen” (Heb. 11:1).",
+            "note": ""
+          },
+          {
+            "claim": "It is a present reality that, although not physically tangible, is experienced spiritually, bringing peace, joy, and rejoicing to the soul.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "What we hope for, though it is not seen with the physical eye, is yet a present reality. Indeed, we do not touch it physically, but we experience it spiritually, and it generates peace, joy, and rejoi",
+            "note": ""
+          },
+          {
+            "claim": "St. Cyril of Jerusalem characterizes faith as an enlightening eye that imparts understanding,",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "St. Cyril of Jerusalem  says, “Faith is an eye that enlightens every conscience, and imparts understanding;",
+            "note": ""
+          },
+          {
+            "claim": "St. Augustine emphasizes that faith involves believing in what is not seen, with the ultimate reward being the ability to see what one believes in.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "And St. Augustine says, “What is faith but to believe what you do not see?... The reward of faith is to see what you believe in.",
+            "note": ""
+          },
+          {
+            "claim": "Faith is also portrayed as essential not only for believers but for all aspects of life, as it underpins various human endeavors, such as marriage and agriculture.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "By faith the laws of marriage yoke together those who have lived as strangers... By faith husbandry also is sustained, for he who believes not that he shall receive a harvest endures not the toils.",
+            "note": ""
+          },
+          {
+            "claim": "St. Clement of Alexandria states that faith is a power of God and the strength of truth, leading to blessings and divine gifts.",
+            "citations": [
+              4
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "St. Clement of Alexandria says, “And faith is a power of God, being the strength of the truth... he who believes will be blessed with the richest blessings of God, for he will be filled with the gifts",
+            "note": ""
+          },
+          {
+            "claim": "Furthermore, faith is foundational for virtues and is intertwined with love, hope, and godliness, as articulated by various Church Fathers.",
+            "citations": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 6,
+            "evidence": "All these things does the faith demand that is based on the rock of the true Stone, that is Christ. These works are required for Christ the King,  who dwells in men that are built up in these works.",
+            "note": ""
+          },
+          {
+            "claim": "faith is a profound spiritual conviction that connects believers to God and is essential for understanding, hope, and the practice of virtues.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_other",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "to present an understanding of the faith, with the goal of knowing God and His work of salvation... so that we may enjoy the holy life by faith working through love (Gal. 5:6).",
+            "note": ""
+          }
+        ],
+        "n_claims": 8,
+        "counts": {
+          "supported": 8,
+          "unsupported": 0,
+          "bad_citation": 0,
+          "uncited": 1
+        },
+        "rates": {
+          "supported": 1.0,
+          "unsupported": 0.0,
+          "bad_citation": 0.0,
+          "uncited": 0.125
+        }
+      },
+      "coverage_score": 0.8,
+      "off_target": false,
+      "faith_supported": 1.0,
+      "faith_unsupported": 0.0,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 0.125,
+      "faith_n_claims": 8
+    },
+    {
+      "id": "CAT-11",
+      "category": "catechism",
+      "language": "en",
+      "mode": "catechism",
+      "should_refuse": false,
+      "verified": true,
+      "question": "What are the signs of true repentance in Coptic Orthodox teaching?",
+      "http_status": 200,
+      "latency_s": 2.19,
+      "outcome": "answered",
+      "answer": "From the loaded sources, I found the following signs of true repentance in Coptic Orthodox teaching:\n\n1. Thankfulness to God for His blessings, mercy, and salvation.\n2. Admission of being a sinner and recognition of the need for God's mercy and grace.\n3. Mercy towards others, including forgiving those who have sinned against oneself.\n4. A focus on heaven and anticipation of eternal life, which elevates the believer's inner being.\n5. Acknowledgment of personal weaknesses and reliance on God's transformative grace.\n6. A commitment to confession and a change in one's way of life, both internally and externally.\n7. Tears of repentance, which are seen as a form of communication with God and a means of healing the soul.\n8. A continuous practice of metanoia (repentance) as a daily renewal and a journey towards holiness.\n\nThese elements reflect a holistic approach to repentance that encompasses gratitude, humility, forgiveness, and a transformative relationship with God.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 568,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 586,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 569,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 572,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 120,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 486,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [
+        "Would you like to ask how this is practiced in Church life?",
+        "Would you like to know which catechism topic this connects to?"
+      ],
+      "error": null,
+      "request_id": "a5bace99a753448cad11bddcf3bb33e6",
+      "retrieval_queries": [
+        "What are the signs of true repentance in Coptic Orthodox teaching?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "What are the signs of true repentance in Coptic Orthodox teaching?",
+          "hits": [
+            {
+              "id": "catechism1.pdf::p568::c0",
+              "distance": 0.6851
+            },
+            {
+              "id": "catechism1.pdf::p586::c0",
+              "distance": 0.7106
+            },
+            {
+              "id": "catechism1.pdf::p569::c0",
+              "distance": 0.7929
+            },
+            {
+              "id": "catechism1.pdf::p572::c0",
+              "distance": 0.8429
+            },
+            {
+              "id": "catechism2.pdf::p120::c0",
+              "distance": 0.8503
+            },
+            {
+              "id": "catechism2.pdf::p486::c0",
+              "distance": 0.8808
+            },
+            {
+              "id": "catechism1.pdf::p580::c0",
+              "distance": 0.8818
+            },
+            {
+              "id": "catechism1.pdf::p278::c0",
+              "distance": 0.883
+            },
+            {
+              "id": "catechism1.pdf::p577::c0",
+              "distance": 0.9111
+            },
+            {
+              "id": "catechism1.pdf::p54::c0",
+              "distance": 0.915
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 10
+        }
+      ],
+      "merged_ids": [
+        "catechism1.pdf::p568::c0",
+        "catechism1.pdf::p586::c0",
+        "catechism1.pdf::p569::c0",
+        "catechism1.pdf::p572::c0",
+        "catechism2.pdf::p120::c0",
+        "catechism2.pdf::p486::c0",
+        "catechism1.pdf::p580::c0",
+        "catechism1.pdf::p278::c0",
+        "catechism1.pdf::p577::c0",
+        "catechism1.pdf::p54::c0"
+      ],
+      "kept_ids": [
+        "catechism1.pdf::p568::c0",
+        "catechism1.pdf::p586::c0",
+        "catechism1.pdf::p569::c0",
+        "catechism1.pdf::p572::c0",
+        "catechism2.pdf::p120::c0",
+        "catechism2.pdf::p486::c0",
+        "catechism1.pdf::p580::c0",
+        "catechism1.pdf::p278::c0",
+        "catechism1.pdf::p54::c0"
+      ],
+      "retrieved_count": 10,
+      "filter_rejected": 1,
+      "best_distance": null,
+      "prompt_tokens": 6379,
+      "completion_tokens": 195,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 203.0,
+        "filter": 0.0,
+        "generation": 1954.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 0.5,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 0.5,
+      "recall_kept": 0.5,
+      "recall_shown": 0.5,
+      "expected_pages": [
+        "catechism1.pdf:p568",
+        "catechism1.pdf:p579"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "The system answer accurately covers all key points from the reference—thankfulness, admission of sin, forgiveness, focus on heaven, and fruits of repentance—while adding correct, relevant details that align with Coptic Orthodox teaching.",
+      "judge_score_prev": 5,
+      "judge_rationale_prev": "The system answer accurately covers all key signs of true repentance from the reference, including thankfulness, admission of sin, forgiveness, focus on heaven, and adds correct extra details consistent with Coptic Orthodox teaching.",
+      "split": null,
+      "coverage": {
+        "score": 0.75,
+        "present": 4,
+        "partial": 1,
+        "absent": 1,
+        "total": 6,
+        "details": [
+          {
+            "i": 1,
+            "fact": "True repentance shows worthy fruit.",
+            "status": "partial",
+            "quote": "A commitment to confession and a change in one's way of life, both internally and externally.",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "St. Basil the Great says those turning from sin must bring forth fruits worthy of repentance.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "The repentant believer must thank God for His mercy.",
+            "status": "present",
+            "quote": "Thankfulness to God for His blessings, mercy, and salvation.",
+            "note": ""
+          },
+          {
+            "i": 4,
+            "fact": "The repentant believer must admit he is a sinner who cannot live the holy life without grace.",
+            "status": "present",
+            "quote": "Admission of being a sinner and recognition of the need for God's mercy and grace.",
+            "note": ""
+          },
+          {
+            "i": 5,
+            "fact": "The repentant believer must forgive those who sin against him.",
+            "status": "present",
+            "quote": "Mercy towards others, including forgiving those who have sinned against oneself.",
+            "note": ""
+          },
+          {
+            "i": 6,
+            "fact": "The repentant believer must fix his heart on heaven and the eternal wedding.",
+            "status": "present",
+            "quote": "A focus on heaven and anticipation of eternal life, which elevates the believer's inner being.",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "",
+        "claims": [
+          {
+            "claim": "Thankfulness to God for His blessings, mercy, and salvation.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "First: He or she thanks God for His blessings, His mercy, and His salvation, so that he may have the boldness to seek forgiveness.",
+            "note": ""
+          },
+          {
+            "claim": "Admission of being a sinner and recognition of the need for God's mercy and grace.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "Second: To admit that he is a sinner and unable to enjoy the holy life without God’s mercy and free grace.",
+            "note": ""
+          },
+          {
+            "claim": "Mercy towards others, including forgiving those who have sinned against oneself.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "Third: To be merciful to those who sin against him and to forgive them, so that the Savior may open for him the way of salvation.",
+            "note": ""
+          },
+          {
+            "claim": "A focus on heaven and anticipation of eternal life, which elevates the believer's inner being.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "Fourth: The believer’s focus on heaven, his anticipation of the eternal wedding and his love for others, elevates all his inner being as on the wings of the Holy Spirit",
+            "note": ""
+          },
+          {
+            "claim": "Acknowledgment of personal weaknesses and reliance on God's transformative grace.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "He also acknowledges his weaknesses, and the grace of God that is capable of transforming the heart from corruption to incorruption and from an earthly heart to a new heaven, and from humans to angels",
+            "note": ""
+          },
+          {
+            "claim": "A commitment to confession and a change in one's way of life, both internally and externally.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "Repentance to God and confession before Him in our private rooms and in the presence of a priest are the beginning of a change in one’s way of life, both at the inner level as well as the external beh",
+            "note": ""
+          },
+          {
+            "claim": "Tears of repentance, which are seen as a form of communication with God and a means of healing the soul.",
+            "citations": [
+              4
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "The method of communication with Him is through tears that are capable of bursting the springs of His love that forgive sins.",
+            "note": ""
+          },
+          {
+            "claim": "A continuous practice of metanoia (repentance) as a daily renewal and a journey towards holiness.",
+            "citations": [
+              4
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "they explained that the tears of repentance are a second baptism for continuous daily renewal, “forgetting those things which are behind and reaching forward to those things which are ahead,” that we ",
+            "note": ""
+          }
+        ],
+        "n_claims": 8,
+        "counts": {
+          "supported": 8,
+          "unsupported": 0,
+          "bad_citation": 0,
+          "uncited": 0
+        },
+        "rates": {
+          "supported": 1.0,
+          "unsupported": 0.0,
+          "bad_citation": 0.0,
+          "uncited": 0.0
+        }
+      },
+      "coverage_score": 0.75,
+      "off_target": false,
+      "faith_supported": 1.0,
+      "faith_unsupported": 0.0,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 0.0,
+      "faith_n_claims": 8
+    },
+    {
+      "id": "SNT-02",
+      "category": "saints",
+      "language": "en",
+      "mode": "chat",
+      "should_refuse": false,
+      "verified": true,
+      "question": "How did St. Moses the Black come to faith?",
+      "http_status": 200,
+      "latency_s": 5.47,
+      "outcome": "answered",
+      "answer": "St. Moses the Black came to faith after a life of extreme wrongdoing. Initially, he was the head of a gang of thieves, living a life of violence and crime. Despite his evil deeds, he looked towards the sun, believing it to be the true God, and sought a way to be saved. He heard a voice instructing him to go to the wilderness to meet the monks of Scetis, known for their piety.\n\nUpon arriving in the wilderness, he encountered St. Isidore, who became his spiritual guide. Moses confessed his sins and expressed a desire to change his life. St. Isidore taught him about God and the importance of repentance. Overcome with remorse for his past, Moses shed many tears and sought forgiveness. He was eventually baptized by Abba Macarius the Great and began his monastic life, dedicating himself to prayer, fasting, and asceticism to atone for his previous sins.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 252,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 256,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 250,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 258,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 251,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 240,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [],
+      "error": null,
+      "request_id": "e73eacdadf554403a43bda7e98bed995",
+      "retrieval_queries": [
+        "How did St. Moses the Black come to faith?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "How did St. Moses the Black come to faith?",
+          "hits": [
+            {
+              "id": "saints3.pdf::p252::c0",
+              "distance": 0.6912
+            },
+            {
+              "id": "saints3.pdf::p256::c0",
+              "distance": 0.7171
+            },
+            {
+              "id": "saints3.pdf::p250::c0",
+              "distance": 0.7187
+            },
+            {
+              "id": "saints3.pdf::p258::c0",
+              "distance": 0.8168
+            },
+            {
+              "id": "saints3.pdf::p251::c0",
+              "distance": 0.8244
+            },
+            {
+              "id": "saints3.pdf::p240::c0",
+              "distance": 0.8456
+            },
+            {
+              "id": "saints3.pdf::p255::c0",
+              "distance": 0.8481
+            },
+            {
+              "id": "saints3.pdf::p257::c0",
+              "distance": 0.8588
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        }
+      ],
+      "merged_ids": [
+        "saints3.pdf::p252::c0",
+        "saints3.pdf::p256::c0",
+        "saints3.pdf::p250::c0",
+        "saints3.pdf::p258::c0",
+        "saints3.pdf::p251::c0",
+        "saints3.pdf::p240::c0",
+        "saints3.pdf::p255::c0",
+        "saints3.pdf::p257::c0"
+      ],
+      "kept_ids": [
+        "saints3.pdf::p252::c0",
+        "saints3.pdf::p256::c0",
+        "saints3.pdf::p250::c0",
+        "saints3.pdf::p258::c0",
+        "saints3.pdf::p251::c0",
+        "saints3.pdf::p240::c0",
+        "saints3.pdf::p255::c0",
+        "saints3.pdf::p257::c0"
+      ],
+      "retrieved_count": 8,
+      "filter_rejected": 0,
+      "best_distance": null,
+      "prompt_tokens": 5781,
+      "completion_tokens": 191,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 235.0,
+        "filter": 0.0,
+        "generation": 5203.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 0.5,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 0.5,
+      "recall_kept": 0.5,
+      "recall_shown": 0.5,
+      "expected_pages": [
+        "saints3.pdf:p249",
+        "saints3.pdf:p250"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "The system answer accurately covers the key facts: Moses' criminal past, his belief in the sun as God, hearing a voice directing him to the monks of Scetis, meeting St. Isidore, and his repentance; extra details about his baptism and ascetic life are correct and do not contradict the reference.",
+      "judge_score_prev": 5,
+      "judge_rationale_prev": "The system answer accurately covers the key facts: Moses' criminal past, his belief in the sun as God, hearing a voice directing him to the monks of Scetis, meeting St. Isidore, and his repentance; extra details about his baptism and ascetic life are correct and do not contradict the reference.",
+      "split": null,
+      "coverage": {
+        "score": 0.5,
+        "present": 3,
+        "partial": 1,
+        "absent": 3,
+        "total": 7,
+        "details": [
+          {
+            "i": 1,
+            "fact": "St. Moses the Black was born between 330 and 340 AD.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "He was probably a slave of a sun-worshipping tribal chief.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "He was expelled by his master for his evil deeds.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 4,
+            "fact": "He became the leader of a gang of robbers and killers.",
+            "status": "partial",
+            "quote": "living a life of violence and crime",
+            "note": ""
+          },
+          {
+            "i": 5,
+            "fact": "He believed the sun was the true God and asked it to reveal itself.",
+            "status": "present",
+            "quote": "he was the head of a gang of thieves, living a life of violence and crime",
+            "note": ""
+          },
+          {
+            "i": 6,
+            "fact": "He heard a voice telling him to go to the monks of Scetis.",
+            "status": "present",
+            "quote": "he looked towards the sun, believing it to be the true God, and sought a way to be saved",
+            "note": ""
+          },
+          {
+            "i": 7,
+            "fact": "He met St. Isidore the priest of the Cells and begged to remain so that God would save him.",
+            "status": "present",
+            "quote": "He heard a voice instructing him to go to the wilderness to meet the monks of Scetis",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "",
+        "claims": [
+          {
+            "claim": "St. Moses the Black came to faith after a life of extreme wrongdoing.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "He turned into a gangster who lived on robbing and killing people. He had a large, muscular stature, which helped him to become the head of an evil gang.",
+            "note": ""
+          },
+          {
+            "claim": "Initially, he was the head of a gang of thieves, living a life of violence and crime.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "He turned into a gangster who lived on robbing and killing people. He had a large, muscular stature, which helped him to become the head of an evil gang.",
+            "note": ""
+          },
+          {
+            "claim": "Despite his evil deeds, he looked towards the sun, believing it to be the true God, and sought a way to be saved.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "Even though an extreme evil-doer, yet he kept raising up his eyes towards the sun, believing that it was the true God, seeking from it to proclaim itself to him.",
+            "note": ""
+          },
+          {
+            "claim": "He heard a voice instructing him to go to the wilderness to meet the monks of Scetis, known for their piety.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "Then, he heard a voice telling him to go to the wilderness to encounter the monks of the Scetis, whose fame was widely spread all over the area at that time.",
+            "note": ""
+          },
+          {
+            "claim": "Upon arriving in the wilderness, he encountered St. Isidore, who became his spiritual guide.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "He went there, carrying his sword, where he happened to meet with St. Isidore (The Priest of the Cells) coming out of his cell and heading to the church.",
+            "note": ""
+          },
+          {
+            "claim": "Moses confessed his sins and expressed a desire to change his life.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "Moses confessed to him all the sins he committed. On seeing how he opened his heart to him, St. Isidore started to teach him and preached him at length the word of God",
+            "note": ""
+          },
+          {
+            "claim": "St. Isidore taught him about God and the importance of repentance.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "St. Isidore started to teach him and preached him at length the word of God, he told him about the judgment to come and then left him to contemplate.",
+            "note": ""
+          },
+          {
+            "claim": "Overcome with remorse for his past, Moses shed many tears and sought forgiveness.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "For hating evil and deciding to rid himself of it, Moses shed so many tears, and deep remorse swept his soul and disturbed his sleep, like a dreadful ghost.",
+            "note": ""
+          },
+          {
+            "claim": "He was eventually baptized by Abba Macarius the Great and began his monastic life, dedicating himself to prayer, fasting, and asceticism to atone for his previous sins.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "He took him to Abba Macarius the Great, who put him under his care, taught him and guided him, gave him the grace of baptism, then put him back under the supervision of St. Isidore.",
+            "note": ""
+          }
+        ],
+        "n_claims": 9,
+        "counts": {
+          "supported": 9,
+          "unsupported": 0,
+          "bad_citation": 0,
+          "uncited": 9
+        },
+        "rates": {
+          "supported": 1.0,
+          "unsupported": 0.0,
+          "bad_citation": 0.0,
+          "uncited": 1.0
+        }
+      },
+      "coverage_score": 0.5,
+      "off_target": false,
+      "faith_supported": 1.0,
+      "faith_unsupported": 0.0,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 1.0,
+      "faith_n_claims": 9
+    },
+    {
+      "id": "SNT-10",
+      "category": "saints",
+      "language": "en",
+      "mode": "chat",
+      "should_refuse": false,
+      "verified": true,
+      "question": "Who was St. Takla Haymanot?",
+      "http_status": 200,
+      "latency_s": 3.64,
+      "outcome": "answered",
+      "answer": "St. Takla Haymanot, an Ethiopian Orthodox saint, lived from 1215 to 1313 and is regarded as a significant figure in Ethiopian monastic life. He was born to a priest named Tsega Zeab and his wife Sarah, who were known for their piety and generosity towards the poor. After his parents distributed their wealth to the needy, St. Takla Haymanot was baptized and initially named Fish Hazion.\n\nHe was ordained as a deacon at the age of 20 and later became a priest. Following a divine revelation from the Archangel Michael, he dedicated his life to prayer, preaching, and performing miracles. He traveled to various regions in Ethiopia, where he preached against idol worship and performed numerous healings, leading many to convert to Christianity.\n\nSt. Takla Haymanot founded a monastery in the Amhara region, where he lived an ascetic life and served as a spiritual father to many monks. He was known for his deep commitment to prayer and fasting, and he performed miracles, including raising the monastery's Abbot from the dead.\n\nHe faced persecution during the reign of the pagan king Matolomy, who sought to harm Christians. Despite the challenges, he continued his ministry, moving from one city to another to spread the Gospel. His life was marked by humility, dedication, and a strong connection to the divine, often depicted with six wings, symbolizing his angelic nature.\n\nSt. Takla Haymanot's feast day is celebrated in the Ethiopian Orthodox Church, honoring his contributions to Christianity and monasticism in Ethiopia.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 220,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 221,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 219,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 365,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 218,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints1.pdf",
+          "page": 157,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [],
+      "error": null,
+      "request_id": "60710666c420413b80c1c715859fad96",
+      "retrieval_queries": [
+        "St. Takla Haymanot, the Ethiopian Orthodox saint biography life feast teachings martyr monk bishop",
+        "St. Takla Haymanot, the Ethiopian Orthodox saint biography life feast teachings martyr monk bishop",
+        "Takla Haymanot, the Ethiopian Orthodox saint biography life feast teachings martyr monk bishop",
+        "St. Takla Haymanot, the Ethiopian",
+        "Takla Haymanot, the Ethiopian"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "St. Takla Haymanot, the Ethiopian Orthodox saint biography life feast teachings martyr monk bishop",
+          "hits": [
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 0.6327
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 0.7195
+            },
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 0.8577
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 0.8846
+            },
+            {
+              "id": "saints4.pdf::p218::c0",
+              "distance": 0.8853
+            },
+            {
+              "id": "saints1.pdf::p157::c0",
+              "distance": 0.9372
+            },
+            {
+              "id": "saints4.pdf::p264::c0",
+              "distance": 0.9439
+            },
+            {
+              "id": "saints4.pdf::p294::c0",
+              "distance": 0.9517
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        },
+        {
+          "source": "vector",
+          "query": "Takla Haymanot, the Ethiopian Orthodox saint biography life feast teachings martyr monk bishop",
+          "hits": [
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 0.6957
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 0.81
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 0.8864
+            },
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 0.9287
+            },
+            {
+              "id": "saints1.pdf::p79::c0",
+              "distance": 0.9425
+            },
+            {
+              "id": "saints4.pdf::p218::c0",
+              "distance": 0.943
+            },
+            {
+              "id": "saints1.pdf::p157::c0",
+              "distance": 0.9486
+            },
+            {
+              "id": "saints1.pdf::p310::c0",
+              "distance": 0.9522
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        },
+        {
+          "source": "vector",
+          "query": "St. Takla Haymanot, the Ethiopian",
+          "hits": [
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 0.7899
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 0.8067
+            },
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 0.8685
+            },
+            {
+              "id": "saints4.pdf::p218::c0",
+              "distance": 0.871
+            },
+            {
+              "id": "saints4.pdf::p348::c0",
+              "distance": 1.034
+            },
+            {
+              "id": "saints3.pdf::p166::c0",
+              "distance": 1.0742
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 1.0756
+            },
+            {
+              "id": "saints4.pdf::p294::c0",
+              "distance": 1.1
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        },
+        {
+          "source": "vector",
+          "query": "Takla Haymanot, the Ethiopian",
+          "hits": [
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 1.056
+            },
+            {
+              "id": "saints4.pdf::p218::c0",
+              "distance": 1.1077
+            },
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 1.1551
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 1.1602
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 1.2962
+            },
+            {
+              "id": "saints4.pdf::p348::c0",
+              "distance": 1.2966
+            },
+            {
+              "id": "saints1.pdf::p45::c0",
+              "distance": 1.2979
+            },
+            {
+              "id": "saints4.pdf::p352::c0",
+              "distance": 1.3307
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        }
+      ],
+      "merged_ids": [
+        "saints4.pdf::p220::c0",
+        "saints4.pdf::p221::c0",
+        "saints4.pdf::p219::c0",
+        "saints4.pdf::p365::c0",
+        "saints4.pdf::p218::c0",
+        "saints1.pdf::p157::c0",
+        "saints4.pdf::p264::c0",
+        "saints4.pdf::p294::c0"
+      ],
+      "kept_ids": [
+        "saints4.pdf::p220::c0",
+        "saints4.pdf::p221::c0",
+        "saints4.pdf::p219::c0",
+        "saints4.pdf::p365::c0",
+        "saints4.pdf::p218::c0",
+        "saints1.pdf::p157::c0",
+        "saints4.pdf::p264::c0",
+        "saints4.pdf::p294::c0"
+      ],
+      "retrieved_count": 14,
+      "filter_rejected": 0,
+      "best_distance": null,
+      "prompt_tokens": 6085,
+      "completion_tokens": 320,
+      "stages_ms": {
+        "prepare": 16.0,
+        "retrieval": 1063.0,
+        "filter": 0.0,
+        "generation": 2562.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "saints4.pdf:p218",
+        "saints4.pdf:p219"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "The system answer accurately covers all key facts from the reference, including St. Takla Haymanot's dates, Ethiopian monastic significance, parents' names and piety, his birth name, and the miracle as an infant, while adding correct extra details about his later life and legacy.",
+      "judge_score_prev": 5,
+      "judge_rationale_prev": "The system answer accurately covers all key facts from the reference, including St. Takla Haymanot's dates, Ethiopian monastic significance, parents' names and piety, his baptismal name, and the miracle as an infant, while adding correct extra details about his later life and legacy.",
+      "split": null,
+      "coverage": {
+        "score": 0.7857142857142857,
+        "present": 5,
+        "partial": 1,
+        "absent": 1,
+        "total": 7,
+        "details": [
+          {
+            "i": 1,
+            "fact": "St. Takla Haymanot was Ethiopian.",
+            "status": "present",
+            "quote": "St. Takla Haymanot, an Ethiopian Orthodox saint",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "He lived from 1215 to 1313.",
+            "status": "present",
+            "quote": "lived from 1215 to 1313",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "He is a pillar of Ethiopian monastic life.",
+            "status": "present",
+            "quote": "is regarded as a significant figure in Ethiopian monastic life",
+            "note": ""
+          },
+          {
+            "i": 4,
+            "fact": "His father was the priest Tsega Zeab.",
+            "status": "present",
+            "quote": "He was born to a priest named Tsega Zeab",
+            "note": ""
+          },
+          {
+            "i": 5,
+            "fact": "His mother was Egzie Haraya (Sarah).",
+            "status": "partial",
+            "quote": "and his wife Sarah",
+            "note": ""
+          },
+          {
+            "i": 6,
+            "fact": "He was born on the 24th of Kiahk.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 7,
+            "fact": "He was baptised with the name Fish Hazion ('Joy of Zion').",
+            "status": "present",
+            "quote": "St. Takla Haymanot was baptized and initially named Fish Hazion",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "",
+        "claims": [
+          {
+            "claim": "St. Takla Haymanot, an Ethiopian Orthodox saint, lived from 1215 to 1313 and is regarded as a significant figure in Ethiopian monastic life.",
+            "citations": [
+              5
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 5,
+            "evidence": "St. Takla Haymanot occupies a prominent standing in the Ethiopian Church as being one of the pillars of the Ethiopian monastic life . He lived during the years 1215-1313",
+            "note": ""
+          },
+          {
+            "claim": "He was born to a priest named Tsega Zeab and his wife Sarah, who were known for their piety and generosity towards the poor.",
+            "citations": [
+              5
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 5,
+            "evidence": "His father, the priest Tsega Zeab (=Gift of Faith), was married to a charming and rich girl by the name of Egzie Haraya ( =Choice of God) or Sarah  in Hebrew. They both lived a life of piety, loving t",
+            "note": ""
+          },
+          {
+            "claim": "After his parents distributed their wealth to the needy, St. Takla Haymanot was baptized and initially named Fish Hazion.",
+            "citations": [
+              3
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "after his parents sold all that his mother Sarah brought from the palace of the king from splendid attire, gold, silver, and pearls and distributed their price on the poor ... The little child was bap",
+            "note": ""
+          },
+          {
+            "claim": "He was ordained as a deacon at the age of 20 and later became a priest.",
+            "citations": [
+              3
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 3,
+            "evidence": "Having reached 20 years of age, the metropolitan of Ethiopia Abba ‘Girguis II’ ordained him as a deacon",
+            "note": ""
+          },
+          {
+            "claim": "Following a divine revelation from the Archangel Michael, he dedicated his life to prayer, preaching, and performing miracles.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "the Archangel Michael appeared to  him and told him that such action is not befitting for a priest, but he should instead dedicate h is life to prayers, to the study of the Holy Bible and teaching. He",
+            "note": ""
+          },
+          {
+            "claim": "He traveled to various regions in Ethiopia, where he preached against idol worship and performed numerous healings, leading many to convert to Christianity.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "he had to move from one city to another in Ethiopia, to preach the Gospel, and to oppose the idol worship a nd the works of sorcery . So, he faced significant troubles and opposition; but God supporte",
+            "note": ""
+          },
+          {
+            "claim": "St. Takla Haymanot founded a monastery in the Amhara region, where he lived an ascetic life and served as a spiritual father to many monks.",
+            "citations": [
+              2
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "In the monastery which the sain t founded in the Amhara region, he practiced the monastic life with the spirit of worship and watching the nights, in addition to serving the others and ministering to ",
+            "note": ""
+          },
+          {
+            "claim": "He was known for his deep commitment to prayer and fasting, and he performed miracles, including raising the monastery's Abbot from the dead.",
+            "citations": [
+              2
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "St. Takla Haymanot dedicated his time to worship and making metanoias with incredible perseverance ... It was said that the Abbot of that monastery died, and he was bitterly mourned by all . Here, St.",
+            "note": ""
+          },
+          {
+            "claim": "He faced persecution during the reign of the pagan king Matolomy, who sought to harm Christians.",
+            "citations": [
+              5
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 5,
+            "evidence": "When the pagan Ma tolomy became the king of Ethiopia, he started to persecute the Christians. He sent his soldiers everywhere around to apply their acts of violence against the Christians",
+            "note": ""
+          },
+          {
+            "claim": "Despite the challenges, he continued his ministry, moving from one city to another to spread the Gospel.",
+            "citations": [
+              1
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "he had to move from one city to another in Ethiopia, to preach the Gospel, and to oppose the idol worship a nd the works of sorcery . So, he faced significant troubles and opposition; but God supporte",
+            "note": ""
+          },
+          {
+            "claim": "His life was marked by humility, dedication, and a strong connection to the divine, often depicted with six wings, symbolizing his angelic nature.",
+            "citations": [
+              2
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "But, behold! They watched how amazing wings emerged out of the saint’s back to let him fly and get down safely. That is why he is often portrayed like a Cherub with six wings.",
+            "note": ""
+          },
+          {
+            "claim": "St. Takla Haymanot's feast day is celebrated in the Ethiopian Orthodox Church, honoring his contributions to Christianity and monasticism in Ethiopia.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "unsupported",
+            "status": "unsupported",
+            "evidence_n": null,
+            "evidence": "",
+            "note": ""
+          }
+        ],
+        "n_claims": 12,
+        "counts": {
+          "supported": 11,
+          "unsupported": 1,
+          "bad_citation": 0,
+          "uncited": 1
+        },
+        "rates": {
+          "supported": 0.9166666666666666,
+          "unsupported": 0.08333333333333333,
+          "bad_citation": 0.0,
+          "uncited": 0.08333333333333333
+        }
+      },
+      "coverage_score": 0.7857142857142857,
+      "off_target": false,
+      "faith_supported": 0.9166666666666666,
+      "faith_unsupported": 0.08333333333333333,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 0.08333333333333333,
+      "faith_n_claims": 12
+    },
+    {
+      "id": "MP-02",
+      "category": "multi_part",
+      "language": "en",
+      "mode": "catechism",
+      "should_refuse": false,
+      "verified": true,
+      "question": "What is prayer, and why does God sometimes delay answering it?",
+      "http_status": 200,
+      "latency_s": 1.91,
+      "outcome": "answered",
+      "answer": "Prayer is described as a conversation with God, a means of union between man and God, and a source of virtues and graces. It is essential for maintaining a relationship with God and is considered a powerful tool for spiritual growth and support.\n\nGod may delay answering prayers for several reasons:\n1. To increase the zeal and desire of the person praying, helping them appreciate the gift when it is received.\n2. To show the value of His good gifts, as things long desired are often held more dearly than those received quickly.\n3. To teach the individual patience and persistence in their requests, as illustrated by the parable of the unjust judge.\n4. Sometimes, the delay may be due to the request being inappropriate or not aligned with what is truly good for the person.\n\nIn essence, while God knows our needs, the process of prayer is meant to foster a deeper relationship and understanding of His will.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 33,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 35,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 49,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 39,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 32,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 31,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [
+        "Would you like to ask about daily prayer?",
+        "Would you like to know how prayer connects with repentance?"
+      ],
+      "error": null,
+      "request_id": "27f5ea000c2840b09b34eca19e9836ae",
+      "retrieval_queries": [
+        "What is prayer, and why does God sometimes delay answering it?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "What is prayer, and why does God sometimes delay answering it?",
+          "hits": [
+            {
+              "id": "catechism2.pdf::p33::c0",
+              "distance": 0.9449
+            },
+            {
+              "id": "catechism2.pdf::p35::c0",
+              "distance": 0.9573
+            },
+            {
+              "id": "catechism2.pdf::p49::c0",
+              "distance": 0.9593
+            },
+            {
+              "id": "catechism2.pdf::p39::c0",
+              "distance": 0.9907
+            },
+            {
+              "id": "catechism2.pdf::p32::c0",
+              "distance": 0.9937
+            },
+            {
+              "id": "catechism2.pdf::p31::c0",
+              "distance": 1.0027
+            },
+            {
+              "id": "catechism2.pdf::p89::c0",
+              "distance": 1.0209
+            },
+            {
+              "id": "catechism2.pdf::p42::c0",
+              "distance": 1.0223
+            },
+            {
+              "id": "catechism2.pdf::p34::c0",
+              "distance": 1.0274
+            },
+            {
+              "id": "catechism2.pdf::p91::c0",
+              "distance": 1.0432
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 10
+        }
+      ],
+      "merged_ids": [
+        "catechism2.pdf::p33::c0",
+        "catechism2.pdf::p35::c0",
+        "catechism2.pdf::p49::c0",
+        "catechism2.pdf::p39::c0",
+        "catechism2.pdf::p32::c0",
+        "catechism2.pdf::p31::c0",
+        "catechism2.pdf::p89::c0",
+        "catechism2.pdf::p42::c0",
+        "catechism2.pdf::p34::c0",
+        "catechism2.pdf::p91::c0"
+      ],
+      "kept_ids": [
+        "catechism2.pdf::p33::c0",
+        "catechism2.pdf::p35::c0",
+        "catechism2.pdf::p49::c0",
+        "catechism2.pdf::p39::c0",
+        "catechism2.pdf::p32::c0",
+        "catechism2.pdf::p31::c0",
+        "catechism2.pdf::p89::c0",
+        "catechism2.pdf::p42::c0",
+        "catechism2.pdf::p34::c0",
+        "catechism2.pdf::p91::c0"
+      ],
+      "retrieved_count": 10,
+      "filter_rejected": 0,
+      "best_distance": null,
+      "prompt_tokens": 8576,
+      "completion_tokens": 181,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 203.0,
+        "filter": 15.0,
+        "generation": 1657.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "catechism2.pdf:p31",
+        "catechism2.pdf:p33"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "The system answer accurately covers the key facts: prayer as union/converse with God, and God's delay to increase zeal and appreciation, and adds correct, relevant details without contradiction.",
+      "judge_score_prev": 5,
+      "judge_rationale_prev": "The system answer accurately covers the definition of prayer as union and conversation with God, and gives the main reasons for delayed answers (to increase zeal, to value the gift), matching the reference; extra correct details are included but do not contradict the reference.",
+      "split": null,
+      "coverage": {
+        "score": 1.0,
+        "present": 3,
+        "partial": 0,
+        "absent": 0,
+        "total": 3,
+        "details": [
+          {
+            "i": 1,
+            "fact": "Part 1: Prayer is converse and union with God (St. Clement of Alexandria, St. John Climacus).",
+            "status": "present",
+            "quote": "Prayer is described as a conversation with God, a means of union between man and God",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "Part 2: God sometimes delays answering prayer so that our zeal and desire for Him grow and we treasure the gift when it comes (St. Basil).",
+            "status": "present",
+            "quote": "To increase the zeal and desire of the person praying, helping them appreciate the gift when it is received.",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "Part 2: God sometimes delays answering prayer to show us the value of His good things rather than refusing them (St. Augustine).",
+            "status": "present",
+            "quote": "To show the value of His good gifts, as things long desired are often held more dearly than those received quickly.",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "",
+        "claims": [
+          {
+            "claim": "Prayer is described as a conversation with God, a means of union between man and God, and a source of virtues and graces.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_other",
+            "status": "supported",
+            "evidence_n": 6,
+            "evidence": "Prayer by reason of its nature is the converse and union of man with God, and by reason of its action upholds the world and brings about reconciliation with God … it is … a source of virtues, a means ",
+            "note": ""
+          },
+          {
+            "claim": "It is essential for maintaining a relationship with God and is considered a powerful tool for spiritual growth and support.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_other",
+            "status": "supported",
+            "evidence_n": 5,
+            "evidence": "The purpose of prayer is to keep the relationship between God and the person alive and effective.",
+            "note": ""
+          },
+          {
+            "claim": "God may delay answering prayers for several reasons: 1. To increase the zeal and desire of the person praying, helping them appreciate the gift when it is received.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_other",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "St. Basil the Great says, 'It may be that He delays answering a prayer so that your zeal and your desire to approach Him may be multiplied, and that you may appreciate the gift of God and guard it car",
+            "note": ""
+          },
+          {
+            "claim": "2. To show the value of His good gifts, as things long desired are often held more dearly than those received quickly.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_other",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "St. Augustine says, 'But when at times He gives somewhat slowly, it is that He is showing us the value of His good things; not that He refuses them. Things which have been long desired, are obtained w",
+            "note": ""
+          },
+          {
+            "claim": "3. To teach the individual patience and persistence in their requests, as illustrated by the parable of the unjust judge.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_other",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "the constant coining of the oppressed widow prevailed upon the unjust judge, who feared not God, neither had any shame at men, so that even against his will he granted her redress (Luke 18:1–8), how s",
+            "note": ""
+          },
+          {
+            "claim": "4. Sometimes, the delay may be due to the request being inappropriate or not aligned with what is truly good for the person.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_other",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "If you do not receive what you ask, this is because your request was inappropriate or lacking in faith, or because you offered your prayer negligently, or because you ask for things that are not good ",
+            "note": ""
+          },
+          {
+            "claim": "In essence, while God knows our needs, the process of prayer is meant to foster a deeper relationship and understanding of His will.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_other",
+            "status": "supported",
+            "evidence_n": 8,
+            "evidence": "He undoubtedly knows [what we need] and He gives us abundantly all temporal things even before we ask. However, we should first ask for the things that are profitable and for the kingdom of heaven, an",
+            "note": ""
+          }
+        ],
+        "n_claims": 7,
+        "counts": {
+          "supported": 7,
+          "unsupported": 0,
+          "bad_citation": 0,
+          "uncited": 7
+        },
+        "rates": {
+          "supported": 1.0,
+          "unsupported": 0.0,
+          "bad_citation": 0.0,
+          "uncited": 1.0
+        }
+      },
+      "coverage_score": 1.0,
+      "off_target": false,
+      "faith_supported": 1.0,
+      "faith_unsupported": 0.0,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 1.0,
+      "faith_n_claims": 7
+    },
+    {
+      "id": "MP-03",
+      "category": "multi_part",
+      "language": "en",
+      "mode": "catechism",
+      "should_refuse": false,
+      "verified": true,
+      "question": "Why does the believer need to fast, and what is the purpose of fasting?",
+      "http_status": 200,
+      "latency_s": 2.81,
+      "outcome": "answered",
+      "answer": "The believer needs to fast for several reasons, and the purpose of fasting encompasses various spiritual benefits:\n\n1. **Acquisition of Virtues**: Fasting serves as a foundation for virtues, helping believers cultivate a virtuous life.\n\n2. **Motivation to Give Thanks**: Fasting makes individuals more aware of God's grace and encourages gratitude for His blessings.\n\n3. **Appreciation of Food as a Blessing**: By abstaining from food, believers learn to appreciate it more when they do partake, recognizing it as a blessing.\n\n4. **Freedom from Enslavement to One’s Belly**: Fasting helps individuals gain control over their desires and not be dominated by physical appetites.\n\n5. **Spiritual Preparation**: Fasting prepares believers for spiritual warfare, helping them to combat sin and temptations.\n\n6. **Joyful Anticipation of Heavenly Nourishment**: Fasting is seen as a way to prepare for the joy of communion with God, especially in anticipation of His second coming.\n\n7. **Connection with the Divine**: Fasting allows believers to focus on their relationship with God, enhancing their spiritual journey and communion with Him.\n\nOverall, fasting is viewed as a means to elevate the soul, promote self-control, and deepen one's relationship with God.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 159,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 161,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 609,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 169,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 165,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 170,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [
+        "Would you like to know how fasting is joined to prayer?",
+        "Would you like to ask about repentance during fasting?"
+      ],
+      "error": null,
+      "request_id": "8e1fe029d60545ff9c1d04b8a0a66bf8",
+      "retrieval_queries": [
+        "Why does the believer need to fast, and what is the purpose of fasting?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "Why does the believer need to fast, and what is the purpose of fasting?",
+          "hits": [
+            {
+              "id": "catechism2.pdf::p159::c0",
+              "distance": 0.771
+            },
+            {
+              "id": "catechism2.pdf::p161::c0",
+              "distance": 0.8081
+            },
+            {
+              "id": "catechism2.pdf::p609::c0",
+              "distance": 0.8154
+            },
+            {
+              "id": "catechism2.pdf::p169::c0",
+              "distance": 0.8175
+            },
+            {
+              "id": "catechism2.pdf::p165::c0",
+              "distance": 0.8207
+            },
+            {
+              "id": "catechism2.pdf::p170::c0",
+              "distance": 0.8333
+            },
+            {
+              "id": "catechism2.pdf::p163::c0",
+              "distance": 0.8607
+            },
+            {
+              "id": "catechism2.pdf::p160::c0",
+              "distance": 0.895
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        }
+      ],
+      "merged_ids": [
+        "catechism2.pdf::p159::c0",
+        "catechism2.pdf::p161::c0",
+        "catechism2.pdf::p609::c0",
+        "catechism2.pdf::p169::c0",
+        "catechism2.pdf::p165::c0",
+        "catechism2.pdf::p170::c0",
+        "catechism2.pdf::p163::c0",
+        "catechism2.pdf::p160::c0"
+      ],
+      "kept_ids": [
+        "catechism2.pdf::p159::c0",
+        "catechism2.pdf::p161::c0",
+        "catechism2.pdf::p609::c0",
+        "catechism2.pdf::p169::c0",
+        "catechism2.pdf::p165::c0",
+        "catechism2.pdf::p170::c0",
+        "catechism2.pdf::p163::c0",
+        "catechism2.pdf::p160::c0"
+      ],
+      "retrieved_count": 8,
+      "filter_rejected": 0,
+      "best_distance": null,
+      "prompt_tokens": 6566,
+      "completion_tokens": 260,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 250.0,
+        "filter": 0.0,
+        "generation": 2531.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "catechism2.pdf:p159",
+        "catechism2.pdf:p169"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "The system answer accurately covers all key points from the reference, including fasting as a foundation of virtues, motivation to thanksgiving, appreciation of food, and adds correct, relevant details without contradiction.",
+      "judge_score_prev": 5,
+      "judge_rationale_prev": "The system answer accurately covers all key points from the reference, including fasting as the foundation of virtues, motivation to thanksgiving, appreciation of food, and adds correct, relevant details without contradiction.",
+      "split": null,
+      "coverage": {
+        "score": 0.42857142857142855,
+        "present": 3,
+        "partial": 0,
+        "absent": 4,
+        "total": 7,
+        "details": [
+          {
+            "i": 1,
+            "fact": "Part 1: The believer needs to fast because fasting began in Paradise with God's one commandment.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "Part 1: Our first parents fell for lack of fasting.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "Part 1: Fasting is the way back into the kingdom.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 4,
+            "fact": "Part 1: Fasting is a medicine for the soul.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 5,
+            "fact": "Part 2: The purpose of fasting is the acquisition of virtues (St. Jerome: the foundation of virtues).",
+            "status": "present",
+            "quote": "Fasting serves as a foundation for virtues, helping believers cultivate a virtuous life.",
+            "note": ""
+          },
+          {
+            "i": 6,
+            "fact": "Part 2: Fasting motivates thanksgiving.",
+            "status": "present",
+            "quote": "Fasting makes individuals more aware of God's grace and encourages gratitude for His blessings.",
+            "note": ""
+          },
+          {
+            "i": 7,
+            "fact": "Part 2: Fasting teaches appreciation of food as a blessing.",
+            "status": "present",
+            "quote": "By abstaining from food, believers learn to appreciate it more when they do partake, recognizing it as a blessing.",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "",
+        "claims": [
+          {
+            "claim": "Fasting serves as a foundation for virtues, helping believers cultivate a virtuous life.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "St. Jerome says, “Fasting is not itself an absolute virtue, but the foundation of virtues.”",
+            "note": ""
+          },
+          {
+            "claim": "Fasting makes individuals more aware of God's grace and encourages gratitude for His blessings.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "St. Evagrius believes that the person who fasts becomes aware of the grace of God at work within him",
+            "note": ""
+          },
+          {
+            "claim": "By abstaining from food, believers learn to appreciate it more when they do partake, recognizing it as a blessing.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "St. Basil believes that while fasting is an opportunity to abstain from food, then end of fasting is an opportunity for rejoicing in food — not with excessive indulgence, but with a sense of the bless",
+            "note": ""
+          },
+          {
+            "claim": "Fasting helps individuals gain control over their desires and not be dominated by physical appetites.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "St. John Climacus says, “Master your stomach before it masters you.”",
+            "note": ""
+          },
+          {
+            "claim": "Fasting prepares believers for spiritual warfare, helping them to combat sin and temptations.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 7,
+            "evidence": "St. Isaac the Syrian says, “all strife against sin and its desires is to be preceded by the labour of fasting, especially if one is combating inward sin.”",
+            "note": ""
+          },
+          {
+            "claim": "Fasting is seen as a way to prepare for the joy of communion with God, especially in anticipation of His second coming.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "the Church fasts adorning herself for His second coming when she will be united with Him in the eternal wedding.",
+            "note": ""
+          },
+          {
+            "claim": "Fasting allows believers to focus on their relationship with God, enhancing their spiritual journey and communion with Him.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "by fasting we leave our tables, not as way of asceticism, but more because of our preoccupation with the Heavenly One, that we may encounter Him, enter into sweet conversation with Him, express our lo",
+            "note": ""
+          },
+          {
+            "claim": "fasting is viewed as a means to elevate the soul, promote self-control, and deepen one's relationship with God.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "St. Basil the Great believes that fasting lifts the soul up to heaven, “as if it were its wings for the upwards journey”",
+            "note": ""
+          }
+        ],
+        "n_claims": 8,
+        "counts": {
+          "supported": 8,
+          "unsupported": 0,
+          "bad_citation": 0,
+          "uncited": 8
+        },
+        "rates": {
+          "supported": 1.0,
+          "unsupported": 0.0,
+          "bad_citation": 0.0,
+          "uncited": 1.0
+        }
+      },
+      "coverage_score": 0.42857142857142855,
+      "off_target": false,
+      "faith_supported": 1.0,
+      "faith_unsupported": 0.0,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 1.0,
+      "faith_n_claims": 8
+    },
+    {
+      "id": "FU-02",
+      "category": "follow_up",
+      "language": "en",
+      "mode": "catechism",
+      "should_refuse": false,
+      "verified": true,
+      "question": "What does St. Anthony say about practicing it?",
+      "http_status": 200,
+      "latency_s": 2.06,
+      "outcome": "answered",
+      "answer": "St. Anthony emphasizes the importance of discernment in practicing virtues. He noted that while a person can engage in many acts of worship, lacking discernment can lead one away from the path of truth and holiness. He also highlighted the necessity of continuous practice and diligence in seeking holiness, comparing it to how helmsmen and charioteers gain proficiency. Furthermore, he warned that many who perform great labors of virtue may ruin themselves through folly, suggesting that self-perception can lead to spiritual blindness. \n\nIn summary, St. Anthony teaches that discernment is crucial for practicing virtues effectively and warns against the dangers of pride and self-deception in one's spiritual journey.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 384,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 343,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 307,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 344,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints1.pdf",
+          "page": 197,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 92,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [
+        "Would you like to ask how this is practiced in Church life?",
+        "Would you like to know which catechism topic this connects to?"
+      ],
+      "error": null,
+      "request_id": "7fd05449d64a4442a6d8a642299d7f63",
+      "retrieval_queries": [
+        "What does St. Anthony say about practicing it?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "What does St. Anthony say about practicing it?",
+          "hits": [
+            {
+              "id": "saints3.pdf::p384::c0",
+              "distance": 0.9706
+            },
+            {
+              "id": "catechism2.pdf::p343::c0",
+              "distance": 0.9824
+            },
+            {
+              "id": "saints3.pdf::p307::c0",
+              "distance": 0.9835
+            },
+            {
+              "id": "catechism2.pdf::p344::c0",
+              "distance": 0.9848
+            },
+            {
+              "id": "saints1.pdf::p197::c0",
+              "distance": 0.9872
+            },
+            {
+              "id": "catechism2.pdf::p92::c0",
+              "distance": 1.0027
+            },
+            {
+              "id": "catechism2.pdf::p37::c0",
+              "distance": 1.0048
+            },
+            {
+              "id": "catechism2.pdf::p17::c0",
+              "distance": 1.0066
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        }
+      ],
+      "merged_ids": [
+        "saints3.pdf::p384::c0",
+        "catechism2.pdf::p343::c0",
+        "saints3.pdf::p307::c0",
+        "catechism2.pdf::p344::c0",
+        "saints1.pdf::p197::c0",
+        "catechism2.pdf::p92::c0",
+        "catechism2.pdf::p37::c0",
+        "catechism2.pdf::p17::c0"
+      ],
+      "kept_ids": [
+        "saints3.pdf::p384::c0",
+        "catechism2.pdf::p343::c0",
+        "saints3.pdf::p307::c0",
+        "catechism2.pdf::p344::c0",
+        "saints1.pdf::p197::c0",
+        "catechism2.pdf::p92::c0",
+        "catechism2.pdf::p17::c0"
+      ],
+      "retrieved_count": 8,
+      "filter_rejected": 1,
+      "best_distance": null,
+      "prompt_tokens": 5632,
+      "completion_tokens": 134,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 172.0,
+        "filter": 0.0,
+        "generation": 1844.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 0.0,
+      "recall_at_k_tol1": 0.0,
+      "recall_any": 0.0,
+      "recall_kept": 0.0,
+      "recall_shown": 0.0,
+      "expected_pages": [
+        "catechism2.pdf:p114"
+      ],
+      "judge_score": 2,
+      "judge_rationale": "The system answer discusses St. Anthony's teachings on discernment and the dangers of pride, but does not mention his specific instructions about sitting in one's cell, working with one's hands, and repeating the name of Jesus, which are the key facts in the reference answer.",
+      "judge_score_prev": 2,
+      "judge_rationale_prev": "The system answer discusses St. Anthony's teachings on discernment and the dangers of pride, but does not mention his specific instructions about sitting in one's cell, working with one's hands, and repeating the name of Jesus, which are the key facts in the reference answer.",
+      "split": null,
+      "coverage": {
+        "score": 0.0,
+        "present": 0,
+        "partial": 0,
+        "absent": 5,
+        "total": 5,
+        "details": [
+          {
+            "i": 1,
+            "fact": "St. Anthony says to sit in your cell and work with your hands.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "St. Anthony says to repeat the name of Jesus.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "St. Anthony says to hold the name of Jesus fast in your heart and mind.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 4,
+            "fact": "St. Anthony says to sing the name of Jesus with your tongue.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 5,
+            "fact": "St. Anthony says to say: 'My Lord Jesus, help me; I praise You my Lord Jesus Christ.'",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "",
+        "claims": [
+          {
+            "claim": "St. Anthony emphasizes the importance of discernment in practicing virtues.",
+            "citations": [
+              2
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "St. Anthony he singled out the virtue of discernment, insight, or illumination, saying, “A person can practice many acts of worship, and without discernment he deviates from the path of truth and holi",
+            "note": ""
+          },
+          {
+            "claim": "He noted that while a person can engage in many acts of worship, lacking discernment can lead one away from the path of truth and holiness.",
+            "citations": [
+              2
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "A person can practice many acts of worship, and without discernment he deviates from the path of truth and holiness.",
+            "note": ""
+          },
+          {
+            "claim": "He also highlighted the necessity of continuous practice and diligence in seeking holiness, comparing it to how helmsmen and charioteers gain proficiency.",
+            "citations": [
+              4
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "Helmsmen and charioteers gain proficiency through practice and diligence. Likewise those who seek the life of holiness must take care to study and practice what conforms to God’s will.",
+            "note": ""
+          },
+          {
+            "claim": "Furthermore, he warned that many who perform great labors of virtue may ruin themselves through folly, suggesting that self-perception can lead to spiritual blindness.",
+            "citations": [
+              4
+            ],
+            "invalid_citations": [],
+            "cited": true,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 4,
+            "evidence": "Many have performed truly great labors of virtue, but have ruined themselves through folly. It would not be surprising if the same thing were to happen to you too; if, for example, having cooled towar",
+            "note": ""
+          },
+          {
+            "claim": "St. Anthony teaches that discernment is crucial for practicing virtues effectively and warns against the dangers of pride and self-deception in one's spiritual journey.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "St. Anthony he singled out the virtue of discernment, insight, or illumination, saying, “A person can practice many acts of worship, and without discernment he deviates from the path of truth and holi",
+            "note": ""
+          }
+        ],
+        "n_claims": 5,
+        "counts": {
+          "supported": 5,
+          "unsupported": 0,
+          "bad_citation": 0,
+          "uncited": 1
+        },
+        "rates": {
+          "supported": 1.0,
+          "unsupported": 0.0,
+          "bad_citation": 0.0,
+          "uncited": 0.2
+        }
+      },
+      "coverage_score": 0.0,
+      "off_target": true,
+      "faith_supported": 1.0,
+      "faith_unsupported": 0.0,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 0.2,
+      "faith_n_claims": 5
+    },
+    {
+      "id": "FU-05",
+      "category": "follow_up",
+      "language": "en",
+      "mode": "chat",
+      "should_refuse": false,
+      "verified": true,
+      "question": "What name was he given at baptism?",
+      "http_status": 200,
+      "latency_s": 2.09,
+      "outcome": "answered",
+      "answer": "St. Takla Haymanot was given the name **Fish Hazion** (meaning: the Joy of Zion) at baptism. Later, after receiving a divine calling, his name was changed to **Takla Haymanot**.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 219,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 220,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 221,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 218,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 365,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [],
+      "error": null,
+      "request_id": "6cd292492bb74cf1b7671823c9298311",
+      "retrieval_queries": [
+        "What name was he given at baptism? St. Takla Haymanot",
+        "St. Takla Haymanot Orthodox saint biography life feast teachings martyr monk bishop",
+        "Takla Haymanot Orthodox saint biography life feast teachings martyr monk bishop",
+        "St. Takla Haymanot",
+        "Takla Haymanot"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "What name was he given at baptism? St. Takla Haymanot",
+          "hits": [
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 0.6522
+            },
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 0.7317
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 0.8566
+            },
+            {
+              "id": "saints4.pdf::p218::c0",
+              "distance": 1.0187
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 1.0241
+            },
+            {
+              "id": "saints4.pdf::p348::c0",
+              "distance": 1.0723
+            },
+            {
+              "id": "saints1.pdf::p80::c0",
+              "distance": 1.0804
+            },
+            {
+              "id": "saints3.pdf::p170::c0",
+              "distance": 1.0975
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        },
+        {
+          "source": "vector",
+          "query": "St. Takla Haymanot Orthodox saint biography life feast teachings martyr monk bishop",
+          "hits": [
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 0.6458
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 0.7351
+            },
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 0.8308
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 0.91
+            },
+            {
+              "id": "saints4.pdf::p218::c0",
+              "distance": 0.9592
+            },
+            {
+              "id": "saints4.pdf::p294::c0",
+              "distance": 0.9777
+            },
+            {
+              "id": "saints3.pdf::p157::c0",
+              "distance": 0.9843
+            },
+            {
+              "id": "saints1.pdf::p631::c0",
+              "distance": 0.9941
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        },
+        {
+          "source": "vector",
+          "query": "Takla Haymanot Orthodox saint biography life feast teachings martyr monk bishop",
+          "hits": [
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 0.6917
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 0.8131
+            },
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 0.8772
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 0.9043
+            },
+            {
+              "id": "saints1.pdf::p79::c0",
+              "distance": 0.9707
+            },
+            {
+              "id": "saints3.pdf::p157::c0",
+              "distance": 0.9892
+            },
+            {
+              "id": "saints1.pdf::p631::c0",
+              "distance": 0.9906
+            },
+            {
+              "id": "saints1.pdf::p310::c0",
+              "distance": 0.9992
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        },
+        {
+          "source": "vector",
+          "query": "St. Takla Haymanot",
+          "hits": [
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 0.78
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 0.8305
+            },
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 0.8434
+            },
+            {
+              "id": "saints4.pdf::p218::c0",
+              "distance": 0.9191
+            },
+            {
+              "id": "saints4.pdf::p348::c0",
+              "distance": 1.1024
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 1.1068
+            },
+            {
+              "id": "saints1.pdf::p77::c0",
+              "distance": 1.1568
+            },
+            {
+              "id": "saints3.pdf::p166::c0",
+              "distance": 1.16
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        },
+        {
+          "source": "vector",
+          "query": "Takla Haymanot",
+          "hits": [
+            {
+              "id": "saints4.pdf::p220::c0",
+              "distance": 1.0562
+            },
+            {
+              "id": "saints4.pdf::p219::c0",
+              "distance": 1.145
+            },
+            {
+              "id": "saints4.pdf::p218::c0",
+              "distance": 1.1812
+            },
+            {
+              "id": "saints4.pdf::p221::c0",
+              "distance": 1.1922
+            },
+            {
+              "id": "saints4.pdf::p365::c0",
+              "distance": 1.3306
+            },
+            {
+              "id": "saints2.pdf::p227::c0",
+              "distance": 1.3404
+            },
+            {
+              "id": "saints1.pdf::p77::c0",
+              "distance": 1.3856
+            },
+            {
+              "id": "saints4.pdf::p348::c0",
+              "distance": 1.3897
+            }
+          ],
+          "collection": "orthodox_pdfs",
+          "where": null,
+          "n_results": 8
+        }
+      ],
+      "merged_ids": [
+        "saints4.pdf::p219::c0",
+        "saints4.pdf::p220::c0",
+        "saints4.pdf::p221::c0",
+        "saints4.pdf::p218::c0",
+        "saints4.pdf::p365::c0",
+        "saints4.pdf::p348::c0",
+        "saints1.pdf::p80::c0",
+        "saints3.pdf::p170::c0"
+      ],
+      "kept_ids": [
+        "saints4.pdf::p219::c0",
+        "saints4.pdf::p220::c0",
+        "saints4.pdf::p221::c0",
+        "saints4.pdf::p218::c0",
+        "saints4.pdf::p365::c0"
+      ],
+      "retrieved_count": 16,
+      "filter_rejected": 3,
+      "best_distance": null,
+      "prompt_tokens": 4153,
+      "completion_tokens": 48,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 1109.0,
+        "filter": 0.0,
+        "generation": 953.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "saints4.pdf:p219"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "The system answer accurately states that he was given the name Fish Hazion at baptism and that Takla Haymanot was given later, matching the reference answer.",
+      "judge_score_prev": 5,
+      "judge_rationale_prev": "The system answer accurately states that he was given the name Fish Hazion at baptism and that Takla Haymanot was given later, matching the reference answer.",
+      "split": null,
+      "coverage": {
+        "score": 1.0,
+        "present": 3,
+        "partial": 0,
+        "absent": 0,
+        "total": 3,
+        "details": [
+          {
+            "i": 1,
+            "fact": "At baptism he was called Fish Hazion.",
+            "status": "present",
+            "quote": "St. Takla Haymanot was given the name **Fish Hazion** (meaning: the Joy of Zion) at baptism.",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "Fish Hazion means 'the Joy of Zion'.",
+            "status": "present",
+            "quote": "Fish Hazion** (meaning: the Joy of Zion)",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "The name Takla Haymanot was given later.",
+            "status": "present",
+            "quote": "Later, after receiving a divine calling, his name was changed to **Takla Haymanot**.",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "",
+        "claims": [
+          {
+            "claim": "St. Takla Haymanot was given the name Fish Hazion (meaning: the Joy of Zion) at baptism.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 1,
+            "evidence": "The little child was baptized, and called by the name ‘Fish Hazion ,’ (meaning: the Joy of Zion)",
+            "note": ""
+          },
+          {
+            "claim": "Later, after receiving a divine calling, his name was changed to Takla Haymanot.",
+            "citations": [],
+            "invalid_citations": [],
+            "cited": false,
+            "verdict": "supported_by_cited",
+            "status": "supported",
+            "evidence_n": 2,
+            "evidence": "He told him also that God has granted him the gift of healing of the sick and performing miracles, and that his name from now on would not be Fish Hazion, but Takla Haymanot.",
+            "note": ""
+          }
+        ],
+        "n_claims": 2,
+        "counts": {
+          "supported": 2,
+          "unsupported": 0,
+          "bad_citation": 0,
+          "uncited": 2
+        },
+        "rates": {
+          "supported": 1.0,
+          "unsupported": 0.0,
+          "bad_citation": 0.0,
+          "uncited": 1.0
+        }
+      },
+      "coverage_score": 1.0,
+      "off_target": false,
+      "faith_supported": 1.0,
+      "faith_unsupported": 0.0,
+      "faith_bad_citation": 0.0,
+      "faith_uncited": 1.0,
+      "faith_n_claims": 2
+    },
+    {
+      "id": "AR-03",
+      "category": "arabic",
+      "language": "ar",
+      "mode": "chat",
+      "should_refuse": false,
+      "verified": true,
+      "question": "من هو الأنبا بولا أول السواح؟",
+      "http_status": 200,
+      "latency_s": 2.64,
+      "outcome": "answered",
+      "answer": "الأنبا بولا أول السواح هو أحد القديسين البارزين في تاريخ الرهبنة المسيحية. يُعتبر أول سائح في تاريخ الرهبنة، حيث ترك العالم وذهب إلى البرية ليعيش حياة النسك والتقشف. كان يعيش في عزلة تامة، لا يرى وجه إنسان، ويقتات على بلح من النخيل وبعض الأعشاب مع ماء من الينابيع. يُذكر أنه كان يتلقى الطعام من الغربان التي كانت تطعمه يوميًا. \n\nتُعتبر حياة الأنبا بولا نموذجًا للنسك والتفاني في العبادة، وقد أثر في العديد من الرهبان الذين جاءوا بعده، مثل الأنبا أنطونيوس الذي اعتبره مثالًا يحتذى به. يُعرف أيضًا بأنه كان يعيش في مغارة في الصحراء، مما جعله رمزًا للرهبنة والسياحة الروحية.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 203,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 219,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 1727,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 1899,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 2048,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 170,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [],
+      "error": null,
+      "request_id": "fbccbe69b81b47579abf0162af8b5d77",
+      "retrieval_queries": [
+        "من هو الأنبا بولا أول السواح؟"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "من هو الأنبا بولا أول السواح؟",
+          "hits": [
+            {
+              "id": "ar::full saints arabic.pdf::p648::c0",
+              "distance": 1.5029
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p1453::c1",
+              "distance": 1.5187
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p478::c1",
+              "distance": 1.5388
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p54::c0",
+              "distance": 1.5521
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p419::c0",
+              "distance": 1.5555
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p479::c0",
+              "distance": 1.5558
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p290::c0",
+              "distance": 1.5592
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p441::c1",
+              "distance": 1.5617
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p60::c0",
+              "distance": 1.5652
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p650::c0",
+              "distance": 1.5663
+            }
+          ],
+          "collection": "orthodox_arabic_pdfs",
+          "where": null,
+          "n_results": 10
+        },
+        {
+          "source": "lexical",
+          "query": "من هو الأنبا بولا أول السواح؟",
+          "hits": [
+            {
+              "id": "ar::full saints arabic.pdf::p203::c0",
+              "score": 335.0
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p219::c0",
+              "score": 335.0
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p1727::c0",
+              "score": 335.0
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p1899::c0",
+              "score": 335.0
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p2048::c0",
+              "score": 335.0
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p170::c0",
+              "score": 215.0
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p2002::c0",
+              "score": 55.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p96::c0",
+              "score": 45.0
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p204::c0",
+              "score": 45.0
+            },
+            {
+              "id": "ar::full saints arabic.pdf::p234::c0",
+              "score": 45.0
+            }
+          ],
+          "collection": "orthodox_arabic_pdfs",
+          "where": null,
+          "terms": [
+            "بولا",
+            "اول",
+            "السواح"
+          ],
+          "phrase_count": 3,
+          "candidates_scored": 1981
+        }
+      ],
+      "merged_ids": [
+        "ar::full saints arabic.pdf::p203::c0",
+        "ar::full saints arabic.pdf::p219::c0",
+        "ar::full saints arabic.pdf::p1727::c0",
+        "ar::full saints arabic.pdf::p1899::c0",
+        "ar::full saints arabic.pdf::p2048::c0",
+        "ar::full saints arabic.pdf::p170::c0",
+        "ar::full saints arabic.pdf::p2002::c0",
+        "ar::full arabic catechism.pdf::p96::c0",
+        "ar::full saints arabic.pdf::p204::c0",
+        "ar::full saints arabic.pdf::p234::c0"
+      ],
+      "kept_ids": [
+        "ar::full saints arabic.pdf::p203::c0",
+        "ar::full saints arabic.pdf::p219::c0",
+        "ar::full saints arabic.pdf::p1727::c0",
+        "ar::full saints arabic.pdf::p1899::c0",
+        "ar::full saints arabic.pdf::p2048::c0",
+        "ar::full saints arabic.pdf::p170::c0",
+        "ar::full saints arabic.pdf::p2002::c0",
+        "ar::full arabic catechism.pdf::p96::c0",
+        "ar::full saints arabic.pdf::p204::c0",
+        "ar::full saints arabic.pdf::p234::c0"
+      ],
+      "retrieved_count": 20,
+      "filter_rejected": 0,
+      "best_distance": null,
+      "prompt_tokens": 7768,
+      "completion_tokens": 185,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 1203.0,
+        "filter": 0.0,
+        "generation": 1406.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 0.0,
+      "recall_at_k_tol1": 0.0,
+      "recall_any": 0.0,
+      "recall_kept": 0.0,
+      "recall_shown": 0.0,
+      "expected_pages": [
+        "full saints arabic.pdf:p1128",
+        "full saints arabic.pdf:p1129"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "الإجابة تغطي جميع النقاط الأساسية من المرجع: هو أول السواح، عاش في عزلة في البرية، كان يعوله غراب، والتقى بالأنبا أنطونيوس، مع إضافة تفاصيل صحيحة عن حياته النسكية.",
+      "judge_score_prev": 4,
+      "judge_rationale_prev": "الإجابة تغطي معظم الحقائق الرئيسية مثل عزلته، إعالته من الغربان، ولقائه بالأنبا أنطونيوس، لكنها أغفلت تفاصيل مثل مكان ولادته، سبب ذهابه للبرية، والموقع الجغرافي الدقيق.",
+      "split": null,
+      "coverage": {
+        "score": 0.125,
+        "present": 0,
+        "partial": 2,
+        "absent": 6,
+        "total": 8,
+        "details": [
+          {
+            "i": 1,
+            "fact": "الأنبا بولا رئيس السواح وُلد في الإسكندرية حوالي سنة 228م.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "أخوه بطرس حاول اغتصاب الميراث فاتجه الأنبا بولا إلى القضاء.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "رأى الأنبا بولا جنازة غني فاحتقر العالم.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 4,
+            "fact": "دخل الأنبا بولا قبرًا مهجورًا ثلاثة أيام.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 5,
+            "fact": "أرشده ملاك إلى البرية الشرقية بجبل نمرة قرب البحر الأحمر.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 6,
+            "fact": "عاش الأنبا بولا أكثر من 80 سنة لا يرى وجه إنسان.",
+            "status": "absent",
+            "quote": "",
+            "note": ""
+          },
+          {
+            "i": 7,
+            "fact": "كان يعوله الله بغراب يحمل نصف خبزة يوميًا.",
+            "status": "partial",
+            "quote": "كان يعيش في عزلة تامة، لا يرى وجه إنسان",
+            "note": ""
+          },
+          {
+            "i": 8,
+            "fact": "التقى به الأنبا أنطونيوس بإرشاد إلهي.",
+            "status": "partial",
+            "quote": "كان يتلقى الطعام من الغربان التي كانت تطعمه يوميًا",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "RateLimitError(\"Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4.1 in organization org-mQX2nPY7GBSKylUDvc4exiin on tokens per min (TPM): Limit 30000, Used 24629, Requested 14472. Please try again in 18.202s. Visit https://platform.openai.com/account/rate-limits to learn more.', ",
+        "claims": [],
+        "n_claims": 0
+      },
+      "coverage_score": 0.125,
+      "off_target": true,
+      "faith_supported": null,
+      "faith_unsupported": null,
+      "faith_bad_citation": null,
+      "faith_uncited": null,
+      "faith_n_claims": 0
+    },
+    {
+      "id": "AR-09",
+      "category": "arabic",
+      "language": "ar",
+      "mode": "catechism",
+      "should_refuse": false,
+      "verified": true,
+      "question": "لماذا لا تعاد المعمودية؟",
+      "http_status": 200,
+      "latency_s": 1.73,
+      "outcome": "answered",
+      "answer": "لا تُعاد المعمودية لأن المعمودية تُعتبر ميلادًا جديدًا روحانيًا، فكما يُولد الإنسان جسديًا مرة واحدة، يُولد روحيًا مرة واحدة أيضًا. إذا سقط الإنسان في الخطايا، يُمارس التوبة التي تُعتبر ميلادًا جديدًا أيضًا. وبالتالي، لا حاجة لتكرار المعمودية، حيث أن المسيح قد صُلب مرة واحدة ولا تكرار للمعمودية.",
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "full arabic catechism.pdf",
+          "page": 379,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full arabic catechism.pdf",
+          "page": 511,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full arabic catechism.pdf",
+          "page": 494,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full arabic catechism.pdf",
+          "page": 55,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full arabic catechism.pdf",
+          "page": 712,
+          "url": null,
+          "title": null
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full arabic catechism.pdf",
+          "page": 488,
+          "url": null,
+          "title": null
+        }
+      ],
+      "options": [
+        "هل تريد شرحًا عن المعمودية والميرون؟",
+        "هل تريد أن تعرف كيف يستعد الموعوظ للمعمودية؟"
+      ],
+      "error": null,
+      "request_id": "2449f6bc85214eccae2a66a549b7a2e1",
+      "retrieval_queries": [
+        "لماذا لا تعاد المعمودية؟"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "لماذا لا تعاد المعمودية؟",
+          "hits": [
+            {
+              "id": "ar::full arabic catechism.pdf::p549::c1",
+              "distance": 1.5291
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p1::c0",
+              "distance": 1.537
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p378::c0",
+              "distance": 1.5472
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p498::c1",
+              "distance": 1.5487
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p552::c1",
+              "distance": 1.5495
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p139::c1",
+              "distance": 1.5541
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p97::c1",
+              "distance": 1.5543
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p539::c1",
+              "distance": 1.5556
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p463::c1",
+              "distance": 1.5557
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p752::c0",
+              "distance": 1.5568
+            }
+          ],
+          "collection": "orthodox_arabic_pdfs",
+          "where": {
+            "title": "full arabic catechism"
+          },
+          "n_results": 10
+        },
+        {
+          "source": "lexical",
+          "query": "لماذا لا تعاد المعمودية؟",
+          "hits": [
+            {
+              "id": "ar::full arabic catechism.pdf::p379::c1",
+              "score": 205.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p511::c0",
+              "score": 195.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p379::c0",
+              "score": 85.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p494::c0",
+              "score": 75.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p55::c0",
+              "score": 65.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p712::c0",
+              "score": 65.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p488::c0",
+              "score": 50.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p498::c0",
+              "score": 50.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p503::c0",
+              "score": 50.0
+            },
+            {
+              "id": "ar::full arabic catechism.pdf::p507::c0",
+              "score": 50.0
+            }
+          ],
+          "collection": "orthodox_arabic_pdfs",
+          "where": {
+            "title": "full arabic catechism"
+          },
+          "terms": [
+            "لماذا",
+            "تعاد",
+            "المعموديه",
+            "معموديه",
+            "عماد",
+            "الميرون",
+            "ولاده جديده"
+          ],
+          "phrase_count": 1,
+          "candidates_scored": 467
+        }
+      ],
+      "merged_ids": [
+        "ar::full arabic catechism.pdf::p379::c1",
+        "ar::full arabic catechism.pdf::p511::c0",
+        "ar::full arabic catechism.pdf::p379::c0",
+        "ar::full arabic catechism.pdf::p494::c0",
+        "ar::full arabic catechism.pdf::p55::c0",
+        "ar::full arabic catechism.pdf::p712::c0",
+        "ar::full arabic catechism.pdf::p488::c0",
+        "ar::full arabic catechism.pdf::p498::c0",
+        "ar::full arabic catechism.pdf::p503::c0",
+        "ar::full arabic catechism.pdf::p507::c0"
+      ],
+      "kept_ids": [
+        "ar::full arabic catechism.pdf::p379::c1",
+        "ar::full arabic catechism.pdf::p511::c0",
+        "ar::full arabic catechism.pdf::p379::c0",
+        "ar::full arabic catechism.pdf::p494::c0",
+        "ar::full arabic catechism.pdf::p55::c0",
+        "ar::full arabic catechism.pdf::p712::c0",
+        "ar::full arabic catechism.pdf::p488::c0",
+        "ar::full arabic catechism.pdf::p498::c0",
+        "ar::full arabic catechism.pdf::p503::c0",
+        "ar::full arabic catechism.pdf::p507::c0"
+      ],
+      "retrieved_count": 20,
+      "filter_rejected": 0,
+      "best_distance": null,
+      "prompt_tokens": 7937,
+      "completion_tokens": 94,
+      "stages_ms": {
+        "prepare": 0.0,
+        "retrieval": 563.0,
+        "filter": 0.0,
+        "generation": 1172.0,
+        "postprocess": 0.0
+      },
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "full arabic catechism.pdf:p511"
+      ],
+      "judge_score": 5,
+      "judge_rationale": "الإجابة تغطي جميع النقاط الأساسية في المرجع بدقة، وتشرح أن المعمودية ميلاد روحي لا يتكرر، وأن التوبة هي الطريق بعد السقوط، مع إضافة صحيحة عن عدم تكرار صلب المسيح.",
+      "judge_score_prev": 5,
+      "judge_rationale_prev": "الإجابة تغطي جميع النقاط الأساسية في المرجع بدقة، وتشرح أن المعمودية ميلاد روحي لا يتكرر، وأن التوبة هي الميلاد الجديد عند السقوط، دون تناقض.",
+      "split": null,
+      "coverage": {
+        "score": 1.0,
+        "present": 5,
+        "partial": 0,
+        "absent": 0,
+        "total": 5,
+        "details": [
+          {
+            "i": 1,
+            "fact": "المعمودية هي ميلاد جديد روحاني.",
+            "status": "present",
+            "quote": "المعمودية تُعتبر ميلادًا جديدًا روحانيًا",
+            "note": ""
+          },
+          {
+            "i": 2,
+            "fact": "الإنسان يولد جسديًا مرة واحدة فقط.",
+            "status": "present",
+            "quote": "فكما يُولد الإنسان جسديًا مرة واحدة",
+            "note": ""
+          },
+          {
+            "i": 3,
+            "fact": "الميلاد الروحي يكون مرة واحدة فقط مثل الميلاد الجسدي.",
+            "status": "present",
+            "quote": "يُولد روحيًا مرة واحدة أيضًا",
+            "note": ""
+          },
+          {
+            "i": 4,
+            "fact": "إذا سقط الإنسان في خطايا بعد المعمودية يمارس التوبة.",
+            "status": "present",
+            "quote": "إذا سقط الإنسان في الخطايا، يُمارس التوبة",
+            "note": ""
+          },
+          {
+            "i": 5,
+            "fact": "التوبة تُدعى ميلادًا جديدًا.",
+            "status": "present",
+            "quote": "التوبة التي تُعتبر ميلادًا جديدًا أيضًا",
+            "note": ""
+          }
+        ],
+        "error": ""
+      },
+      "faithfulness": {
+        "error": "RateLimitError(\"Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4.1 in organization org-mQX2nPY7GBSKylUDvc4exiin on tokens per min (TPM): Limit 30000, Used 25321, Requested 14375. Please try again in 19.392s. Visit https://platform.openai.com/account/rate-limits to learn more.', ",
+        "claims": [],
+        "n_claims": 0
+      },
+      "coverage_score": 1.0,
+      "off_target": false,
+      "faith_supported": null,
+      "faith_unsupported": null,
+      "faith_bad_citation": null,
+      "faith_uncited": null,
+      "faith_n_claims": 0
+    }
+  ],
+  "timestamp": "20260915-182420",
+  "judge_model_prev": "gpt-4.1",
+  "rejudged_from": "20260915-170734.json"
+}

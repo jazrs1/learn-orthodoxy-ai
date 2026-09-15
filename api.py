@@ -1583,11 +1583,18 @@ def _build_numbered_context(
     """
     blocks: List[str] = []
     numbered: List[Dict[str, Any]] = []
+    passages: List[Dict[str, Any]] = []
     for index, (doc, meta) in enumerate(zip(docs, metas), start=1):
-        text = normalize(doc) if normalize else (doc or "")
+        text = (normalize(doc) if normalize else (doc or "")).strip()
         label = _friendly_source_label(meta or {})
-        blocks.append(f"[{index}] {label}\n{text.strip()}")
+        blocks.append(f"[{index}] {label}\n{text}")
         numbered.append({**_source_from_metadata(meta or {}), "n": index, "label": label})
+        passages.append({"n": index, "id": chunk_id_from_metadata(meta or {}), "label": label, "text": text})
+    trace = current_trace()
+    if trace is not None:
+        # Kept out of the log line (LOG-002); surfaced only to authenticated debug callers so
+        # the eval harness can check each claim against the passage it cites (EVAL-011).
+        trace.debug_passages = passages
     return "\n\n".join(blocks), numbered
 
 

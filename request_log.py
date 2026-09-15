@@ -80,6 +80,8 @@ class RequestTrace:
         self.retrieval: List[Dict[str, Any]] = []
         self.retrieved_ids: List[str] = []
         self.kept_ids: List[str] = []
+        # Passage texts for the eval harness only: returned in debug_payload(), never logged.
+        self.debug_passages: Optional[List[Dict[str, Any]]] = None
         self.emitted = False
         self._token: contextvars.Token | None = None
 
@@ -198,6 +200,8 @@ class RequestTrace:
         payload["merged_ids"] = self.fields.get("merged_ids", [])
         payload["kept_ids"] = self.kept_ids
         payload["stages_ms"] = self.stages_ms
+        if self.debug_passages is not None:
+            payload["passages"] = self.debug_passages
         return payload
 
     def to_dict(self) -> Dict[str, Any]:
