@@ -234,21 +234,6 @@ function followUpToUserMessage(option: string) {
   return cleaned;
 }
 
-function compactFollowUpContext(answer: string) {
-  return answer
-    .replace(/\s+/g, " ")
-    .replace(/\b(?:Would you like to|I would like to|I would like|I want to)\b.*$/i, "")
-    .trim()
-    .slice(0, 1200);
-}
-
-function followUpBackendQuestion(displayQuestion: string, answerContext: string) {
-  const context = compactFollowUpContext(answerContext);
-  if (!context) return displayQuestion;
-
-  return `${displayQuestion}\n\nPrevious answer context for resolving this follow-up:\n${context}`;
-}
-
 function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<string>) {
   const saintOptions: string[] = [];
   const questionOptions: string[] = [];
@@ -322,6 +307,9 @@ function ChatPageContent() {
   const [composerInitialValue, setComposerInitialValue] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState("");
   const [activeTab, setActiveTab] = useState<ChatMode>("chat");
+  // Mode of the most recent request in this conversation. Follow-up chips reuse it so a
+  // catechism thread stays in catechism mode and a saints thread in saints mode.
+  const [conversationMode, setConversationMode] = useState<ChatMode>("chat");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [pendingAutoSubmitText, setPendingAutoSubmitText] = useState("");
   const [saints, setSaints] = useState<string[]>([]);
@@ -637,6 +625,7 @@ function ChatPageContent() {
       submittingRef.current = true;
       setIsSending(true);
       const requestMode = options?.mode || activeTab;
+      setConversationMode(requestMode);
       if (activeTab !== "chat") {
         setActiveTab("chat");
       }
@@ -872,20 +861,18 @@ function ChatPageContent() {
   }, [handleSendMessage, language]);
 
   const submitMessageOption = useCallback(
-    (option: string, answerContext = "") => {
+    (option: string) => {
       if (isValidSaintName(option, saintLookup)) {
         submitSaintLookup(option);
         return;
       }
-      const displayQuestion = followUpToUserMessage(option);
-      const backendQuestion = followUpBackendQuestion(displayQuestion, answerContext);
-      void handleSendMessage(backendQuestion, {
-        displayMessage: displayQuestion,
-        hideUserMessage: true,
-        mode: "catechism",
-      });
+      // The chip text becomes an ordinary user turn: it is stored in the conversation and the
+      // backend receives it with the server-side history, so "it"/"this" resolve from the
+      // previous turns. No answer text is pasted into the question any more (AUDIT C14/C31),
+      // and the request keeps the mode the conversation is already in.
+      void handleSendMessage(option, { mode: conversationMode });
     },
-    [handleSendMessage, saintLookup, submitSaintLookup]
+    [conversationMode, handleSendMessage, saintLookup, submitSaintLookup]
   );
 
   const selectSaint = useCallback(
@@ -963,7 +950,7 @@ function ChatPageContent() {
                                           key={option}
                                           type="button"
                                           className="message-option-chip"
-                                          onClick={() => submitMessageOption(option, message.content)}
+                                          onClick={() => submitMessageOption(option)}
                                         >
                                           {isValidSaintName(option, saintLookup)
                                             ? displaySaintName(option, language)
