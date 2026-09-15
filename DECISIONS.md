@@ -39,6 +39,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [EVAL-006: What the baseline run showed (and where it corrects AUDIT.md)](#eval-006-what-the-baseline-run-showed-and-where-it-corrects-auditmd)
   - [EVAL-007: Judge moved to a stronger, different model (gpt-4.1) with a human-check sheet](#eval-007-judge-moved-to-a-stronger-different-model-gpt-41-with-a-human-check-sheet)
   - [EVAL-008: Phase 2 results, step by step](#eval-008-phase-2-results-step-by-step)
+  - [EVAL-009: Judge vs human on the 10-question check sheet](#eval-009-judge-vs-human-on-the-10-question-check-sheet)
 - [Retrieval](#retrieval)
   - [RET-001: A saint-index miss falls through to retrieval instead of refusing](#ret-001-a-saint-index-miss-falls-through-to-retrieval-instead-of-refusing)
   - [RET-002: The keyword relevance filter is deleted; results are merged by vector distance](#ret-002-the-keyword-relevance-filter-is-deleted-results-are-merged-by-vector-distance)
@@ -339,6 +340,20 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Files changed:** `eval/compare_results.py`.
 - **Concept to learn:** *Ablation by steps.* Changing one thing per run and re-measuring is the only way to attribute an improvement (or a regression) to a specific change; the phase-1 column shows why the judge had to be fixed first, so that later columns are comparable. Search: "ablation study", "A/B evaluation offline".
 - **Revisit if:** the human check sheet disagrees with the judge; then re-read this table with the corrected scores.
+
+### EVAL-009: Judge vs human on the 10-question check sheet
+- **Date / Part:** 2026-09-15, Phase 3 Step 1
+- **Audit ref:** EVAL-003, EVAL-007, open question 5
+- **Context:** The project owner hand-graded the 10 answers in `eval/human_check.md` (answers from the phase-2 baseline run `20260915-170734`, old prompt, gpt-4.1 judge) and reported: judge mean 4.6 vs human 3.8, exact agreement 4/10, judge never below the human, with three failure patterns (misses omitted halves/sources, credits absent facts, rewards unverifiable extras), worst on long answers.
+- **Verification against the files:** all three numbers are exactly right (judge 4.60, human 3.80, 4/10 exact, 0/10 judge-below-human; the six disagreements are +1 ×4 and +2 ×2). The three patterns hold on inspection:
+  - *Absent facts credited:* SNT-10's judge rationale credits "the miracle" (the infant flour miracle); the word "flour" does not occur in the answer. AR-03's rationale credits "his meeting with Anba Anthony"; the answer only says Anthony regarded him as a model, no meeting.
+  - *Omitted halves:* MP-03's judge said "covers the key facts"; the answer has the purpose half and none of the four "why" facts. CAT-11 covers Q730 but only echoes Q752.
+  - *Unverifiable extras rewarded:* SNT-02 (baptism by Macarius), SNT-10 (deacon at 20, Amhara monastery, king Matolomy, six wings) are not in the reference and were not checked against the pages; the rubric said "extra correct detail is fine", which the judge read as "extra detail is fine".
+- **Length:** on the 10 graded answers the judge's *excess* over the human correlates with answer length (Pearson 0.66, Spearman 0.57; the two +2 cases are the two longest answers, 1,256 and 1,529 chars). Across the full result sets, however, the judge's *score* does not rise with length (Spearman −0.02 on 45 baseline answers, −0.22 on 52 step-3 answers). So the judge is not simply rewarding length; long answers give omissions and unsupported extras more room to hide, and a rubric that only looks for "key facts of the reference" cannot see either. That is the case for two separate metrics (EVAL-010).
+- **Specific questions from the notes:** (1) MP-03: `catechism2.pdf p.159` *was* retrieved, at rank 1, in both the graded run and the latest run, with p.169 at rank 4; the omission was generation, not retrieval, and the step-3 answer to MP-03 now covers both halves (Paradise, "medicine of the soul", St. Jerome's "foundation of virtues"). (2) FU-02 is *not* fixed in the latest results (judge 3, would be a human 1–2): the retrieval query is still the bare "What does St. Anthony say about practicing it?" with no history rewrite, so it retrieves Anthony passages about discernment (saints3 p.384) instead of catechism2 p.114, and the answer bridges the gap with an unsupported claim ("...which includes the Jesus Prayer"). It needs the history-aware query rewrite (a later step); the faithfulness metric should flag the bridging claim.
+- **Files changed:** `eval/human_check.md` (scores and notes recorded).
+- **Concept to learn:** *Judge failure modes.* A single holistic score lets a grader compensate: length and fluency mask omissions, and plausible extras get credited because nothing forces the grader to locate each fact in the text. Requiring the grader to *quote* evidence for every credited fact (extractive grading) is the standard fix. Search: "LLM judge verbosity bias", "extractive evaluation quote evidence".
+- **Revisit if:** after EVAL-010 the new metrics still disagree with these ten human grades.
 
 ## Retrieval
 

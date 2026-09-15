@@ -1,22 +1,22 @@
 # Human check of the LLM judge
 
-Source results: `20260915-170734.json` (judge model: `gpt-4.1`). 10 answered questions chosen across categories with seed 7.
+Source results: `20260915-170734.json` (judge model: `gpt-4.1`). 10 answered questions chosen across categories with seed 7. Human scores and notes were supplied by the project owner on 2026-09-15 (summary: judge mean 4.6 vs human 3.8).
 
 Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 5 = covers the key facts of the reference accurately; 4 = mostly correct, minor omissions; 3 = partially correct; 2 = largely misses the reference or has clear errors; 1 = wrong, irrelevant or a refusal. Do not reward length. Fill in **Your score** and optional notes, then compare with the judge column.
 
 | # | id | category | judge | your score |
 |---|----|----------|-------|------------|
-| 1 | MP-03 | multi_part | 5 |  |
-| 2 | FU-02 | follow_up | 2 |  |
-| 3 | AR-09 | arabic | 5 |  |
-| 4 | CAT-11 | catechism | 5 |  |
-| 5 | SNT-02 | saints | 5 |  |
-| 6 | MP-02 | multi_part | 5 |  |
-| 7 | FU-05 | follow_up | 5 |  |
-| 8 | AR-03 | arabic | 4 |  |
-| 9 | CAT-05 | catechism | 5 |  |
-| 10 | SNT-10 | saints | 5 |  |
+| 1 | MP-03 | multi_part | 5 | 3 |
+| 2 | FU-02 | follow_up | 2 | 1 |
+| 3 | AR-09 | arabic | 5 | 5 |
+| 4 | CAT-11 | catechism | 5 | 4 |
+| 5 | SNT-02 | saints | 5 | 4 |
+| 6 | MP-02 | multi_part | 5 | 5 |
+| 7 | FU-05 | follow_up | 5 | 5 |
+| 8 | AR-03 | arabic | 4 | 3 |
+| 9 | CAT-05 | catechism | 5 | 5 |
+| 10 | SNT-10 | saints | 5 | 3 |
 
 ---
 
@@ -52,9 +52,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 5 — The system answer accurately covers all key points from the reference, including fasting as the foundation of virtues, motivation to thanksgiving, appreciation of food, and adds correct, relevant details without contradiction.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 3
 
-**Notes:**
+**Notes:** Answers purpose only (3/3); skips "why" half entirely (0/4: Paradise, the Fall, way back to kingdom, medicine for soul). Judge claims full coverage — false.
 
 ---
 
@@ -76,9 +76,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 2 — The system answer discusses St. Anthony's teachings on discernment and the dangers of pride, but does not mention his specific instructions about sitting in one's cell, working with one's hands, and repeating the name of Jesus, which are the key facts in the reference answer.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 1
 
-**Notes:**
+**Notes:** Follow-up resolution failure: "it" = Jesus Prayer, answer is about discernment. 0/4 facts.
 
 ---
 
@@ -98,9 +98,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 5 — الإجابة تغطي جميع النقاط الأساسية في المرجع بدقة، وتشرح أن المعمودية ميلاد روحي لا يتكرر، وأن التوبة هي الميلاد الجديد عند السقوط، دون تناقض.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 5
 
-**Notes:**
+**Notes:** 4/4. One unverified extra (Christ crucified once), likely on p511.
 
 ---
 
@@ -131,9 +131,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 5 — The system answer accurately covers all key signs of true repentance from the reference, including thankfulness, admission of sin, forgiveness, focus on heaven, and adds correct extra details consistent with Coptic Orthodox teaching.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 4
 
-**Notes:**
+**Notes:** Q730 list fully covered. Q752 "fruits worthy of repentance"/St. Basil only loosely echoed. Extras plausible but unverifiable.
 
 ---
 
@@ -155,9 +155,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 5 — The system answer accurately covers the key facts: Moses' criminal past, his belief in the sun as God, hearing a voice directing him to the monks of Scetis, meeting St. Isidore, and his repentance; extra details about his baptism and ascetic life are correct and do not contradict the reference.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 4
 
-**Notes:**
+**Notes:** Core conversion covered. Missing birth date, slavery/expulsion, sword, specific plea. Macarius baptism unverified; judge credited it anyway.
 
 ---
 
@@ -185,9 +185,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 5 — The system answer accurately covers the definition of prayer as union and conversation with God, and gives the main reasons for delayed answers (to increase zeal, to value the gift), matching the reference; extra correct details are included but do not contradict the reference.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 5
 
-**Notes:**
+**Notes:** Both parts covered. No patristic attributions. Item 4 (inappropriate requests) unverified, mild tension with Augustine.
 
 ---
 
@@ -207,9 +207,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 5 — The system answer accurately states that he was given the name Fish Hazion at baptism and that Takla Haymanot was given later, matching the reference answer.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 5
 
-**Notes:**
+**Notes:** 3/3, correct entity resolution. Good length model for factual follow-ups.
 
 ---
 
@@ -231,9 +231,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 4 — الإجابة تغطي معظم الحقائق الرئيسية مثل عزلته، إعالته من الغربان، ولقائه بالأنبا أنطونيوس، لكنها أغفلت تفاصيل مثل مكان ولادته، سبب ذهابه للبرية، والموقع الجغرافي الدقيق.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 3
 
-**Notes:**
+**Notes:** ~2/8. Generic hermit summary likely from prior knowledge, not source pages. Dates/herbs from outside reference; plural crows contradicts single raven. Judge credited an Anthony meeting that isn't there.
 
 ---
 
@@ -257,9 +257,9 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 5 — The system answer accurately covers all key points from the reference, including the biblical definition, spiritual experience, quotes from St. Cyril and St. Augustine, and adds correct extra detail without contradiction.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 5
 
-**Notes:**
+**Notes:** Heb 11:1, spiritual reality, peace/joy, Cyril covered. Augustine quote swapped for a different genuine Augustine saying. Extras likely from same page.
 
 ---
 
@@ -287,6 +287,6 @@ Grade each SYSTEM answer 1-5 with the same rubric the judge uses:
 
 **Judge score:** 5 — The system answer accurately covers all key facts from the reference, including St. Takla Haymanot's dates, Ethiopian monastic significance, parents' names and piety, his baptismal name, and the miracle as an infant, while adding correct extra details about his later life and legacy.
 
-**Your score (1-5):** ____
+**Your score (1-5):** 3
 
-**Notes:**
+**Notes:** Missing infant flour miracle, birth date, childless/freed slaves; order garbled. ~75% unverified extras incl. specific miracle claims. Judge rationale cites the flour miracle, which is absent.
