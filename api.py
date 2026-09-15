@@ -535,11 +535,22 @@ def _find_saint_record_matches(query: str, limit: int = 12) -> List[Dict[str, An
         score: int | None = None
         for query_key in query_keys:
             query_tokens = set(query_key.split())
+            query_first = query_key.split()[0] if query_key else ""
             for name_key in name_keys:
                 name_tokens = set(name_key.split())
+                name_first = name_key.split()[0] if name_key else ""
                 if query_key == name_key:
                     score = 0 if query_key in _saint_match_keys(name) else 1
                 elif name_key.startswith(query_key):
+                    score = 2 if score is None else min(score, 2)
+                elif (
+                    query_first
+                    and query_first == name_first
+                    and len(query_tokens) > 1
+                    and query_first not in SAINT_ORDERING_TITLES
+                ):
+                    # "barbara martyr" vs indexed "barbara": the user's descriptor is not in the
+                    # index name, but the core name is. Medium confidence.
                     score = 2 if score is None else min(score, 2)
                 elif query_key in name_key:
                     score = 3 if score is None else min(score, 3)
@@ -559,15 +570,31 @@ def _find_saint_record_matches(query: str, limit: int = 12) -> List[Dict[str, An
 
     matches: List[Dict[str, Any]] = []
     seen = set()
-    for _, _, _, record in scored:
+    for score, _, _, record in scored:
         key = str(record.get("id", ""))
         if key in seen:
             continue
         seen.add(key)
-        matches.append(record)
+        # Attach the match strength so callers can decide between "use it", "ask which one"
+        # and "not confident, fall through to retrieval" (DECISIONS.md RET-001).
+        matches.append({**record, "match_score": score})
         if len(matches) >= max(1, min(limit, 400)):
             break
     return matches
+
+
+# Match-score bands for `_find_saint_record_matches` (lower is better):
+#   0-1  strong: the query equals an indexed name or alias
+#   2    medium: the indexed name starts with the query, or shares its core (first) name token
+#   3-4  weak:   substring / token-subset only
+SAINT_STRONG_MAX_SCORE = 1
+SAINT_MEDIUM_SCORE = 2
+
+
+def _split_saint_matches(records: List[Dict[str, Any]]) -> Tuple[List[str], List[str]]:
+    strong = [str(r.get("name", "")) for r in records if int(r.get("match_score", 9)) <= SAINT_STRONG_MAX_SCORE]
+    medium = [str(r.get("name", "")) for r in records if int(r.get("match_score", 9)) == SAINT_MEDIUM_SCORE]
+    return strong, medium
 
 
 def _find_saint_index_matches(query: str, limit: int = 12) -> List[str]:
@@ -1906,10 +1933,26 @@ def _extract_ambiguous_saint_query(question: str) -> str:
             continue
         candidate = re.sub(r"\s+", " ", match.group(1)).strip()
         name_only = re.sub(r"^(?:st\.?|saint|pope|patriarch|abba|anba)\s+", "", candidate, flags=re.IGNORECASE).strip()
-        # Treat short saint names as ambiguous (e.g. St. John / St. Mary)
-        if len(name_only.split()) <= 2:
+        # Only a bare single name is treated as possibly ambiguous (e.g. "St. John", "St. Mary").
+        # "St. Mary Magdalene" or "St. John Chrysostom" are specific and go straight to retrieval.
+        if len(name_only.split()) == 1:
             return candidate
     return ""
+
+
+SAINT_CANDIDATE_CLAUSE_SPLIT = re.compile(
+    r",|;|\?|\s+-\s+|\s+(?:and|who|what|how|when|where|why|which|whose|that)\s+",
+    flags=re.IGNORECASE,
+)
+
+
+def _trim_saint_candidate(candidate: str) -> str:
+    """Cut a captured name at the first clause boundary.
+
+    "St. Demiana and how was she martyred" -> "St. Demiana"; "St. Abanoub, and how old ..." -> "St. Abanoub".
+    """
+    head = SAINT_CANDIDATE_CLAUSE_SPLIT.split(candidate, maxsplit=1)[0]
+    return re.sub(r"\s+", " ", head).strip(" .")
 
 
 app = FastAPI(title="Orthodox PDF Chat API")
@@ -2810,27 +2853,29 @@ def _extract_saint_chat_intent(question: str) -> Dict[str, str] | None:
     if not q:
         return None
 
+    # `explicit` marks phrasings where the user typed only a name to look up (the Saints tab
+    # sends "search saint: X"); natural questions keep their wording for retrieval.
     patterns = [
-        ("lookup", r"^search\s+saints?\s*:\s*(.+)$"),
-        ("lookup", r"^(?:i\s+(?:want|would\s+like)\s+to\s+)?learn\s+more\s+about\s+(.+)$"),
-        ("lookup", r"^(?:tell\s+me\s+)?more\s+about\s+(.+)$"),
-        ("lookup", r"^(?:look\s+up|lookup|find)\s+(.+)$"),
-        ("lookup", r"^(?:who\s+is|who\s+was|tell\s+me\s+about|about)\s+(.+)$"),
-        ("list", r"^(?:list|show)\s+saints?\s+named\s+(.+)$"),
-        ("list", r"^(?:give\s+me|show\s+me)\s+(?:a\s+)?list\s+of\s+(?:saints?\s+named\s+)?(.+)$"),
-        ("list", r"^list\s+(?:of\s+)?(.+)$"),
+        ("lookup", True, r"^search\s+saints?\s*:\s*(.+)$"),
+        ("lookup", True, r"^(?:i\s+(?:want|would\s+like)\s+to\s+)?learn\s+more\s+about\s+(.+)$"),
+        ("lookup", True, r"^(?:tell\s+me\s+)?more\s+about\s+(.+)$"),
+        ("lookup", True, r"^(?:look\s+up|lookup|find)\s+(.+)$"),
+        ("lookup", False, r"^(?:who\s+is|who\s+was|tell\s+me\s+about|about)\s+(.+)$"),
+        ("list", True, r"^(?:list|show)\s+saints?\s+named\s+(.+)$"),
+        ("list", True, r"^(?:give\s+me|show\s+me)\s+(?:a\s+)?list\s+of\s+(?:saints?\s+named\s+)?(.+)$"),
+        ("list", True, r"^list\s+(?:of\s+)?(.+)$"),
     ]
 
-    for mode, pattern in patterns:
+    for mode, explicit, pattern in patterns:
         match = re.match(pattern, q, flags=re.IGNORECASE)
         if not match:
             continue
-        candidate = re.sub(r"\s+", " ", match.group(1)).strip()
+        candidate = _trim_saint_candidate(re.sub(r"\s+", " ", match.group(1)).strip())
         if not candidate:
             continue
         has_marker = re.search(r"\b(?:st\.?|saint|saints|marys)\b", candidate, flags=re.IGNORECASE)
         if has_marker or _find_saint_index_matches(candidate, limit=1):
-            return {"mode": mode, "query": candidate}
+            return {"mode": mode, "query": candidate, "explicit": explicit}
 
     return None
 
@@ -2854,20 +2899,6 @@ def _saint_options_response(raw_query: str, matches: List[str], mode: str, langu
         "sources": [],
         "entities": [],
         "options": last_options,
-        "can_learn_more": False,
-    }
-
-
-def _saint_missing_response(raw_query: str, language: str = "en") -> Dict[str, Any]:
-    if language == "ar":
-        answer = f"لم أجد مدخلًا مخصصًا للقديس '{raw_query}' في قاعدة بيانات القديسين المتاحة. جرّب تهجئة أخرى."
-    else:
-        answer = f"I could not find a dedicated saint entry for '{raw_query}' in the loaded saint database. Try a different spelling."
-    return {
-        "answer": answer,
-        "sources": [],
-        "entities": [],
-        "options": [],
         "can_learn_more": False,
     }
 
@@ -3102,21 +3133,46 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         saint_intent = _extract_saint_chat_intent(question) if mode != "catechism" else None
         if saint_intent:
             raw_saint_query = saint_intent["query"]
-            saint_matches = _find_saint_index_matches(raw_saint_query, limit=12)
+            saint_records = _find_saint_record_matches(raw_saint_query, limit=12)
+            saint_matches = [str(r.get("name", "")) for r in saint_records]
+            strong_matches, medium_matches = _split_saint_matches(saint_records)
+            single_bare_name = len(_normalize_saint_match_key(raw_saint_query).split()) == 1
             _log_saint_query(raw_saint_query, _normalize_saint_search_query(raw_saint_query), saint_matches)
+            trace.set(
+                saint_intent=saint_intent["mode"],
+                saint_intent_explicit=saint_intent.get("explicit", False),
+                saint_strong_matches=len(strong_matches),
+                saint_medium_matches=len(medium_matches),
+            )
 
-            trace.set(saint_intent=saint_intent["mode"])
-            if not saint_matches:
-                trace.set(outcome="not_found", refusal=True, refusal_reason="saint_not_in_index")
-                return _saint_missing_response(raw_saint_query, language=detected_language)
-
-            if saint_intent["mode"] == "list" or len(saint_matches) > 1:
+            # A saint-index miss must never end the request (AUDIT C17, DECISIONS RET-001):
+            # the index is built from heading heuristics and misses real entries, so an
+            # unconfident lookup falls through to ordinary retrieval on the user's own words.
+            if saint_intent["mode"] == "list" and saint_matches:
                 trace.set(outcome="options", refusal=False, options_count=min(12, len(saint_matches)))
-                return _saint_options_response(raw_saint_query, saint_matches, saint_intent["mode"], language=detected_language)
+                return _saint_options_response(raw_saint_query, saint_matches, "list", language=detected_language)
 
-            entity = saint_matches[0]
-            question = f"{entity} Orthodox saint biography life feast teachings martyr monk bishop"
-            retrieval_question = question
+            # A menu is only justified by several genuinely matching saints: two or more exact
+            # matches, or a bare first name ("St. John") that several indexed saints share.
+            many_bare_candidates = single_bare_name and len(strong_matches) + len(medium_matches) >= 3
+            if len(strong_matches) >= 2 or many_bare_candidates:
+                option_names = strong_matches + medium_matches if many_bare_candidates else strong_matches
+                trace.set(outcome="options", refusal=False, options_count=min(12, len(option_names)))
+                return _saint_options_response(raw_saint_query, option_names, "lookup", language=detected_language)
+
+            confident = strong_matches[:1] or (medium_matches[:1] if len(medium_matches) == 1 else [])
+            if confident:
+                entity = confident[0]
+                if saint_intent.get("explicit"):
+                    # The user typed only a name; a descriptive query retrieves better than "search saint: X".
+                    question = f"{entity} Orthodox saint biography life feast teachings martyr monk bishop"
+                    retrieval_question = question
+                # Otherwise keep the user's question; `_build_retrieval_queries` adds entity variants.
+            else:
+                trace.set(saint_intent_fallthrough=True)
+                if saint_intent.get("explicit"):
+                    question = f"{raw_saint_query} Orthodox saint biography life feast teachings martyr monk bishop"
+                    retrieval_question = question
         elif history_resolved_entity:
             entity = history_resolved_entity
 
@@ -3148,11 +3204,15 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                         "options": clean_entities,
                     }
 
-            suggestion_options = (
-                _find_arabic_saint_index_matches(ambiguous_query, limit=10)
-                if detected_language == "ar"
-                else _find_saint_suggestions(ambiguous_query, limit=10)
-            )
+            if detected_language == "ar":
+                suggestion_options = _find_arabic_saint_index_matches(ambiguous_query, limit=10)
+            else:
+                # Only strong/medium matches count as "several saints match"; weak substring
+                # hits are not a reason to interrupt the user with a menu.
+                strong_opts, medium_opts = _split_saint_matches(
+                    _find_saint_record_matches(_canonicalize_saint_text(ambiguous_query), limit=10)
+                )
+                suggestion_options = strong_opts if len(strong_opts) >= 2 else (strong_opts + medium_opts)
             if len(suggestion_options) > 1:
                 clean_entities = suggestion_options
                 trace.set(outcome="options", refusal=False, options_count=len(clean_entities), ambiguous_query=ambiguous_query)

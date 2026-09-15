@@ -304,7 +304,28 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 
 ## Retrieval
 
-_(Entries for phase 2 are added below as the steps land.)_
+### RET-001: A saint-index miss falls through to retrieval instead of refusing
+- **Date / Part:** 2026-09-15, Phase 2 Step 1
+- **Audit ref:** C17, EVAL-006
+- **Context:** Six of the seven answerable refusals in the baseline came from `_extract_saint_chat_intent`. Tracing the six showed two separate faults:
+  1. The regex captured everything after "who was", so the index was asked for `"St. Demiana and how was she martyred"` or `"St. Abanoub, and how old was he when his parents died"`, which can never match.
+  2. The runtime saint index (built by `_build_saint_record_index` from ALL-CAPS heading lines) never contains Bishoy, Demiana or Rebecca: their headings are `BISHOY, ST. ABBA`, `DEMIANA AND THE FOURTY VIRGINS, SS.` and `REBECCA AND HER FIVE CHILDREN`, and the name-plausibility heuristics reject any name containing "and" or a leftover "St." token. `St. Barbara` *is* indexed, but the query `"St. Barbara the martyr"` failed every scoring rule because the descriptor is not part of the indexed name.
+  In all six cases an empty match list ended the request with "I could not find a dedicated saint entry", so retrieval, which had the pages, was never tried.
+- **Options considered:**
+  1. *Rebuild the index properly at ingestion* (the real fix for fault 2). Deferred by instruction to the re-ingestion phase.
+  2. *Delete the intent path entirely and always retrieve.* Simplest, but loses the useful disambiguation menu for bare first names and the entity-based query expansion that helps the Saints tab.
+  3. *Keep the path but make it advisory*: a miss or an unconfident match can add information (an entity) but can never end the request.
+- **Decision:** Option 3.
+  - The captured candidate is cut at the first clause boundary (`,`, `and`, `how`, `when`, ...) so the index sees `St. Demiana`, not the whole sentence.
+  - `_find_saint_record_matches` now returns a `match_score` per record and gains one rule: if the first name token matches (`barbara martyr` vs `barbara`) that is a medium match. Scores are banded: strong (0–1, exact name/alias), medium (2, prefix or shared core name), weak (3–4).
+  - Routing: two or more strong matches, or a bare first name shared by three or more indexed saints ("St. John"), shows the menu. Exactly one strong match (or one medium match) becomes the `entity`, which only *adds* query variants; the user's own question is kept as the retrieval query unless the phrasing was an explicit lookup (`search saint: X`, `learn more about X`), where the old descriptive query is still used. Anything else falls through to normal retrieval with no entity and no refusal.
+  - The separate "ambiguous bare name" path now triggers only for single-word names and only when there are strong/medium matches.
+  - `_saint_missing_response` was deleted; no code path refuses on an index miss any more.
+- **Why:** The index is a heuristic cache, not the source of truth; the vector store is. A cache miss should degrade to the slower path, never to a wrong answer. Keeping the user's wording as the retrieval query also fixes multi-part saint questions, which used to have their second half discarded.
+- **Result (eval `20260915-171208.json` vs baseline `20260915-170734.json`):** answerable refusals 13.5 % → 1.9 % (7 → 1); saints category 69 % → 100 % answered, recall@8 54 % → 82 %; multi-part 50 % → 100 % answered; overall recall@8 62.2 % → 73.1 %; judge all-answerable 4.15 → 4.54. The one remaining refusal (FU-01) is the keyword filter, addressed in Step 3. Nothing got worse: out-of-corpus refusals stayed 10/10 and no category dropped.
+- **Files changed:** `api.py`.
+- **Concept to learn:** *Fail-soft routing / graceful degradation.* When a fast path (a regex + lookup table) cannot decide confidently, hand the request to the general path rather than answering from the fast path's ignorance. Also *precision vs recall of a classifier*: the intent regex had high recall (it fired on every "who was") and low precision (it decided wrongly), so its decisions must not be terminal. Search: "graceful degradation", "intent classification confidence threshold fallback".
+- **Revisit if:** the saint index is rebuilt at ingestion with proper names and aliases; then strong matches become reliable and the menu thresholds can be simplified.
 
 ## Prompting & Generation
 
