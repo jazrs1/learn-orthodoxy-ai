@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
+import { BRAND } from "../lib/brand";
 import { IconMenu } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
 
@@ -68,7 +69,14 @@ export default function Navbar() {
         ) : null}
 
         <Link href="/" className="nav-brand">
-          <Image src="/cross-mark.png" alt="" width={32} height={32} className="nav-cross" loading="eager" />
+          <Image
+            src={BRAND.lettermark.src}
+            alt=""
+            width={BRAND.lettermark.width}
+            height={BRAND.lettermark.height}
+            className="nav-lettermark"
+            loading="eager"
+          />
           <span className="nav-title">{t("appName")}</span>
         </Link>
 

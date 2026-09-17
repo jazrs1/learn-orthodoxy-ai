@@ -80,6 +80,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-011: Font loading trimmed after the first "after" measurement](#ui-011-font-loading-trimmed-after-the-first-after-measurement)
   - [UI-012: Traditional redesign on its own branch; logo redrawn as outlined SVG (proposal)](#ui-012-traditional-redesign-on-its-own-branch-logo-redrawn-as-outlined-svg-proposal)
   - [UI-013: Classical type and logo colors — EB Garamond for display, Source Serif 4 kept for reading](#ui-013-classical-type-and-logo-colors--eb-garamond-for-display-source-serif-4-kept-for-reading)
+  - [UI-014: Book-style layout replaces the app patterns; logo assets wired in through one switch](#ui-014-book-style-layout-replaces-the-app-patterns-logo-assets-wired-in-through-one-switch)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1099,6 +1100,61 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:** `orthodox-site/app/fonts.ts`, `orthodox-site/app/globals.css`, `orthodox-site/app/layout.tsx`, `orthodox-site/app/manifest.ts`, `ui-audit/tools/reading-fonts.mjs` (new), `ui-audit/tools/lighthouse.mjs` (new), `ui-audit/tools/capture.mjs` (`BASE_URL`), `ui-audit/typography/` (new), `.gitignore`.
 - **Concept to learn:** *x-height and optical size.* Two fonts at the same pixel size can look very different in size; the height of the lowercase letters decides legibility. Search: "x-height legibility screen", "font-variant-caps all-small-caps".
 - **Revisit if:** the owner prefers Garamond for answers anyway (use 20 px, weight 450, and check the 1× rendering), or a dark theme is added (the color tokens are the only thing to redefine).
+
+### UI-014: Book-style layout replaces the app patterns; logo assets wired in through one switch
+- **Date / Part:** 2026-09-17, design-traditional Step 3
+- **Context:** Several parts of the refreshed site looked templated rather than designed: the pill chips, the icon tiles in rounded cards, the red eyebrow above the title, the answer cards with shadows, and the pill-shaped buttons and language switch. The owner chose the logo (Bold ORTHODOXY, dark-square favicon). The cross is still waiting for the priest, so the Coptic cross is the default.
+- **Decision:**
+  - **One switch for the cross.**
+    - `lib/brand.ts` holds `BRAND_CROSS = "coptic"` and every logo path. The lettermark, the ornament cross, the favicon, the apple icon and the manifest icons all come from it.
+    - The icons are declared in the root layout's `metadata.icons` instead of `app/icon*` files, because file-based icons can't follow a constant.
+    - `/favicon.ico` is rewritten to the current favicon for clients that request it directly.
+    - `ui-audit/tools/brand.mjs` (with `SITE_DIR`) writes both crosses' files into `public/brand/`, so switching is that one line. It was tested by switching to `"latin"` and back.
+    - The social card uses no cross, so it never needs regenerating.
+  - **Header:** the lettermark next to "Learn Orthodoxy" in EB Garamond, with a double hairline under the header. The navigation is in small caps; the current page is underlined in red instead of filled.
+    - The language switch is two words split by a hairline, and both are now 44 px tall on phones (they were 36 px).
+  - **Hero:**
+    - The wordmark (without its tagline) is the `h1`. The tagline is set underneath as real text, in spaced small caps. It stays readable below 400 px, and on Arabic pages it is translated ("دليل دراسي قبطي أرثوذكسي").
+    - On Arabic pages the Arabic name is the heading text and the English wordmark is decorative.
+    - The red eyebrow is gone. A quiet italic note sits under the question box: "Answers are prepared by AI from these books, with sources shown." It has an Arabic version.
+  - **"Begin with a question":** a table-of-contents list (italic Garamond, dotted leaders, hairline rules, each row a full-width button) replaces the pill chips. Follow-up suggestions and catechism prompts use the same rows.
+  - **Explore:** two columns of text divided by a hairline, each with a small-caps heading, a short description and a text link. The icon tiles are gone, and `IconBook` and `IconUsers` were removed.
+  - **How it works:** numbered with Roman numerals in rubric red; Arabic uses Arabic-Indic digits. "Before you start" is a ruled note with em-dash markers instead of a tinted box.
+  - **Ornament:** `components/Ornament.tsx` draws two antique-gold rules around the brand cross. It is used only between the home page's major sections and under the 404 title.
+  - **Answers:**
+    - No card. The question is set in italic Garamond beside a gold rule, and each new question is separated from the previous answer by a hairline.
+    - The first paragraph of a left-to-right answer gets a two-line drop cap in rubric red (`initial-letter`, with a float fallback). Arabic gets none, because it would break the joined letters.
+    - Headings are in Garamond, with small caps for the minor levels. Numbered-list markers are red, bullet markers gold.
+    - Tables use book rules (a heavy rule above and below, a light rule under the header, no grid).
+    - Sources look like footnotes: a short gold rule, small type, red numbers and italic titles.
+  - **Controls:** buttons are rectangles (2 px radius) in small caps, umber or outlined. The composer and inputs have 2–4 px corners with a 3.3:1 border and no shadow. The focus ring is still 2 px rubric red. The only shadow left is the phone drawer's.
+  - **Other pages:**
+    - Saints: the selected saint is a ruled encyclopedia entry, and the names are a ruled index.
+    - Catechism: topics are ruled chapter rows.
+    - Credits: the portrait sits in a thin frame and the doxology is in centered italic.
+    - Contact: the form is set on the page without a card.
+    - 404: red "404", the title and the ornament. `public/cross-mark.png` and the old `app/favicon.ico`, `icon.png` and `apple-icon.png` are removed.
+  - **Social card:** redrawn as a framed page with the wordmark, the Arabic name, a small rule and one line of copy (`ui-audit/tools/og-image.*`).
+- **Why:** These patterns come from printed liturgical books and catechisms: rules, small caps, rubrics, contents pages and footnotes. They replace the chat-app vocabulary without losing any function.
+- **Result (production build, mocked API, no OpenAI calls):**
+  - axe finds 0 violations in all 32 captured states.
+  - Tap targets under 44 px on phones: before, the site name, both language buttons, an example chip and "About the sources"; after, only the text field inside the 44 px composer.
+  - The Lighthouse numbers are in the design-traditional summary in UI_AUDIT.md.
+- **Files changed:**
+  - New: `orthodox-site/lib/brand.ts`, `orthodox-site/components/Ornament.tsx`, `orthodox-site/public/brand/*` (generated).
+  - Changed:
+    - `orthodox-site/app/globals.css`
+    - `orthodox-site/app/home-page.tsx`, `orthodox-site/app/layout.tsx`, `orthodox-site/app/manifest.ts`, `orthodox-site/app/not-found.tsx`
+    - `orthodox-site/components/ExampleQuestions.tsx`, `orthodox-site/components/Navbar.tsx`, `orthodox-site/components/ChatSidebar.tsx`, `orthodox-site/components/Icons.tsx`
+    - `orthodox-site/lib/home-content.ts`, `orthodox-site/lib/site.ts`, `orthodox-site/next.config.ts`
+    - `orthodox-site/public/og-image.png`
+    - `ui-audit/tools/brand.mjs`, `ui-audit/tools/og-image.html`, `ui-audit/tools/og-image.mjs`
+  - Removed: `orthodox-site/app/favicon.ico`, `orthodox-site/app/icon.png`, `orthodox-site/app/apple-icon.png`, `orthodox-site/public/cross-mark.png`.
+- **Concept to learn:** *Book typography on the web.* Rules (hairlines), small caps, rubrication, drop caps (`initial-letter`) and running heads carry structure without boxes. Search: "CSS initial-letter", "booktabs table style", "rubrication".
+- **Revisit if:**
+  - The priest picks the Latin cross: change `BRAND_CROSS`.
+  - Firefox gains `initial-letter` (then drop the float fallback).
+  - A dark theme is added: the logo's `-dark` files are in `ui-audit/brand/svg/`.
 
 ## Code Cleanup
 

@@ -4,6 +4,10 @@
 //
 //   FONT_DIR=/path/with/EBGaramond-VF.ttf CHROME_BIN=/path/to/chrome node brand.mjs ../ui-audit/brand
 //
+// With SITE_DIR=/path/to/orthodox-site it also installs the site's assets into public/brand/
+// (wordmark, and for both crosses the lettermark, ornament cross, favicon and app icons; the
+// site picks one cross in lib/brand.ts).
+//
 // Needs fontkit, sharp and playwright next to this script (see README.md).
 import * as fontkit from "fontkit";
 import sharp from "sharp";
@@ -37,8 +41,10 @@ const instances = {};
 const font = (w) => (instances[w] ??= vf.getVariation({ wght: w }));
 
 const r2 = (s) => s.replace(/-?\d*\.\d+/g, (n) => String(Math.round(+n * 100) / 100));
+const r1 = (s) => s.replace(/-?\d*\.\d+/g, (n) => String(Math.round(+n * 10) / 10));
 const f2 = (n) => String(Math.round(n * 100) / 100);
-const P = (x, y) => `${f2(x)} ${f2(y)}`;
+const f1 = (n) => String(Math.round(n * 10) / 10);
+const P =(x, y) => `${f2(x)} ${f2(y)}`;
 
 function bboxOf(points) {
   const b = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
@@ -51,20 +57,28 @@ function bboxOf(points) {
   return b;
 }
 
-// Set one line as outlines. y is the baseline (y grows downward).
-function setText(text, { size, weight = 400, x = 0, y = 0, tracking = 0, features = [] }) {
+// Set one line as outlines. y is the baseline (y grows downward). With a defs map, each glyph
+// outline is stored once and placed with <use> (the wordmark repeats O, D and most tagline letters).
+function setText(text, { size, weight = 400, x = 0, y = 0, tracking = 0, features = [], defs = null }) {
   const f = font(weight);
   const s = size / f.unitsPerEm;
   const run = f.layout(text, features);
   let pen = x;
   const parts = [];
+  const uses = [];
   const contours = [];
   const bb = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
   run.glyphs.forEach((g, i) => {
     const p = run.positions[i];
-    const tp = g.path.scale(s, -s).translate(pen + p.xOffset * s, y - p.yOffset * s);
+    const gx = pen + p.xOffset * s, gy = y - p.yOffset * s;
+    const tp = g.path.scale(s, -s).translate(gx, gy);
     if (tp.commands.length) {
       parts.push(tp.toSVG());
+      if (defs) {
+        const id = `g${weight}-${g.id}-${Math.round(size)}`;
+        if (!defs.has(id)) defs.set(id, r1(g.path.scale(s, -s).toSVG()));
+        uses.push(`<use href="#${id}" x="${f1(gx)}" y="${f1(gy)}"/>`);
+      }
       const b = tp.bbox;
       bb.minX = Math.min(bb.minX, b.minX);
       bb.maxX = Math.max(bb.maxX, b.maxX);
@@ -77,7 +91,7 @@ function setText(text, { size, weight = 400, x = 0, y = 0, tracking = 0, feature
     }
     pen += p.xAdvance * s + (i < run.glyphs.length - 1 ? tracking : 0);
   });
-  return { d: r2(parts.join("")), bbox: bb, width: bb.maxX - bb.minX, count: run.glyphs.length, contours };
+  return { d: r2(parts.join("")), uses: uses.join(""), bbox: bb, width: bb.maxX - bb.minX, count: run.glyphs.length, contours };
 }
 
 function svgDoc(vb, body, title) {
@@ -127,21 +141,23 @@ const TAG_TRACKING = (() => {
   return (orth.width - nat.width) / (nat.count - 1);
 })();
 
-function wordmark({ tagline, dark, weight = 600 }) {
+// ORTHODOXY is Bold (owner's choice, UI-012); lighter weights are rendered for the comparison sheet.
+function wordmark({ tagline, dark, weight = 700 }) {
+  const defs = new Map();
   const col = dark
     ? { learn: C.ivory, orth: C.gold, tag: C.ivoryMuted }
     : { learn: C.umber, orth: C.gold, tag: C.umber };
   const capO = O_SIZE * 0.65;
   const yO = 0;
-  const orth = setText("ORTHODOXY", { size: O_SIZE, weight, y: yO, tracking: O_SIZE * 0.02 });
+  const orth = setText("ORTHODOXY", { size: O_SIZE, weight, y: yO, tracking: O_SIZE * 0.02, defs });
   const yL = yO - capO - O_SIZE * 0.14;
-  const learn = setText("Learn", { size: 106, weight: 600, y: yL });
+  const learn = setText("Learn", { size: 106, weight: 600, y: yL, defs });
 
   let tag = null;
   if (tagline) {
     const probe = setText(tagline, { size: T_SIZE, weight: 500, features: T_FEATURES, tracking: TAG_TRACKING });
     const tx = orth.bbox.minX + (orth.width - probe.width) / 2 - probe.bbox.minX;
-    tag = setText(tagline, { size: T_SIZE, weight: 500, features: T_FEATURES, tracking: TAG_TRACKING, x: tx, y: yO + O_SIZE * 0.38 });
+    tag = setText(tagline, { size: T_SIZE, weight: 500, features: T_FEATURES, tracking: TAG_TRACKING, x: tx, y: yO + O_SIZE * 0.38, defs });
   }
 
   // Candle: flame a little above "Learn", foot on the ORTHODOXY baseline, clear of every letter.
@@ -158,8 +174,9 @@ function wordmark({ tagline, dark, weight = 600 }) {
   const body = `<g transform="translate(${f2(cx)} ${f2(top)}) scale(${kx.toFixed(4)} ${k.toFixed(4)})">
 ${candlestick(dark)}
 </g>
-<path fill="${col.learn}" d="${learn.d}"/>
-<path fill="${col.orth}" d="${orth.d}"/>${tag ? `\n<path fill="${col.tag}" d="${tag.d}"/>` : ""}`;
+<defs>${[...defs].map(([id, d]) => `<path id="${id}" d="${d}"/>`).join("")}</defs>
+<g fill="${col.learn}">${learn.uses}</g>
+<g fill="${col.orth}">${orth.uses}</g>${tag ? `\n<g fill="${col.tag}">${tag.uses}</g>` : ""}`;
   const label = tagline ? `Learn Orthodoxy — ${tagline}` : "Learn Orthodoxy";
   return svgDoc([minX, minY, maxX - minX, maxY - minY], body, label);
 }
@@ -209,6 +226,12 @@ function placeCross(name, { cx, cy, cw, ch, fh, fw, ink }) {
   const art = crossArt(name);
   const s = Math.min((ch * fh) / art.h, (cw * fw) / art.w);
   return `<g fill="${ink}" transform="translate(${f2(cx)} ${f2(cy)}) scale(${s.toFixed(4)})">${art.svg}</g>`;
+}
+
+// The cross alone in antique gold, for the site's section divider.
+function crossOrnament(name) {
+  const art = crossArt(name);
+  return svgDoc([-art.w / 2, -art.h / 2, art.w, art.h], `<g fill="${C.antique}">${art.svg}</g>`, CROSS_NAME[name]);
 }
 
 /* ---------------------------------------------------------------- O shapes */
@@ -404,6 +427,59 @@ for (const name of Object.keys(files)) {
   }
 }
 
+/* ---------------------------------------------------------------- site install */
+// An .ico file holding PNG frames (supported by every current browser).
+function ico(frames) {
+  const header = Buffer.alloc(6 + 16 * frames.length);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(frames.length, 4);
+  let offset = header.length;
+  frames.forEach(({ size, png: data }, i) => {
+    const o = 6 + 16 * i;
+    header.writeUInt8(size % 256, o);
+    header.writeUInt8(size % 256, o + 1);
+    header.writeUInt16LE(1, o + 4);
+    header.writeUInt16LE(32, o + 6);
+    header.writeUInt32LE(data.length, o + 8);
+    header.writeUInt32LE(offset, o + 12);
+    offset += data.length;
+  });
+  return Buffer.concat([header, ...frames.map((frame) => frame.png)]);
+}
+
+function rasterise(svg, width) {
+  const vbWidth = +svg.match(/viewBox="[^ ]+ [^ ]+ ([^ ]+)/)[1];
+  return sharp(Buffer.from(svg), { density: Math.min(2400, 72 * Math.max(1, (width * 4) / vbWidth)) })
+    .resize({ width, kernel: "lanczos3" })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+if (process.env.SITE_DIR) {
+  const dir = path.join(process.env.SITE_DIR, "public/brand");
+  fs.mkdirSync(dir, { recursive: true });
+  const put = (name, data) => fs.writeFileSync(path.join(dir, name), data);
+  put("wordmark.svg", files["wordmark.svg"]);
+  put("wordmark-short.svg", files["wordmark-short.svg"]);
+  for (const cross of CROSSES) {
+    put(`lettermark-${cross}.svg`, files[`lettermark-${cross}.svg`]);
+    put(`cross-${cross}.svg`, crossOrnament(cross));
+    // Favicon: the dark rounded square, no tail at 16 px and a tail at 32 px (owner's choice).
+    put(
+      `favicon-${cross}.ico`,
+      ico([
+        { size: 16, png: await rasterise(files[`icon-16-square-${cross}.svg`], 16) },
+        { size: 32, png: await rasterise(files[`icon-32-square-${cross}.svg`], 32) },
+      ]),
+    );
+    const app = files[`app-icon-${cross}-dark.svg`];
+    put(`apple-icon-${cross}.png`, await rasterise(app, 180));
+    put(`icon-${cross}-192.png`, await rasterise(app, 192));
+    put(`icon-${cross}-512.png`, await rasterise(app, 512));
+  }
+  console.log(`installed site brand assets -> ${dir}`);
+}
+
 /* ---------------------------------------------------------------- sheets */
 const fileUrl = (p) => "file:///" + p.replace(/\\/g, "/");
 const orig = (f) => fileUrl(path.join(REPO, "orthodox-site/public/brand", f));
@@ -453,8 +529,8 @@ ${row(
   cell("Main, light on dark (new tagline, brass candlestick)", img("wordmark-dark-1200.png", 700), true),
 )}
 ${row(cell("Alternate, light on dark", img("wordmark-alt-dark-1200.png", 700), true))}
-<h2>ORTHODOXY weight (the current version is already SemiBold 600, so Bold and ExtraBold are included as the heavier options)</h2>
-${row(...WEIGHTS.map((w) => cell(`${w} — ${{ 500: "Medium", 600: "SemiBold (current)", 700: "Bold", 800: "ExtraBold" }[w]}`, img(`wordmark-w${w}-1200.png`, 700))))}
+<h2>ORTHODOXY weight (the owner chose Bold 700; the main files above use it)</h2>
+${row(...WEIGHTS.map((w) => cell(`${w} — ${{ 500: "Medium", 600: "SemiBold", 700: "Bold (chosen)", 800: "ExtraBold" }[w]}`, img(`wordmark-w${w}-1200.png`, 700))))}
 <h2>Weight at header sizes (short version, 320 and 240 px wide)</h2>
 ${row(...WEIGHTS.map((w) => cell(`${w}`, `<div class="pair">${img(`wordmark-short-w${w}-320.png`, 320)}${img(`wordmark-short-w${w}-240.png`, 240)}</div>`)))}
 <h2>Smaller sizes</h2>

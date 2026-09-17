@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type { MouseEvent } from "react";
+import { BRAND } from "../lib/brand";
 import { ConversationSummary } from "../lib/chat-types";
 import { IconClose, IconPlus, IconTrash } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
@@ -70,7 +71,13 @@ export default function ChatSidebar({
       <div className="chat-sidebar-details">
         <div className="chat-sidebar-header">
           <Link href="/" className="chat-sidebar-home-link" onClick={onClose} aria-label={t("home")}>
-            <Image src="/cross-mark.png" alt="" width={28} height={28} className="chat-sidebar-home-cross" />
+            <Image
+              src={BRAND.lettermark.src}
+              alt=""
+              width={BRAND.lettermark.width}
+              height={BRAND.lettermark.height}
+              className="chat-sidebar-home-mark"
+            />
           </Link>
           <div className="chat-sidebar-title">{t("chats")}</div>
           {onClose ? (

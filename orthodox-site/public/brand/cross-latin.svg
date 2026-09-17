@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-37.44 -50.44 74.89 100.89" role="img" aria-label="Latin budded cross">
+<title>Latin budded cross</title>
+<g fill="#866426"><rect x="-5.5" y="-37" width="11" height="74"/>
+<rect x="-24" y="-18.5" width="48" height="11"/>
+<g transform="translate(0 -37)"><path d="M5.5 11L7.58 1.22L-7.58 1.22L-5.5 11Z"/><path d="M6.36 1.22Q7.94 -4.89 0 -13.44Q-7.94 -4.89 -6.36 1.22Z"/><circle cx="8.07" cy="1.22" r="4.52"/><circle cx="-8.07" cy="1.22" r="4.52"/></g><g transform="translate(0 37) rotate(180)"><path d="M5.5 11L7.58 1.22L-7.58 1.22L-5.5 11Z"/><path d="M6.36 1.22Q7.94 -4.89 0 -13.44Q-7.94 -4.89 -6.36 1.22Z"/><circle cx="8.07" cy="1.22" r="4.52"/><circle cx="-8.07" cy="1.22" r="4.52"/></g>
+<g transform="translate(-24 -13) rotate(-90)"><path d="M5.5 11L7.58 1.22L-7.58 1.22L-5.5 11Z"/><path d="M6.36 1.22Q7.94 -4.89 0 -13.44Q-7.94 -4.89 -6.36 1.22Z"/><circle cx="8.07" cy="1.22" r="4.52"/><circle cx="-8.07" cy="1.22" r="4.52"/></g><g transform="translate(24 -13) rotate(90)"><path d="M5.5 11L7.58 1.22L-7.58 1.22L-5.5 11Z"/><path d="M6.36 1.22Q7.94 -4.89 0 -13.44Q-7.94 -4.89 -6.36 1.22Z"/><circle cx="8.07" cy="1.22" r="4.52"/><circle cx="-8.07" cy="1.22" r="4.52"/></g></g>
+</svg>

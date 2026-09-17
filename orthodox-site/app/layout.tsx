@@ -3,6 +3,7 @@ import "./globals.css";
 import { fontVariables } from "./fonts";
 import Navbar from "../components/Navbar";
 import { LanguageProvider } from "../components/LanguageProvider";
+import { BRAND } from "../lib/brand";
 import { directionForLanguage } from "../lib/i18n";
 import { getRequestLanguage } from "../lib/request-language";
 import { pageMetadata, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "../lib/site";
@@ -17,6 +18,12 @@ export const metadata: Metadata = {
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
+  // Declared here rather than as app/icon files so the cross can be switched in lib/brand.ts (UI-014).
+  // favicon.ico holds the 16 px (no tail) and 32 px (with tail) dark-square drawings.
+  icons: {
+    icon: [{ url: BRAND.favicon, sizes: "16x16 32x32", type: "image/x-icon" }],
+    apple: [{ url: BRAND.appleIcon, sizes: "180x180", type: "image/png" }],
+  },
   verification: {
     google: "qSkr64BCs0d2ya1fOEyD6AmupuD7UhMKVqu_Vxb_wu0",
   },

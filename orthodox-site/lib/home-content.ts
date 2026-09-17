@@ -1,11 +1,14 @@
 import type { Language } from "./i18n";
 
-// Landing-page copy (UI-009). Example questions are ones the eval set shows the library answers
-// well (CAT-01, CAT-08, CAT-15, CAT-18, SNT-08, KW-03 and AR-01/02/04/07/08/10).
+// Landing-page copy (UI-009, UI-014). Example questions are ones the eval set shows the library
+// answers well (CAT-01, CAT-08, CAT-15, CAT-18, SNT-08, KW-03 and AR-01/02/04/07/08/10).
 
 export type HomeContent = {
-  eyebrow: string;
+  /** Set under the wordmark in spaced small caps. */
+  tagline: string;
   lead: string;
+  /** Quiet note under the question box. */
+  aiNote: string;
   examplesLabel: string;
   examples: string[];
   exploreTitle: string;
@@ -20,10 +23,11 @@ export type HomeContent = {
 
 export const HOME_CONTENT: Record<Language, HomeContent> = {
   en: {
-    eyebrow: "An AI study guide to the Coptic Orthodox faith",
+    tagline: "A Coptic Orthodox Study Guide",
     lead:
       "Ask about Church teaching and the lives of the saints. Answers come only from Fr. Tadros Malaty's books and the Coptic Orthodox catechism, and every answer shows the book and page it drew on.",
-    examplesLabel: "Try one of these",
+    aiNote: "Answers are prepared by AI from these books, with sources shown.",
+    examplesLabel: "Begin with a question",
     examples: [
       "Why is prayer essential in the Coptic Orthodox life?",
       "What does the Coptic Orthodox Church teach about the Eucharist?",
@@ -68,10 +72,11 @@ export const HOME_CONTENT: Record<Language, HomeContent> = {
     noteLink: "About the sources",
   },
   ar: {
-    eyebrow: "دليل دراسي بالذكاء الاصطناعي للإيمان القبطي الأرثوذكسي",
+    tagline: "دليل دراسي قبطي أرثوذكسي",
     lead:
       "اسأل عن تعليم الكنيسة وسير القديسين. تأتي الإجابات فقط من كتب القمص تادرس يعقوب ملطي والتعليم الكنسي القبطي الأرثوذكسي، وكل إجابة تذكر الكتاب والصفحة التي اعتمدت عليها.",
-    examplesLabel: "جرّب أحد هذه الأسئلة",
+    aiNote: "يُعِدّ الذكاء الاصطناعي الإجابات من هذه الكتب، مع ذكر مصادرها.",
+    examplesLabel: "ابدأ بسؤال",
     examples: [
       "من هو الأنبا موسى الأسود؟",
       "ما هي أهمية الصلاة الربانية؟",

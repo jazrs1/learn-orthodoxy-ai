@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { BRAND } from "./lib/brand";
 
 const nextConfig: NextConfig = {
   async redirects() {
@@ -7,6 +8,10 @@ const nextConfig: NextConfig = {
       { source: "/about", destination: "/credits", permanent: true },
       { source: "/sources", destination: "/credits", permanent: true },
     ];
+  },
+  async rewrites() {
+    // Browsers and crawlers that ask for /favicon.ico directly get the current brand favicon (UI-014).
+    return [{ source: "/favicon.ico", destination: BRAND.favicon }];
   },
 };
 

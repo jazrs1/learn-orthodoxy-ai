@@ -11,7 +11,7 @@ export const OG_IMAGE = {
   url: "/og-image.png",
   width: 1200,
   height: 630,
-  alt: "Learn Orthodoxy — an AI study guide to the Coptic Orthodox faith",
+  alt: "Learn Orthodoxy — A Coptic Orthodox Study Guide",
 };
 
 type PageMetadataInput = {
