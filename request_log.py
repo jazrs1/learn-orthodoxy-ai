@@ -190,6 +190,7 @@ class RequestTrace:
             "retry_queries", "entity", "rewritten_question", "filter_rejected", "context_chunks",
             "prompt_tokens", "completion_tokens", "model", "citations", "history_turns_sent",
             "prompt_version", "best_distance", "distance_threshold", "saint_intent_fallthrough",
+            "task_analysis", "analysis_tokens", "retrieval_plan", "entity_check", "saint_list",
         )
         payload: Dict[str, Any] = {"request_id": self.request_id}
         for key in keys:

@@ -32,6 +32,7 @@ from saint_index_overrides import (
     MANUAL_SAINT_NAME_REPLACEMENTS,
 )
 from arabic_saints_index import ARABIC_SAINTS_INDEX
+from task_analysis import TaskAnalysis, analyze_request
 
 load_dotenv()
 
@@ -95,6 +96,12 @@ VECTOR_DISTANCE_THRESHOLD = _env_float("VECTOR_DISTANCE_THRESHOLD", 1.0)
 ARABIC_VECTOR_DISTANCE_THRESHOLD = _env_float("ARABIC_VECTOR_DISTANCE_THRESHOLD", 0.0)
 # Number of prior conversation turns passed to the model as real messages.
 HISTORY_TURNS_FOR_MODEL = _env_int("HISTORY_TURNS_FOR_MODEL", 6)
+
+# --- Request analysis (DECISIONS.md RET-006) ---
+# One cheap call separates the retrieval query from the requested format before retrieval.
+TASK_ANALYSIS_ENABLED = _env_flag("TASK_ANALYSIS_ENABLED", "1")
+TASK_ANALYSIS_MODEL = os.getenv("TASK_ANALYSIS_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
+TASK_ANALYSIS_TIMEOUT_SECONDS = _env_float("TASK_ANALYSIS_TIMEOUT_SECONDS", 8.0)
 
 # --- Prompts are versioned files under prompts/ (DECISIONS.md GEN-001) ---
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
@@ -1080,154 +1087,6 @@ def _merge_document_batches(
     return merged_docs, merged_metas
 
 
-def _arabic_retrieval_hints(question: str) -> List[str]:
-    hints: List[str] = []
-    q = question or ""
-
-    manual_match = _matched_manual_arabic_alias(q)
-    if manual_match:
-        manual_names = _manual_saint_record_names(manual_match["canonical"])
-        saint_name = manual_names[0] if manual_names else manual_match["canonical"]
-        hints.append(f"{saint_name} Orthodox saint biography life feast teachings")
-
-    if "الآباء الرسول" in q or "اباء رسول" in q:
-        hints.append(
-            "apostolic fathers early Christian writers connected to the apostles Ignatius Polycarp Clement Barnabas Hermas"
-        )
-    if "العذراء" in q or "مريم" in q:
-        hints.append("Virgin Mary Theotokos Saint Mary Mother of God")
-    if "المعمودية" in q or "معمودية" in q:
-        hints.append("baptism sacrament Coptic Orthodox Church born again water Holy Spirit chrismation")
-    if "الميرون" in q:
-        hints.append("chrismation holy myron sacrament Coptic Orthodox Church")
-    if re.search(r"(أتحول|اتحول|التحول|أصبح|اصبح|أنضم|انضم)", q) and "الأرثوذكس" in q:
-        hints.append("become Orthodox convert to Coptic Orthodox Church catechumen baptism chrismation")
-
-    return hints
-
-
-def _fallback_english_retrieval_query(question: str) -> str:
-    hints = _arabic_retrieval_hints(question)
-    if hints:
-        return " ".join(hints)
-    return question
-
-
-def _build_english_retrieval_query(question: str, mode: str) -> str:
-    fallback = _fallback_english_retrieval_query(question)
-
-    try:
-        resp = oai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=0,
-            max_tokens=90,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Rewrite the user's Arabic or mixed-language Orthodox Christian question "
-                        "as one concise English retrieval query for searching English Coptic Orthodox source chunks. "
-                        "Include important Orthodox, Coptic, saint, sacrament, and catechism terms in English. "
-                        "Return only the query, with no quotes or explanation."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": f"Mode: {mode}\nQuestion: {question}",
-                },
-            ],
-        )
-        query = (resp.choices[0].message.content or "").strip()
-    except Exception:
-        logger.warning("English retrieval query rewrite failed", exc_info=True)
-        query = ""
-
-    if not query:
-        query = fallback
-
-    for hint in _arabic_retrieval_hints(question):
-        if hint.lower() not in query.lower():
-            query = f"{query} {hint}".strip()
-
-    query = re.sub(r"\s+", " ", query).strip()
-    return query or fallback or question
-
-
-def _history_messages(history: list, role: str | None = None) -> List[str]:
-    messages: List[str] = []
-    for item in history:
-        if not isinstance(item, dict):
-            continue
-        if role and item.get("role") != role:
-            continue
-        content = str(item.get("content", "") or "").strip()
-        if content:
-            messages.append(content)
-    return messages
-
-
-def _extract_entity_from_history(history: list) -> str | None:
-    for content in reversed(_history_messages(history, role="assistant")):
-        bold_match = re.search(r"\*\*([^*\n]{2,80})\*\*", content)
-        if bold_match:
-            candidate = _normalize_entity_label(bold_match.group(1))
-            if candidate:
-                return candidate
-
-        name_match = re.search(
-            r"\b(?:St\.|Saint|Abba|Anba)\s+([A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,4})",
-            content,
-        )
-        if name_match:
-            return _normalize_entity_label(name_match.group(0))
-
-    for content in reversed(_history_messages(history, role="user")):
-        match = re.match(
-            r"^(?:who\s+is|who\s+was|tell\s+me\s+about|about)\s+(.+?)\s*[?.!]*$",
-            content.strip(),
-            flags=re.IGNORECASE,
-        )
-        if not match:
-            continue
-        candidate = re.sub(r"\s+", " ", match.group(1)).strip()
-        if not candidate:
-            continue
-        saint_matches = _find_saint_index_matches(candidate, limit=1)
-        return saint_matches[0] if saint_matches else _canonicalize_saint_text(candidate)
-
-    return None
-
-
-def _question_has_followup_reference(question: str) -> bool:
-    q = f" {question.lower()} "
-    return bool(
-        re.search(
-            r"\b(?:he|his|him|she|her|hers|it|its|they|their|them|that|this)\b",
-            q,
-        )
-        or re.search(r"\b(?:that|this|the same)\s+(?:saint|church|monastery|one|person|place)\b", q)
-    )
-
-
-def _rewrite_question_with_history(question: str, history: list) -> Tuple[str, str | None]:
-    resolved_entity = _extract_entity_from_history(history)
-    if not resolved_entity or not _question_has_followup_reference(question):
-        return question, None
-
-    q_lower = question.lower()
-    if re.search(r"\bchurch\b", q_lower) and re.search(r"\b(?:name|named|called|dedicated)\b", q_lower):
-        return (
-            f"Is there a church, monastery, or place named after {resolved_entity}? "
-            f"{resolved_entity} church named after {resolved_entity} monastery",
-            resolved_entity,
-        )
-
-    if re.search(r"\bmonaster", q_lower):
-        return f"{question} {resolved_entity} monastery {resolved_entity}", resolved_entity
-
-    return f"{question} {resolved_entity}", resolved_entity
-
-
 def _is_broad_list_question(question: str) -> bool:
     q = question.lower()
     if not re.search(r"\b(?:list|show|name|what are|which are|give me)\b", q):
@@ -1641,6 +1500,22 @@ def _cited_sources(answer: str, numbered: List[Dict[str, Any]], fallback_limit: 
             if len(chosen) >= fallback_limit:
                 break
     return chosen, cited_count
+
+
+def _analyze_request(question: str, history: List[Dict[str, str]]) -> TaskAnalysis:
+    """Standalone retrieval query + requested format for this turn (RET-006), logged in the trace."""
+    trace = current_trace()
+    if not TASK_ANALYSIS_ENABLED or re.match(r"^\s*search\s+saints?\s*:", question, flags=re.IGNORECASE):
+        analysis = TaskAnalysis(retrieval_query=question, error="skipped")
+    else:
+        analysis = analyze_request(
+            oai_client, question, history, model=TASK_ANALYSIS_MODEL, timeout_seconds=TASK_ANALYSIS_TIMEOUT_SECONDS
+        )
+        if analysis.error:
+            logger.warning("task analysis failed, using the raw question: %s", analysis.error)
+    if trace is not None:
+        trace.set(task_analysis=analysis.log_dict(), analysis_tokens=analysis.prompt_tokens and (analysis.prompt_tokens + (analysis.completion_tokens or 0)))
+    return analysis
 
 
 def _build_chat_messages(
@@ -2923,29 +2798,24 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             if manual_saint_match
             else ""
         )
-        if detected_language == "ar":
-            question = original_question
-            history_resolved_entity = None
-        elif mode == "catechism":
-            question = original_question
-            history_resolved_entity = None
-        else:
-            question, history_resolved_entity = _rewrite_question_with_history(original_question, history)
-            question = _canonicalize_saint_text(question)
-
-        english_retrieval_query = "" if detected_language == "ar" else question
-        retrieval_question = original_question if detected_language == "ar" else question
-        entity = manual_saint_match["record_name"] if manual_saint_match else None
-        clean_entities = []
-
         trace.set_question(original_question)
         trace.set(
             language=detected_language,
             mode=mode,
             matched_saint_alias=matched_saint_alias or None,
-            history_resolved_entity=history_resolved_entity,
             history_messages_used=len(history),
         )
+
+        # Separate WHAT to retrieve from HOW to present it (RET-006). Saint-tab lookups
+        # ("search saint: X") are already a bare name and skip the call.
+        analysis = _analyze_request(original_question, history)
+        trace.lap("analysis")
+        # `question` keeps the user's words for the saint-intent patterns below; retrieval
+        # uses the standalone query (pronouns resolved, formatting words removed).
+        question = original_question
+        retrieval_question = _canonicalize_saint_text(analysis.retrieval_query)
+        entity = manual_saint_match["record_name"] if manual_saint_match else None
+        clean_entities = []
 
         if detected_language == "ar":
             metadata_filter = _arabic_metadata_filter_for_mode(mode)
@@ -3052,6 +2922,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             trace.set(
                 outcome="refused" if refused else "answered",
                 refusal=refused,
+                refusal_reason="model_refusal" if refused else None,
                 grounding=grounding,
                 answer_chars=len(answer),
                 citations=cited_count,
@@ -3107,11 +2978,12 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 # Otherwise keep the user's question; `_build_retrieval_queries` adds entity variants.
             else:
                 trace.set(saint_intent_fallthrough=True)
-                if saint_intent.get("explicit"):
+                # Only a name lookup ("search saint: X") is rewritten into a biography query. A
+                # "list ..." request with no index match ("list saints who were martyred in Egypt")
+                # keeps the analysed query; the canned biography string used to replace it (RET-006).
+                if saint_intent.get("explicit") and saint_intent["mode"] == "lookup":
                     question = f"{raw_saint_query} Orthodox saint biography life feast teachings martyr monk bishop"
                     retrieval_question = question
-        elif history_resolved_entity:
-            entity = history_resolved_entity
 
         # TODO(per-conversation follow-ups): numbered follow-ups ("the 2nd one") used to be
         # resolved against a process-global `last_list` shared by every user, keyed off any
@@ -3120,7 +2992,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         # stores `options`/`entities` per message) and only when the question is clearly an
         # ordinal selection, not any question that happens to contain a number.
 
-        trace.set(rewritten_question=question[:300], entity=entity)
+        trace.set(rewritten_question=retrieval_question[:300], entity=entity)
 
         ambiguous_query = _extract_ambiguous_saint_query(question) if mode != "catechism" else ""
         if ambiguous_query and entity is None:
@@ -3266,6 +3138,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         trace.set(
             outcome="refused" if refused else "answered",
             refusal=refused,
+            refusal_reason="model_refusal" if refused else None,
             grounding=grounding,
             answer_chars=len(answer),
             entities_extracted=len(clean_entities),

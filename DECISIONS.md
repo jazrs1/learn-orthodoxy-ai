@@ -52,6 +52,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-003: "No relevant source" is decided by a distance threshold chosen from the eval data](#ret-003-no-relevant-source-is-decided-by-a-distance-threshold-chosen-from-the-eval-data)
   - [RET-004: The distance threshold stays at 1.0; near-miss refusals need a different mechanism](#ret-004-the-distance-threshold-stays-at-10-near-miss-refusals-need-a-different-mechanism)
   - [RET-005: Raise the distance threshold to 1.1 after a production false refusal on a short query](#ret-005-raise-the-distance-threshold-to-11-after-a-production-false-refusal-on-a-short-query)
+  - [RET-006: One analysis call separates the retrieval query from the requested task](#ret-006-one-analysis-call-separates-the-retrieval-query-from-the-requested-task)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -579,6 +580,43 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Files changed:** `DECISIONS.md`, `eval/questions.jsonl`.
 - **Concept to learn:** *Distribution shift between the eval set and production.* A threshold can only be trusted over the kinds of input it was tuned on; an eval written as full sentences says nothing about keyword queries. When production shows a new input shape, add examples of it to the set before moving the threshold very far. Search: "query length embedding similarity", "eval set coverage distribution shift".
 - **Revisit if:** the KW questions have been run (re-derive on tune), the entity-presence check exists, the query rewrite (phase 4 Step 3) turns short queries into full questions (distances should drop), or re-ingestion changes chunk size.
+
+### RET-006: One analysis call separates the retrieval query from the requested task
+- **Date / Part:** 2026-09-16, Phase 4 Step 2
+- **Audit ref:** EVAL-014, GEN-003 revisit, open question 18, FU-02 (EVAL-009)
+- **Context:** The embedded query was the user's raw words. "make a table of the fasts and their lengths" embedded at distance 1.405 from pages that answer it; "make a table with the differences …" pulled table-of-contents chunks; bare keywords ("confession", 1.246) fell outside the threshold; follow-ups were rewritten only by a regex that looked for a bold name in the previous answer, and only outside catechism mode, so FU-02 ("What does St. Anthony say about practicing it?") searched for the pronoun. The saint-list regex also replaced unmatched "list …" requests with a canned biography query.
+- **Options considered:**
+  1. *Strip formatting words with a regex.* Cheap, but the phrasing space is open ("put it in a table", "give me five quiz questions"), and it cannot resolve pronouns or expand keywords.
+  2. *Embed the question twice (raw and cleaned) and merge.* Keeps the raw noise in the candidate set.
+  3. *One small LLM call before retrieval* that returns a standalone query, the requested format and a broad flag. One extra request per turn (~0.9 s, ~700 tokens of gpt-4o-mini), but it handles formatting words, pronouns and short keywords in one place.
+- **Decision:** Option 3, in a new module `task_analysis.py`. The call (JSON mode, temperature 0, 8 s timeout, no retries) returns `retrieval_query`, `output_format` (prose/table/list/comparison/summary/study_guide/other) and `broad`. The same prompt also returns `sub_queries`, `saint_name_filter` and `named_subjects`, which are logged now and used by Step 3 (RET-007) and Step 5; putting them in the prompt now keeps the prompt identical across Steps 2–6, so later step deltas are not prompt changes. The conversation (last 4 turns, 600 chars each) is only included when there is history. The whole result goes into the request log as `task_analysis`, with `analysis_tokens` and an `analysis` stage time. On any failure (timeout, API error, bad JSON, empty query) the raw question is used with format `prose`, and the error is logged; `search saint: X` lookups skip the call. Config: `TASK_ANALYSIS_MODEL` (default `gpt-4o-mini`), `TASK_ANALYSIS_ENABLED` (default on), `TASK_ANALYSIS_TIMEOUT_SECONDS` (default 8).
+  - Retrieval (English and Arabic) now embeds `retrieval_query`; the answer prompt still receives the user's original words, so the format request reaches generation.
+  - The saint-intent patterns still run on the user's words (they recognise Saints-tab lookups), but only a *lookup* with no index match is rewritten into the descriptive biography query; an unmatched *list* request keeps the analysed query.
+  - Removed: the regex history rewrite (`_rewrite_question_with_history`, `_extract_entity_from_history`, `_question_has_followup_reference`, `_history_messages`) and an unused earlier LLM rewrite (`_build_english_retrieval_query` and its hint helpers), which was never called.
+  - Model refusals are now logged with `refusal_reason=model_refusal` (EVAL-014 showed they were indistinguishable in the log).
+- **Model choice:** on eight sample requests gpt-4.1-mini labelled the Catholic-differences table as `prose` and was ~0.2 s slower; gpt-4o-mini got the formats right but sometimes keeps a command word ("What are some quiz questions about fasting?" for TSK-13) and sometimes adds a `saint_name_filter` to a one-saint question (fixed in the prompt: "only when the user wants SEVERAL saints").
+- **Result (tune, coverage-only; `20260916-210222` → `20260916-211037`):**
+
+| metric | step 1 baseline | step 2 |
+|---|---|---|
+| coverage (all answerable) | 60.5% | 62.5% |
+| off-target | 9.1% | 10.9% |
+| answerable refused | 9.1% | 7.3% |
+| … short / task-style | 14.3% / 40.0% | **0.0%** / 40.0% |
+| out-of-corpus refused (easy / near-miss / task) | 80.8% (100 / 68.8 / 100) | 84.6% (100 / 75.0 / 100) |
+| format followed (task) | 60.0% (n=5) | 80.0% (n=5) |
+| follow-up coverage | 63.3% | 80.2% |
+| keyword coverage | 75.6% | 80.4% |
+| recall@8 | 71.8% | 73.3% |
+| mean latency | 2.6 s | 3.4 s |
+| analysis call | — | 869 ms, 689 tokens (mean), 0 failures |
+
+  - **Fixed:** FU-02 (coverage 0 → 0.90; query "What does St. Anthony say about practicing the Jesus Prayer?", distance 0.971 → 0.741); KW-08 "confession" answered (distance 1.246 → 0.984); KW-01 "What is prayer" 1.059 → 0.972; KW-02 "fasting" 0.912 → 0.624; TSK-02 now produces a list (format ok) but of different martyrs than the sampled key facts (coverage 0). OOC-31 (St. Barbara's move to Egypt) went from an answer to a refusal. On the holdout-only TSK-01 fasts table the probe distance fell from 1.405 to 0.865 and the table was produced.
+  - **Not fixed:** the four task refusals (PRD-01, PRD-03, TSK-09, TSK-14) are now all **model refusals** with good distances (PRD-03 retrieves catechism1 pp. 104, 17, 33 and the Coptic website pages instead of contents pages) — a prompt problem (Step 4). PRD-01 still retrieves the index pages (Step 3).
+  - **Worse / noise:** CAT-11 (0.67 → 0.33) and CAT-13 (0.50 → 0.17, now off-target) have *identical* retrieval in both runs, so their drop is generation variance at temperature 0.2, not this change; the 9.1 → 10.9 % off-target rise is CAT-03 and CAT-13 (same retrieval) and TSK-02 (different but valid martyrs). Latency +0.8 s per request.
+- **Files changed:** `task_analysis.py` (new), `api.py`, `request_log.py`.
+- **Concept to learn:** *Query understanding / query rewriting.* Production RAG systems usually put a small, fast model in front of retrieval to produce a clean, self-contained search query (resolving coreference from the conversation) and to classify the request; the big model then answers with the original wording. Search: "conversational query rewriting", "HyDE query expansion", "query intent classification RAG".
+- **Revisit if:** analysis latency matters more than quality (cache by question text, or run it in parallel with a raw-question retrieval), or the analysis model is changed (re-run the eight-request comparison above).
 
 ## Prompting & Generation
 
