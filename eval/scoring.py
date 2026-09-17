@@ -13,6 +13,9 @@ Faithfulness (EVAL-011): the system answer is split into atomic claims, each wit
     unsupported    no passage supports it
 Uncited claims are checked against all passages and counted separately as `uncited`.
 
+Format (phase 4): `format_check` tests mechanically whether an answer uses the output shape a
+task-style question asked for (markdown table, list, structured study guide).
+
 Both judges return JSON; both are extractive (they must quote), which is what makes them
 harder to fool than a holistic 1-5 score (see EVAL-009).
 """
@@ -315,3 +318,42 @@ def faithfulness_judge(client: Any, model: str, answer: str, passages: List[Dict
     }
     rates = {k: (v / n if n else None) for k, v in counts.items()}
     return {"error": "", "claims": claims_out, "n_claims": n, "counts": counts, "rates": rates}
+
+
+# ----------------------------------------------------------------------------
+# format (phase 4)
+# ----------------------------------------------------------------------------
+
+TABLE_ROW_RE = re.compile(r"^\s*\|.*\|\s*$")
+TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$")
+LIST_ITEM_RE = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+\S")
+HEADING_RE = re.compile(r"^\s*(?:#{1,6}\s+\S|\*\*[^*]{2,80}\*\*:?\s*$)")
+
+
+def _has_table(lines: List[str]) -> bool:
+    return any(TABLE_SEP_RE.match(line) for line in lines) and sum(1 for line in lines if TABLE_ROW_RE.match(line)) >= 3
+
+
+def format_check(expected_format: Optional[str], answer: str) -> Optional[bool]:
+    """True/False when the question asks for a checkable shape, None otherwise.
+
+    table       a markdown table (header, separator, at least one row)
+    list        at least three list items
+    comparison  a table, or at least two headings/list items per side (>= 4 structured lines)
+    study_guide at least three headings or list items
+    summary / prose / other: not checked (None)
+    """
+    if not expected_format or expected_format in {"summary", "prose", "other"}:
+        return None
+    lines = (answer or "").splitlines()
+    list_items = sum(1 for line in lines if LIST_ITEM_RE.match(line))
+    headings = sum(1 for line in lines if HEADING_RE.match(line))
+    if expected_format == "table":
+        return _has_table(lines)
+    if expected_format == "list":
+        return list_items >= 3 or _has_table(lines)
+    if expected_format == "comparison":
+        return _has_table(lines) or (list_items + headings) >= 4
+    if expected_format == "study_guide":
+        return (list_items + headings) >= 3 or _has_table(lines)
+    return None

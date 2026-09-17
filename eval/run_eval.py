@@ -5,6 +5,9 @@ Usage (from the repo root, backend running locally with INTERNAL_API_KEY set):
     python eval/run_eval.py                       # full run against http://127.0.0.1:8001
     python eval/run_eval.py --ids CAT-01 SNT-02   # subset
     python eval/run_eval.py --no-judge            # retrieval + refusal metrics only (no OpenAI cost)
+    python eval/run_eval.py --split tune --coverage-only
+                                                  # per-step check: tune split, coverage + refusal metrics,
+                                                  # no faithfulness or legacy judge (phase 4)
     python eval/run_eval.py --backend https://... # another deployment
     python eval/run_eval.py --rejudge eval/results/<file>.json
                                                   # re-score the answers in an existing results file
@@ -25,6 +28,9 @@ What it measures (see DECISIONS.md, EVAL-* entries):
   plus unsupported and bad-citation rates
 - the legacy holistic 1-5 judge score, kept for continuity only
 - off-target answers: answered questions whose coverage is <= 0.25 (wrong entity / wrong topic)
+- FORMAT (phase 4): for task-style questions with `expected_format`, whether the answer has that shape
+- refusal breakdowns (phase 4): answerable refused for short (keyword) and task-style questions;
+  out-of-corpus refused for easy (no subtype), near-miss (phase-3 subtypes) and task-style requests
 
 Results are written to eval/results/<timestamp>.json and summarised on stdout. If questions carry a
 `split` field (tune/holdout), every metric is also reported per split.
@@ -102,7 +108,10 @@ SOURCE_TITLES = {
 # helpers
 # ----------------------------------------------------------------------------
 
-def load_questions(path: Path, ids: Optional[List[str]] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+NEAR_MISS_SUBTYPES = {"saint_not_in_books", "non_coptic_doctrine", "false_premise", "same_name_confusion"}
+
+
+def load_questions(path: Path, ids: Optional[List[str]] = None, limit: Optional[int] = None, split: Optional[str] = None) -> List[Dict[str, Any]]:
     items: List[Dict[str, Any]] = []
     with open(path, encoding="utf-8") as handle:
         for line_no, line in enumerate(handle, start=1):
@@ -117,6 +126,8 @@ def load_questions(path: Path, ids: Optional[List[str]] = None, limit: Optional[
     if ids:
         wanted = set(ids)
         items = [item for item in items if item["id"] in wanted]
+    if split:
+        items = [item for item in items if item.get("split") == split]
     if limit:
         items = items[:limit]
     return items
@@ -257,17 +268,29 @@ def call_backend(base_url: str, api_key: str, item: Dict[str, Any], top_k: int, 
 # scoring of one record
 # ----------------------------------------------------------------------------
 
-def score_record(record: Dict[str, Any], item: Dict[str, Any], client: Any, model: str, passages: List[Dict[str, Any]]) -> None:
-    """Attach legacy judge, coverage and faithfulness to an answerable record in place."""
+def score_record(
+    record: Dict[str, Any], item: Dict[str, Any], client: Any, model: str, passages: List[Dict[str, Any]], coverage_only: bool = False
+) -> None:
+    """Attach legacy judge, coverage and faithfulness to an answerable record in place.
+
+    coverage_only skips the legacy judge and the (expensive) faithfulness judge; used for the
+    per-step tune runs in phase 4."""
     answer = record.get("answer") or ""
     outcome = record.get("outcome")
     if outcome == "answered":
-        score, rationale = scoring.legacy_judge(client, model, item, answer)
-        record["judge_score"], record["judge_rationale"] = score, rationale
+        if coverage_only:
+            record["judge_score"], record["judge_rationale"] = None, "skipped: coverage-only run"
+        else:
+            score, rationale = scoring.legacy_judge(client, model, item, answer)
+            record["judge_score"], record["judge_rationale"] = score, rationale
         record["coverage"] = scoring.coverage_judge(client, model, item, answer)
-        record["faithfulness"] = scoring.faithfulness_judge(client, model, answer, passages)
+        record["faithfulness"] = (
+            {"error": "skipped: coverage-only run", "claims": [], "n_claims": 0}
+            if coverage_only
+            else scoring.faithfulness_judge(client, model, answer, passages)
+        )
     else:
-        record["judge_score"], record["judge_rationale"] = 1, f"auto: {outcome}"
+        record["judge_score"], record["judge_rationale"] = (None if coverage_only else 1), f"auto: {outcome}"
         total = len(item.get("key_facts") or [])
         record["coverage"] = {"score": 0.0 if total else None, "present": 0, "partial": 0, "absent": total, "total": total, "details": [], "error": ""}
         record["faithfulness"] = {"error": f"not scored: {outcome}", "claims": [], "n_claims": 0}
@@ -301,6 +324,13 @@ def _metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     def claim_rate(status: str) -> float:
         return sum(1 for c in claims if c["status"] == status) / n_claims if n_claims else float("nan")
 
+    short = [r for r in answerable if r.get("category") == "keyword"]
+    task = [r for r in answerable if r.get("category") == "task"]
+    ooc_easy = [r for r in ooc if not r.get("subtype")]
+    ooc_near = [r for r in ooc if r.get("subtype") in NEAR_MISS_SUBTYPES]
+    ooc_task = [r for r in ooc if r.get("subtype") == "task_style"]
+    formatted = [r for r in answerable if r.get("format_ok") is not None]
+
     return {
         "n": len(records),
         "n_answerable": len(answerable),
@@ -310,6 +340,18 @@ def _metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "clarification_rate": rate(answerable, "outcome", "clarification"),
         "ooc_correct_refusal_rate": rate(ooc, "outcome", "refused"),
         "ooc_false_answer_rate": rate(ooc, "outcome", "answered"),
+        "refusal_rate_short": rate(short, "outcome", "refused"),
+        "refusal_rate_task": rate(task, "outcome", "refused"),
+        "n_short": len(short),
+        "n_task": len(task),
+        "ooc_refused_easy": rate(ooc_easy, "outcome", "refused"),
+        "ooc_refused_near_miss": rate(ooc_near, "outcome", "refused"),
+        "ooc_refused_task": rate(ooc_task, "outcome", "refused"),
+        "n_ooc_easy": len(ooc_easy),
+        "n_ooc_near_miss": len(ooc_near),
+        "n_ooc_task": len(ooc_task),
+        "format_ok_rate": (sum(1 for r in formatted if r["format_ok"]) / len(formatted)) if formatted else float("nan"),
+        "n_format_checked": len(formatted),
         "recall_at_k": mean([r["recall_at_k"] for r in answerable if "recall_at_k" in r]),
         "recall_at_k_tol1": mean([r["recall_at_k_tol1"] for r in answerable if "recall_at_k_tol1" in r]),
         "recall_any": mean([r["recall_any"] for r in answerable if "recall_any" in r]),
@@ -331,6 +373,9 @@ def _metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "answer_chars_mean": mean([len(r.get("answer") or "") for r in answered]),
         "latency_s_mean": mean([r.get("latency_s") for r in records if r.get("latency_s")]),
         "prompt_tokens_mean": mean([r.get("prompt_tokens") for r in records if r.get("prompt_tokens")]),
+        "completion_tokens_mean": mean([r.get("completion_tokens") for r in records if r.get("completion_tokens")]),
+        "analysis_tokens_mean": mean([r.get("analysis_tokens") for r in records if r.get("analysis_tokens")]),
+        "retrieval_ms_mean": mean([(r.get("stages_ms") or {}).get("retrieval") for r in records if (r.get("stages_ms") or {}).get("retrieval")]),
     }
 
 
@@ -356,6 +401,13 @@ def print_metrics(label: str, m: Dict[str, Any], k: int) -> None:
     print(f"  coverage      answered-only {fmt(m['coverage_answered'])}  all-answerable {fmt(m['coverage_all'])}   off-target {fmt(m['off_target_rate'])}")
     print(f"  faithfulness  supported {fmt(m['faith_supported'])}  unsupported {fmt(m['faith_unsupported'])}  bad-citation {fmt(m['faith_bad_citation'])}  uncited {fmt(m['faith_uncited'])}  (claims {m['faith_n_claims']})")
     print(f"  outcomes      refused {fmt(m['refusal_rate'])}  clarification {fmt(m['clarification_rate'])}  | out-of-corpus refused {fmt(m['ooc_correct_refusal_rate'])}  false answer {fmt(m['ooc_false_answer_rate'])}")
+    print(
+        f"  refused by    short {fmt(m['refusal_rate_short'])} (n={m['n_short']})  task {fmt(m['refusal_rate_task'])} (n={m['n_task']})"
+        f"  | ooc easy {fmt(m['ooc_refused_easy'])} (n={m['n_ooc_easy']})  near-miss {fmt(m['ooc_refused_near_miss'])} (n={m['n_ooc_near_miss']})"
+        f"  task {fmt(m['ooc_refused_task'])} (n={m['n_ooc_task']})"
+    )
+    latency = f"   latency {m['latency_s_mean']:.1f}s" if m["latency_s_mean"] == m["latency_s_mean"] else ""
+    print(f"  format        followed {fmt(m['format_ok_rate'])} (n={m['n_format_checked']}){latency}")
     print(f"  retrieval     recall@{k} {fmt(m['recall_at_k'])}  (+/-1 {fmt(m['recall_at_k_tol1'])})  kept {fmt(m['recall_kept'])}  shown {fmt(m['recall_shown'])}")
     prev = f"  prev-judge all {fmt(m['judge_prev_mean_all'], pct=False)}" if m.get("judge_prev_mean_all") == m.get("judge_prev_mean_all") else ""
     print(f"  legacy judge  answered-only {fmt(m['judge_mean_answered'], pct=False)}  all-answerable {fmt(m['judge_mean_all'], pct=False)}{prev}")
@@ -423,6 +475,8 @@ def run_rejudge(args: argparse.Namespace) -> int:
             record["judge_score"] = None
             continue
         passages = record.get("passages") or load_passages_from_chroma(record.get("merged_ids") or [])
+        record["subtype"] = item.get("subtype")
+        record["format_ok"] = scoring.format_check(item.get("expected_format"), record.get("answer") or "") if record["outcome"] == "answered" else None
         score_record(record, item, client, args.judge_model, passages)
         print(
             f"[{index:2d}/{len(records)}] {record['id']:<7} {record['outcome']:<10} prev={record['judge_score_prev']!s:<4} judge={record.get('judge_score')!s:<4} "
@@ -451,7 +505,7 @@ def run_live(args: argparse.Namespace) -> int:
         return 2
 
     base_url = args.backend.rstrip("/")
-    items = load_questions(Path(args.questions), args.ids, args.limit)
+    items = load_questions(Path(args.questions), args.ids, args.limit, args.split)
     if not items:
         print("No questions selected.", file=sys.stderr)
         return 2
@@ -464,7 +518,8 @@ def run_live(args: argparse.Namespace) -> int:
         print(f"ERROR: backend not reachable at {base_url}: {exc!r}", file=sys.stderr)
         return 2
     print(f"Backend {base_url}: {health}")
-    print(f"Questions: {len(items)}   judge: {'off' if client is None else args.judge_model}   k={args.k}\n")
+    judge_mode = "off" if client is None else (f"{args.judge_model} (coverage only)" if args.coverage_only else args.judge_model)
+    print(f"Questions: {len(items)}   split: {args.split or 'all'}   judge: {judge_mode}   k={args.k}\n")
 
     records: List[Dict[str, Any]] = []
     for index, item in enumerate(items, start=1):
@@ -485,6 +540,8 @@ def run_live(args: argparse.Namespace) -> int:
         record: Dict[str, Any] = {
             "id": item["id"],
             "category": item.get("category"),
+            "subtype": item.get("subtype"),
+            "expected_format": item.get("expected_format"),
             "split": item.get("split"),
             "language": item.get("language", "en"),
             "mode": item.get("mode", "chat"),
@@ -510,7 +567,12 @@ def run_live(args: argparse.Namespace) -> int:
             "prompt_tokens": debug.get("prompt_tokens"),
             "completion_tokens": debug.get("completion_tokens"),
             "stages_ms": debug.get("stages_ms"),
+            "refusal_reason": debug.get("refusal_reason"),
+            "task_analysis": debug.get("task_analysis"),
+            "analysis_tokens": debug.get("analysis_tokens"),
+            "entity_check": debug.get("entity_check"),
         }
+        record["format_ok"] = scoring.format_check(item.get("expected_format"), answer) if outcome == "answered" and not item.get("should_refuse") else None
 
         if exp:
             record["recall_at_k"] = recall(exp, pages_from_ids(merged_ids[: args.k]))
@@ -521,7 +583,7 @@ def run_live(args: argparse.Namespace) -> int:
             record["expected_pages"] = sorted(f"{pdf}:p{page}" for pdf, page in exp)
 
         if client is not None and not item.get("should_refuse"):
-            score_record(record, item, client, args.judge_model, passages)
+            score_record(record, item, client, args.judge_model, passages, coverage_only=args.coverage_only)
 
         records.append(record)
         r_at_k = record.get("recall_at_k")
@@ -543,6 +605,8 @@ def run_live(args: argparse.Namespace) -> int:
         "questions_file": str(Path(args.questions)),
         "k": args.k,
         "judge_model": None if client is None else args.judge_model,
+        "split_filter": args.split,
+        "coverage_only": bool(args.coverage_only),
         "summary": summary,
         "records": records,
     }
@@ -563,6 +627,8 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90.0)
     parser.add_argument("--judge-model", default=os.getenv("EVAL_JUDGE_MODEL", DEFAULT_JUDGE_MODEL))
     parser.add_argument("--no-judge", action="store_true")
+    parser.add_argument("--split", choices=["tune", "holdout"], help="only run questions from this split")
+    parser.add_argument("--coverage-only", action="store_true", help="skip the faithfulness and legacy judges (coverage + refusal metrics only)")
     parser.add_argument("--rejudge", metavar="RESULTS_JSON", help="re-score an existing results file with the current judges")
     parser.add_argument("--label", default="", help="free-text label stored in the results file")
     args = parser.parse_args()

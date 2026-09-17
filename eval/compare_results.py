@@ -24,7 +24,13 @@ ROWS = [
     ("off-target answers", lambda s, d: pct(g(s, "off_target_rate"))),
     ("answerable refused", lambda s, d: pct(g(s, "refusal_rate"))),
     ("answerable clarification", lambda s, d: pct(g(s, "clarification_rate"))),
+    ("  short refused", lambda s, d: pct(g(s, "refusal_rate_short"))),
+    ("  task-style refused", lambda s, d: pct(g(s, "refusal_rate_task"))),
     ("out-of-corpus refused", lambda s, d: pct(g(s, "ooc_correct_refusal_rate"))),
+    ("  easy", lambda s, d: pct(g(s, "ooc_refused_easy"))),
+    ("  near-miss", lambda s, d: pct(g(s, "ooc_refused_near_miss"))),
+    ("  task-style", lambda s, d: pct(g(s, "ooc_refused_task"))),
+    ("format followed (task)", lambda s, d: pct(g(s, "format_ok_rate"))),
     ("recall@k", lambda s, d: pct(g(s, "recall_at_k"))),
     ("recall@k (±1 page)", lambda s, d: pct(g(s, "recall_at_k_tol1"))),
     ("recall kept", lambda s, d: pct(g(s, "recall_kept"))),
@@ -38,6 +44,9 @@ ROWS = [
     ("arabic coverage (all)", lambda s, d: pct(cat(s, "arabic", "coverage_all"))),
     ("answer chars (mean)", lambda s, d: num(g(s, "answer_chars_mean"), 0)),
     ("prompt tokens (mean)", lambda s, d: num(g(s, "prompt_tokens_mean"), 0)),
+    ("completion tokens (mean)", lambda s, d: num(g(s, "completion_tokens_mean"), 0)),
+    ("analysis tokens (mean)", lambda s, d: num(g(s, "analysis_tokens_mean"), 0)),
+    ("retrieval ms (mean)", lambda s, d: num(g(s, "retrieval_ms_mean"), 0)),
     ("latency s (mean)", lambda s, d: num(g(s, "latency_s_mean"), 1)),
 ]
 

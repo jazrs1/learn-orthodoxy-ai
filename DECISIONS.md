@@ -1,8 +1,8 @@
-# Decision Log — audit-phase-1 and audit-phase-2
+# Decision Log — audit phases 1–4
 
 This file records the engineering decisions made while working through the
 [AUDIT.md](AUDIT.md) action plan on the `audit-phase-1` branch (Parts A–C) and the
-`audit-phase-2` branch (Steps 0–3) and the `audit-phase-3` branch (Steps 1–5). It is written for
+`audit-phase-2` branch (Steps 0–3), the `audit-phase-3` branch (Steps 1–5) and the `audit-phase-4` branch (Steps 1–6). It is written for
 someone who reads code comfortably but may be new to RAG systems, backend security,
 or evaluation methodology. Every entry explains what problem was being solved, which
 alternatives were realistic, what was chosen and why, and a short "concept to learn"
@@ -44,11 +44,14 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [EVAL-011: Faithfulness — every claim is checked against the passage it cites](#eval-011-faithfulness--every-claim-is-checked-against-the-passage-it-cites)
   - [EVAL-012: Near-miss out-of-corpus questions and a sticky tune/holdout split](#eval-012-near-miss-out-of-corpus-questions-and-a-sticky-tuneholdout-split)
   - [EVAL-013: Phase 3 before/after on tune and holdout](#eval-013-phase-3-beforeafter-on-tune-and-holdout)
+  - [EVAL-014: Phase 4 diagnosis — where the production refusals and weak answers come from](#eval-014-phase-4-diagnosis--where-the-production-refusals-and-weak-answers-come-from)
+  - [EVAL-015: Task-style questions, production examples, and a format metric](#eval-015-task-style-questions-production-examples-and-a-format-metric)
 - [Retrieval](#retrieval)
   - [RET-001: A saint-index miss falls through to retrieval instead of refusing](#ret-001-a-saint-index-miss-falls-through-to-retrieval-instead-of-refusing)
   - [RET-002: The keyword relevance filter is deleted; results are merged by vector distance](#ret-002-the-keyword-relevance-filter-is-deleted-results-are-merged-by-vector-distance)
   - [RET-003: "No relevant source" is decided by a distance threshold chosen from the eval data](#ret-003-no-relevant-source-is-decided-by-a-distance-threshold-chosen-from-the-eval-data)
   - [RET-004: The distance threshold stays at 1.0; near-miss refusals need a different mechanism](#ret-004-the-distance-threshold-stays-at-10-near-miss-refusals-need-a-different-mechanism)
+  - [RET-005: Raise the distance threshold to 1.1 after a production false refusal on a short query](#ret-005-raise-the-distance-threshold-to-11-after-a-production-false-refusal-on-a-short-query)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -424,6 +427,63 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Concept to learn:** an eval upgrade usually makes numbers *look* worse; that is the point. Search: "measurement validity", "Goodhart's law".
 - **Revisit if:** phase 4 changes the pipeline; then this table is the baseline.
 
+### EVAL-014: Phase 4 diagnosis — where the production refusals and weak answers come from
+- **Date / Part:** 2026-09-16, Phase 4 Step 1
+- **Audit ref:** RET-005, open questions 12, 17, 18
+- **Context:** After the phase 1–3 deploy, the priest who uses the app reported that it refuses too often when asked to *do* something with the sources (make a table, list saints, compare, summarize), and three production requests showed the pattern. Before changing anything, each was replayed against the unchanged pipeline (local backend, `VECTOR_DISTANCE_THRESHOLD=1.1`, prompt v2) with `debug: true`, together with close variants, and the request-log fields were read.
+
+| request (mode) | outcome | where it comes from (log fields) |
+|---|---|---|
+| "create a table with all saints whos names start with g" (chat and saints) | refused | **model refusal** (`grounding=no-source`, no `refusal_reason` because model refusals were not labelled); `best_distance` 1.042 (so the old 1.0 threshold would also have refused it); **narrow retrieval**: the 8 chunks are saints4 pp. 403–404 and 429–430, the *alphabetical index* of the Encyclopedia, which lists names with no text. Production answered the same request once, and its table column "Noted in the alphabetical index [2]" is exactly what those pages allow. |
+| "list saints whose names start with G" | refused | **saint-intent routing**: `saint_intent=list`, `saint_intent_explicit=true`, `saint_query="saints"`, `saint_match_count=0`, `saint_intent_fallthrough=true`; the retrieval query was replaced by the canned `"saints Orthodox saint biography life feast teachings martyr monk bishop"`, which retrieves generic pages; then a model refusal. |
+| "list saints who were martyred in Egypt" | answered, 2 saints | same saint-intent rewrite as above; the answer is built from two incidental mentions. |
+| "saints starting with G" | answered | no routing; `best_distance` 1.007; answer from the index pages plus three G entries; two rows say "details are not provided". |
+| "why is coptic easter different than catholic" | answered | `best_distance` 0.955, passages [1] catechism2 p.252, [7] p.251 (the calendar pages). Generation adds general knowledge (see below). |
+| "make a table with the differences between catholicism and coptic" (chat and catechism) | refused | **model refusal**, `best_distance` 0.900 (well under the threshold), but `context_chars` 2,240 and `prompt_tokens` 1,130: the formatting words pulled the embedding towards short table-of-contents and page-header chunks (catechism1 p.9, catechism2 p.494 …), so the model saw eight near-empty passages. The plain question "What are the differences between the Coptic Orthodox Church and the Catholic Church?" answered from real pages (context 28k chars). |
+| "make a table of the fasts and their lengths" | refused | **distance threshold** (`refusal_reason=distance_above_threshold`, `best_distance` 1.405), although the retrieved pages *were* the fasting pages (catechism2 pp. 249, 159–171). |
+| "make a table of Catholic teachings on purgatory" | refused (correct) | model refusal at 1.099, one hundredth under the threshold. |
+| "summarize … baptism", "make a study guide on the Holy Trinity" | answered | no problem: these phrasings stay topical. |
+
+- **The Easter answer, claim by claim** (production answer cited [1][7] = catechism2 p.252 and p.251 for this query): *Gregory XIII in 1582* — supported (p.251: "In 1582 A. D., Pope Gregory XIII of Rome omitted ten days"). *Julius Caesar, 45 BC* — unsupported and wrong for this corpus: the catechism says 46 B.C., on p.250, which is not among the retrieved passages. *A year of 365.2425 days* — unsupported: p.251 gives 365.25 (Julian) and 365.24217 (solar); 365.2425 is the Gregorian mean year from general knowledge. *Pope Demetrius established the computus at Nicaea* — contradicted: p.251 says Demetrius (second century) devised it and "the Council of Nicaea approved this computation" later. The local replay produced a different wording with the same pattern ("one day every 128 years" is not in the passages; the passages say about a day and a half every two centuries). What the passages *do* say — the Orthodox still compute the Resurrection with the Julian calendar, Gregory XIII dropped the Jewish Passover from the computation — is only partly in either answer.
+- **Findings:** four independent causes, none of which is "the distance threshold is too strict" alone: (1) formatting words in the embedded query ("make a table …") either push the distance up (1.405 for the fasts) or pull retrieval to empty structural chunks; (2) the saint-list regex replaces the query when the index has no match; (3) saint lists have no data source except the name-only index pages, so a table can only say "noted in the index"; (4) the v2 prompt's single refusal rule is applied when the passages do not look like a table's worth of material, and nothing forbids general-knowledge filler. Model refusals were not labelled in the log (`refusal_reason` empty), which made (4) look like (1) until the fields were compared.
+- **Decision:** address them in that order: separate the retrieval query from the task (Step 2), give broad and saint-list requests their own retrieval (Step 3), rewrite the prompt for format/content (Step 4), then re-derive the threshold with an entity check in place (Step 5).
+- **Files changed:** none (analysis; probe script kept out of the repo).
+- **Concept to learn:** *Query/instruction separation.* An embedding model encodes everything in the text, including "make a table"; instructions about the output are noise for retrieval and should be removed before embedding. Search: "query rewriting RAG", "instruction-following vs retrieval query".
+- **Revisit if:** new production failures do not fit these four causes.
+
+### EVAL-015: Task-style questions, production examples, and a format metric
+- **Date / Part:** 2026-09-16, Phase 4 Step 1
+- **Audit ref:** EVAL-012, RET-005, open question 17
+- **Context:** The eval had no request that asks the system to *do* something with the sources, so none of the production failures above could show up in a number. The ten keyword questions from RET-005 were unverified.
+- **Decision:**
+  - **KW-01…KW-10 verified.** Every evidence quote and every key fact was located on the listed PDF page with pypdf (`verified: true`). One evidence string was rewritten (KW-06: a straight apostrophe cut the quote short) and KW-10 gained a p.197 quote. No new short questions were added.
+  - **Production examples:** `PRD-01` (G-saints table, category `task`), `PRD-02` (Easter, category `catechism`, subtype `faithfulness_case`, key facts from catechism2 pp. 251–252, notes listing the four checked claims), `PRD-03` (Catholic/Coptic differences table, category `task`; key facts are only the differences the catechism states: the Pascha computation, the Archangel Michael feast date, handbells, the sacred-heart symbol, the fifth-century isolation, plus "says the sources do not give a full comparison").
+  - **15 task-style questions** `TSK-01…15`, category `task`, `subtype` and a new `expected_format` field: tables (fasts and lengths, seven sacraments, church tunes, Egyptian vs Julian calendar), lists (martyrs in Egypt, Coptic months, saints named Gregory, three bullets on the Jesus Prayer, the three archangels), comparisons (baptism vs chrismation; the Michael feast in Coptic/Byzantine/Catholic use, where the sources do describe every side), summaries (baptism, St. Moses the Black) and study guides (Holy Trinity, a fasting quiz). Every page was opened and every key fact located. For broad lists (`PRD-01`, `TSK-02`, `TSK-11`) the key facts are a *sample* of correct entries plus the fact "the answer says the list may be incomplete", so a partial, honest list can score well and a padded or silent one cannot.
+  - **5 task-style out-of-corpus requests** `OOC-34…38` (subtype `task_style`): a table of Catholic teaching on purgatory, a study guide on sola scriptura, a table of St. Francis of Assisi's miracles, a Coptic/Catholic filioque table, a bullet list on the Immaculate Conception. Absence was established in phase 3 (OOC-13, 20, 22, 23, 24).
+  - **Split:** `make_split.py` now stratifies `task` by subtype as it does `out_of_corpus`. Result: 81 tune / 38 holdout (task 10/7, out-of-corpus 26/12; PRD-01..03 landed in tune, TSK-01 — the fasts table — in holdout).
+  - **Harness:** `--split tune` and `--coverage-only` (skips the faithfulness and legacy judges) for the per-step runs; `scoring.format_check` tests mechanically whether an answer has the requested shape (a markdown table with a separator row; ≥ 3 list items; a comparison as a table or ≥ 4 structured lines; a study guide as ≥ 3 headings/items); new summary rows: answerable refused for short (keyword) and task-style questions, out-of-corpus refused split into easy (no subtype), near-miss (the four phase-3 subtypes) and task-style, format followed, completion/analysis tokens and retrieval time. In coverage-only runs the legacy judge is left empty rather than scoring refusals as 1.
+- **Baseline (`20260916-210222`, tune only, coverage-only, threshold 1.1, prompt v2):**
+
+| metric | tune |
+|---|---|
+| coverage (all answerable, n=55) | 60.5% |
+| off-target | 9.1% |
+| answerable refused | 9.1% |
+| … short (n=7) | 14.3% (KW-08 "confession", distance 1.246) |
+| … task-style (n=10) | 40.0% (PRD-01, PRD-03, TSK-09, TSK-14) |
+| out-of-corpus refused (n=26) | 80.8% |
+| … easy (n=7) / near-miss (n=16) / task-style (n=3) | 100% / 68.8% / 100% |
+| format followed (task, answered, n=5) | 60.0% |
+| task coverage (all) | 33.5% |
+| recall@8 | 71.8% |
+| mean answer length | 1,828 chars |
+| mean latency | 2.6 s |
+
+  Keyword best distances on tune: KW-01 "What is prayer" 1.059 (the production value), KW-02 "fasting" 0.912, KW-07 "eucharist" 0.965, KW-08 "confession" **1.246** (refused at 1.1), others 0.67–0.83. The two model-refused tables TSK-09 (tunes) and TSK-14 (calendars) had best distances of 0.75 and 0.74 and recall 50–100 %: the passages were there and the model refused the task. TSK-02 (martyrs) answered with coverage 10 % and no list.
+- **Files changed:** `eval/questions.jsonl`, `eval/make_split.py`, `eval/run_eval.py`, `eval/scoring.py`, `eval/compare_results.py`, `eval/results/20260916-210222.json`.
+- **Concept to learn:** *Behavioural test coverage.* An eval measures only the kinds of requests it contains; users ask for tasks ("make a table …"), not just questions, and the task wording changes both retrieval and generation. A cheap structural check (does the output have the requested shape?) complements the semantic judges. Search: "behavioral testing NLP CheckList", "LLM output format compliance".
+- **Revisit if:** the saints index is rebuilt (the G-saints reference pages may change) or the UI adds new task buttons (add a question for each).
+
 ## Retrieval
 
 ### RET-001: A saint-index miss falls through to retrieval instead of refusing
@@ -485,6 +545,40 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Files changed:** `eval/threshold_analysis.py`, `eval/questions.jsonl` (splits), `DECISIONS.md`.
 - **Concept to learn:** *Topical similarity vs entity grounding.* Embedding distance answers "is this about the same subject?", not "is this fact in the corpus?"; near-miss negatives expose the difference. Refusal needs an *entity-level* check (does the retrieved text mention the thing asked about?) or an answer-level check (faithfulness flags claims with no support). Search: "hallucination near-miss negatives RAG", "entity linking grounding check".
 - **Revisit if:** re-ingestion changes distances (re-run the analysis on tune), or once an entity-presence check exists (then the threshold can be raised to reduce false refusals of paraphrased questions).
+
+### RET-005: Raise the distance threshold to 1.1 after a production false refusal on a short query
+- **Date / Part:** 2026-09-16, after the phase 1–3 deploy (analysis only; no code change, no new eval run)
+- **Audit ref:** RET-003, RET-004, open question 8
+- **Context:** In production, "What is prayer" was refused before any model call: its best distance was 1.058, above `VECTOR_DISTANCE_THRESHOLD = 1.0`. An off-topic sourdough question in production scored 1.619. The eval never showed this failure because every answerable question in the set is a full sentence: the largest answerable best distance on tune is 0.971 (FU-02). Short keyword queries embed further from 3,500-character page chunks than full questions do, so the eval set did not include the kind of input that was refused.
+- **Data:** best distances already stored in `eval/results/20260915-192113.json` (the latest full run), **tune split only, English only** (30 answerable, 21 out-of-corpus). Arabic is excluded because its threshold is off (`ARABIC_VECTOR_DISTANCE_THRESHOLD = 0`, RET-003). The check in `api.py` refuses when `best_distance > threshold`. For out-of-corpus questions that pass a threshold, "what the stored answer did" is only known for questions at or below 1.0, because everything above 1.0 was refused by the threshold with no model call in that run (`prompt_tokens` is empty and there is no `generation` stage). For those, the only earlier evidence is phase-2 runs from before the threshold existed.
+
+| threshold | answerable refused | out-of-corpus passing | … model refused | … model answered | … never sent to the model (outcome unknown) |
+|---|---|---|---|---|---|
+| 1.00 (current) | 0 / 30 | 11 / 21 | 7 | 4 | 0 |
+| 1.05 | 0 / 30 | 13 / 21 | 7 | 4 | 2: OOC-12 (1.003), OOC-15 (1.036) |
+| **1.10** | 0 / 30 | 14 / 21 | 7 | 4 | 3: + OOC-06 (1.053) |
+| 1.15 | 0 / 30 | 16 / 21 | 7 | 4 | 5: + OOC-13 (1.111), OOC-21 (1.131) |
+| 1.20 | 0 / 30 | 16 / 21 | 7 | 4 | 5 |
+| 1.30 | 0 / 30 | 16 / 21 | 7 | 4 | 5 |
+
+  - **The four model answers at ≤ 1.0 (unchanged at every threshold):** OOC-20 purgatory, OOC-22 sola scriptura, OOC-24 filioque (0.9995): invented doctrine positions from general knowledge; OOC-26 "St. Paul the First Hermit's wife": correctly rejects the premise but is scored as an answer (RET-004). **The seven model refusals:** OOC-16, 25, 29, 18, 11, 27, and OOC-31, which says the passages do not give the year or place and is counted as a refusal.
+  - **What the newly admitted questions would probably do**, judged from their subtype, not from a stored answer:
+    - OOC-12 (Therese of Lisieux), OOC-15 (Herman of Alaska) and OOC-13 (Francis of Assisi) are *saints not in the books*. At ≤ 1.0 the prompt refused 3 of 3 such questions (OOC-11, 16, 18), so a refusal is likely.
+    - OOC-06 (cryptocurrency) was refused by the model in all three phase-2 runs (`20260915-170734`, `-171208`, `-171939`). Those runs used a keyword-filtered context of about 1,950 prompt tokens, and one of them used the v2 prompt, so this is supporting evidence, not proof.
+    - OOC-21 (papal infallibility) is a *non-Coptic doctrine* question. At ≤ 1.0 the model answered 3 of 3 such questions with invented content, so admitting it will most likely produce another invented answer.
+  - Nothing on tune lies between 1.131 and 1.454; the easy negatives (Harry Potter 1.454, nirvana 1.455, sourdough 1.605…) are refused at every value in the table. That range is unmeasured, not safe.
+- **Options considered:**
+  1. *Keep 1.0.* Short keyword questions are wrongly refused in production, which is the product's most basic use.
+  2. *1.05.* Still refuses "What is prayer" (1.058).
+  3. *1.1.* Admits the production case with a 0.04 margin; the extra negatives it admits are two saints-not-in-books questions and the cryptocurrency question, the kinds the prompt has refused so far.
+  4. *1.15–1.3.* Same answerable result on tune, but admits OOC-21, a doctrine question of the kind the prompt has answered with invented content every time, plus OOC-13; beyond 1.131 there is no tune data at all.
+- **Decision:** recommend `VECTOR_DISTANCE_THRESHOLD = 1.1`, set as a Railway env var (no code change; the default in `api.py` stays 1.0 until phase 4 re-measures). Treat it as provisional.
+- **Why:** it is the smallest listed value that fixes the observed false refusal, and every question it newly admits is of a kind the prompt has refused so far. Going higher buys nothing measurable on tune and admits the one question type the model is known to get wrong. The real guard for near misses is the entity-presence check (phase 4 Step 2), not this threshold.
+- **Weak points:** (a) one production data point: single-word queries such as "fasting" may sit above 1.1, in which case they are still refused; (b) the cryptocurrency, Herman of Alaska and Therese of Lisieux cases have never been answered under the current prompt with the full context; (c) 21 negatives is a small sample.
+- **Follow-up:** 10 keyword-style answerable questions (`KW-01`…`KW-10`, category `keyword`, 7 tune / 3 holdout, `verified: false` until hand-checked) were added to `eval/questions.jsonl`. They include a bare noun ("fasting"), a question with no question mark ("What is prayer"), a missing period ("St Bishoy") and a name not used in the book's heading ("Anthony the Great"). Phase 4 runs will record their best distances; re-derive the threshold on tune from those distances. If they sit between 1.1 and 1.3, raise the threshold only once the Step 2 entity check is in place to catch OOC-21-type doctrine questions.
+- **Files changed:** `DECISIONS.md`, `eval/questions.jsonl`.
+- **Concept to learn:** *Distribution shift between the eval set and production.* A threshold can only be trusted over the kinds of input it was tuned on; an eval written as full sentences says nothing about keyword queries. When production shows a new input shape, add examples of it to the set before moving the threshold very far. Search: "query length embedding similarity", "eval set coverage distribution shift".
+- **Revisit if:** the KW questions have been run (re-derive on tune), the entity-presence check exists, the query rewrite (phase 4 Step 3) turns short queries into full questions (distances should drop), or re-ingestion changes chunk size.
 
 ## Prompting & Generation
 
@@ -573,3 +667,5 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 14. **Unsupported claims are mostly filler (Phase 3).** The unsupported 7–11 % of claims are generic characterisations rather than invented facts; a prompt line "do not add general characterisations that the passages do not state" is the cheapest experiment.
 15. **Judge cost and rate limits (Phase 3).** Faithfulness sends the full context per answer (~10k tokens); a full run needs ~40 minutes under the 30k tokens-per-minute limit and two runs must not overlap. Consider gpt-4.1-mini for faithfulness after checking agreement with gpt-4.1 on the 10-answer sheet.
 16. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
+17. **~~Keyword questions are unverified (RET-005).~~ Resolved in EVAL-015: all ten verified against the PDFs.** KW-01…KW-10 have pages located by searching stored chunk text and key facts drafted from that text; they need a hand check (pages and facts) before their coverage scores are trusted. Until then, read their best distances, not their coverage.
+18. **Short queries and the threshold (RET-005).** 1.1 rests on one production data point. Options if single-word queries still sit above it: raise it once the entity check exists, or let the phase 4 query rewrite expand short queries into full questions before embedding (this avoids moving the threshold at all).

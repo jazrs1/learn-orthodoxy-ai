@@ -5,7 +5,7 @@
     python eval/make_split.py --reassign  # recompute everything (use only if the set changes a lot)
 
 Rules (DECISIONS.md EVAL-012):
-- Stratified: within each category (and out-of-corpus subtype) about 30% go to holdout.
+- Stratified: within each category (and subtype, for out-of-corpus and task-style questions) about 30% go to holdout.
 - Deterministic: a fixed seed and an alphabetical sort make the split reproducible.
 - Sticky: questions that already have a split keep it unless --reassign is given, so adding
   questions later does not shuffle earlier ones between splits.
@@ -23,6 +23,8 @@ from pathlib import Path
 QUESTIONS = Path(__file__).resolve().parent / "questions.jsonl"
 HOLDOUT_FRACTION = 0.3
 SEED = 20260915
+# Categories whose subtypes are balanced separately (phase 3: out-of-corpus kinds; phase 4: task formats).
+SUBTYPE_STRATIFIED = {"out_of_corpus", "task"}
 
 
 def main() -> None:
@@ -35,7 +37,7 @@ def main() -> None:
     rng = random.Random(SEED)
     groups = defaultdict(list)
     for row in rows:
-        key = (row.get("category"), row.get("subtype") if row.get("category") == "out_of_corpus" else None)
+        key = (row.get("category"), row.get("subtype") if row.get("category") in SUBTYPE_STRATIFIED else None)
         groups[key].append(row)
 
     changed = 0
