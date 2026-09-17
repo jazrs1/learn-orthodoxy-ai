@@ -103,6 +103,14 @@ TASK_ANALYSIS_ENABLED = _env_flag("TASK_ANALYSIS_ENABLED", "1")
 TASK_ANALYSIS_MODEL = os.getenv("TASK_ANALYSIS_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
 TASK_ANALYSIS_TIMEOUT_SECONDS = _env_float("TASK_ANALYSIS_TIMEOUT_SECONDS", 8.0)
 
+# --- Broad and list requests (DECISIONS.md RET-007) ---
+# Broad requests retrieve more chunks, from the main query plus the analysis sub-queries.
+BROAD_RETRIEVAL_TOP_K = _env_int("BROAD_RETRIEVAL_TOP_K", 16, minimum=1)
+BROAD_PER_QUERY_MIN = _env_int("BROAD_PER_QUERY_MIN", 2)
+# "Saints whose names start with G": entries come from the saint index, not from vector search.
+SAINT_LIST_MAX_ENTRIES = _env_int("SAINT_LIST_MAX_ENTRIES", 40, minimum=1)
+SAINT_LIST_EXCERPT_CHARS = 600
+
 # --- Prompts are versioned files under prompts/ (DECISIONS.md GEN-001) ---
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 PROMPT_VERSION = os.getenv("PROMPT_VERSION", "v2").strip() or "v2"
@@ -714,7 +722,15 @@ def _retrieve_documents(
     entity: str | None = None,
     target_collection: Any | None = None,
     metadata_filter: Dict[str, Any] | None = None,
+    per_query_min: int = 0,
 ):
+    """Vector search for several queries, merged by best distance (RET-002).
+
+    All queries go to Chroma in one call, so their embeddings are computed in a single
+    OpenAI request (RET-007). `per_query_min` guarantees that each query's best few
+    chunks survive the merge, so a sub-query about a narrower aspect of a broad request
+    is not crowded out by the main query's neighbours.
+    """
     global collection
     search_collection = target_collection or collection
     if search_collection is None:
@@ -731,10 +747,10 @@ def _retrieve_documents(
             continue
         seen_queries.add(key)
         deduped_queries.append(normalized)
+    deduped_queries = deduped_queries[:8]
+    if not deduped_queries:
+        return [], [], []
 
-    # Best (smallest) distance per unique chunk across all queries; the final list is
-    # ordered by that distance, not by which query happened to run first (RET-002).
-    best: Dict[tuple, Tuple[float, str, Dict[str, Any]]] = {}
     trace = current_trace()
     collection_label = None
     if trace is not None:
@@ -743,15 +759,20 @@ def _retrieve_documents(
         except Exception:
             collection_label = None
 
-    for query in deduped_queries[:8]:
-        query_kwargs: Dict[str, Any] = {"query_texts": [query], "n_results": top_k}
-        if metadata_filter:
-            query_kwargs["where"] = metadata_filter
-        retrieved = search_collection.query(**query_kwargs)
-        docs = retrieved.get("documents", [[]])[0]
-        metas = retrieved.get("metadatas", [[]])[0]
-        ids = (retrieved.get("ids") or [[]])[0]
-        distances = (retrieved.get("distances") or [[]])[0]
+    query_kwargs: Dict[str, Any] = {"query_texts": deduped_queries, "n_results": top_k}
+    if metadata_filter:
+        query_kwargs["where"] = metadata_filter
+    retrieved = search_collection.query(**query_kwargs)
+
+    # Best (smallest) distance per unique chunk across all queries; the final list is
+    # ordered by that distance, not by which query happened to run first (RET-002).
+    best: Dict[tuple, Tuple[float, str, Dict[str, Any]]] = {}
+    quota_keys: List[tuple] = []
+    for index, query in enumerate(deduped_queries):
+        docs = (retrieved.get("documents") or [])[index] if index < len(retrieved.get("documents") or []) else []
+        metas = (retrieved.get("metadatas") or [])[index] if index < len(retrieved.get("metadatas") or []) else []
+        ids = (retrieved.get("ids") or [])[index] if index < len(retrieved.get("ids") or []) else []
+        distances = (retrieved.get("distances") or [])[index] if index < len(retrieved.get("distances") or []) else []
 
         if trace is not None:
             trace.add_retrieval(
@@ -763,6 +784,7 @@ def _retrieve_documents(
                 n_results=top_k,
             )
 
+        taken = 0
         for position, (doc, meta) in enumerate(zip(docs, metas)):
             if not doc or not meta:
                 continue
@@ -778,8 +800,18 @@ def _retrieve_documents(
             current = best.get(key)
             if current is None or distance < current[0]:
                 best[key] = (distance, doc, meta)
+            if taken < per_query_min:
+                if key not in quota_keys:
+                    quota_keys.append(key)
+                taken += 1
 
-    ranked = sorted(best.values(), key=lambda item: item[0])[:top_k]
+    chosen = list(quota_keys[:top_k])
+    for key, _ in sorted(best.items(), key=lambda item: item[1][0]):
+        if len(chosen) >= top_k:
+            break
+        if key not in chosen:
+            chosen.append(key)
+    ranked = sorted((best[key] for key in chosen), key=lambda item: item[0])
     docs = [doc for _, doc, _ in ranked]
     metas = [meta for _, _, meta in ranked]
     distances_out = [dist for dist, _, _ in ranked]
@@ -1176,6 +1208,56 @@ def _prepend_saint_record_context(
     return merged_docs, merged_metas
 
 
+def _saint_list_entries(name_filter: Dict[str, str]) -> Tuple[List[Dict[str, Any]], int]:
+    """Saint-index records selected by name (RET-007): ({name, heading, body, metadata}, total matches).
+
+    `starts_with` compares the start of the name without "St."; `contains` matches whole words.
+    The index is built from ALL-CAPS headings (RET-001), so joint entries such as
+    "GERVASE AND PROTASE" can be missing; callers must say the list may be incomplete.
+    """
+    starts = _normalize_saint_match_key(name_filter.get("starts_with", ""))
+    contains = _normalize_saint_match_key(name_filter.get("contains", ""))
+    if not starts and not contains:
+        return [], 0
+    matched = []
+    for record in _build_saint_record_index():
+        key = _normalize_saint_match_key(str(record.get("name", "")))
+        if starts and not key.startswith(starts):
+            continue
+        if contains and not re.search(rf"\b{re.escape(contains)}\b", key):
+            continue
+        matched.append(record)
+    return matched[:SAINT_LIST_MAX_ENTRIES], len(matched)
+
+
+def _saint_list_context(records: List[Dict[str, Any]]) -> Tuple[List[str], List[Dict[str, Any]]]:
+    """One passage per entry: the book's heading and the opening of the entry, with its page."""
+    docs, metas = [], []
+    for record in records:
+        body = str(record.get("body", "") or "")
+        excerpt = body[:SAINT_LIST_EXCERPT_CHARS].rsplit(" ", 1)[0] + (" …" if len(body) > SAINT_LIST_EXCERPT_CHARS else "")
+        docs.append(f"{record.get('raw_heading') or record.get('name')}\n{excerpt}")
+        metas.append(record.get("metadata") or {})
+    return docs, metas
+
+
+def _saint_list_note(name_filter: Dict[str, str], shown: int, total: int) -> str:
+    if "starts_with" in name_filter:
+        criterion = f"names starting with “{name_filter['starts_with']}”"
+    else:
+        criterion = f"names containing “{name_filter['contains']}”"
+    note = (
+        f"The passages below are the Encyclopedia entries whose headings an automatic index matched for {criterion}: "
+        f"{shown} shown"
+    )
+    note += f" of {total} matched." if total > shown else "."
+    note += (
+        " The index cannot read every heading (for example some joint entries), so tell the reader the list may be "
+        "incomplete. Describe each saint only from its passage."
+    )
+    return note
+
+
 def _collection_count_safe(target_collection: Any | None) -> int:
     if target_collection is None:
         return 0
@@ -1524,8 +1606,11 @@ def _build_chat_messages(
     question: str,
     context: str,
     language: str,
+    note: str | None = None,
 ) -> List[Dict[str, str]]:
-    """System prompt, then the last few real turns, then the question with its numbered passages."""
+    """System prompt, then the last few real turns, then the question with its numbered passages.
+
+    `note` is a short pipeline remark placed before the passages (e.g. how a saint list was built)."""
     messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
     for turn in history[-HISTORY_TURNS_FOR_MODEL:]:
         messages.append({"role": turn["role"], "content": turn["content"]})
@@ -1533,6 +1618,8 @@ def _build_chat_messages(
         user_content = f"المقاطع المصدرية\n\n{context}\n\nالسؤال\n{question}"
     else:
         user_content = f"SOURCE PASSAGES\n\n{context}\n\nQUESTION\n{question}"
+    if note:
+        user_content = f"NOTE\n{note}\n\n{user_content}"
     messages.append({"role": "user", "content": user_content})
     return messages
 
@@ -3042,8 +3129,23 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         top_k = requested_top_k
         retrieval_top_k = min(16, max(top_k, 12 if broad_list else 10 if definition_question else top_k))
 
-        # Retrieval
+        # Retrieval plan (RET-007): a saint list selected by name comes from the saint index;
+        # a broad request searches with the sub-queries too and keeps more chunks.
+        retrieval_plan = "default"
+        list_note = None
+        saint_list_records: List[Dict[str, Any]] = []
+        saint_list_total = 0
+        if analysis.saint_name_filter and entity is None:
+            saint_list_records, saint_list_total = _saint_list_entries(analysis.saint_name_filter)
+            if saint_list_records:
+                retrieval_plan = "saint_list"
+        if retrieval_plan == "default" and analysis.broad:
+            retrieval_plan = "broad"
+            retrieval_top_k = max(retrieval_top_k, BROAD_RETRIEVAL_TOP_K)
+
         retrieval_queries = _build_retrieval_queries(retrieval_question, entity=entity)
+        if retrieval_plan == "broad":
+            retrieval_queries = retrieval_queries[:1] + analysis.sub_queries + retrieval_queries[1:]
         trace.set(
             collection=COLLECTION_NAME,
             metadata_filter=None,
@@ -3051,10 +3153,23 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             retrieval_queries=[q[:300] for q in retrieval_queries],
             broad_list=broad_list,
             definition_question=definition_question,
+            retrieval_plan=retrieval_plan,
         )
         trace.lap("prepare")
-        docs, metas, distances = _retrieve_documents(retrieval_queries, top_k=retrieval_top_k, entity=entity)
-        best_distance = min(distances) if distances else None
+        if retrieval_plan == "saint_list":
+            docs, metas = _saint_list_context(saint_list_records)
+            distances = []
+            best_distance = None
+            list_note = _saint_list_note(analysis.saint_name_filter, len(saint_list_records), saint_list_total)
+            trace.set(saint_list={"filter": analysis.saint_name_filter, "shown": len(saint_list_records), "matched": saint_list_total})
+        else:
+            docs, metas, distances = _retrieve_documents(
+                retrieval_queries,
+                top_k=retrieval_top_k,
+                entity=entity,
+                per_query_min=BROAD_PER_QUERY_MIN if retrieval_plan == "broad" else 0,
+            )
+            best_distance = min(distances) if distances else None
         if mode == "saints":
             docs, metas = _prepend_saint_record_context(docs, metas, entity)
         trace.lap("retrieval")
@@ -3069,8 +3184,12 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         # best vector distance across all queries (RET-003).
         trace.set_kept(metas, 0)
 
+        # A saint list is selected by exact name match, not by similarity, so the distance
+        # check does not apply to it.
         no_relevant_source = not docs or (
-            VECTOR_DISTANCE_THRESHOLD > 0 and (best_distance is None or best_distance > VECTOR_DISTANCE_THRESHOLD)
+            retrieval_plan != "saint_list"
+            and VECTOR_DISTANCE_THRESHOLD > 0
+            and (best_distance is None or best_distance > VECTOR_DISTANCE_THRESHOLD)
         )
         if no_relevant_source:
             trace.set(outcome="refused", refusal=True, refusal_reason="nothing_retrieved" if not docs else "distance_above_threshold")
@@ -3085,7 +3204,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         # Numbered passages the model cites as [n]; the last few turns go in as real messages
         # so pronouns and follow-ups resolve naturally (DECISIONS.md GEN-001..003).
         context, numbered_sources = _build_numbered_context(docs, metas)
-        messages = _build_chat_messages(ENGLISH_SYSTEM_PROMPT, history, original_question, context, "en")
+        messages = _build_chat_messages(ENGLISH_SYSTEM_PROMPT, history, original_question, context, "en", note=list_note)
         trace.set(
             context_chunks=len(docs),
             context_chars=len(context),

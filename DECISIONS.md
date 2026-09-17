@@ -53,6 +53,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-004: The distance threshold stays at 1.0; near-miss refusals need a different mechanism](#ret-004-the-distance-threshold-stays-at-10-near-miss-refusals-need-a-different-mechanism)
   - [RET-005: Raise the distance threshold to 1.1 after a production false refusal on a short query](#ret-005-raise-the-distance-threshold-to-11-after-a-production-false-refusal-on-a-short-query)
   - [RET-006: One analysis call separates the retrieval query from the requested task](#ret-006-one-analysis-call-separates-the-retrieval-query-from-the-requested-task)
+  - [RET-007: Broad requests retrieve wider; saint lists are built from the saint index](#ret-007-broad-requests-retrieve-wider-saint-lists-are-built-from-the-saint-index)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -617,6 +618,44 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Files changed:** `task_analysis.py` (new), `api.py`, `request_log.py`.
 - **Concept to learn:** *Query understanding / query rewriting.* Production RAG systems usually put a small, fast model in front of retrieval to produce a clean, self-contained search query (resolving coreference from the conversation) and to classify the request; the big model then answers with the original wording. Search: "conversational query rewriting", "HyDE query expansion", "query intent classification RAG".
 - **Revisit if:** analysis latency matters more than quality (cache by question text, or run it in parallel with a raw-question retrieval), or the analysis model is changed (re-run the eight-request comparison above).
+
+### RET-007: Broad requests retrieve wider; saint lists are built from the saint index
+- **Date / Part:** 2026-09-16, Phase 4 Step 3
+- **Audit ref:** EVAL-014 (causes 1 and 3), RET-001, RET-006
+- **Context:** Eight chunks from one query cannot answer "list saints who were martyred in Egypt" or "the differences between two churches": the answer needs many separate entries. For saint lists selected by name ("saints whose names start with G") the vector search returns the Encyclopedia's alphabetical index (saints4 pp. 404–440), which lists names only, so the only possible table column was "noted in the index".
+- **Options considered:**
+  1. *Just raise top_k for everything.* More tokens on every request, and the extra chunks are the main query's near neighbours, not other aspects.
+  2. *Sub-queries for broad requests* (from the RET-006 analysis) with a per-query quota, so each aspect contributes.
+  3. *For name-based saint lists, skip similarity search and use the saint record index* (`_build_saint_record_index`, 1,363 entries built from the books' ALL-CAPS headings, each with its page and entry text) to select candidates by name and pass each entry's opening text.
+  4. *Parse the alphabetical index pages* for complete name lists. Names only, no text and no page numbers in the extracted text, so it cannot fill a useful column.
+- **Decision:** Options 2 and 3.
+  - **Broad** (`task_analysis.broad`): queries = analysed query + up to four sub-queries (+ saint variants when an entity is known); `retrieval_top_k = BROAD_RETRIEVAL_TOP_K` (16); each query's best `BROAD_PER_QUERY_MIN` (2) chunks are guaranteed a place before the rest are filled by distance.
+  - **Saint list** (`task_analysis.saint_name_filter`, no resolved entity): `starts_with` compares the start of the normalised name (without "St."), `contains` matches whole words; the first `SAINT_LIST_MAX_ENTRIES` (40) matches become passages "HEADING\nfirst 600 characters of the entry" with the entry's PDF page, so the model can say who each saint was and cite the page. The distance threshold does not apply (candidates are exact name matches). A NOTE before the passages tells the model how the list was built, how many matched, and that joint entries may be missing, so it must say the list may be incomplete.
+  - **One Chroma call:** `_retrieve_documents` now sends all queries in one `collection.query(query_texts=[…])`, so the embeddings are one OpenAI request instead of one per query; results are merged as before (best distance per chunk, RET-002).
+  - Logged: `retrieval_plan` (default / broad / saint_list) and `saint_list` {filter, shown, matched}.
+- **Measured cost:**
+  - *Broad* (5 tune questions answered in both runs, `20260916-211037` → `20260916-211927`): prompt tokens 6,582 → 11,218 (+70 %, ≈ $0.0007 more per request at gpt-4o-mini input prices), latency 4.47 → 4.79 s, retrieval stage 222 → 303 ms for up to five queries. Non-broad retrieval got faster with the single call (431 → 330 ms mean).
+  - *Saint list* (probe "list saints whose names start with G"): 40 entries, prompt 6,889 tokens (vs 5,746 with 12 vector chunks), latency 8.5 s, and **the answer used all 1,200 completion tokens** — a 40-row list is cut off by `ANSWER_MAX_TOKENS`. Fixed in Step 4 (GEN-004).
+  - Index coverage: "G" → 42 matched entries (all in vol. 2, pp. 143–219); "Gregory" → all six Gregory entries (TSK-11's reference); "S" → 113 matched (40 shown). The index also contains non-saints with entries in the Encyclopedia ("Sabillius, the Heretic Bishop") and misses joint headings ("GERVASE AND PROTASE, SS."), which is why the note is mandatory.
+- **Result (tune, coverage-only; step 2 `20260916-211037` → step 3 `20260916-211927`):**
+
+| metric | step 2 | step 3 |
+|---|---|---|
+| coverage (all answerable) | 62.5% | 59.1% |
+| off-target | 10.9% | 7.3% |
+| answerable refused | 7.3% | 9.1% |
+| … short / task-style | 0.0% / 40.0% | 0.0% / 40.0% |
+| out-of-corpus refused (easy / near-miss / task) | 84.6% (100 / 75.0 / 100) | 80.8% (100 / 68.8 / 100) |
+| format followed (task) | 80.0% | 80.0% |
+| task coverage | 32.8% | 32.8% |
+| recall@8 / recall kept | 73.3% / 75.1% | 73.9% / 78.2% |
+| mean latency | 3.4 s | 3.3 s |
+
+  - **Reading:** the headline numbers moved the wrong way, and almost all of it is not this step. (a) SNT-01 became a "refusal" although its answer is correct and complete: the pre-v3 heuristic `_response_grounding_status` treats "could not find"/"does not say" *anywhere* in an answer as a refusal, and this answer ends with a sentence about what the passages omit; OOC-31 flipped the other way for the same reason. Step 4 replaces the heuristic. (b) CAT-08 (0.80 → 0.40), CAT-15 (0.90 → 0.20), CAT-12, PRD-02 moved with **identical retrieval** for the CAT questions (non-broad, same best distance and chunks): generation variance at temperature 0.2 is ±0.3–0.7 coverage per question on these multi-fact answers, i.e. single-run per-step deltas under ~5 points on 55 questions are noise. (c) The four task refusals (PRD-01, PRD-03, TSK-09, TSK-14) are still model refusals under prompt v2: PRD-01 now receives 40 real G entries and still says "I could not find enough", and the same entries produce a good list when the request says "list" instead of "create a table" (probe P1b). That is the prompt (Step 4).
+  - **What this step did achieve:** real material for list requests (P1b: forty described G saints with page citations and an incompleteness sentence, instead of index rows; TSK-02 martyrs from four sub-queries); recall kept +3 points; no latency cost overall.
+- **Files changed:** `api.py`, `request_log.py`.
+- **Concept to learn:** *Query decomposition and structured retrieval.* A "list all X" request is a database query, not a similarity search; when a structured index exists, filter it directly and use vectors only for open-ended aspects. For multi-aspect requests, decompose into sub-queries and reserve slots for each so the merged context covers every aspect. Search: "query decomposition RAG", "multi-query retriever", "structured vs unstructured retrieval".
+- **Revisit if:** the saint index is rebuilt at ingestion (then joint entries and aliases are covered and the note can be softened), or broad prompts exceed the latency budget (lower `BROAD_RETRIEVAL_TOP_K`).
 
 ## Prompting & Generation
 
