@@ -54,12 +54,16 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-005: Raise the distance threshold to 1.1 after a production false refusal on a short query](#ret-005-raise-the-distance-threshold-to-11-after-a-production-false-refusal-on-a-short-query)
   - [RET-006: One analysis call separates the retrieval query from the requested task](#ret-006-one-analysis-call-separates-the-retrieval-query-from-the-requested-task)
   - [RET-007: Broad requests retrieve wider; saint lists are built from the saint index](#ret-007-broad-requests-retrieve-wider-saint-lists-are-built-from-the-saint-index)
+  - [RET-008: Comparisons with another church also retrieve the passages that name it](#ret-008-comparisons-with-another-church-also-retrieve-the-passages-that-name-it)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
   - [GEN-003: Conversation history is sent as real messages](#gen-003-conversation-history-is-sent-as-real-messages)
+  - [GEN-004: Prompt v3 — flexible about format and task, strict about content](#gen-004-prompt-v3--flexible-about-format-and-task-strict-about-content)
+  - [GEN-005: Generation model: gpt-4.1-mini recommended over gpt-4o-mini](#gen-005-generation-model-gpt-41-mini-recommended-over-gpt-4o-mini)
 - [Frontend](#frontend)
   - [FE-001: Follow-up chips are ordinary user turns in the conversation's own mode](#fe-001-follow-up-chips-are-ordinary-user-turns-in-the-conversations-own-mode)
+  - [FE-002: Answers are rendered as Markdown (GFM tables), wide tables scroll inside the bubble](#fe-002-answers-are-rendered-as-markdown-gfm-tables-wide-tables-scroll-inside-the-bubble)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -657,6 +661,17 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Concept to learn:** *Query decomposition and structured retrieval.* A "list all X" request is a database query, not a similarity search; when a structured index exists, filter it directly and use vectors only for open-ended aspects. For multi-aspect requests, decompose into sub-queries and reserve slots for each so the merged context covers every aspect. Search: "query decomposition RAG", "multi-query retriever", "structured vs unstructured retrieval".
 - **Revisit if:** the saint index is rebuilt at ingestion (then joint entries and aliases are covered and the note can be softened), or broad prompts exceed the latency budget (lower `BROAD_RETRIEVAL_TOP_K`).
 
+### RET-008: Comparisons with another church also retrieve the passages that name it
+- **Date / Part:** 2026-09-16, Phase 4 Step 4
+- **Audit ref:** EVAL-014 (PRD-03), RET-007
+- **Context:** With prompt v3 the Catholic/Coptic table stopped being refused, but the answer paired Coptic teachings with invented Catholic ones: the catechism mentions the Catholic Church only in passing (handbells on cat1 p.512, the Michael feast on cat2 p.304, the Pascha computation on cat2 p.252, the sacred-heart symbol on cat1 p.496), and a similarity search for "differences between Catholicism and Coptic" ranks general pages about the Coptic Church far above those.
+- **Options considered:** (1) rely on the prompt alone — the model had nothing true to say about the other side; (2) a lexical scan over the whole collection (like the Arabic path) — slow, unranked; (3) Chroma's `where_document={"$contains": term}` on the same semantic query, so ranking stays semantic but only chunks that name the tradition are eligible.
+- **Decision:** Option 3. When the request looks like a comparison (analysis format `comparison`, or "differ/compare/versus/than/between" in the question) and names another tradition, `_compared_tradition_terms` maps it to case-sensitive book terms (Catholic → "Catholic", "Roman"; Protestant; Anglican; Byzantine/Eastern/Greek Orthodox → "Byzantine", "Chalcedonian") and the analysed query is run once per term (`TRADITION_RETRIEVAL_TOP_K` = 6); new chunks are appended to the context and logged as `tradition_terms`. The analysis prompt also gained one line: for such comparisons, one sub-query is the other church's name.
+- **Result:** the PRD-03 context now includes cat2 p.252 and cat1 p.496 and pages about Catholic missionary activity (saints2 pp. 405–406, cat1 p.23). It still misses p.512 and p.304 (the word "Catholic" appears in many patristic book titles, which compete). The probe answers moved from invented contrasts to either "Not described in the sources" cells (gpt-4o-mini) or cited statements from those pages (gpt-4.1-mini).
+- **Files changed:** `api.py` (`_retrieve_documents(where_document=…)`, `_compared_tradition_terms`), `task_analysis.py`.
+- **Concept to learn:** *Filtered / hybrid retrieval.* Combining a metadata or keyword filter with vector ranking retrieves passages that are relevant *and* satisfy a hard constraint, which pure similarity cannot guarantee for rare mentions. Search: "hybrid search keyword filter vector", "Chroma where_document".
+- **Revisit if:** a lexical (BM25) index is added for English (then fuse with RRF instead of a contains filter).
+
 ## Prompting & Generation
 
 ### GEN-001: System prompts live in versioned files under prompts/
@@ -692,6 +707,55 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Concept to learn:** *Conversation state in stateless APIs.* Each request must carry the history it needs; bounding it (turn count and per-message size, SEC-006) keeps cost predictable. Search: "chat completions message roles", "context window management".
 - **Revisit if:** history dominates the prompt (add summarisation), or when the retrieval rewrite moves to an LLM (then the rewritten standalone question can also be shown to the model).
 
+### GEN-004: Prompt v3 — flexible about format and task, strict about content
+- **Date / Part:** 2026-09-16, Phase 4 Step 4
+- **Audit ref:** EVAL-014 (cause 4), GEN-002, open questions 11 and 14, production examples 1–3
+- **Context:** Prompt v2 had one refusal rule ("if none of the passages is relevant, reply with exactly …") and a paragraphs-by-default style rule. After Steps 2–3 gave the model the right material, it still refused four task requests (G-saints table, Catholic/Coptic table, tunes table, calendar table) and wrote tables as numbered lists. It also let general knowledge in: the Easter answer's Julius Caesar date, year length and "Demetrius at Nicaea" (EVAL-014), and the phase-3 filler ("a significant figure"). Any "does not say" anywhere in an answer was logged as a refusal (SNT-01 in RET-007).
+- **Options considered:** edit v2 in place (loses the comparison baseline; GEN-001 says never); add rules to v2's end (the refusal rule would still dominate); a new v3 organised around the product rule "flexible about format and task, strict about content".
+- **Decision:** `prompts/english_v3.md` and `prompts/arabic_v3.md` (same structure in Arabic), `PROMPT_VERSION` default `v3`; v2 files are unchanged and still selectable.
+  - *Content:* every factual statement must be in a passage and cited; no general-knowledge filler even when true (no extra dates, numbers, names, background); copy dates exactly; no generic characterisations; do not merge same-name people; for partial coverage do the covered part and say in one sentence what is not covered.
+  - *Comparisons:* only what passages say about each side; every statement about the other church needs a citation to a passage that names it, otherwise the cell says exactly "Not described in the sources"; only differences a passage states; say the sources do not give a full comparison.
+  - *Format and task:* never decline because of the format; Markdown tables/lists; citations inside cells; no placeholder cells ("noted in the index"); incomplete lists get one sentence saying so; paragraphs when no format was asked.
+  - *Length:* match the request; short factual questions get a few sentences.
+  - *Declines:* flexibility is about format, not topic (off-topic requests are declined even if a passage shares a word). If no passage is about the named subject, begin with "I could not find …" naming it, then optionally say what the sources cover nearby, with citations, and suggest a question; if nothing is related, a one-line decline.
+  - *Pipeline support:* the analysed format is passed as a NOTE ("Requested format: table."); tables/lists/comparisons/study guides and broad requests get `ANSWER_MAX_TOKENS_TASK` (2,400) because a 40-row list was cut at 1,200 (RET-007); saint lists now show 30 entries (40 took 12.3 s, near the 20 s proxy timeout) and name each entry with its index name plus heading. The distance-threshold refusal text (`_no_source_answer`) now says what the sources cover and suggests topics.
+  - *Refusal detection:* `_response_grounding_status` decides a refusal only from the answer's opening ("I could not find …", "The sources/passages do not mention …", the Arabic marker); phrases such as "the sources do not say" elsewhere mark a *partial* answer. A decline returns only the sources it cites for nearby material. The eval harness now trusts the backend's `answered` verdict instead of re-scanning the answer for refusal words.
+- **Iterations during the step (probes, not the tune set):** the first v3 draft still produced a Catholic column of invented contrasts ("the Catholic Church has historically had significant political influence"); the comparison rules above were then made explicit, and RET-008 added passages that name the other church. The Arabic off-topic question (OOC-10) was answered from a passage about Poitiers ("the capital of France is Poitiers") under the first draft; the "flexibility is about format, not topic" line was added; gpt-4o-mini then refused it, gpt-4.1-mini still did not (handled in Step 5).
+- **Result (tune, coverage-only; step 3 `20260916-211927` → v3 with gpt-4o-mini `20260916-213838` / v3 with gpt-4.1-mini `20260916-213948`):**
+
+| metric | step 3 (v2, 4o-mini) | v3, 4o-mini | v3, 4.1-mini |
+|---|---|---|---|
+| coverage (all answerable) | 59.1% | 63.5% | **73.0%** |
+| off-target | 7.3% | 10.9% | **5.5%** |
+| answerable refused | 9.1% | 1.8% (AR-04) | **0.0%** |
+| … task-style | 40.0% | 0.0% | 0.0% |
+| out-of-corpus refused | 80.8% | **92.3%** | 76.9% |
+| … easy / near-miss / task | 100 / 68.8 / 100 | 100 / 87.5 / 100 | 85.7 / 75.0 / 66.7 |
+| format followed (task) | 80.0% (n=5) | 100% (n=9) | 100% (n=9) |
+| task coverage | 32.8% | 57.8% | 63.0% |
+| keyword coverage | 82.1% | 78.6% | 92.9% |
+| catechism coverage | 52.1% | 55.1% | 71.1% |
+| mean answer length | 1,875 chars | 1,156 | 1,860 |
+| prompt / completion tokens | 7,051 / 297 | 7,699 / 205 | 7,775 / 328 |
+| mean latency | 3.3 s | 2.9 s | 3.7 s |
+
+  - **Production examples (4.1-mini):** PRD-01 answered as a Markdown table of G saints with real descriptions and an incompleteness sentence (coverage 0.64); PRD-02 coverage 0.42 → 0.83 (Demetrius in the second century, Nicaea approving it, the thirteen-day divergence, all cited); PRD-03 answered as a table (coverage 0.25, below the off-target line: it cites real Catholic-mention passages but not the four differences in the reference). TSK-09 (tunes) 0 → 1.00 and TSK-14 (calendars) 0 → 0.75.
+  - **Regressions:** with gpt-4.1-mini, out-of-corpus refusals dropped (OOC-10 Arabic off-topic answered; OOC-21, 22, 24, 38 doctrine questions answered from general knowledge with a Coptic framing, the phase-3 failure mode; OOC-26 correctly says Paul had no wife but does not open with a decline). With gpt-4o-mini, AR-04 (St. Anthony in Arabic) was refused and answers became 38 % shorter; TSK-12 ("three bullet points") coverage 0.83 → 0.33 under 4.1-mini because three bullets hold fewer facts than a paragraph. The doctrine answers are the target of the Step 5 check.
+- **Files changed:** `prompts/english_v3.md`, `prompts/arabic_v3.md` (new), `api.py`, `eval/run_eval.py`.
+- **Concept to learn:** *Separating style latitude from grounding constraints.* Refusal-heavy prompts conflate "I can't do this format" with "the sources don't say this"; stating the two policies separately, and giving the model an explicit, checkable way to decline ("begin with …"), makes both behaviours measurable. Search: "grounded generation instructions", "refusal calibration RAG".
+- **Revisit if:** the faithfulness numbers in Step 6 show the stricter content rules are not followed (then add a post-generation claim check).
+
+### GEN-005: Generation model: gpt-4.1-mini recommended over gpt-4o-mini
+- **Date / Part:** 2026-09-16, Phase 4 Step 4
+- **Audit ref:** DEP-001, GEN-004
+- **Context:** The v3 content and comparison rules are instructions a small model has to follow over a 10k-token context. On the probes gpt-4o-mini wrote "The Catholic Church also practices seven sacraments … Not described in the sources" in one cell, and dropped the passages' facts for Easter; gpt-4.1-mini followed the rules and cited the right pages.
+- **Options considered:** keep gpt-4o-mini (cheapest, fastest, stricter declines); gpt-4.1-mini (better instruction following, ~2.7× the token price); a larger model (gpt-4.1 or newer) — not tested, several times the price again.
+- **Decision:** run Steps 5–6 with `OPENAI_CHAT_MODEL=gpt-4.1-mini` and recommend it for Railway; the code default stays `gpt-4o-mini` so the switch is an env var and reversible. The request-analysis model stays gpt-4o-mini (RET-006).
+- **Why:** on tune it answers more of what is asked (coverage +9.5 points, catechism +16, task +5), is off-target half as often and refuses no answerable question; its weakness (answering near-miss doctrine questions) is exactly what the Step 5 entity check targets, while gpt-4o-mini's weaknesses (short answers, a wrongful Arabic refusal, poorer comparisons) have no such guard. Cost at list prices (gpt-4o-mini $0.15 / $0.60 per million input/output tokens, gpt-4.1-mini $0.40 / $1.60; check current OpenAI pricing): ~7,800 prompt + ~330 completion tokens per answer ≈ $0.0017 vs $0.0036 per request, plus ≈ $0.0001 for the analysis call. Latency +0.8 s mean.
+- **Files changed:** none (env var); evaluated in `eval/results/20260916-213838.json` and `20260916-213948.json`.
+- **Concept to learn:** *Model selection by eval, not by vibes.* Swap one component, rerun the same set, and compare the metrics you care about, including the failure modes the cheaper model avoids. Search: "LLM model selection evaluation cost quality tradeoff".
+- **Revisit if:** Step 6 faithfulness is worse for 4.1-mini, the monthly bill matters more than coverage, or a newer small model is available (rerun the tune set).
+
 ## Frontend
 
 _(See also SEC-003, SEC-005, SEC-006 for the Next.js route changes.)_
@@ -707,6 +771,17 @@ _(See also SEC-003, SEC-005, SEC-006 for the Next.js route changes.)_
 - **Files changed:** `orthodox-site/app/chat/page.tsx`, `eval/questions.jsonl`.
 - **Concept to learn:** *Single source of truth for conversation state.* Once the server stores the turns and replays them to the model, the client must not smuggle context through the question text; two channels for the same information drift apart and the model gets duplicated or stale context. Search: "stateless client stateful server chat history".
 - **Revisit if:** the UI adds threads that mix modes in one conversation; then the mode should be stored per message and chosen per request explicitly.
+
+### FE-002: Answers are rendered as Markdown (GFM tables), wide tables scroll inside the bubble
+- **Date / Part:** 2026-09-16, Phase 4 Step 4
+- **Audit ref:** production example 1 (raw pipes and dashes in the chat)
+- **Context:** `InteractiveAnswer` split the answer on newlines and only recognised `**bold**`, so a Markdown table showed as raw `| … |` lines, lists showed their `1.`/`-` characters verbatim, and bold text that was not a clickable saint name was rendered as a plain `<span>` (not bold at all). The bubble also used `white-space: pre-wrap`, which would double every blank line once real paragraphs are rendered.
+- **Options considered:** extend the hand-written parser to tables and lists (fragile, a Markdown parser in miniature); `marked` + `dangerouslySetInnerHTML` (HTML injection risk from model output); `react-markdown` + `remark-gfm` (renders to React elements, no raw HTML by default, GFM tables/strikethrough/autolinks).
+- **Decision:** `react-markdown@10` with `remark-gfm@4`. Custom renderers keep the existing behaviour and add containment: `strong` still turns backend-extracted saint names into the "search saint" button (other bold text is now real `<strong>`); `table` is wrapped in `.answer-table-wrap` (`overflow-x: auto`, focusable region) so wide tables scroll horizontally inside the bubble; links open in a new tab with `rel="noopener noreferrer"`. CSS: the answer container uses `white-space: normal` with paragraph/list/heading spacing; table cells have borders, a shaded header, `max-width: 28rem` (14rem under 640 px) and wrap long words; `.message-stack` and `.message-bubble` get `min-width: 0` so a wide table cannot widen the message column. The unused `.answer-line`/`.answer-spacer` rules were removed.
+- **Verification:** `tsc --noEmit`, `eslint` and `next build` pass. A temporary preview route (not committed) rendered real v3 answers (the 30-row G-saints table, the fasts table, a numbered Easter answer, and a bold/list/raw-HTML sample) inside the chat bubble markup, screenshotted with headless Chrome at 1280 px and, via a 390 px iframe (headless Chrome will not size a window below ~485 px), at a true 375 px viewport. Results: tables render with header and borders and scroll inside the bubble with a visible scrollbar; the page's scroll width equals the viewport at both widths (only the table's own wrapper overflows); numbered and bulleted lists, bold, italics and the clickable saint-name button render correctly; `<script>` in the answer is shown as text. The real chat page was not opened because `.env.local` points at a remote Neon database, and a test conversation would have been written there.
+- **Files changed:** `orthodox-site/components/InteractiveAnswer.tsx`, `orthodox-site/app/globals.css`, `orthodox-site/package.json`, `orthodox-site/package-lock.json`.
+- **Concept to learn:** *Rendering untrusted Markdown safely.* Parse Markdown to a React tree (no `innerHTML`), keep raw HTML disabled, and contain overflowing blocks in their own scroll box so one wide element cannot break a responsive layout (flex children need `min-width: 0` for that). Search: "react-markdown remark-gfm", "flexbox min-width 0 overflow".
+- **Revisit if:** answers start using headings or code blocks heavily (style them), or right-to-left tables look wrong in Arabic (not screenshotted in this step).
 
 ## Code Cleanup
 

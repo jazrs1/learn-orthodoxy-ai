@@ -182,6 +182,10 @@ def classify_outcome(answer: str, sources: List[Dict[str, Any]], options: List[s
         return "refused"
     if debug and debug.get("outcome") == "options":
         return "clarification"
+    if debug and debug.get("outcome") == "answered":
+        # Phase 4: the backend decides refusals from the answer's opening (GEN-004); a
+        # partial answer that says "the sources do not say X" is an answer, not a refusal.
+        return "answered"
     lowered = (answer or "").lower()
     if any(marker in lowered for marker in CLARIFICATION_MARKERS) or (options and not sources and not lowered.strip()):
         return "clarification"

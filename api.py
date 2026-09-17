@@ -79,6 +79,9 @@ MAX_TOP_K = 12
 MAX_HISTORY_MESSAGES = 12
 MAX_HISTORY_MESSAGE_CHARS = 4000
 ANSWER_MAX_TOKENS = _env_int("ANSWER_MAX_TOKENS", 1200, minimum=64)
+# Tables, lists, study guides and broad requests need more room (GEN-004): a 40-row saint
+# list was cut off at 1200 tokens in phase 4 step 3.
+ANSWER_MAX_TOKENS_TASK = _env_int("ANSWER_MAX_TOKENS_TASK", 2400, minimum=64)
 OPENAI_TIMEOUT_SECONDS = _env_float("OPENAI_TIMEOUT_SECONDS", 25.0)
 OPENAI_MAX_RETRIES = _env_int("OPENAI_MAX_RETRIES", 1)
 CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
@@ -108,12 +111,23 @@ TASK_ANALYSIS_TIMEOUT_SECONDS = _env_float("TASK_ANALYSIS_TIMEOUT_SECONDS", 8.0)
 BROAD_RETRIEVAL_TOP_K = _env_int("BROAD_RETRIEVAL_TOP_K", 16, minimum=1)
 BROAD_PER_QUERY_MIN = _env_int("BROAD_PER_QUERY_MIN", 2)
 # "Saints whose names start with G": entries come from the saint index, not from vector search.
-SAINT_LIST_MAX_ENTRIES = _env_int("SAINT_LIST_MAX_ENTRIES", 40, minimum=1)
+# 30 keeps a described table under ~10 s; 40 took 12 s, too close to the 20 s proxy timeout (GEN-004).
+SAINT_LIST_MAX_ENTRIES = _env_int("SAINT_LIST_MAX_ENTRIES", 30, minimum=1)
 SAINT_LIST_EXCERPT_CHARS = 600
+# Comparisons with another church: extra chunks that contain its name (RET-008).
+TRADITION_RETRIEVAL_TOP_K = _env_int("TRADITION_RETRIEVAL_TOP_K", 6, minimum=1)
+# (pattern in the request, case-sensitive substrings to require in a chunk)
+TRADITION_TERMS = (
+    (r"catholic|roman church|church of rome|pope of rome|latin church", ("Catholic", "Roman")),
+    (r"protestant|lutheran|evangelical|reformation", ("Protestant",)),
+    (r"anglican|church of england", ("Anglican",)),
+    (r"byzantine|greek orthodox|eastern orthodox|russian orthodox|chalcedonian", ("Byzantine", "Chalcedonian")),
+)
+COMPARISON_CUE = re.compile(r"differ|compar|contrast|versus|\bvs\.?\b|\bthan\b|\bbetween\b", re.IGNORECASE)
 
 # --- Prompts are versioned files under prompts/ (DECISIONS.md GEN-001) ---
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
-PROMPT_VERSION = os.getenv("PROMPT_VERSION", "v2").strip() or "v2"
+PROMPT_VERSION = os.getenv("PROMPT_VERSION", "v3").strip() or "v3"
 
 
 def _load_prompt(name: str) -> str:
@@ -723,6 +737,7 @@ def _retrieve_documents(
     target_collection: Any | None = None,
     metadata_filter: Dict[str, Any] | None = None,
     per_query_min: int = 0,
+    where_document: Dict[str, Any] | None = None,
 ):
     """Vector search for several queries, merged by best distance (RET-002).
 
@@ -762,6 +777,8 @@ def _retrieve_documents(
     query_kwargs: Dict[str, Any] = {"query_texts": deduped_queries, "n_results": top_k}
     if metadata_filter:
         query_kwargs["where"] = metadata_filter
+    if where_document:
+        query_kwargs["where_document"] = where_document
     retrieved = search_collection.query(**query_kwargs)
 
     # Best (smallest) distance per unique chunk across all queries; the final list is
@@ -839,9 +856,18 @@ def _detect_language(selected_language: str | None, question: str) -> str:
 
 
 def _no_source_answer(language: str) -> str:
+    """Reply when retrieval found nothing related (GEN-004): say so, and say what the sources are for."""
     if language == "ar":
-        return "لم أجد معلومات كافية عن هذا في المصادر العربية المتاحة."
-    return "I could not find enough about that in the loaded sources."
+        return (
+            "لم أجد معلومات كافية عن هذا في المصادر العربية المتاحة. "
+            "تغطي المصادر تعليم الكنيسة القبطية الأرثوذكسية (الإيمان والأسرار والصلاة والصوم والسنة الكنسية) "
+            "وسير القديسين وآباء الكنيسة، فجرّب أن تسأل عن أحد هذه الموضوعات."
+        )
+    return (
+        "I could not find anything about that in the loaded sources. They cover the teaching of the Coptic Orthodox "
+        "Church (faith, the sacraments, prayer, fasting, the Church year) and the lives of the saints and Church Fathers, "
+        "so try asking about one of those."
+    )
 
 
 ARABIC_LEXICAL_STOPWORDS = {
@@ -1236,7 +1262,7 @@ def _saint_list_context(records: List[Dict[str, Any]]) -> Tuple[List[str], List[
     for record in records:
         body = str(record.get("body", "") or "")
         excerpt = body[:SAINT_LIST_EXCERPT_CHARS].rsplit(" ", 1)[0] + (" …" if len(body) > SAINT_LIST_EXCERPT_CHARS else "")
-        docs.append(f"{record.get('raw_heading') or record.get('name')}\n{excerpt}")
+        docs.append(f"{record.get('name')} (entry heading: {record.get('raw_heading') or record.get('name')})\n{excerpt}")
         metas.append(record.get("metadata") or {})
     return docs, metas
 
@@ -1253,7 +1279,7 @@ def _saint_list_note(name_filter: Dict[str, str], shown: int, total: int) -> str
     note += f" of {total} matched." if total > shown else "."
     note += (
         " The index cannot read every heading (for example some joint entries), so tell the reader the list may be "
-        "incomplete. Describe each saint only from its passage."
+        "incomplete. Describe each saint only from its passage, in one short sentence."
     )
     return note
 
@@ -1281,28 +1307,77 @@ ARABIC_REFUSAL_MARKERS = (
 )
 
 
+# "The sources do not mention X" opens a decline; "the sources do not give a full comparison"
+# inside or at the start of an answer does not (it is a partial answer).
+REFUSAL_OPENINGS = (
+    "i could not find",
+    "i couldn't find",
+    "the sources do not mention",
+    "the passages do not mention",
+    "the loaded sources do not mention",
+    "the provided passages do not mention",
+)
+PARTIAL_MARKERS = (
+    "do not cover",
+    "does not cover",
+    "don't cover",
+    "do not describe",
+    "do not say",
+    "does not say",
+    "do not contain",
+    "do not give a full",
+    "may be incomplete",
+    "may not be complete",
+    "may not be exhaustive",
+    "not exhaustive",
+    "the sources mention",
+)
+
+
 def _response_grounding_status(answer: str, docs: List[str]) -> str:
+    """no-source | partial | full.
+
+    Prompt v3 (GEN-004) opens a decline with a fixed phrase, and states gaps inside an otherwise
+    useful answer with other wording, so only the *opening* decides a refusal. Before v3, any
+    "does not say" anywhere turned a partial answer into a logged refusal.
+    """
     if not docs:
         return "no-source"
-    lowered = (answer or "").lower()
-    if (
-        "could not find" in lowered
-        or "do not contain" in lowered
-        or "does not say" in lowered
-        or "no relevant" in lowered
-        or any(marker in (answer or "") for marker in ARABIC_REFUSAL_MARKERS)
-    ):
+    text = (answer or "").strip()
+    lowered = text.lower()
+    if lowered.startswith(REFUSAL_OPENINGS) or any(text.startswith(marker) for marker in ARABIC_REFUSAL_MARKERS):
         return "no-source"
-    if (
-        "from the loaded sources" in lowered
-        or "the sources mention" in lowered
-        or "do not give a full" in lowered
-        or "may not be exhaustive" in lowered
-        or "not exhaustive" in lowered
-        or "partial" in lowered
-    ):
+    if any(marker in lowered for marker in PARTIAL_MARKERS) or "غير كاملة" in text or "لا تغطي" in text:
         return "partial"
     return "full"
+
+
+def _compared_tradition_terms(question: str, analysis: TaskAnalysis) -> List[str]:
+    """Names of other traditions a comparison request is about, as they appear in the books."""
+    text = f"{question} {analysis.retrieval_query}"
+    if analysis.output_format != "comparison" and not COMPARISON_CUE.search(text):
+        return []
+    terms: List[str] = []
+    for pattern, substrings in TRADITION_TERMS:
+        if re.search(pattern, text, flags=re.IGNORECASE):
+            terms.extend(term for term in substrings if term not in terms)
+    return terms[:3]
+
+
+def _answer_max_tokens(analysis: TaskAnalysis, broad: bool) -> int:
+    if broad or analysis.output_format in {"table", "list", "comparison", "study_guide"}:
+        return max(ANSWER_MAX_TOKENS, ANSWER_MAX_TOKENS_TASK)
+    return ANSWER_MAX_TOKENS
+
+
+def _format_note(analysis: TaskAnalysis, language: str) -> str | None:
+    """Tell the model which presentation the analysis detected (GEN-004)."""
+    if analysis.output_format in {"prose", "other"}:
+        return None
+    label = analysis.output_format.replace("_", " ")
+    if language == "ar":
+        return f"الشكل المطلوب: {label}"
+    return f"Requested format: {label}."
 
 
 def _has_viable_saint_learn_more(answer: str, docs: List[str], metas: List[Dict[str, Any]], mode: str) -> bool:
@@ -1572,7 +1647,7 @@ def _cited_sources(answer: str, numbered: List[Dict[str, Any]], fallback_limit: 
         seen_keys.add(key)
         chosen.append(source)
     cited_count = len(chosen)
-    if not chosen:
+    if not chosen and fallback_limit > 0:
         for source in numbered:
             key = _source_key(source)
             if key in seen_keys:
@@ -1598,6 +1673,17 @@ def _analyze_request(question: str, history: List[Dict[str, str]]) -> TaskAnalys
     if trace is not None:
         trace.set(task_analysis=analysis.log_dict(), analysis_tokens=analysis.prompt_tokens and (analysis.prompt_tokens + (analysis.completion_tokens or 0)))
     return analysis
+
+
+def _decline_or_cited_sources(
+    answer: str, numbered: List[Dict[str, Any]], refused: bool
+) -> Tuple[List[Dict[str, Any]], int]:
+    """A decline shows only the passages it cites for nearby material (GEN-004), never a fallback list."""
+    if not refused:
+        return _cited_sources(answer, numbered)
+    if not _parse_citations(answer):
+        return [], 0
+    return _cited_sources(answer, numbered, fallback_limit=0)
 
 
 def _build_chat_messages(
@@ -2980,7 +3066,9 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 }
 
             context, numbered_sources = _build_numbered_context(docs, metas, normalize=_normalize_arabic_context_text)
-            messages = _build_chat_messages(ARABIC_SYSTEM_PROMPT, history, original_question, context, "ar")
+            messages = _build_chat_messages(
+                ARABIC_SYSTEM_PROMPT, history, original_question, context, "ar", note=_format_note(analysis, "ar")
+            )
             trace.set(
                 context_chunks=len(docs),
                 context_chars=len(context),
@@ -2992,7 +3080,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             resp = oai_client.chat.completions.create(
                 model=CHAT_MODEL,
                 temperature=CHAT_TEMPERATURE,
-                max_tokens=ANSWER_MAX_TOKENS,
+                max_tokens=_answer_max_tokens(analysis, broad=analysis.broad),
                 messages=messages,
             )
             trace.set_generation(resp, CHAT_MODEL)
@@ -3005,7 +3093,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
 
             grounding = _response_grounding_status(answer, docs)
             refused = grounding == "no-source"
-            response_sources, cited_count = ([], 0) if refused else _cited_sources(answer, numbered_sources)
+            response_sources, cited_count = _decline_or_cited_sources(answer, numbered_sources, refused)
             trace.set(
                 outcome="refused" if refused else "answered",
                 refusal=refused,
@@ -3170,6 +3258,27 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 per_query_min=BROAD_PER_QUERY_MIN if retrieval_plan == "broad" else 0,
             )
             best_distance = min(distances) if distances else None
+            # Comparisons with another tradition: the Coptic books mention it only in passing,
+            # so similarity search rarely surfaces those pages. Rank again among chunks that
+            # contain the tradition's name (RET-008).
+            tradition_terms = _compared_tradition_terms(original_question, analysis)
+            if tradition_terms and docs:
+                seen_ids = {chunk_id_from_metadata(m) for m in metas}
+                for term in tradition_terms:
+                    extra_docs, extra_metas, extra_distances = _retrieve_documents(
+                        [retrieval_question],
+                        top_k=TRADITION_RETRIEVAL_TOP_K,
+                        where_document={"$contains": term},
+                    )
+                    for doc, meta, dist in zip(extra_docs, extra_metas, extra_distances):
+                        chunk_id = chunk_id_from_metadata(meta)
+                        if chunk_id in seen_ids:
+                            continue
+                        seen_ids.add(chunk_id)
+                        docs.append(doc)
+                        metas.append(meta)
+                        distances.append(dist)
+                trace.set(tradition_terms=tradition_terms)
         if mode == "saints":
             docs, metas = _prepend_saint_record_context(docs, metas, entity)
         trace.lap("retrieval")
@@ -3204,7 +3313,8 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         # Numbered passages the model cites as [n]; the last few turns go in as real messages
         # so pronouns and follow-ups resolve naturally (DECISIONS.md GEN-001..003).
         context, numbered_sources = _build_numbered_context(docs, metas)
-        messages = _build_chat_messages(ENGLISH_SYSTEM_PROMPT, history, original_question, context, "en", note=list_note)
+        note = "\n".join(part for part in (list_note, _format_note(analysis, "en")) if part) or None
+        messages = _build_chat_messages(ENGLISH_SYSTEM_PROMPT, history, original_question, context, "en", note=note)
         trace.set(
             context_chunks=len(docs),
             context_chars=len(context),
@@ -3216,7 +3326,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         resp = oai_client.chat.completions.create(
             model=CHAT_MODEL,
             temperature=CHAT_TEMPERATURE,
-            max_tokens=ANSWER_MAX_TOKENS,
+            max_tokens=_answer_max_tokens(analysis, broad=retrieval_plan != "default"),
             messages=messages,
         )
         trace.set_generation(resp, CHAT_MODEL)
@@ -3253,7 +3363,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
 
         grounding = _response_grounding_status(answer, docs)
         refused = grounding == "no-source"
-        response_sources, cited_count = ([], 0) if refused else _cited_sources(answer, numbered_sources)
+        response_sources, cited_count = _decline_or_cited_sources(answer, numbered_sources, refused)
         trace.set(
             outcome="refused" if refused else "answered",
             refusal=refused,

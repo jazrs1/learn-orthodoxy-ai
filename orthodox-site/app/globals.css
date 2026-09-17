@@ -585,6 +585,8 @@ textarea {
   flex-direction: column;
   gap: 0.35rem;
   max-width: min(72%, 720px);
+  /* Let wide content (tables) scroll inside the bubble rather than widen the column. */
+  min-width: 0;
 }
 
 .user-row {
@@ -601,6 +603,8 @@ textarea {
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .user-bubble {
@@ -678,20 +682,120 @@ textarea {
   opacity: 1;
 }
 
+/* Assistant answers are rendered Markdown (FE-002); the bubble's pre-wrap would add stray blank lines. */
 .interactive-answer {
-  white-space: pre-wrap;
+  white-space: normal;
+  min-width: 0;
 }
 
-.answer-line {
+.interactive-answer > :first-child {
+  margin-top: 0;
+}
+
+.interactive-answer > :last-child {
+  margin-bottom: 0;
+}
+
+.interactive-answer p {
+  margin: 0 0 0.7rem;
+}
+
+.interactive-answer ul,
+.interactive-answer ol {
+  margin: 0 0 0.7rem;
+  padding-inline-start: 1.4rem;
+}
+
+.interactive-answer ul {
+  list-style: disc;
+}
+
+.interactive-answer ol {
+  list-style: decimal;
+}
+
+.interactive-answer li + li {
+  margin-top: 0.3rem;
+}
+
+.interactive-answer li > p {
   margin: 0;
 }
 
-.answer-line + .answer-line {
-  margin-top: 0.45rem;
+.interactive-answer h1,
+.interactive-answer h2,
+.interactive-answer h3,
+.interactive-answer h4 {
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 1rem 0 0.5rem;
 }
 
-.answer-spacer {
-  height: 0.45rem;
+.interactive-answer h1 {
+  font-size: 1.2rem;
+}
+
+.interactive-answer h2 {
+  font-size: 1.1rem;
+}
+
+.interactive-answer h3,
+.interactive-answer h4 {
+  font-size: 1rem;
+}
+
+.interactive-answer strong {
+  font-weight: 700;
+}
+
+.interactive-answer a {
+  text-decoration: underline;
+}
+
+.interactive-answer blockquote {
+  margin: 0 0 0.7rem;
+  padding-inline-start: 0.8rem;
+  border-inline-start: 3px solid rgba(58, 38, 22, 0.2);
+}
+
+/* Wide tables scroll horizontally inside the bubble instead of breaking the layout. */
+.answer-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0 0 0.8rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.answer-table-wrap table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 0.92em;
+  line-height: 1.45;
+}
+
+.answer-table-wrap th,
+.answer-table-wrap td {
+  border: 1px solid rgba(58, 38, 22, 0.18);
+  padding: 0.45rem 0.65rem;
+  text-align: start;
+  vertical-align: top;
+  max-width: 28rem;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.answer-table-wrap th {
+  background: rgba(58, 38, 22, 0.06);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .answer-table-wrap th,
+  .answer-table-wrap td {
+    max-width: 14rem;
+    padding: 0.4rem 0.5rem;
+  }
 }
 
 .answer-name-button {

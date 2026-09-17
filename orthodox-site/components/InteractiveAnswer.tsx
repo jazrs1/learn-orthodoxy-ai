@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { isValidElement, useMemo, type ReactNode } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { isValidSaintName, normalizeSaintKey } from "./saintNameUtils";
 
 type InteractiveAnswerProps = {
@@ -9,22 +11,15 @@ type InteractiveAnswerProps = {
   saintLookup?: Set<string>;
 };
 
-type Segment = {
-  text: string;
-  bold: boolean;
-};
+// Answers are Markdown (DECISIONS.md FE-002): paragraphs, lists, bold and GFM tables.
+// Raw HTML in the answer is not rendered (react-markdown's default), so model output
+// cannot inject markup.
 
-function parseBoldSegments(text: string): Segment[] {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts
-    .filter(Boolean)
-    .map((part) => {
-      const isBold = part.startsWith("**") && part.endsWith("**");
-      return {
-        text: isBold ? part.slice(2, -2) : part,
-        bold: isBold,
-      };
-    });
+function textOf(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) return textOf(node.props.children);
+  return "";
 }
 
 function handleNameClick(name: string) {
@@ -53,43 +48,44 @@ export default function InteractiveAnswer({
     );
   }, [entities, saintLookup]);
 
-  const lines = answer.split("\n");
+  const components = useMemo<Components>(
+    () => ({
+      // Bold saint names that the backend extracted stay clickable; other bold text is just bold.
+      strong({ children }) {
+        const text = textOf(children).trim();
+        const clickable =
+          text && clickableNames.has(normalizeSaintKey(text)) && isValidSaintName(text, saintLookup);
+        if (!clickable) return <strong>{children}</strong>;
+        return (
+          <button type="button" className="answer-name-button" onClick={() => handleNameClick(text)}>
+            <strong>{children}</strong>
+          </button>
+        );
+      },
+      // Wide tables scroll inside the bubble instead of stretching the layout.
+      table({ children }) {
+        return (
+          <div className="answer-table-wrap" role="region" aria-label="Table" tabIndex={0}>
+            <table>{children}</table>
+          </div>
+        );
+      },
+      a({ href, children }) {
+        return (
+          <a href={href} target="_blank" rel="noopener noreferrer">
+            {children}
+          </a>
+        );
+      },
+    }),
+    [clickableNames, saintLookup]
+  );
 
   return (
     <div className="interactive-answer">
-      {lines.map((line, lineIndex) => {
-        if (!line.trim()) {
-          return <div key={`line-${lineIndex}`} className="answer-spacer" />;
-        }
-
-        const segments = parseBoldSegments(line);
-
-        return (
-          <p key={`line-${lineIndex}`} className="answer-line">
-            {segments.map((segment, segmentIndex) => {
-              if (!segment.bold) {
-                return <span key={`seg-${lineIndex}-${segmentIndex}`}>{segment.text}</span>;
-              }
-
-              const normalized = normalizeSaintKey(segment.text);
-              if (!clickableNames.has(normalized) || !isValidSaintName(segment.text, saintLookup)) {
-                return <span key={`seg-${lineIndex}-${segmentIndex}`}>{segment.text}</span>;
-              }
-
-              return (
-                <button
-                  key={`seg-${lineIndex}-${segmentIndex}`}
-                  type="button"
-                  className="answer-name-button"
-                  onClick={() => handleNameClick(segment.text)}
-                >
-                  <strong>{segment.text}</strong>
-                </button>
-              );
-            })}
-          </p>
-        );
-      })}
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {answer}
+      </ReactMarkdown>
     </div>
   );
 }
