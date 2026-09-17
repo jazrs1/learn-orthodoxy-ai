@@ -1029,13 +1029,33 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
     - Gold #E4AE48 (1.8:1, large marks only).
     - Antique gold #866426 (4.9:1, for small gold text and hairlines).
     - Rubric red #8E2A1E (7.6:1).
-    - Dark versions: night #2A2117 with ivory #F4ECDC and gold (7.9:1).
+    - Dark versions: night #2A2117 with ivory #F4ECDC and gold (7.9:1); brass #B08A3E for the candlestick.
   - **Dark versions:** every variant also comes light-on-dark.
 - **Why:**
   - Outlined SVG stays sharp at any size and needs no font.
   - The mixed type families and the candlestick collision were the most visible flaws.
   - A detailed cross turns into a gray smudge at 16 px, so the smallest sizes need their own drawing rather than a scaled-down copy.
-- **Status:** Proposal only. Renders and comparison sheets are in `ui-audit/brand/`. Nothing on the site uses the new files yet, and the original PNGs are kept. The owner still needs to choose the cross and the tagline.
+- **Owner feedback, round 1 (2026-09-17):**
+  - **Tagline:** "A Coptic Orthodox Study Guide" is the main tagline, including on dark; the original wording stays as the alternate.
+  - **Cross:** waiting for the priest. Both versions are kept, and the Coptic cross is shown first by default.
+  - **Changes made:**
+    - *Tagline spacing:* fixed at 0.094 em (the original tagline's spacing) and centred, not stretched to the width of ORTHODOXY. Taglines are not used below 400 px; a `wordmark-short` version has no tagline.
+    - *Weight:* ORTHODOXY is shown at 500, 600, 700 and 800. The current weight was already SemiBold (600), so the default stays at 600 until the owner chooses.
+    - *Candlestick:* brass #B08A3E on dark backgrounds (4.9:1).
+    - *Crosses:* each arm end is drawn once and rotated, so the arms are symmetric by construction.
+      - Latin cross: stroke 9 → 11; top and side arms equal.
+      - Coptic cross: straight arms 12 wide, smaller three-point ends, a plain centre.
+    - *Lettermark:* the cross is about 12% larger and centred on the counter measured from the glyph outline.
+    - *Icon and app icon:* an upright O with an almost even stroke instead of the tilted Garamond O. The O, tail and counter are one compound path (nonzero fill: outer contour and tail clockwise, counter hole counter-clockwise). The counter fill extends halfway under the stroke, so no background line shows at the join.
+    - *Favicons:*
+      - At 16 px: a 2 px O stroke, a larger counter, a 2 px cross and a solid tail.
+      - A version without a tail at 16 and 32 px.
+      - A dark rounded-square version: no tail at 16 px, with a tail at 32 px. It stays visible on light browser tabs.
+    - *New sheets:* the comparison sheets now include 8× nearest-neighbour zooms, light and dark tab mockups, and a mock site header with the 48 px lettermark.
+- **Status:** Proposal only. Renders and comparison sheets are in `ui-audit/brand/`. Nothing on the site uses the new files yet, and the original PNGs are kept. Still open:
+  - the cross (waiting for the priest)
+  - the ORTHODOXY weight
+  - which favicon to use (tail, no tail, or dark square)
 - **Files changed:** `ui-audit/tools/brand.mjs` (new), `ui-audit/tools/README.md`, `ui-audit/brand/` (new), `orthodox-site/public/brand/` (the owner's original PNGs, now committed), `.gitignore`.
 - **Concept to learn:** *Optical sizing and pixel hinting.* Small sizes need heavier strokes and simpler shapes. A stroke aligned to whole pixels stays sharp; one that falls between pixels is drawn as a gray blur. Search: "favicon design pixel grid", "optical size typography".
 - **Revisit if:** the owner redraws the logo in a design tool (then keep `brand.mjs` only as a reference), or the site gets a dark theme (the `-dark` files are ready for it).
