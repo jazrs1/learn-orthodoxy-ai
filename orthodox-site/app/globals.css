@@ -815,6 +815,145 @@ textarea {
   background: rgba(58, 38, 22, 0.14);
 }
 
+/* Inline citation markers and the per-answer Sources list (UI-006). */
+.cite-group {
+  unicode-bidi: isolate;
+  font-size: 0.72em;
+  line-height: 0;
+  margin-inline-start: 0.1em;
+  white-space: nowrap;
+}
+
+.cite {
+  display: inline-block;
+  min-width: 1.1em;
+  padding: 0.2em 0.12em;
+  border-radius: 0.3em;
+  color: #8e2a1e;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1;
+}
+
+.interactive-answer a.cite {
+  text-decoration: none;
+}
+
+a.cite:hover {
+  background: rgba(142, 42, 30, 0.1);
+  text-decoration: underline;
+}
+
+a.cite:focus-visible {
+  outline: 2px solid #8e2a1e;
+  outline-offset: 1px;
+}
+
+.cite-unlinked {
+  color: #6d5645;
+  font-weight: 400;
+}
+
+.cite-sep {
+  color: #6d5645;
+}
+
+.answer-sources {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(58, 38, 22, 0.14);
+}
+
+.answer-sources-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6d5645;
+}
+
+.answer-sources-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.answer-source {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.35rem 0.5rem;
+  margin-inline: -0.5rem;
+  border-radius: 8px;
+  font-size: 0.88em;
+  line-height: 1.45;
+  scroll-margin: 5rem;
+  transition: background-color 0.3s ease;
+}
+
+.answer-source:focus {
+  outline: none;
+}
+
+.answer-source:focus-visible,
+.answer-source-highlighted {
+  background: rgba(176, 138, 62, 0.2);
+}
+
+.answer-source-number {
+  flex: 0 0 auto;
+  min-width: 1.6em;
+  color: #8e2a1e;
+  font-weight: 700;
+  text-align: center;
+}
+
+.answer-source-body {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.45rem;
+  min-width: 0;
+}
+
+.answer-source-entry {
+  font-weight: 700;
+}
+
+.answer-source-title a {
+  text-decoration: underline;
+}
+
+.answer-source-details {
+  color: #6d5645;
+  white-space: nowrap;
+}
+
+.answer-sources-toggle {
+  margin-top: 0.35rem;
+  border: none;
+  background: transparent;
+  color: #8e2a1e;
+  font: inherit;
+  font-size: 0.88em;
+  font-weight: 700;
+  padding: 0.35rem 0;
+  cursor: pointer;
+}
+
+.answer-sources-toggle:hover {
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .answer-source {
+    transition: none;
+  }
+}
+
 .typing-dots {
   display: inline-flex;
   align-items: center;

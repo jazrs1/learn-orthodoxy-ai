@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import ChatShell from "../../components/ChatShell";
 import ChatSidebar from "../../components/ChatSidebar";
-import InteractiveAnswer from "../../components/InteractiveAnswer";
+import AnswerWithSources from "../../components/AnswerWithSources";
 import { useLanguage } from "../../components/LanguageProvider";
 import { buildSaintLookup, isValidSaintName } from "../../components/saintNameUtils";
 import {
@@ -935,8 +935,10 @@ function ChatPageContent() {
                             </div>
                           ) : (
                             <>
-                              <InteractiveAnswer
+                              <AnswerWithSources
+                                answerId={message.id}
                                 answer={message.content}
+                                sources={message.sources}
                                 entities={message.entities}
                                 saintLookup={saintLookup}
                               />
@@ -1061,8 +1063,10 @@ function ChatPageContent() {
                   {!saintDetailLoading && !saintDetailError && saintDetail?.answer ? (
                     <>
                       <div className="saint-detail-answer" dir="auto">
-                        <InteractiveAnswer
+                        <AnswerWithSources
+                          answerId="saint-detail"
                           answer={saintDetail.answer}
+                          sources={saintDetail.sources}
                           entities={saintDetail.entities}
                           saintLookup={saintLookup}
                         />

@@ -59,6 +59,11 @@ export const translations = {
     sending: "Sending...",
     messageSent: "Message sent.",
     unableToReachContact: "Unable to reach the contact service. Please try again.",
+    answerSources: "Sources",
+    sourceLabel: "Source",
+    showAllSources: "Show all {count} sources",
+    showFewerSources: "Show fewer sources",
+    tableLabel: "Table",
   },
   ar: {
     appName: "تعلّم الأرثوذكسية",
@@ -116,6 +121,11 @@ export const translations = {
     sending: "جارٍ الإرسال...",
     messageSent: "تم إرسال الرسالة.",
     unableToReachContact: "تعذّر الوصول إلى خدمة التواصل. حاول مرة أخرى.",
+    answerSources: "مصادر الإجابة",
+    sourceLabel: "المصدر",
+    showAllSources: "عرض كل المصادر ({count})",
+    showFewerSources: "عرض مصادر أقل",
+    tableLabel: "جدول",
   },
 } as const;
 

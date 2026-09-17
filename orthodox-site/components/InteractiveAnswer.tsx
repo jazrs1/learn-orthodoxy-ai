@@ -1,19 +1,31 @@
 "use client";
 
-import { isValidElement, useMemo, type ReactNode } from "react";
+import { Fragment, isValidElement, useMemo, type MouseEvent, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkCitations from "../lib/remark-citations";
 import { isValidSaintName, normalizeSaintKey } from "./saintNameUtils";
+
+export type CitationTarget = {
+  href: string;
+  label: string;
+};
 
 type InteractiveAnswerProps = {
   answer: string;
   entities?: string[];
   saintLookup?: Set<string>;
+  /** Resolves a cited passage number to its entry in the Sources list, if it has one. */
+  resolveCitation?: (n: number) => CitationTarget | null;
+  onCitationClick?: (n: number) => void;
+  tableLabel?: string;
+  /** Separator between grouped markers ("," or the Arabic comma). */
+  citationSeparator?: string;
 };
 
 // Answers are Markdown (DECISIONS.md FE-002): paragraphs, lists, bold and GFM tables.
 // Raw HTML in the answer is not rendered (react-markdown's default), so model output
-// cannot inject markup.
+// cannot inject markup. Inline [n] markers become links to the Sources list (UI-006).
 
 function textOf(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -38,6 +50,10 @@ export default function InteractiveAnswer({
   answer,
   entities = [],
   saintLookup = new Set<string>(),
+  resolveCitation,
+  onCitationClick,
+  tableLabel = "Table",
+  citationSeparator = ",",
 }: InteractiveAnswerProps) {
   const clickableNames = useMemo(() => {
     return new Set(
@@ -62,10 +78,49 @@ export default function InteractiveAnswer({
           </button>
         );
       },
-      // Wide tables scroll inside the bubble instead of stretching the layout.
+      sup({ node, children }) {
+        const raw = String(node?.properties?.dataCites ?? "");
+        const numbers = raw
+          .split(",")
+          .map(Number)
+          .filter((number) => Number.isInteger(number) && number > 0);
+        if (!numbers.length) return <sup>{children}</sup>;
+
+        return (
+          <sup className="cite-group">
+            {numbers.map((n, index) => {
+              const target = resolveCitation?.(n) ?? null;
+              return (
+                <Fragment key={n}>
+                  {index > 0 ? <span className="cite-sep">{citationSeparator}</span> : null}
+                  {target ? (
+                    <a
+                      className="cite"
+                      href={target.href}
+                      aria-label={target.label}
+                      title={target.label}
+                      onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+                        event.preventDefault();
+                        onCitationClick?.(n);
+                      }}
+                    >
+                      {n}
+                    </a>
+                  ) : (
+                    // A passage the Sources list does not show separately (the backend lists
+                    // each page once), so there is nothing to jump to.
+                    <span className="cite cite-unlinked">{n}</span>
+                  )}
+                </Fragment>
+              );
+            })}
+          </sup>
+        );
+      },
+      // Wide tables scroll inside the answer instead of stretching the layout.
       table({ children }) {
         return (
-          <div className="answer-table-wrap" role="region" aria-label="Table" tabIndex={0}>
+          <div className="answer-table-wrap" role="region" aria-label={tableLabel} tabIndex={0}>
             <table>{children}</table>
           </div>
         );
@@ -78,12 +133,12 @@ export default function InteractiveAnswer({
         );
       },
     }),
-    [clickableNames, saintLookup]
+    [citationSeparator, clickableNames, onCitationClick, resolveCitation, saintLookup, tableLabel]
   );
 
   return (
     <div className="interactive-answer">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkCitations]} components={components}>
         {answer}
       </ReactMarkdown>
     </div>

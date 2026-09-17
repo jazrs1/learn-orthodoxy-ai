@@ -12,35 +12,45 @@
     "pdf": "catechism1.pdf",
     "page": 279,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 2,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 279"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism1.pdf",
     "page": 280,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 5,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 280"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism1.pdf",
     "page": 297,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 4,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 297"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism2.pdf",
     "page": 180,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 1,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 2, p. 180"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism2.pdf",
     "page": 174,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 6,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 2, p. 174"
    }
   ],
   "entities": []
@@ -55,56 +65,72 @@
     "pdf": "saints2.pdf",
     "page": 406,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 17,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 2, p. 406"
    },
    {
     "source_type": "pdf",
     "pdf": "saints2.pdf",
     "page": 405,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 18,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 2, p. 405"
    },
    {
     "source_type": "pdf",
     "pdf": "saints1.pdf",
     "page": 538,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 21,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 1, p. 538"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism1.pdf",
     "page": 23,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 19,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 23"
    },
    {
     "source_type": "website",
     "pdf": null,
     "page": null,
     "url": "https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z",
-    "title": "THE COPTIC ORTHODOX CHURCH & THE CHRISTIAN DOGMAS"
+    "title": "THE COPTIC ORTHODOX CHURCH & THE CHRISTIAN DOGMAS",
+    "n": 20,
+    "label": "THE COPTIC ORTHODOX CHURCH & THE CHRISTIAN DOGMAS (https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z)"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism1.pdf",
     "page": 609,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 6,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 609"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism1.pdf",
     "page": 104,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 7,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 104"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism1.pdf",
     "page": 33,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 11,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 33"
    }
   ],
   "entities": []
@@ -122,14 +148,18 @@
     "pdf": "catechism2.pdf",
     "page": 226,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 1,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 2, p. 226"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism1.pdf",
     "page": 500,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 9,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 500"
    }
   ],
   "entities": []
@@ -144,28 +174,36 @@
     "pdf": "saints1.pdf",
     "page": 196,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 1,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 1, p. 196"
    },
    {
     "source_type": "pdf",
     "pdf": "catechism1.pdf",
     "page": 677,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 2,
+    "label": "Catechism of the Coptic Orthodox Church, Volume 1, p. 677"
    },
    {
     "source_type": "pdf",
     "pdf": "saints1.pdf",
     "page": 197,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 3,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 1, p. 197"
    },
    {
     "source_type": "pdf",
     "pdf": "saints1.pdf",
     "page": 198,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 7,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 1, p. 198"
    }
   ],
   "entities": []
@@ -183,35 +221,45 @@
     "pdf": "full arabic catechism.pdf",
     "page": 492,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 1,
+    "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية, p. 492"
    },
    {
     "source_type": "pdf",
     "pdf": "full arabic catechism.pdf",
     "page": 506,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 3,
+    "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية, p. 506"
    },
    {
     "source_type": "pdf",
     "pdf": "full arabic catechism.pdf",
     "page": 513,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 4,
+    "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية, p. 513"
    },
    {
     "source_type": "pdf",
     "pdf": "full arabic catechism.pdf",
     "page": 202,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 5,
+    "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية, p. 202"
    },
    {
     "source_type": "pdf",
     "pdf": "full arabic catechism.pdf",
     "page": 481,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 10,
+    "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية, p. 481"
    }
   ],
   "entities": []
@@ -226,14 +274,18 @@
     "pdf": "full saints arabic.pdf",
     "page": 1354,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 2,
+    "label": "قاموس آباء الكنيسة وقديسيها, p. 1354"
    },
    {
     "source_type": "pdf",
     "pdf": "full saints arabic.pdf",
     "page": 39,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 5,
+    "label": "قاموس آباء الكنيسة وقديسيها, p. 39"
    }
   ],
   "entities": []
@@ -255,35 +307,45 @@
     "pdf": "saints3.pdf",
     "page": 250,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 3,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 3, p. 250"
    },
    {
     "source_type": "pdf",
     "pdf": "saints3.pdf",
     "page": 251,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 9,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 3, p. 251"
    },
    {
     "source_type": "pdf",
     "pdf": "saints3.pdf",
     "page": 252,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 1,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 3, p. 252"
    },
    {
     "source_type": "pdf",
     "pdf": "saints3.pdf",
     "page": 253,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 8,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 3, p. 253"
    },
    {
     "source_type": "pdf",
     "pdf": "saints3.pdf",
     "page": 255,
     "url": null,
-    "title": null
+    "title": null,
+    "n": 6,
+    "label": "Encyclopedia of the Saints and Fathers of the Church, Volume 3, p. 255"
    }
   ],
   "entities": []
@@ -3601,27 +3663,29 @@
    {
     "source_type": "pdf",
     "pdf": "full saints arabic.pdf",
-    "page": 195
+    "page": 195,
+    "url": null,
+    "title": null,
+    "n": 7,
+    "label": "قاموس آباء الكنيسة وقديسيها, p. 195"
    },
    {
     "source_type": "pdf",
     "pdf": "full saints arabic.pdf",
-    "page": 197
+    "page": 197,
+    "url": null,
+    "title": null,
+    "n": 4,
+    "label": "قاموس آباء الكنيسة وقديسيها, p. 197"
    },
    {
     "source_type": "pdf",
     "pdf": "full arabic catechism.pdf",
-    "page": 759
-   },
-   {
-    "source_type": "pdf",
-    "pdf": "full saints arabic.pdf",
-    "page": 1187
-   },
-   {
-    "source_type": "pdf",
-    "pdf": "full saints arabic.pdf",
-    "page": 1905
+    "page": 759,
+    "url": null,
+    "title": null,
+    "n": 10,
+    "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية, p. 759"
    }
   ],
   "entities": []
