@@ -62,6 +62,11 @@ Notes:
 - Optional tuning: `MAX_QUESTION_CHARS` (1000), `ANSWER_MAX_TOKENS` (1200),
   `OPENAI_TIMEOUT_SECONDS` (25), `OPENAI_MAX_RETRIES` (1), `OPENAI_CHAT_MODEL` (gpt-4o-mini),
   `CHAT_RATE_LIMIT_PER_MINUTE` (20 per user IP), `CHAT_GLOBAL_RATE_LIMIT_PER_MINUTE` (300).
+- Retrieval and generation (phase 4, see DECISIONS.md): `PROMPT_VERSION` (v3), `VECTOR_DISTANCE_THRESHOLD`
+  (1.25), `ANSWER_MAX_TOKENS_TASK` (2400), `TASK_ANALYSIS_ENABLED` (1), `TASK_ANALYSIS_MODEL` (gpt-4o-mini),
+  `TASK_ANALYSIS_TIMEOUT_SECONDS` (8), `BROAD_RETRIEVAL_TOP_K` (16), `BROAD_PER_QUERY_MIN` (2),
+  `SAINT_LIST_MAX_ENTRIES` (30), `TRADITION_RETRIEVAL_TOP_K` (6), `ENTITY_CHECK_ENABLED` (1).
+  `OPENAI_CHAT_MODEL=gpt-4.1-mini` is the recommended production setting (GEN-005).
 - `ALLOWED_ORIGINS` is a comma-separated list for exact origins.
 - `CORS_ALLOW_ORIGIN_REGEX` is optional and useful for Vercel preview deployments.
 - `CHROMA_DIR` defaults to `chroma_db` locally. On Railway, prefer a persistent volume and set `CHROMA_DIR` to the volume-backed path.
