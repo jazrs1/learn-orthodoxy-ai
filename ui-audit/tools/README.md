@@ -12,7 +12,8 @@ cd orthodox-site && npm run build
 POSTGRES_URL=postgres://u:p@127.0.0.1:1/x DATABASE_URL=postgres://u:p@127.0.0.1:1/x \
   ORTHODOX_API_URL=http://127.0.0.1:9 ORTHODOX_API_KEY=dummy npx next start -p 3217
 
-# 2. Screenshots, axe and overflow report (every /api/* call is answered from fixtures.json)
+# 2. Screenshots, axe and overflow report (every /api/* call is answered from fixtures.json).
+#    BASE_URL overrides http://localhost:3217.
 CHROME_BIN=/path/to/chrome node capture.mjs ../ui-audit/after
 CHROME_BIN=/path/to/chrome node extra.mjs ../ui-audit/after
 
@@ -31,4 +32,20 @@ indexes; no script calls OpenAI.
 
 ```sh
 FONT_DIR=/path/to/fonts REPO_ROOT=/path/to/repo CHROME_BIN=/path/to/chrome node brand.mjs ../ui-audit/brand
+```
+
+## Lighthouse and reading fonts (design-traditional, UI-013)
+
+`lighthouse.mjs` runs Lighthouse (mobile and desktop presets) on the home, chat, credits and contact
+pages and writes a summary with scores, paint timings, layout shift and font bytes:
+
+```sh
+BASE_URL=http://localhost:3217 CHROME_BIN=/path/to/chrome node lighthouse.mjs ../ui-audit/after-traditional 2
+```
+
+`reading-fonts.mjs` renders one eval answer at phone width in EB Garamond and Source Serif 4 and
+measures x-height and characters per line (needs `marked`, and the two variable fonts in FONT_DIR):
+
+```sh
+FONT_DIR=/path/to/fonts CHROME_BIN=/path/to/chrome node reading-fonts.mjs ../ui-audit/typography
 ```

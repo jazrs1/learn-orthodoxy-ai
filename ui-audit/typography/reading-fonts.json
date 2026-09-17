@@ -1,0 +1,26 @@
+{
+ "ss4-17": {
+  "medianFullLine": 43,
+  "lines": 111,
+  "heightPx": 1784,
+  "xHeightPx": 8.1
+ },
+ "ss4-18": {
+  "medianFullLine": 40,
+  "lines": 127,
+  "heightPx": 2015,
+  "xHeightPx": 8.5
+ },
+ "ebg-19": {
+  "medianFullLine": 45,
+  "lines": 111,
+  "heightPx": 1793,
+  "xHeightPx": 7.6
+ },
+ "ebg-20": {
+  "medianFullLine": 43,
+  "lines": 117,
+  "heightPx": 1926,
+  "xHeightPx": 8
+ }
+}

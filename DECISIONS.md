@@ -79,6 +79,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-010: Sharing and SEO — one site URL, per-page metadata, a real social card, no debug logging](#ui-010-sharing-and-seo--one-site-url-per-page-metadata-a-real-social-card-no-debug-logging)
   - [UI-011: Font loading trimmed after the first "after" measurement](#ui-011-font-loading-trimmed-after-the-first-after-measurement)
   - [UI-012: Traditional redesign on its own branch; logo redrawn as outlined SVG (proposal)](#ui-012-traditional-redesign-on-its-own-branch-logo-redrawn-as-outlined-svg-proposal)
+  - [UI-013: Classical type and logo colors — EB Garamond for display, Source Serif 4 kept for reading](#ui-013-classical-type-and-logo-colors--eb-garamond-for-display-source-serif-4-kept-for-reading)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1059,6 +1060,45 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:** `ui-audit/tools/brand.mjs` (new), `ui-audit/tools/README.md`, `ui-audit/brand/` (new), `orthodox-site/public/brand/` (the owner's original PNGs, now committed), `.gitignore`.
 - **Concept to learn:** *Optical sizing and pixel hinting.* Small sizes need heavier strokes and simpler shapes. A stroke aligned to whole pixels stays sharp; one that falls between pixels is drawn as a gray blur. Search: "favicon design pixel grid", "optical size typography".
 - **Revisit if:** the owner redraws the logo in a design tool (then keep `brand.mjs` only as a reference), or the site gets a dark theme (the `-dark` files are ready for it).
+
+### UI-013: Classical type and logo colors — EB Garamond for display, Source Serif 4 kept for reading
+- **Date / Part:** 2026-09-17, design-traditional Step 2
+- **Context:** Inter made the interface look like a generic app. The owner asked for a classical serif system: EB Garamond for headings and UI labels, Amiri and Noto Naskh Arabic for Arabic, colors from the logo, and a comparison of EB Garamond and Source Serif 4 for long answers.
+- **Reading-font comparison:** `ui-audit/tools/reading-fonts.mjs` renders a real eval answer (CAT-06) at 390 px wide and measures it. The screenshots are `ui-audit/typography/reading-fonts-2x.png` and `-1x.png`.
+
+  | Face and size | x-height | Characters per full line | Answer height |
+  |---|---|---|---|
+  | Source Serif 4, 17 px / 1.7 (today) | 8.1 px | 43 | 1784 px |
+  | Source Serif 4, 18 px / 1.65 | 8.5 px | 40 | 2015 px |
+  | EB Garamond, 19 px / 1.6 | 7.6 px | 45 | 1793 px |
+  | EB Garamond, 20 px / 1.55 | 8.0 px | 43 | 1926 px |
+
+- **Decision:**
+  - **Long answer text:** Source Serif 4 stays, at 17 px. EB Garamond's x-height is 0.40 em, against 0.475 em for Source Serif, so Garamond needs 20 px to be as legible. At 20 px it gives the same 43 characters per line but makes answers 8% taller. On 1× screens its thin strokes also turn faint at body sizes, while Source Serif's stay solid.
+  - **Display face:** EB Garamond (variable weight, Latin subset) is used for headings, the site name, and the navigation, labels and buttons. Labels, navigation and buttons are set in all-small-caps with 0.06 em tracking (`--caps-label`, `--tracking-label`).
+  - **EB Garamond Italic:** a separate file that is not preloaded; it is used for questions in Step 3.
+  - **Small functional text:** tables, sources, sidebar titles and alerts use `--font-text` (Source Serif 4).
+  - **Arabic:** Amiri Regular for headings and Noto Naskh Arabic for everything else. Arabic turns off small caps and letter-spacing. `font-synthesis: none` stops the browser from faking a bold Amiri.
+  - **Colors (from the logo):**
+    - Paper: #f8f3ea.
+    - Text: ink #3b2d1b, soft #5e4d36 and faint #6b5a42. Each is at least 5.2:1 on every surface.
+    - Umber #4b3a22: headings and primary buttons.
+    - Rubric red #8e2a1e: accent and focus.
+    - Antique gold #866426: hairlines and small ornament, 4.9:1 on paper. It is never used for text on the hover background (4.3:1).
+    - Gold #e4ae48: large ornament only.
+    - Control borders: #8f7a57, at least 3.3:1 on every surface.
+    - The browser theme color and manifest colors match the new paper.
+  - **Inter** is removed.
+- **Result:**
+  - English pages still preload two font files: 93 KB, against 98 KB before.
+  - Arabic fonts and the italic load only when used.
+  - Lighthouse on the production build (one run, Step 2) against the Step 0 baseline (two runs):
+    - Mobile performance: home 92 (baseline 92–94), chat 94 (94–95), credits 96 (96), contact 93 (93–96).
+    - Desktop performance: 100 on every page, before and after.
+    - Layout shift: 0 everywhere.
+- **Files changed:** `orthodox-site/app/fonts.ts`, `orthodox-site/app/globals.css`, `orthodox-site/app/layout.tsx`, `orthodox-site/app/manifest.ts`, `ui-audit/tools/reading-fonts.mjs` (new), `ui-audit/tools/lighthouse.mjs` (new), `ui-audit/tools/capture.mjs` (`BASE_URL`), `ui-audit/typography/` (new), `.gitignore`.
+- **Concept to learn:** *x-height and optical size.* Two fonts at the same pixel size can look very different in size; the height of the lowercase letters decides legibility. Search: "x-height legibility screen", "font-variant-caps all-small-caps".
+- **Revisit if:** the owner prefers Garamond for answers anyway (use 20 px, weight 450, and check the 1× rendering), or a dark theme is added (the color tokens are the only thing to redefine).
 
 ## Code Cleanup
 

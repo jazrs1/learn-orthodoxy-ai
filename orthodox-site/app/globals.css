@@ -1,46 +1,54 @@
 /*
- * Learn Orthodoxy — global styles (UI-007).
- * Direction B "clean modern reader" with Coptic red and gold as sparing accents.
+ * Learn Orthodoxy — global styles (UI-007; traditional redesign UI-013, UI-014).
+ * A printed-book look: warm paper, umber ink, antique gold hairlines, rubric red used sparingly.
  * Every color, font, size and radius comes from the tokens below; a dark theme only has to
  * redefine the color tokens (not built yet).
  */
 
 :root {
   /* Color: surfaces */
-  --color-paper: #faf7f2;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f3ede4;
-  --color-surface-hover: #efe7db;
-  --color-overlay: rgba(30, 25, 21, 0.32);
+  --color-paper: #f8f3ea;
+  --color-surface: #fcfaf5;
+  --color-surface-muted: #f1eadc;
+  --color-surface-hover: #ede4d3;
+  --color-overlay: rgba(43, 32, 20, 0.32);
 
-  /* Color: text */
-  --color-ink: #1e1915;
-  --color-ink-soft: #5e5249;
-  --color-ink-faint: #6f625a;
-  --color-on-primary: #ffffff;
+  /* Color: text. Each is at least 5.2:1 on every surface above (UI-013). */
+  --color-ink: #3b2d1b;
+  --color-ink-soft: #5e4d36;
+  --color-ink-faint: #6b5a42;
+  --color-on-primary: #f8f3ea;
 
-  /* Color: brand */
-  --color-primary: #3a2616;
-  --color-primary-hover: #4d3421;
-  --color-accent: #9a2f24;
-  --color-accent-soft: #f7e9e6;
-  --color-gold: #b08a3e;
-  --color-gold-soft: #f1e6cf;
+  /* Color: brand, taken from the logo */
+  --color-primary: #4b3a22; /* umber */
+  --color-primary-hover: #5c4a2f;
+  --color-accent: #8e2a1e; /* rubric red: initials, section marks, citation numbers */
+  --color-accent-soft: #f4e4df;
+  --color-gold: #e4ae48; /* large ornament only (1.8:1 on paper) */
+  --color-gold-antique: #866426; /* hairlines, small ornament, small gold text (4.9:1 on paper) */
+  --color-gold-soft: #f1e4c6;
 
   /* Color: lines, focus, status */
-  --color-line: #e7dfd4;
-  --color-line-strong: #d3c6b5;
-  --color-focus: #9a2f24;
+  --color-line: #e2d6c2; /* decorative hairline */
+  --color-line-strong: #8f7a57; /* borders that identify a control (3.3:1 or more) */
+  --color-focus: #8e2a1e;
   --color-danger: #8e2a1e;
   --color-danger-soft: #fbedea;
   --color-success: #2d6a3f;
 
-  /* Typography */
+  /* Typography: EB Garamond for display and labels, Source Serif 4 for reading (UI-013) */
+  --font-display: var(--font-garamond), Garamond, "Times New Roman", serif;
+  --font-display-italic: var(--font-garamond-italic), var(--font-garamond), Garamond, "Times New Roman", serif;
   --font-reading: var(--font-serif), var(--font-naskh), Georgia, "Times New Roman", serif;
-  --font-ui: var(--font-sans), var(--font-naskh), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui: var(--font-garamond), Garamond, "Times New Roman", serif;
+  /* Small functional text (lists, tables, sources) stays in the sturdier reading face. */
+  --font-text: var(--font-serif), var(--font-naskh), Georgia, "Times New Roman", serif;
+  --caps-label: all-small-caps;
+  --tracking-label: 0.06em;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
+  --text-label: 1.0625rem;
   --text-reading: 1.0625rem;
   --text-lg: 1.25rem;
   --text-xl: 1.5rem;
@@ -77,8 +85,14 @@
 
 /* Arabic: Naskh leads, and needs a little more size and line height to read comfortably. */
 :root:lang(ar) {
+  --font-display: var(--font-amiri), var(--font-naskh), "Times New Roman", serif;
+  --font-display-italic: var(--font-amiri), var(--font-naskh), "Times New Roman", serif;
   --font-reading: var(--font-naskh), var(--font-serif), "Times New Roman", serif;
-  --font-ui: var(--font-naskh), var(--font-sans), system-ui, sans-serif;
+  --font-ui: var(--font-naskh), var(--font-garamond), "Times New Roman", serif;
+  --font-text: var(--font-naskh), var(--font-serif), "Times New Roman", serif;
+  /* Arabic has no small caps, and letter-spacing breaks the joined letters. */
+  --caps-label: normal;
+  --tracking-label: 0;
   /* Naskh has a small x-height, so Arabic runs one step larger than Latin. */
   --text-xs: 0.875rem;
   --text-sm: 1rem;
@@ -88,10 +102,10 @@
   --leading-reading: 1.9;
 }
 
-/* Naskh does not need (and is harmed by) Latin letter-spacing and uppercase labels. */
-:root:lang(ar) .answer-sources-heading,
-:root:lang(ar) .chat-sidebar-section-label {
-  letter-spacing: 0;
+/* Amiri is loaded in one weight: show it as drawn instead of a synthetic bold. (Naskh is a
+   variable font with real weights, so bold body text is unaffected.) */
+:root:lang(ar) {
+  font-synthesis: none;
 }
 
 /* ---------- Base ---------- */
@@ -112,7 +126,7 @@ body {
 body {
   background: var(--color-paper);
   color: var(--color-ink);
-  font-family: var(--font-ui);
+  font-family: var(--font-text);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
@@ -140,10 +154,10 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-reading);
+  font-family: var(--font-display);
   font-weight: 600;
   line-height: var(--leading-tight);
-  color: var(--color-ink);
+  color: var(--color-primary);
 }
 
 :focus-visible {
@@ -211,7 +225,9 @@ textarea:focus-visible {
   border: 1px solid transparent;
   border-radius: var(--radius-pill);
   font-family: var(--font-ui);
-  font-size: var(--text-sm);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -248,7 +264,7 @@ textarea:focus-visible {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(250, 247, 242, 0.92);
+  background: rgba(248, 243, 234, 0.94);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-line);
 }
@@ -278,7 +294,7 @@ textarea:focus-visible {
 }
 
 .nav-title {
-  font-family: var(--font-reading);
+  font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -309,7 +325,10 @@ textarea:focus-visible {
   padding: 0 var(--space-3);
   border-radius: var(--radius-pill);
   color: var(--color-ink-soft);
-  font-size: var(--text-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 500;
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -351,7 +370,10 @@ textarea:focus-visible {
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-ink-soft);
-  font-size: var(--text-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   line-height: 1;
   white-space: nowrap;
 }
@@ -452,7 +474,10 @@ textarea:focus-visible {
 .section-label {
   margin: 0 0 var(--space-3);
   color: var(--color-ink-soft);
-  font-size: var(--text-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 600;
 }
 
@@ -517,7 +542,7 @@ textarea:focus-visible {
 }
 
 .explore-card-title {
-  font-family: var(--font-reading);
+  font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 600;
 }
@@ -536,7 +561,10 @@ textarea:focus-visible {
   margin-top: auto;
   padding-top: var(--space-2);
   color: var(--color-accent);
-  font-size: var(--text-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 600;
 }
 
@@ -569,7 +597,7 @@ textarea:focus-visible {
   border: 1px solid var(--color-gold);
   border-radius: 50%;
   color: var(--color-primary);
-  font-family: var(--font-reading);
+  font-family: var(--font-display);
   font-weight: 600;
 }
 
@@ -580,6 +608,8 @@ textarea:focus-visible {
 }
 
 .how-step-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
   font-weight: 600;
 }
 
@@ -777,7 +807,10 @@ textarea:focus-visible {
   border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-ink);
-  font-size: var(--text-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 600;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
@@ -788,10 +821,11 @@ textarea:focus-visible {
 
 .chat-sidebar-section-label {
   margin-top: var(--space-2);
-  font-size: var(--text-xs);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--color-ink-soft);
 }
 
@@ -1014,7 +1048,7 @@ textarea:focus-visible {
   align-items: center;
   gap: var(--space-3);
   color: var(--color-ink-soft);
-  font-family: var(--font-ui);
+  font-family: var(--font-text);
   font-size: var(--text-sm);
 }
 
@@ -1028,7 +1062,7 @@ textarea:focus-visible {
   border-radius: var(--radius-lg);
   background: var(--color-danger-soft);
   color: var(--color-danger);
-  font-family: var(--font-ui);
+  font-family: var(--font-text);
 }
 
 .chat-alert-icon {
@@ -1144,7 +1178,7 @@ textarea:focus-visible {
   width: 100%;
   min-width: max-content;
   border-collapse: collapse;
-  font-family: var(--font-ui);
+  font-family: var(--font-text);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
 }
@@ -1196,7 +1230,7 @@ textarea:focus-visible {
 /* Inline citation markers and the per-answer Sources list (UI-006). */
 .cite-group {
   unicode-bidi: isolate;
-  font-family: var(--font-ui);
+  font-family: var(--font-text);
   font-size: 0.68em;
   line-height: 0;
   margin-inline-start: 0.1em;
@@ -1237,16 +1271,16 @@ textarea:focus-visible {
   margin-top: var(--space-5);
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-line);
-  font-family: var(--font-ui);
+  font-family: var(--font-text);
 }
 
 .answer-sources-heading {
   margin: 0 0 var(--space-2);
   font-family: var(--font-ui);
-  font-size: var(--text-xs);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--color-ink-soft);
 }
 
@@ -1320,7 +1354,10 @@ textarea:focus-visible {
   border: none;
   background: transparent;
   color: var(--color-accent);
-  font-size: var(--text-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 600;
 }
 
@@ -1349,7 +1386,7 @@ textarea:focus-visible {
   border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-ink);
-  font-family: var(--font-ui);
+  font-family: var(--font-text);
   font-size: var(--text-sm);
   line-height: 1.35;
   text-align: start;
@@ -1401,7 +1438,7 @@ textarea:focus-visible {
 .chat-bottom-bar {
   flex: 0 0 auto;
   padding: var(--space-3) max(var(--space-5), calc((100% - var(--reading-width)) / 2)) var(--space-4);
-  background: linear-gradient(to bottom, rgba(250, 247, 242, 0), var(--color-paper) 30%);
+  background: linear-gradient(to bottom, rgba(248, 243, 234, 0), var(--color-paper) 30%);
 }
 
 /* ---------- Saints ---------- */
@@ -1600,7 +1637,7 @@ textarea:focus-visible {
 }
 
 .catechism-topic-title {
-  font-family: var(--font-reading);
+  font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 600;
 }
@@ -1818,7 +1855,10 @@ textarea:focus-visible {
 }
 
 .contact-field label {
-  font-size: var(--text-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
   font-weight: 600;
 }
 

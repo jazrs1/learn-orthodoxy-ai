@@ -5,7 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 import fs from "node:fs";
 import path from "node:path";
 
-const BASE = "http://localhost:3217";
+const BASE = process.env.BASE_URL || "http://localhost:3217";
 const OUT = process.argv[2];
 const FX = JSON.parse(fs.readFileSync(new URL("./fixtures.json", import.meta.url), "utf-8"));
 fs.mkdirSync(OUT, { recursive: true });

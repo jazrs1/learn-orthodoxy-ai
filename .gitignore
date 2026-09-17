@@ -18,3 +18,5 @@ ui-audit/before/
 ui-audit/after/
 ui-audit/after-traditional/
 ui-audit/brand/*.html
+ui-audit/before-traditional/
+ui-audit/typography/*.html
