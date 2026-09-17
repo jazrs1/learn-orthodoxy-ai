@@ -261,7 +261,8 @@ export default function ContactPage() {
           type="button"
           className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
-          aria-label={t("closeChatsPanel")}
+          aria-hidden="true"
+          tabIndex={-1}
         />
         <ChatSidebar
           sessions={conversations}

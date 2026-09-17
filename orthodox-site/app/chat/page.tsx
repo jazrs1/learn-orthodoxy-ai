@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ChatShell from "../../components/ChatShell";
+import ExampleQuestions from "../../components/ExampleQuestions";
 import { IconAlert, IconChevronDown, IconCopy, IconCheck, IconRetry, IconSearch } from "../../components/Icons";
 import ChatSidebar from "../../components/ChatSidebar";
 import AnswerWithSources from "../../components/AnswerWithSources";
@@ -1047,7 +1048,11 @@ function ChatPageContent() {
                   </div>
                 ))
               ) : !conversationLoading && !conversationError && !sendFailure ? (
-                <div className="chat-empty-state">{t("startByAsking")}</div>
+                <div className="chat-welcome">
+                  <h2 className="chat-welcome-title">{t("chatWelcomeTitle")}</h2>
+                  <p className="chat-welcome-text">{t("chatWelcomeText")}</p>
+                  <ExampleQuestions onPick={(question) => void handleSendMessage(question)} disabled={isSending} limit={4} />
+                </div>
               ) : null}
               {sendFailure ? (
                 <div className="chat-alert" role="alert">
@@ -1253,7 +1258,8 @@ function ChatPageContent() {
           type="button"
           className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
-          aria-label={t("closeChatsPanel")}
+          aria-hidden="true"
+          tabIndex={-1}
         />
         <ChatSidebar
           sessions={conversations}

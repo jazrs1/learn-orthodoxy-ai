@@ -179,7 +179,6 @@ export default function CreditsPage() {
                 src={frTadrosImage}
                 alt="القمص تادرس يعقوب ملطي"
                 sizes="(max-width: 720px) 82vw, 320px"
-                priority
               />
               <figcaption>القمص تادرس يعقوب ملطي</figcaption>
             </figure>
@@ -280,7 +279,6 @@ export default function CreditsPage() {
                 src={frTadrosImage}
                 alt="Fr. Tadros Yacoub Malaty"
                 sizes="(max-width: 720px) 82vw, 320px"
-                priority
               />
               <figcaption>Fr. Tadros Yacoub Malaty</figcaption>
             </figure>
@@ -293,7 +291,8 @@ export default function CreditsPage() {
           type="button"
           className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
-          aria-label={t("closeChatsPanel")}
+          aria-hidden="true"
+          tabIndex={-1}
         />
         <ChatSidebar
           sessions={conversations}

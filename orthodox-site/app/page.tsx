@@ -1,29 +1,32 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ChatShell from "../components/ChatShell";
 import ChatSidebar from "../components/ChatSidebar";
+import ExampleQuestions from "../components/ExampleQuestions";
+import { IconArrowForward, IconBook, IconUsers } from "../components/Icons";
 import { useLanguage } from "../components/LanguageProvider";
 import { fetchConversationList, deleteConversationRequest } from "../lib/chat-client";
 import { ConversationSummary } from "../lib/chat-types";
+import { HOME_CONTENT } from "../lib/home-content";
 
 const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
 const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
 
 export default function HomePage() {
-  const [mounted, setMounted] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const router = useRouter();
-  const { t } = useLanguage();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { language, t } = useLanguage();
+  const content = HOME_CONTENT[language];
+  // First-time visitors get the full-width landing page; the chat history column only
+  // appears on desktop once there is history to show (UI-009).
+  const hasHistory = !loading && conversations.length > 0;
 
   useEffect(() => {
     function handleOpenSidebar() {
@@ -86,10 +89,8 @@ export default function HomePage() {
   }
 
   function startChatFromHome(message: string) {
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem(PENDING_CHAT_MESSAGE_KEY, message);
-      sessionStorage.setItem(PENDING_CHAT_TOKEN_KEY, `${Date.now()}`);
-    }
+    sessionStorage.setItem(PENDING_CHAT_MESSAGE_KEY, message);
+    sessionStorage.setItem(PENDING_CHAT_TOKEN_KEY, `${Date.now()}`);
     router.push("/chat");
   }
 
@@ -104,49 +105,116 @@ export default function HomePage() {
 
   return (
     <main className="home-page">
-      <div className="home-layout home-layout-with-sidebar">
-        <section className="hero">
-          <Image
-            src="/cross-mark.png"
-            alt="Coptic cross"
-            width={280}
-            height={280}
-            className="hero-cross"
-            priority
-          />
+      <div className={`home-layout ${hasHistory ? "home-layout-with-sidebar" : ""}`}>
+        <div className="home-content">
+          <section className="hero" aria-labelledby="home-title">
+            <Image
+              src="/cross-mark.png"
+              alt=""
+              width={96}
+              height={96}
+              className="hero-cross"
+              loading="eager"
+              fetchPriority="high"
+            />
+            <p className="hero-eyebrow">{content.eyebrow}</p>
+            <h1 className="hero-title" id="home-title">
+              {t("appName")}
+            </h1>
+            <p className="hero-subtitle">{content.lead}</p>
 
-          <h1 className="hero-title">{t("appName")}</h1>
+            <div className="hero-chat-wrap">
+              <ChatShell onSubmit={startChatFromHome} />
+            </div>
 
-          <p className="hero-subtitle">
-            {t("heroSubtitle")}
-          </p>
+            <ExampleQuestions onPick={startChatFromHome} />
+          </section>
 
-          <div className="hero-chat-wrap">
-            <ChatShell onSubmit={startChatFromHome} />
-          </div>
-        </section>
+          <section className="home-section" aria-labelledby="home-explore">
+            <h2 className="section-title" id="home-explore">
+              {content.exploreTitle}
+            </h2>
+            <div className="explore-grid">
+              <Link href="/chat#catechism" className="explore-card">
+                <span className="explore-card-icon">
+                  <IconBook size={22} />
+                </span>
+                <span className="explore-card-title">{content.catechismCard.title}</span>
+                <span className="explore-card-text">{content.catechismCard.text}</span>
+                <span className="explore-card-cta">
+                  {content.catechismCard.cta}
+                  <IconArrowForward size={16} />
+                </span>
+              </Link>
+              <Link href="/chat#saints" className="explore-card">
+                <span className="explore-card-icon">
+                  <IconUsers size={22} />
+                </span>
+                <span className="explore-card-title">{content.saintsCard.title}</span>
+                <span className="explore-card-text">{content.saintsCard.text}</span>
+                <span className="explore-card-cta">
+                  {content.saintsCard.cta}
+                  <IconArrowForward size={16} />
+                </span>
+              </Link>
+            </div>
+          </section>
 
-        <button
-          type="button"
-          className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
-          onClick={() => setMobileSidebarOpen(false)}
-          aria-label={t("closeChatsPanel")}
-        />
+          <section className="home-section" aria-labelledby="home-how">
+            <h2 className="section-title" id="home-how">
+              {content.howTitle}
+            </h2>
+            <ol className="how-steps">
+              {content.howSteps.map((step, index) => (
+                <li key={step.title} className="how-step">
+                  <span className="how-step-number" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <span className="how-step-body">
+                    <span className="how-step-title">{step.title}</span>
+                    <span className="how-step-text">{step.text}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
 
-        {mounted ? (
-          <ChatSidebar
-            sessions={conversations}
-            onSelectSession={openSession}
-            onNewChat={startNewChat}
-            onDeleteSession={deleteSession}
-            showAppNav
-            loading={loading}
-            error={error}
-            isMobileOpen={mobileSidebarOpen}
-            onClose={() => setMobileSidebarOpen(false)}
-          />
-        ) : null}
+          <section className="home-section home-note" aria-labelledby="home-note">
+            <h2 className="section-title" id="home-note">
+              {content.noteTitle}
+            </h2>
+            <ul className="home-note-list">
+              {content.notes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+            <Link href="/credits" className="home-note-link">
+              {content.noteLink}
+              <IconArrowForward size={16} />
+            </Link>
+          </section>
+        </div>
       </div>
+
+      <button
+        type="button"
+        className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
+        onClick={() => setMobileSidebarOpen(false)}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+      <ChatSidebar
+        sessions={conversations}
+        onSelectSession={openSession}
+        onNewChat={startNewChat}
+        onDeleteSession={deleteSession}
+        showAppNav
+        loading={loading}
+        error={error}
+        isMobileOpen={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+        desktopHidden={!hasHistory}
+      />
     </main>
   );
 }

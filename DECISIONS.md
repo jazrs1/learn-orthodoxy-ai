@@ -75,6 +75,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-006: Citations link to a per-answer Sources list; books shown as text, not PDF links](#ui-006-citations-link-to-a-per-answer-sources-list-books-shown-as-text-not-pdf-links)
   - [UI-007: Design foundation — self-hosted fonts, color and type tokens, logical CSS, real icons](#ui-007-design-foundation--self-hosted-fonts-color-and-type-tokens-logical-css-real-icons)
   - [UI-008: Broken states fixed; language remembered in a cookie and rendered on the server](#ui-008-broken-states-fixed-language-remembered-in-a-cookie-and-rendered-on-the-server)
+  - [UI-009: A landing page that explains the site; the empty history column is hidden for new visitors](#ui-009-a-landing-page-that-explains-the-site-the-empty-history-column-is-hidden-for-new-visitors)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -961,6 +962,24 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:** `orthodox-site/lib/errors.ts` (new), `orthodox-site/lib/request-language.ts` (new), `orthodox-site/app/not-found.tsx` (new), `orthodox-site/app/layout.tsx`, `orthodox-site/components/LanguageProvider.tsx`, `orthodox-site/components/ChatShell.tsx`, `orthodox-site/components/ChatSidebar.tsx`, `orthodox-site/components/AnswerWithSources.tsx`, `orthodox-site/app/chat/page.tsx`, `orthodox-site/app/contact/page.tsx`, `orthodox-site/app/page.tsx`, `orthodox-site/app/credits/page.tsx`, `orthodox-site/lib/chat-client.ts`, `orthodox-site/lib/i18n.ts`, `orthodox-site/app/globals.css`, `ui-audit/tools/capture.mjs` and `extra.mjs` (set the cookie too).
 - **Concept to learn:** *Error messages are UI, not logs.* Map failures to what the user can do next (wait, shorten, reconnect, retry) and keep diagnostic text in server logs. Search: "error message UX guidelines", "WAI-ARIA live regions".
 - **Revisit if:** the site adds locale URLs (then the cookie becomes a redirect hint only), or the backend starts returning structured error codes (map those instead of HTTP status).
+
+### UI-009: A landing page that explains the site; the empty history column is hidden for new visitors
+- **Date / Part:** 2026-09-16, UI refresh fix 4
+- **Audit ref:** UI_AUDIT §1 (first impression), prioritized fix 2
+- **Context:** The home page was a cross, the site name, one faint sentence and a text box. On desktop, a new visitor's first view also included a 300 px "No saved chats yet" column.
+- **Decision:** The home page is a single centered reading column, in this order:
+  1. **Hero.** The cross, then a red eyebrow line ("An AI study guide to the Coptic Orthodox faith"), the name, and one lead sentence: answers come only from Fr. Tadros Malaty's books and the Coptic Orthodox catechism, and every answer shows its book and page. Then the composer, then six example questions (four on phones) that start a chat when tapped.
+  2. **"Explore".** Two cards linking to the Catechism topics and the Saints browser.
+  3. **"How it works".** Three steps: ask in English or Arabic; it reads a fixed library, named; answers cite book, volume and page.
+  4. **"Before you start".** A gold-edged note with three honest limits: it's an AI and can misread, so check the cited pages; it only knows these books and says so when they don't cover a question; it's a study aid, not a spiritual father. It links to Credits.
+
+  The copy lives in `lib/home-content.ts` in both languages. The example questions come from the eval set, where the library answers them well (CAT-01/08/15/18, SNT-08, KW-03; AR-01/02/04/07/08/10). The desktop history column appears only once the visitor has conversations (`ChatSidebar desktopHidden`); the mobile drawer is always available for navigation. On wide screens, the column no longer pushes the centered page; only narrower desktops (821–1320 px) reserve room for it. On `/chat`, a new visitor sees "What would you like to learn?" with four example questions instead of "Start by asking a question below.", and the empty history column says conversations will be saved there in this browser (they are stored server-side under this browser's anonymous cookie).
+- **Wording check:** the English index also contains 207 passages from Mind of Christ Light, which publishes translations of Fr. Tadros's writings (Credits page). The "How it works" step names it, so "only from Fr. Tadros Malaty's books and the catechism" stays accurate. The Arabic library is the Arabic catechism and Fr. Tadros's قاموس آباء الكنيسة وقديسيها, and the Arabic copy names those.
+- **Also:** `priority` on `next/image` is deprecated in Next 16. The hero cross uses `loading="eager"` with `fetchPriority="high"`, the header mark uses `loading="eager"`, and the below-the-fold Credits portrait lazy-loads. The drawer's full-screen backdrop is now `aria-hidden` and out of the tab order; the drawer's close button is the keyboard path.
+- **Verification:** screenshots at 1440 and 390 px in both languages (no horizontal overflow). Tapping "Who was St. Moses the Black?" on the home page opens `/chat` and sends exactly that question, in `chat` mode with `language: en`.
+- **Files changed:** `orthodox-site/lib/home-content.ts` (new), `orthodox-site/components/ExampleQuestions.tsx` (new), `orthodox-site/app/page.tsx` (rewritten), `orthodox-site/app/chat/page.tsx`, `orthodox-site/components/ChatSidebar.tsx`, `orthodox-site/components/Navbar.tsx`, `orthodox-site/app/credits/page.tsx`, `orthodox-site/app/contact/page.tsx`, `orthodox-site/lib/i18n.ts`, `orthodox-site/app/globals.css`.
+- **Concept to learn:** *Set expectations before the first interaction.* For AI tools, saying what the system can use, how to verify it, and where it stops builds more trust than a bare prompt box. Search: "AI UX onboarding expectations", "Google PAIR guidebook mental models".
+- **Revisit if:** the library grows (update the "fixed library" step and the example questions), or analytics show most traffic lands directly on `/chat`.
 
 ## Code Cleanup
 

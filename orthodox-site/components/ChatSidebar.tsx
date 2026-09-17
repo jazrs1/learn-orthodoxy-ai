@@ -23,6 +23,8 @@ type ChatSidebarProps = {
   error?: string;
   isMobileOpen?: boolean;
   onClose?: () => void;
+  /** Hide the column on desktop (landing page with no history); the mobile drawer still works. */
+  desktopHidden?: boolean;
 };
 
 export default function ChatSidebar({
@@ -38,6 +40,7 @@ export default function ChatSidebar({
   error = "",
   isMobileOpen = false,
   onClose,
+  desktopHidden = false,
 }: ChatSidebarProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
@@ -58,7 +61,12 @@ export default function ChatSidebar({
   }
 
   return (
-    <aside className={`chat-sidebar ${isMobileOpen ? "chat-sidebar-mobile-open" : ""}`}>
+    <aside
+      className={`chat-sidebar ${isMobileOpen ? "chat-sidebar-mobile-open" : ""} ${
+        desktopHidden ? "chat-sidebar-desktop-hidden" : ""
+      }`}
+      aria-label={t("chats")}
+    >
       <div className="chat-sidebar-details">
         <div className="chat-sidebar-header">
           <Link href="/" className="chat-sidebar-home-link" onClick={onClose} aria-label={t("home")}>

@@ -79,10 +79,12 @@
 :root:lang(ar) {
   --font-reading: var(--font-naskh), var(--font-serif), "Times New Roman", serif;
   --font-ui: var(--font-naskh), var(--font-sans), system-ui, sans-serif;
-  --text-xs: 0.8125rem;
-  --text-sm: 0.9375rem;
-  --text-base: 1.0625rem;
-  --text-reading: 1.1875rem;
+  /* Naskh has a small x-height, so Arabic runs one step larger than Latin. */
+  --text-xs: 0.875rem;
+  --text-sm: 1rem;
+  --text-base: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-reading: 1.25rem;
   --leading-reading: 1.9;
 }
 
@@ -382,16 +384,25 @@ textarea:focus-visible {
 .home-layout {
   display: flex;
   justify-content: center;
-  padding: var(--space-6) var(--space-5) var(--space-8);
+  padding: var(--space-7) var(--space-5) var(--space-8);
 }
 
-.home-layout-with-sidebar {
-  padding-inline-start: calc(var(--sidebar-width) + var(--space-5));
+/* Only narrower desktops need room for the history column; wide screens have it already. */
+@media (min-width: 821px) and (max-width: 1320px) {
+  .home-layout-with-sidebar {
+    padding-inline-start: calc(var(--sidebar-width) + var(--space-5));
+  }
+}
+
+.home-content {
+  width: 100%;
+  max-width: var(--reading-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
 }
 
 .hero {
-  width: 100%;
-  max-width: var(--reading-width);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -399,21 +410,29 @@ textarea:focus-visible {
 }
 
 .hero-cross {
-  width: 120px;
-  height: auto;
+  width: 84px;
+  height: 84px;
   margin-bottom: var(--space-4);
 }
 
+.hero-eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .hero-title {
-  margin: 0 0 var(--space-3);
+  margin: 0 0 var(--space-4);
   font-size: var(--text-3xl);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .hero-subtitle {
-  margin: 0 0 var(--space-5);
-  max-width: 38rem;
+  margin: 0 0 var(--space-6);
+  max-width: 40rem;
   font-family: var(--font-reading);
   font-size: var(--text-lg);
   line-height: var(--leading-normal);
@@ -422,6 +441,190 @@ textarea:focus-visible {
 
 .hero-chat-wrap {
   width: 100%;
+}
+
+.section-label {
+  margin: 0 0 var(--space-3);
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.example-questions {
+  width: 100%;
+  margin-top: var(--space-5);
+}
+
+.example-questions-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.example-question:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.section-title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-xl);
+}
+
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.explore-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.explore-card:hover {
+  border-color: var(--color-line-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.explore-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-gold-soft);
+  color: var(--color-primary);
+}
+
+.explore-card-title {
+  font-family: var(--font-reading);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.explore-card-text {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.explore-card-cta,
+.home-note-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.explore-card:hover .explore-card-cta,
+.home-note-link:hover {
+  text-decoration: underline;
+}
+
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.how-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-gold);
+  border-radius: 50%;
+  color: var(--color-primary);
+  font-family: var(--font-reading);
+  font-weight: 600;
+}
+
+.how-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.how-step-title {
+  font-weight: 600;
+}
+
+.how-step-text {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.home-note {
+  padding: var(--space-5);
+  border: 1px solid var(--color-line);
+  border-inline-start: 3px solid var(--color-gold);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.home-note-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  padding-inline-start: var(--space-5);
+  color: var(--color-ink);
+  line-height: var(--leading-normal);
+}
+
+/* Chat page welcome (no conversation yet) */
+.chat-welcome {
+  padding-top: var(--space-6);
+  text-align: center;
+}
+
+.chat-welcome-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-2xl);
+}
+
+.chat-welcome-text {
+  margin: 0 auto;
+  max-width: 34rem;
+  color: var(--color-ink-soft);
+  font-family: var(--font-reading);
+  font-size: var(--text-reading);
+  line-height: var(--leading-normal);
+}
+
+@media (min-width: 821px) {
+  .chat-sidebar-desktop-hidden {
+    display: none;
+  }
 }
 
 /* ---------- Composer ---------- */
@@ -1720,9 +1923,55 @@ textarea:focus-visible {
     font-size: var(--text-xs);
   }
 
-  .home-layout,
-  .home-layout-with-sidebar {
+  .home-layout {
     padding: var(--space-5) var(--space-4) var(--space-7);
+  }
+
+  .home-content {
+    gap: var(--space-7);
+  }
+
+  .hero-cross {
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--space-3);
+  }
+
+  .hero-subtitle {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-5);
+  }
+
+  .example-questions-list {
+    justify-content: flex-start;
+  }
+
+  /* Four examples are enough on a phone; the rest push "Explore" too far down. */
+  .example-questions-list li:nth-child(n + 5) {
+    display: none;
+  }
+
+  .example-questions .section-label {
+    text-align: start;
+  }
+
+  .explore-grid,
+  .how-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .how-step {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .how-step-number {
+    flex: 0 0 auto;
+  }
+
+  .chat-welcome {
+    padding-top: var(--space-4);
+    text-align: start;
   }
 
   .chat-layout {

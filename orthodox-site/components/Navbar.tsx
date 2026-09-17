@@ -68,7 +68,7 @@ export default function Navbar() {
         ) : null}
 
         <Link href="/" className="nav-brand">
-          <Image src="/cross-mark.png" alt="" width={32} height={32} className="nav-cross" priority />
+          <Image src="/cross-mark.png" alt="" width={32} height={32} className="nav-cross" loading="eager" />
           <span className="nav-title">{t("appName")}</span>
         </Link>
 
