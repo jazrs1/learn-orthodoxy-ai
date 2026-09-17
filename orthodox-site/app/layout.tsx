@@ -1,59 +1,35 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { fontVariables } from "./fonts";
 import Navbar from "../components/Navbar";
 import { LanguageProvider } from "../components/LanguageProvider";
 import { directionForLanguage } from "../lib/i18n";
 import { getRequestLanguage } from "../lib/request-language";
+import { pageMetadata, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "../lib/site";
 
-const siteUrl = "https://learnorthodoxy.net";
-const siteDescription =
-  "Ask questions about Orthodox saints, Coptic Orthodox catechism, Church teaching, and Orthodox Christian tradition.";
-const ogImage = "/og-image.png";
-
+// Defaults for every page; each page sets its own title, canonical URL and social tags
+// through pageMetadata() (UI-010).
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: "Learn Orthodoxy",
-  description: siteDescription,
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
+  title: {
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
   verification: {
     google: "qSkr64BCs0d2ya1fOEyD6AmupuD7UhMKVqu_Vxb_wu0",
-  },
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    title: "Learn Orthodoxy",
-    description: siteDescription,
-    url: siteUrl,
-    siteName: "Learn Orthodoxy",
-    images: [
-      {
-        url: ogImage,
-        width: 1200,
-        height: 630,
-        alt: "Learn Orthodoxy",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Learn Orthodoxy",
-    description: siteDescription,
-    images: [ogImage],
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
+  ...pageMetadata({ path: "/" }),
+  alternates: undefined,
+};
+
+export const viewport: Viewport = {
+  themeColor: "#faf7f2",
 };
 
 export default async function RootLayout({

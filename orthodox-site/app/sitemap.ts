@@ -1,34 +1,19 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl = "https://learnorthodoxy.net";
+import { SITE_URL } from "../lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
-
-  return [
-    {
-      url: siteUrl,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-    {
-      url: `${siteUrl}/about`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${siteUrl}/credits`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${siteUrl}/contact`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
+  const pages: Array<{ path: string; priority: number; changeFrequency: "weekly" | "monthly" }> = [
+    { path: "", priority: 1, changeFrequency: "weekly" },
+    { path: "/chat", priority: 0.8, changeFrequency: "weekly" },
+    { path: "/credits", priority: 0.6, changeFrequency: "monthly" },
+    { path: "/contact", priority: 0.4, changeFrequency: "monthly" },
   ];
+
+  return pages.map(({ path, priority, changeFrequency }) => ({
+    url: `${SITE_URL}${path}`,
+    lastModified,
+    changeFrequency,
+    priority,
+  }));
 }

@@ -330,15 +330,10 @@ export async function POST(request: Request) {
       return contactError("rate_limited", "Too many messages. Please wait a few minutes and try again.", 429);
     }
 
-    const result = await sendContactEmail({ name, email, subject, message, ip, userAgent });
+    await sendContactEmail({ name, email, subject, message, ip, userAgent });
     if (!localRequest) {
       recordSuccessfulSubmission(ip);
     }
-    console.log("CONTACT_SUCCESS", {
-      status: 200,
-      recipientCount: result.recipientCount,
-      fromEmail: result.fromEmail,
-    });
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof ContactConfigError) {

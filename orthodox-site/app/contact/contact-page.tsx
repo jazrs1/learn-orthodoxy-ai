@@ -1,0 +1,281 @@
+"use client";
+
+import Script from "next/script";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import ChatSidebar from "../../components/ChatSidebar";
+import { useLanguage } from "../../components/LanguageProvider";
+import { deleteConversationRequest, fetchConversationList } from "../../lib/chat-client";
+import type { ConversationSummary } from "../../lib/chat-types";
+import type { Language, TranslationKey } from "../../lib/i18n";
+
+const DEFAULT_SUBJECT = "Learn Orthodoxy Contact";
+const AR_DEFAULT_SUBJECT = "تواصل مع تعلّم الأرثوذكسية";
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+
+// The route's validation messages are written for visitors (English only); configuration and
+// provider errors are not shown (UI-008).
+function contactErrorMessage(
+  result: { error?: string; message?: string },
+  language: Language,
+  t: (key: TranslationKey) => string
+) {
+  switch (result.error) {
+    case "validation_failed":
+      return language === "en" && result.message ? result.message : t("contactCheckFields");
+    case "rate_limited":
+      return t("contactRateLimited");
+    case "captcha_failed":
+      return t("contactCaptchaFailed");
+    default:
+      return t("unableToSend");
+  }
+}
+
+type SubmitState = {
+  status: "idle" | "sending" | "success" | "error";
+  message: string;
+};
+
+export default function ContactPage() {
+  const { language, t } = useLanguage();
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [startedAt] = useState(() => Date.now());
+  const [subject, setSubject] = useState(DEFAULT_SUBJECT);
+  const [state, setState] = useState<SubmitState>({ status: "idle", message: "" });
+  const router = useRouter();
+  const isSending = state.status === "sending";
+  const captchaEnabled = Boolean(turnstileSiteKey);
+  const defaultSubject = t("contactDefaultSubject");
+
+  const statusClassName = useMemo(() => {
+    if (state.status === "success") return "contact-status contact-status-success";
+    if (state.status === "error") return "contact-status contact-status-error";
+    return "contact-status";
+  }, [state.status]);
+
+  useEffect(() => {
+    setSubject((current) =>
+      current === DEFAULT_SUBJECT || current === AR_DEFAULT_SUBJECT ? defaultSubject : current
+    );
+  }, [defaultSubject]);
+
+  useEffect(() => {
+    function handleOpenSidebar() {
+      setMobileSidebarOpen(true);
+    }
+
+    window.addEventListener("chat:openSidebar", handleOpenSidebar);
+    return () => {
+      window.removeEventListener("chat:openSidebar", handleOpenSidebar);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileSidebarOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const nextConversations = await fetchConversationList();
+        if (!cancelled) {
+          setConversations(nextConversations);
+        }
+      } catch {
+        if (!cancelled) {
+          setError(t("unableToLoadChats"));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  function openSession(sessionId: string) {
+    setMobileSidebarOpen(false);
+    router.push(`/chat?chat=${encodeURIComponent(sessionId)}`);
+  }
+
+  function startNewChat() {
+    setMobileSidebarOpen(false);
+    router.push("/chat");
+  }
+
+  async function deleteSession(sessionId: string) {
+    try {
+      await deleteConversationRequest(sessionId);
+      setConversations((prev) => prev.filter((conversation) => conversation.id !== sessionId));
+    } catch {
+      setError(t("unableToDeleteChat"));
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isSending) return;
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    setState({ status: "sending", message: t("sending") });
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: String(formData.get("name") || ""),
+          email: String(formData.get("email") || ""),
+          subject: String(formData.get("subject") || defaultSubject),
+          message: String(formData.get("message") || ""),
+          company: String(formData.get("company") || ""),
+          captchaToken: String(formData.get("cf-turnstile-response") || ""),
+          startedAt,
+        }),
+      });
+
+      const result = (await response.json().catch(() => ({}))) as { error?: string; message?: string };
+
+      if (!response.ok) {
+        setState({
+          status: "error",
+          message: contactErrorMessage(result, language, t),
+        });
+        return;
+      }
+    } catch {
+      setState({
+        status: "error",
+        message: t("unableToReachContact"),
+      });
+      return;
+    }
+
+    form.reset();
+    setSubject(defaultSubject);
+    setState({ status: "success", message: t("messageSent") });
+  }
+
+  return (
+    <>
+      <main className="page-shell contact-page">
+        {captchaEnabled ? (
+          <Script
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+            async
+            defer
+            strategy="afterInteractive"
+          />
+        ) : null}
+
+        <div className="page-header contact-heading">
+          <h1 className="page-title">{t("contact")}</h1>
+          <p className="page-subtitle">{t("contactIntro")}</p>
+        </div>
+
+        <form className="contact-form" onSubmit={handleSubmit}>
+          <div className="contact-field">
+            <label htmlFor="contact-name">{t("name")}</label>
+            <input id="contact-name" name="name" type="text" autoComplete="name" required maxLength={120} dir={language === "ar" ? "rtl" : "ltr"} />
+          </div>
+
+          <div className="contact-field">
+            <label htmlFor="contact-email">{t("email")}</label>
+            <input id="contact-email" name="email" type="email" autoComplete="email" required maxLength={254} dir="ltr" />
+          </div>
+
+          <div className="contact-field">
+            <label htmlFor="contact-subject">{t("subject")}</label>
+            <input
+              id="contact-subject"
+              name="subject"
+              type="text"
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+              maxLength={160}
+              dir={language === "ar" ? "rtl" : "ltr"}
+            />
+          </div>
+
+          <div className="contact-field">
+            <label htmlFor="contact-message">{t("message")}</label>
+            <textarea
+              id="contact-message"
+              name="message"
+              required
+              minLength={10}
+              maxLength={3000}
+              rows={7}
+              dir={language === "ar" ? "rtl" : "ltr"}
+            />
+          </div>
+
+          <div className="contact-honeypot" aria-hidden="true">
+            <label htmlFor="contact-company">Company</label>
+            <input id="contact-company" name="company" type="text" tabIndex={-1} autoComplete="off" />
+          </div>
+
+          {captchaEnabled ? (
+            <div className="contact-captcha">
+              <div className="cf-turnstile" data-sitekey={turnstileSiteKey} />
+            </div>
+          ) : null}
+
+          <div className="contact-actions">
+            <button type="submit" className="button button-primary contact-submit" disabled={isSending}>
+              {isSending ? t("sending") : t("sendMessage")}
+            </button>
+            <div className={statusClassName} role="status" aria-live="polite">
+              {state.message}
+            </div>
+          </div>
+        </form>
+      </main>
+
+      <div className="credits-mobile-sidebar">
+        <button
+          type="button"
+          className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+        <ChatSidebar
+          sessions={conversations}
+          onSelectSession={openSession}
+          onNewChat={startNewChat}
+          onDeleteSession={deleteSession}
+          showAppNav
+          loading={loading}
+          error={error}
+          isMobileOpen={mobileSidebarOpen}
+          onClose={() => setMobileSidebarOpen(false)}
+        />
+      </div>
+    </>
+  );
+}

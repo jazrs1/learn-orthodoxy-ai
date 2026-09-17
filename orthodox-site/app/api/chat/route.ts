@@ -58,7 +58,6 @@ export async function POST(request: Request) {
     const mode: ChatMode =
       body.mode === "saints" || body.mode === "catechism" ? body.mode : "chat";
     const language = normalizeLanguage(body.language);
-    console.log("NEXT_CHAT_LANGUAGE_FORWARDED", language);
 
     if (!question) {
       const badRequest = NextResponse.json({ error: "Question is required." }, { status: 400 });

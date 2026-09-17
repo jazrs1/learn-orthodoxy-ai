@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Learn Orthodoxy social card</title>
+<!-- Source of orthodox-site/public/og-image.png (1200x630). Rendered by og-image.mjs. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Noto+Naskh+Arabic:wght@600&family=Source+Serif+4:opsz,wght@8..60,600&display=block" rel="stylesheet">
+<style>
+  :root {
+    --paper: #faf7f2;
+    --surface: #ffffff;
+    --ink: #1e1915;
+    --ink-soft: #5e5249;
+    --accent: #9a2f24;
+    --gold: #b08a3e;
+    --gold-soft: #f1e6cf;
+    --line: #e7dfd4;
+  }
+  html, body { margin: 0; }
+  body {
+    width: 1200px;
+    height: 630px;
+    background: var(--paper);
+    font-family: "Inter", sans-serif;
+    color: var(--ink);
+  }
+  .card {
+    position: relative;
+    box-sizing: border-box;
+    width: 1200px;
+    height: 630px;
+    padding: 72px 80px;
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 48px;
+    align-items: center;
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 24px;
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    pointer-events: none;
+  }
+  .eyebrow {
+    margin: 0 0 18px;
+    color: var(--accent);
+    font-size: 26px;
+    font-weight: 600;
+  }
+  h1 {
+    margin: 0;
+    font-family: "Source Serif 4", serif;
+    font-size: 92px;
+    white-space: nowrap;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .ar {
+    margin: 14px 0 0;
+    font-family: "Noto Naskh Arabic", serif;
+    font-size: 44px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    direction: rtl;
+    text-align: left;
+  }
+  .rule {
+    width: 88px;
+    height: 5px;
+    margin: 26px 0 24px;
+    border-radius: 999px;
+    background: var(--gold);
+  }
+  .lead {
+    margin: 0;
+    max-width: 640px;
+    font-family: "Source Serif 4", serif;
+    font-size: 28px;
+    line-height: 1.4;
+    color: var(--ink-soft);
+  }
+  .cite {
+    color: var(--accent);
+    font-family: "Inter", sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    vertical-align: super;
+  }
+  .url {
+    margin: 28px 0 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+  .mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--surface) 0%, var(--gold-soft) 100%);
+    box-shadow: 0 0 0 1px var(--line), 0 20px 50px rgba(30, 25, 21, 0.10);
+  }
+  .mark img { width: 180px; height: 180px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <p class="eyebrow">An AI study guide to the Coptic Orthodox faith</p>
+      <h1>Learn Orthodoxy</h1>
+      <p class="ar">تعلّم الأرثوذكسية</p>
+      <div class="rule"></div>
+      <p class="lead">Answers from Fr. Tadros Malaty’s books and the Coptic catechism, with the book and page behind each one<span class="cite">1,2</span></p>
+      <p class="url">learnorthodoxy.net</p>
+    </div>
+    <div class="mark"><img src="CROSS_SRC" alt=""></div>
+  </div>
+</body>
+</html>

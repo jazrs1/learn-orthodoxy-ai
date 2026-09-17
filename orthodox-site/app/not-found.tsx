@@ -5,9 +5,9 @@ import { IconArrowForward } from "../components/Icons";
 import { translations } from "../lib/i18n";
 import { getRequestLanguage } from "../lib/request-language";
 
+// Next.js already marks not-found responses noindex.
 export const metadata: Metadata = {
   title: "Page not found",
-  robots: { index: false },
 };
 
 export default async function NotFound() {
