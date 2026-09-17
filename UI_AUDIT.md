@@ -551,3 +551,75 @@ backend return 500s.
 - On-screen keyboard behavior on iOS is untested.
 - The backend doesn't send saint entry names (open question 22).
 - Publishing the PDFs is still pending permission (open question 20).
+
+---
+
+## Traditional redesign: verification (2026-09-17)
+
+The `design-traditional` branch (DECISIONS.md UI-012 to UI-015) was compared with the deployed
+design (`main`). Both production builds were measured the same way:
+
+- Dead database and backend addresses.
+- Every `/api/*` call answered from `ui-audit/tools/fixtures.json`.
+- 0 OpenAI calls.
+
+The screenshots, axe and overflow reports were made with `capture.mjs` (32 states). Lighthouse
+was run twice per page with `lighthouse.mjs`, using the mobile and desktop presets. The folders are
+not committed; rerun `ui-audit/tools` to regenerate them:
+
+- `ui-audit/before-traditional/`: the deployed design.
+- `ui-audit/after-traditional/`: the new design.
+- `ui-audit/after-traditional/compare/`: side-by-side images for home, chat with a table and
+  citations, saints and 404, at 1440 and 390 px, in English and Arabic.
+
+| Measure | Deployed | design-traditional |
+|---|---|---|
+| Lighthouse performance, mobile (home / chat / credits / contact) | 92–94 / 94–95 / 96 / 93–96 | 92–97 / 92–93 / 94–97 / 95–99 |
+| Lighthouse performance, desktop | 100 on every page | 100 on every page |
+| Mobile first contentful paint (home, chat, credits / contact) | 0.75 s / 0.75 s | 0.90 s / 0.75 s |
+| Desktop first contentful paint (home, chat, credits / contact) | 0.20 s / 0.20 s | 0.24 s / 0.20 s |
+| Mobile largest contentful paint, simulated (home / chat / credits / contact) | 3.1–3.3 / 3.0 / 2.8 / 2.8–3.2 s | 2.6–3.3 / 3.2–3.4 / 2.6–3.1 / 2.3–2.9 s |
+| Layout shift, every page | 0 | 0 |
+| English font files (home, chat, credits / contact) | 2 files, 98 KB | 3 files, 140 KB / 2 files, 93 KB |
+| Page weight, mobile (home / chat / credits / contact) | 360 / 388 / 358 / 336 KB | 342 / 383 / 354 / 283 KB |
+| Accessibility / SEO / Best Practices (Lighthouse) | 100 / 100 / 96 | 100 / 100 / 96 |
+| axe violations across 32 states | 0 | 0 |
+| Mobile tap targets under 44 px (English home) | 6 | 1 (the text field inside the 44 px composer) |
+| Visible width of a table on a 390 px phone | 322 px | 358 px |
+| Pages with horizontal overflow | none | none |
+| Console messages | only the mocked 500 and 404 | only the mocked 500 and 404 |
+
+Best Practices stays at 96 on both builds only because the audit server's dead database and
+backend return 500s.
+
+**What got worse**
+- **First paint is 0.15 s later on phones** (home, chat and credits; Lighthouse simulation) and
+  0.04 s later on desktop. EB Garamond Italic is a third font file (47 KB). In the first
+  measurement it was loaded late: first paint was 1.2 s, and its swap caused a layout shift of
+  0.009. Preloading it only on the pages that use it (UI-015) brought the shift back to 0 and
+  first paint to 0.9 s.
+- **Chat on mobile scores 92–93 instead of 94–95**, and its simulated largest paint is 3.2–3.4 s
+  instead of 3.0 s. The cause is the same extra font.
+- **Arabic pages also preload that italic (47 KB) without using it.** next/font preloads per
+  route, not per language. Arabic pages already preloaded the two Latin fonts before this change.
+- **Your own questions are no longer in a filled, right-aligned bubble.** They are italic lines
+  with a gold rule, like a catechism question. The page reads more like a book, but who said what
+  now depends on italic type, the gold rule and the hairline between turns.
+- **Small-caps labels in EB Garamond are lighter than the old Inter labels.** On 1× Windows
+  screens the navigation, buttons and form labels look thinner, although their contrast is still
+  at least 7.3:1.
+- **Arabic answers look plainer than English ones.** They get no drop cap or italics, because
+  both would break Arabic script.
+- **The Saints list shows about one name fewer per phone screen**, because each row is now a
+  44 px row with a rule under it.
+- **The home page title is an image.** "Learn Orthodoxy" is the wordmark's alt text; it is still
+  announced and still in the page title. On Arabic pages the heading text is the Arabic name.
+- **Shared links keep the old preview card** until each platform fetches the page again.
+
+**Still open** (unchanged from before):
+- Wide tables on phones still show about one and a half columns.
+- Deleting a chat has no confirmation.
+- The Saints browser has no letter index and no per-saint URL.
+- iOS keyboard behavior is untested.
+- Open questions 20 and 22 in DECISIONS.md.
+- The cross is waiting for the priest's choice: set `BRAND_CROSS` in `orthodox-site/lib/brand.ts`.

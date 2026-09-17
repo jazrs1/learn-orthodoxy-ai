@@ -81,6 +81,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-012: Traditional redesign on its own branch; logo redrawn as outlined SVG (proposal)](#ui-012-traditional-redesign-on-its-own-branch-logo-redrawn-as-outlined-svg-proposal)
   - [UI-013: Classical type and logo colors — EB Garamond for display, Source Serif 4 kept for reading](#ui-013-classical-type-and-logo-colors--eb-garamond-for-display-source-serif-4-kept-for-reading)
   - [UI-014: Book-style layout replaces the app patterns; logo assets wired in through one switch](#ui-014-book-style-layout-replaces-the-app-patterns-logo-assets-wired-in-through-one-switch)
+  - [UI-015: Verification of the traditional design; the italic font is preloaded only where it is used](#ui-015-verification-of-the-traditional-design-the-italic-font-is-preloaded-only-where-it-is-used)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1155,6 +1156,31 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - The priest picks the Latin cross: change `BRAND_CROSS`.
   - Firefox gains `initial-letter` (then drop the float fallback).
   - A dark theme is added: the logo's `-dark` files are in `ui-audit/brand/svg/`.
+
+### UI-015: Verification of the traditional design; the italic font is preloaded only where it is used
+- **Date / Part:** 2026-09-17, design-traditional Step 4
+- **Context:** The owner asked for screenshots, axe and Lighthouse runs, a comparison with the deployed design, and a list of anything that got worse. The baseline was built from the same branch before any site change; at that point its site code was identical to `main`.
+- **Finding:** The first Lighthouse run of Step 3 showed three regressions against the baseline:
+  - Mobile first paint went from 0.75 s to 1.2 s on home, chat and credits.
+  - Desktop first paint went from 0.20 s to 0.33 s.
+  - Layout shift went from 0 to 0.007–0.009 on home and chat.
+
+  The cause was EB Garamond Italic. It was not preloaded, so its request started about 40 ms after the others. It sat in the render path of the simulated first paint, and its swap moved the question rows.
+- **Decision:**
+  - The italic moves to `app/font-italic.tsx`, with preloading on. Its CSS variable is set by a `display: contents` wrapper in the home, chat and credits page files, so next/font preloads it on those three routes only.
+  - `.font-scope` redefines `--font-display-italic`, because a custom property is resolved where it is declared. The `:root` token falls back to the roman file.
+  - Contact and 404 load two font files, as before.
+- **Result:**
+  - Layout shift is 0 on every page again.
+  - Mobile first paint is 0.9 s and desktop 0.24 s on the three pages that use the italic; contact is unchanged.
+  - Mobile performance: home 92–97, chat 92–93, credits 94–97, contact 95–99. Desktop stays at 100.
+  - axe: 0 violations in all 32 states.
+  - The full table and the list of what got worse are in the design-traditional section of UI_AUDIT.md.
+- **Files changed:** `orthodox-site/app/font-italic.tsx` (new), `orthodox-site/app/fonts.ts`, `orthodox-site/app/page.tsx`, `orthodox-site/app/chat/page.tsx`, `orthodox-site/app/credits/page.tsx`, `orthodox-site/app/globals.css`, `ui-audit/tools/compare.mjs` (new), `ui-audit/tools/README.md`, `UI_AUDIT.md`.
+- **Concept to learn:** *Route-scoped font preloading.* next/font preloads a font on the routes whose files use it, so calling it in the root layout preloads it everywhere. Search: "next/font preloading", "Lighthouse lantern simulated FCP".
+- **Revisit if:**
+  - The italic is dropped from above the fold; then it no longer needs preloading.
+  - Arabic pages get their own routes; then they can skip the Latin italic.
 
 ## Code Cleanup
 

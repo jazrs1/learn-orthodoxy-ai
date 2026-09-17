@@ -40,7 +40,9 @@
 
   /* Typography: EB Garamond for display and labels, Source Serif 4 for reading (UI-013) */
   --font-display: var(--font-garamond), Garamond, "Times New Roman", serif;
-  --font-display-italic: var(--font-garamond-italic), var(--font-garamond), Garamond, "Times New Roman", serif;
+  /* The italic face is scoped to the pages that use it (app/font-italic.tsx); elsewhere this
+     falls back to the roman file with a synthetic slant. */
+  --font-display-italic: var(--font-garamond-italic, var(--font-garamond)), Garamond, "Times New Roman", serif;
   --font-reading: var(--font-serif), var(--font-naskh), Georgia, "Times New Roman", serif;
   --font-ui: var(--font-garamond), Garamond, "Times New Roman", serif;
   /* Small functional text (lists, tables, sources) stays in the sturdier reading face. */
@@ -114,6 +116,17 @@
 }
 
 /* ---------- Base ---------- */
+
+/* Carries the italic font variable without adding a layout box. The token is redefined here
+   because a custom property is resolved where it is declared (:root has no italic variable). */
+.font-scope {
+  display: contents;
+  --font-display-italic: var(--font-garamond-italic), var(--font-garamond), Garamond, "Times New Roman", serif;
+}
+
+:root:lang(ar) .font-scope {
+  --font-display-italic: var(--font-amiri), var(--font-naskh), "Times New Roman", serif;
+}
 
 *,
 *::before,

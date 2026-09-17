@@ -17,7 +17,7 @@ POSTGRES_URL=postgres://u:p@127.0.0.1:1/x DATABASE_URL=postgres://u:p@127.0.0.1:
 CHROME_BIN=/path/to/chrome node capture.mjs ../ui-audit/after
 CHROME_BIN=/path/to/chrome node extra.mjs ../ui-audit/after
 
-# 3. Social card (writes orthodox-site/public/og-image.png)
+# 3. Social card (writes orthodox-site/public/og-image.png from public/brand/wordmark.svg)
 REPO_ROOT=/path/to/repo CHROME_BIN=/path/to/chrome node og-image.mjs
 ```
 
@@ -32,6 +32,7 @@ indexes; no script calls OpenAI.
 
 ```sh
 FONT_DIR=/path/to/fonts REPO_ROOT=/path/to/repo CHROME_BIN=/path/to/chrome node brand.mjs ../ui-audit/brand
+# add SITE_DIR=/path/to/orthodox-site to install the site assets into public/brand/ (UI-014)
 ```
 
 ## Lighthouse and reading fonts (design-traditional, UI-013)
@@ -48,4 +49,10 @@ measures x-height and characters per line (needs `marked`, and the two variable 
 
 ```sh
 FONT_DIR=/path/to/fonts CHROME_BIN=/path/to/chrome node reading-fonts.mjs ../ui-audit/typography
+```
+
+`compare.mjs` puts the deployed design and the new one side by side for review (UI-015):
+
+```sh
+node compare.mjs ../ui-audit/before-traditional ../ui-audit/after-traditional
 ```

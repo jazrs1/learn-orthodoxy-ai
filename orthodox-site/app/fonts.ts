@@ -10,16 +10,6 @@ export const garamond = EB_Garamond({
   display: "swap",
 });
 
-// Italic is a separate file used for questions; it is not preloaded so pages that never show it
-// don't pay for it.
-export const garamondItalic = EB_Garamond({
-  subsets: ["latin"],
-  style: "italic",
-  variable: "--font-garamond-italic",
-  display: "swap",
-  preload: false,
-});
-
 // Long answer text: sturdier than Garamond at 16–18px, especially on 1x screens (UI-013).
 export const serif = Source_Serif_4({
   subsets: ["latin"],
@@ -44,4 +34,4 @@ export const amiri = Amiri({
   preload: false,
 });
 
-export const fontVariables = [garamond, garamondItalic, serif, naskh, amiri].map((font) => font.variable).join(" ");
+export const fontVariables = [garamond, serif, naskh, amiri].map((font) => font.variable).join(" ");

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WithItalic } from "../font-italic";
 import { pageMetadata } from "../../lib/site";
 import ChatPage from "./chat-page";
 
@@ -10,5 +11,9 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default function Page() {
-  return <ChatPage />;
+  return (
+    <WithItalic>
+      <ChatPage />
+    </WithItalic>
+  );
 }
