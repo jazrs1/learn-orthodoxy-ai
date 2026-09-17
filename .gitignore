@@ -12,3 +12,7 @@ orthodox-site/.env.local
 orthodox-site/.next/
 orthodox-site/node_modules/
 orthodox-site/.idea/
+
+# UI audit screenshots and reports (regenerate with ui-audit/tools)
+ui-audit/before/
+ui-audit/after/

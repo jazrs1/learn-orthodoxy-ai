@@ -66,6 +66,12 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - [Frontend](#frontend)
   - [FE-001: Follow-up chips are ordinary user turns in the conversation's own mode](#fe-001-follow-up-chips-are-ordinary-user-turns-in-the-conversations-own-mode)
   - [FE-002: Answers are rendered as Markdown (GFM tables), wide tables scroll inside the bubble](#fe-002-answers-are-rendered-as-markdown-gfm-tables-wide-tables-scroll-inside-the-bubble)
+- [UI/UX](#uiux)
+  - [UI-001: UI refresh on its own branch, frontend only, shipped with Phase 4](#ui-001-ui-refresh-on-its-own-branch-frontend-only-shipped-with-phase-4)
+  - [UI-002: Audit screenshots use browser-level API mocks filled with real eval answers](#ui-002-audit-screenshots-use-browser-level-api-mocks-filled-with-real-eval-answers)
+  - [UI-003: Accessibility and performance measured with axe and Lighthouse on a production build](#ui-003-accessibility-and-performance-measured-with-axe-and-lighthouse-on-a-production-build)
+  - [UI-004: Fixes ranked by first-time-visitor impact; showing sources is priority one](#ui-004-fixes-ranked-by-first-time-visitor-impact-showing-sources-is-priority-one)
+  - [UI-005: Three design directions proposed; the choice is pending](#ui-005-three-design-directions-proposed-the-choice-is-pending)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -838,6 +844,58 @@ _(See also SEC-003, SEC-005, SEC-006 for the Next.js route changes.)_
 - **Concept to learn:** *Rendering untrusted Markdown safely.* Parse Markdown to a React tree (no `innerHTML`), keep raw HTML disabled, and contain overflowing blocks in their own scroll box so one wide element cannot break a responsive layout (flex children need `min-width: 0` for that). Search: "react-markdown remark-gfm", "flexbox min-width 0 overflow".
 - **Revisit if:** answers start using headings or code blocks heavily (style them), or right-to-left tables look wrong in Arabic (not screenshotted in this step).
 
+## UI/UX
+
+_(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.)_
+
+### UI-001: UI refresh on its own branch, frontend only, shipped with Phase 4
+- **Date / Part:** 2026-09-16, UI refresh Step 0 (base commit 36e6c5b)
+- **Audit ref:** none (new workstream)
+- **Context:** Phase 4 (retrieval and prompt changes) is finished but not deployed. People reviewing the project will look at the site, and the frontend has not had a design pass. Backend and RAG work is paused.
+- **Options considered:** branch off `main` (the UI would then need rebasing onto Phase 4, and FE-002's Markdown rendering exists only on the Phase 4 branch); keep working on `audit-phase-4` (mixes two reviews); a new branch off `audit-phase-4`.
+- **Decision:** `ui-refresh` is branched from `audit-phase-4` and the two ship together. Before branching, the pending README/.env.example documentation for the Phase 4 settings was committed on `audit-phase-4` (36e6c5b), and the two partial eval result files from an interrupted run (`20260916-224032.json`, `20260916-224325.json`) were deleted so the branch starts clean. Only `orthodox-site/` changes on this branch; no Python file is touched.
+- **Concept to learn:** *Stacked branches.* A branch built on an unmerged branch keeps review units small, but has to be rebased if the base changes. Search: "stacked pull requests".
+- **Revisit if:** Phase 4 needs changes after review (rebase `ui-refresh` onto the new tip), or the UI must ship first (cherry-pick onto `main`, which needs FE-002 as well).
+
+### UI-002: Audit screenshots use browser-level API mocks filled with real eval answers
+- **Date / Part:** 2026-09-16, UI refresh Step 1
+- **Audit ref:** none
+- **Context:** Screenshots of realistic chat states (long answer, table, refusal, Arabic) normally need the backend, which costs OpenAI calls. They also need Postgres, and `orthodox-site/.env.local` points at the remote Neon database (see FE-002), so test conversations would be written to real storage.
+- **Options considered:** run the backend and ask a handful of real questions (costs money, writes to Neon, answers change between runs); a temporary preview route with hard-coded markup (the FE-002 approach; doesn't exercise the real page); intercept `/api/*` in the browser.
+- **Decision:** A production build is started with `POSTGRES_URL`, `DATABASE_URL` and `ORTHODOX_API_URL` overridden to dead local addresses. Playwright intercepts every `/api/*` request and answers from `ui-audit/tools/fixtures.json`. The fixtures are real answers, sources and options copied from the Phase 4 eval runs (`CAT-06`, `PRD-03`, `TSK-09`, `KW-03`, `SNT-08`, `AR-08`, `AR-02`, `OOC-03`, and `OOC-10` from the latest run, after GEN-006). The saint lists are the real English (1,363) and Arabic (1,936) indexes, read from the local Chroma store with `collection.get` (no embeddings). The loading, error and saint-detail-loading states are produced by delaying or failing the mocked responses. Only the Arabic table is synthetic (no real Arabic table answer exists). The saint-detail fixture returns the same answer for any saint. **OpenAI calls: 0.** The tooling (Playwright 1.55, axe, Lighthouse) was installed in a scratch directory, not in `orthodox-site/package.json`. The scripts are kept in `ui-audit/tools/` so the "after" pass can be captured the same way.
+- **Findings about the method:** A 390 px viewport works with Playwright's device emulation (FE-002 had needed an iframe). Chromium's page screenshot of a very wide RTL document comes out blank, which is how the Arabic contact overflow was found (UI_AUDIT §4). Element positions were checked separately to separate the real bug from the capture artifact.
+- **Files changed:** `ui-audit/before/*`, `ui-audit/tools/*`, `UI_AUDIT.md`.
+- **Concept to learn:** *Network-level mocking for UI tests.* Intercepting requests at the browser boundary tests the real page, routing and rendering while making the data deterministic and free. Search: "playwright page.route mock API".
+- **Revisit if:** the API response shapes change (update the fixtures), or the screenshots should become a visual regression test (commit the tooling with a `package.json` and compare images automatically).
+
+### UI-003: Accessibility and performance measured with axe and Lighthouse on a production build
+- **Date / Part:** 2026-09-16, UI refresh Step 1
+- **Audit ref:** none
+- **Context:** Scores measured on `next dev` are misleading: the dev bundle is unminified and has overlays.
+- **Decision:** axe (`wcag2a`, `wcag2aa`, `wcag21aa`, `best-practice`) ran on 34 page states across both languages and viewports. Lighthouse 12 ran on `/`, `/chat`, `/credits` and `/contact` with the mobile and desktop presets. Contrast of `opacity`-dimmed text was computed by hand, because neither tool reports it reliably. Baseline: Lighthouse accessibility 100 and SEO 100 everywhere. Performance 81–90 mobile and 98–99 desktop. Best Practices 96, which is an artifact: console errors from the dead local API. axe found 4 rules: `nested-interactive` (serious), `page-has-heading-one`, `landmark-one-main`, `region`.
+- **Why the scores are not the headline:** a perfect Lighthouse accessibility score coexists with the problems these tools can't see: 3.07:1 subtitle text, removed focus outlines on every text input, no live region for new answers, and 21 px tall language buttons. UI_AUDIT §6 lists those manually.
+- **Concept to learn:** *Automated accessibility testing catches only part of the issues.* Contrast through opacity, focus visibility and screen-reader announcements need manual checks. Search: "automated accessibility testing coverage", "WCAG 2.4.7 focus visible".
+- **Revisit if:** the design lands; then rerun the same pages and compare `_lighthouse.json` before and after.
+
+### UI-004: Fixes ranked by first-time-visitor impact; showing sources is priority one
+- **Date / Part:** 2026-09-16, UI refresh Step 1
+- **Audit ref:** UI_AUDIT "Prioritized fixes"
+- **Context:** The audit found about 40 issues. They range from a broken Arabic page to dead CSS.
+- **Options considered:** rank by severity (bugs first); rank by effort (quick wins first); rank by how much a first-time visitor's impression improves, with effort as the tiebreaker.
+- **Decision:** Rank by first-time-visitor impact. The top five: (1) render the `sources` the backend already returns, with linked `[n]` markers; (2) a landing page that says what the site is, that answers come from Fr. Tadros Malaty's books, and shows example questions; (3) fix the broken states (Arabic contact overflow, error shown twice with raw developer text, stripped question marks, fixed-height composer, default 404); (4) typography and tokens (`next/font`, Arabic face, contrast, focus); (5) share/SEO polish (the missing `og-image.png`, per-page titles and canonicals, one site URL, the 17 `console.log`/`console.debug` calls). The Arabic contact overflow is a one-line fix, so it goes in the first pass regardless of rank.
+- **Why sources first:** the site's promise is answers from trusted books. Right now every answer shows `[1][2]` markers that lead nowhere, which makes that promise look broken. The data is already in each stored message (`ChatMessage.sources`), so this is frontend-only work.
+- **Concept to learn:** *Impact/effort prioritisation.* Score each change by the user outcome it moves, not by how bad the code looks. Search: "impact effort matrix", "RICE prioritization".
+- **Revisit if:** analytics show most visitors are returning users (then chat ergonomics outrank the landing page).
+
+### UI-005: Three design directions proposed; the choice is pending
+- **Date / Part:** 2026-09-16, UI refresh Step 1
+- **Audit ref:** UI_AUDIT "Design directions"
+- **Context:** The current look (parchment, umber, Merriweather, the Coptic cross) has an identity worth keeping. Its problems are inconsistency, missing Arabic typography, and a chat-bubble layout that doesn't suit long doctrinal answers.
+- **Options considered:** A, illuminated manuscript (parchment, Coptic red, gold; Cormorant/EB Garamond, Amiri); B, clean modern reader (warm paper, umber, red citation accents; Source Serif 4 + Inter, Noto Naskh Arabic + IBM Plex Sans Arabic; answers as full-width articles with a sources list); C, calm minimal (near-white, one umber accent; Newsreader + Inter, Noto Naskh/Kufi Arabic).
+- **Decision:** B is recommended, optionally with A's red and gold accents and one ornamental divider. **Pending the owner's choice**; no site code changes until then.
+- **Concept to learn:** *Design tokens.* Naming colors, type sizes and spacing once (`--color-ink`, `--text-lg`) makes a direction swappable and gives dark mode almost for free. Search: "design tokens CSS custom properties".
+- **Revisit if:** the owner picks A or C, or a church or diocesan style guide exists that the site should follow.
+
 ## Code Cleanup
 
 _(Deferred to a later phase; see AUDIT.md §3.)_
@@ -876,3 +934,6 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 16. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
 17. **~~Keyword questions are unverified (RET-005).~~ Resolved in EVAL-015: all ten verified against the PDFs.** KW-01…KW-10 have pages located by searching stored chunk text and key facts drafted from that text; they need a hand check (pages and facts) before their coverage scores are trusted. Until then, read their best distances, not their coverage.
 18. **~~Short queries and the threshold (RET-005).~~ Resolved in RET-006/RET-009: the analysis call expands short queries (largest answerable distance 0.984) and the threshold is 1.25.** 1.1 rests on one production data point. Options if single-word queries still sit above it: raise it once the entity check exists, or let the phase 4 query rewrite expand short queries into full questions before embedding (this avoids moving the threshold at all).
+19. **Which domain is canonical (UI refresh).** `layout.tsx`, `sitemap.ts`, `robots.ts` and the Credits text say learnorthodoxy.net; the owner has referred to learnorthodoxy.com. Pick one, read it from a single `NEXT_PUBLIC_SITE_URL`, and redirect the other.
+20. **Public PDFs (UI refresh).** `orthodox-site/public/pdfs/` serves the four English saints volumes and two catechism volumes (34 MB) to anyone, although nothing links to them. Linking citations to `/pdfs/<file>#page=<n>` would be the best source experience, but it needs confirmation that Fr. Tadros's publishers allow the full books to be public. If not, show book and page only and remove the folder.
+21. **Unused `NEXT_PUBLIC_API_URL` in `orthodox-site/.env.local` (UI refresh).** It's no longer read (SEC-003); delete it locally and in Vercel so it can't be reintroduced by accident.
