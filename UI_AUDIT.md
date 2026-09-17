@@ -574,14 +574,14 @@ not committed; rerun `ui-audit/tools` to regenerate them:
 
 | Measure | Deployed | design-traditional |
 |---|---|---|
-| Lighthouse performance, mobile (home / chat / credits / contact) | 92–94 / 94–95 / 96 / 93–96 | 92–97 / 92–93 / 94–97 / 95–99 |
+| Lighthouse performance, mobile (home / chat / credits / contact) | 92–94 / 94–95 / 96 / 93–96 | 94–96 / 94–95 / 96 / 94–96 |
 | Lighthouse performance, desktop | 100 on every page | 100 on every page |
-| Mobile first contentful paint (home, chat, credits / contact) | 0.75 s / 0.75 s | 0.90 s / 0.75 s |
-| Desktop first contentful paint (home, chat, credits / contact) | 0.20 s / 0.20 s | 0.24 s / 0.20 s |
-| Mobile largest contentful paint, simulated (home / chat / credits / contact) | 3.1–3.3 / 3.0 / 2.8 / 2.8–3.2 s | 2.6–3.3 / 3.2–3.4 / 2.6–3.1 / 2.3–2.9 s |
+| Mobile first contentful paint, every page | 0.75 s | 0.75 s |
+| Desktop first contentful paint, every page | 0.20 s | 0.20 s |
+| Mobile largest contentful paint, simulated (home / chat / credits / contact) | 3.1–3.3 / 3.0 / 2.8 / 2.8–3.2 s | 2.8–3.0 / 3.0 / 2.8 / 2.8–3.2 s |
 | Layout shift, every page | 0 | 0 |
-| English font files (home, chat, credits / contact) | 2 files, 98 KB | 3 files, 140 KB / 2 files, 93 KB |
-| Page weight, mobile (home / chat / credits / contact) | 360 / 388 / 358 / 336 KB | 342 / 383 / 354 / 283 KB |
+| English font files, every page | 2 files, 98 KB | 2 files, 93 KB |
+| Page weight, mobile (home / chat / credits / contact) | 360 / 388 / 358 / 336 KB | 291 / 335 / 306 / 283 KB |
 | Accessibility / SEO / Best Practices (Lighthouse) | 100 / 100 / 96 | 100 / 100 / 96 |
 | axe violations across 32 states | 0 | 0 |
 | Mobile tap targets under 44 px (English home) | 6 | 1 (the text field inside the 44 px composer) |
@@ -592,22 +592,20 @@ not committed; rerun `ui-audit/tools` to regenerate them:
 Best Practices stays at 96 on both builds only because the audit server's dead database and
 backend return 500s.
 
+These numbers are from the final build, after italic was reserved for quoted matter inside
+answers and EB Garamond Italic was dropped (UI-016). An earlier build carried that italic as a
+third font file: first paint was 0.15 s slower on phones and its late swap cost 0.009 of layout
+shift. Both are gone.
+
 **What got worse**
-- **First paint is 0.15 s later on phones** (home, chat and credits; Lighthouse simulation) and
-  0.04 s later on desktop. EB Garamond Italic is a third font file (47 KB). In the first
-  measurement it was loaded late: first paint was 1.2 s, and its swap caused a layout shift of
-  0.009. Preloading it only on the pages that use it (UI-015) brought the shift back to 0 and
-  first paint to 0.9 s.
-- **Chat on mobile scores 92–93 instead of 94–95**, and its simulated largest paint is 3.2–3.4 s
-  instead of 3.0 s. The cause is the same extra font.
-- **Arabic pages also preload that italic (47 KB) without using it.** next/font preloads per
-  route, not per language. Arabic pages already preloaded the two Latin fonts before this change.
 - **Your own questions look different from before**, though they remain a filled panel aligned to
   the end of the line: a warm surface tone with a hairline border and the site serif, instead of
   the dark umber bubble with white text.
 - **Small-caps labels in EB Garamond are lighter than the old Inter labels.** On 1× Windows
   screens the navigation, buttons and form labels look thinner, although their contrast is still
   at least 7.3:1.
+- **Emphasis inside an answer is a synthetic italic.** No italic font file is loaded, so the
+  browser slants the reading face. It is fine for a few words and would be poor for a paragraph.
 - **Arabic answers look plainer than English ones.** They get no drop cap or italics, because
   both would break Arabic script.
 - **The Saints list shows about one name fewer per phone screen**, because each row is now a

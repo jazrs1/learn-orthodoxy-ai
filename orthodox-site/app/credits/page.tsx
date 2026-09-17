@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { WithItalic } from "../font-italic";
 import { pageMetadata } from "../../lib/site";
 import CreditsPage from "./credits-page";
 
@@ -11,9 +10,5 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default function Page() {
-  return (
-    <WithItalic>
-      <CreditsPage />
-    </WithItalic>
-  );
+  return <CreditsPage />;
 }

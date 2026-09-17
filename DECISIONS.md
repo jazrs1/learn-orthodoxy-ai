@@ -82,6 +82,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-013: Classical type and logo colors — EB Garamond for display, Source Serif 4 kept for reading](#ui-013-classical-type-and-logo-colors--eb-garamond-for-display-source-serif-4-kept-for-reading)
   - [UI-014: Book-style layout replaces the app patterns; logo assets wired in through one switch](#ui-014-book-style-layout-replaces-the-app-patterns-logo-assets-wired-in-through-one-switch)
   - [UI-015: Verification of the traditional design; the italic font is preloaded only where it is used](#ui-015-verification-of-the-traditional-design-the-italic-font-is-preloaded-only-where-it-is-used)
+  - [UI-016: Italic reserved for quoted matter inside answers; the italic font file is dropped](#ui-016-italic-reserved-for-quoted-matter-inside-answers-the-italic-font-file-is-dropped)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1078,7 +1079,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Decision:**
   - **Long answer text:** Source Serif 4 stays, at 17 px. EB Garamond's x-height is 0.40 em, against 0.475 em for Source Serif, so Garamond needs 20 px to be as legible. At 20 px it gives the same 43 characters per line but makes answers 8% taller. On 1× screens its thin strokes also turn faint at body sizes, while Source Serif's stay solid.
   - **Display face:** EB Garamond (variable weight, Latin subset) is used for headings, the site name, and the navigation, labels and buttons. Labels, navigation and buttons are set in all-small-caps with 0.06 em tracking (`--caps-label`, `--tracking-label`).
-  - **EB Garamond Italic:** a separate file that is not preloaded; it is used for questions in Step 3.
+  - **EB Garamond Italic:** a separate file that is not preloaded; it is used for questions in Step 3. (Dropped in UI-016: italic is now only used inside answers, in the reading face.)
   - **Small functional text:** tables, sources, sidebar titles and alerts use `--font-text` (Source Serif 4).
   - **Arabic:** Amiri Regular for headings and Noto Naskh Arabic for everything else. Arabic turns off small caps and letter-spacing. `font-synthesis: none` stops the browser from faking a bold Amiri.
   - **Colors (from the logo):**
@@ -1118,7 +1119,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
     - The wordmark (without its tagline) is the `h1`. The tagline is set underneath as real text, in spaced small caps. It stays readable below 400 px, and on Arabic pages it is translated ("دليل دراسي قبطي أرثوذكسي").
     - On Arabic pages the Arabic name is the heading text and the English wordmark is decorative.
     - The red eyebrow is gone. A quiet italic note sits under the question box: "Answers are prepared by AI from these books, with sources shown." It has an Arabic version.
-  - **"Begin with a question":** a table-of-contents list (italic Garamond, dotted leaders, hairline rules, each row a full-width button) replaces the pill chips. Follow-up suggestions and catechism prompts use the same rows.
+  - **"Begin with a question":** a table-of-contents list (Garamond, dotted leaders, hairline rules, each row a full-width button) replaces the pill chips. Follow-up suggestions and catechism prompts use the same rows. (Set in italic at first; roman since UI-016.)
   - **Explore:** two columns of text divided by a hairline, each with a small-caps heading, a short description and a text link. The icon tiles are gone, and `IconBook` and `IconUsers` were removed.
   - **How it works:** numbered with Roman numerals in rubric red; Arabic uses Arabic-Indic digits. "Before you start" is a ruled note with em-dash markers instead of a tinted box.
   - **Ornament:** `components/Ornament.tsx` draws two antique-gold rules around the brand cross. It is used only between the home page's major sections and under the 404 title.
@@ -1159,6 +1160,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 
 ### UI-015: Verification of the traditional design; the italic font is preloaded only where it is used
 - **Date / Part:** 2026-09-17, design-traditional Step 4
+- **Superseded by UI-016:** the italic face was removed altogether, so no route preloads it and every page loads two font files.
 - **Context:** The owner asked for screenshots, axe and Lighthouse runs, a comparison with the deployed design, and a list of anything that got worse. The baseline was built from the same branch before any site change; at that point its site code was identical to `main`.
 - **Finding:** The first Lighthouse run of Step 3 showed three regressions against the baseline:
   - Mobile first paint went from 0.75 s to 1.2 s on home, chat and credits.
@@ -1181,6 +1183,28 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Revisit if:**
   - The italic is dropped from above the fold; then it no longer needs preloading.
   - Arabic pages get their own routes; then they can skip the Latin italic.
+
+### UI-016: Italic reserved for quoted matter inside answers; the italic font file is dropped
+- **Date / Part:** 2026-09-17, after Step 4 (owner review before pushing)
+- **Context:** The owner found too much italic on the home page. Italic had been used for the question rows, the two placeholders, the AI note, the typing indicator, follow-up suggestions, catechism prompts, the credits doxology and the portrait caption. Used that widely, it stopped meaning anything and made the page look mannered.
+- **Decision:**
+  - Every piece of interface text is roman EB Garamond: the "Begin with a question" rows, the composer and saints placeholders, the AI note under the question box, "Searching the sources…", follow-up suggestions, catechism prompts, the doxology and the portrait caption.
+  - Italic is kept only inside an answer, where it carries meaning: emphasis from the Markdown, block quotes, and book titles in the Sources list. These use the reading face.
+  - With nothing left using EB Garamond Italic, the font, the `WithItalic` wrapper, `app/font-italic.tsx`, the `.font-scope` rule and the `--font-display-italic` token are all removed. Every page is back to two font files.
+  - This supersedes UI-015, which preloaded the italic on the three routes that used it.
+- **Result (production build, mocked API, 0 OpenAI calls; two Lighthouse runs per page):**
+  - Every page now matches or beats the deployed design.
+    - Mobile performance: home 94–96 (deployed 92–94), chat 94–95 (94–95), credits 96 (96), contact 94–96 (93–96).
+    - Desktop performance: 100 everywhere, as before.
+    - Mobile first contentful paint: 0.75 s on every page, the same as the deployed design.
+    - Layout shift: 0 everywhere.
+    - Font files: 2 (93 KB) on every page, against 2 (98 KB) deployed.
+    - Page weight is 50–65 KB lower per page than the deployed design.
+  - axe: 0 violations across the 32 captured states.
+- **Why the italic is not missed:** emphasis inside answers still renders italic; the browser slants the reading face, since Source Serif 4's italic file is not loaded. That costs a little quality on the few italic words in an answer, and saves a 47 KB download on every page.
+- **Files changed:** `orthodox-site/app/globals.css`, `orthodox-site/app/page.tsx`, `orthodox-site/app/chat/page.tsx`, `orthodox-site/app/credits/page.tsx`, `orthodox-site/app/font-italic.tsx` (deleted), `UI_AUDIT.md`.
+- **Concept to learn:** *Synthetic italic.* With no italic file, the browser slants the roman one. It is acceptable for a few words and poor for a paragraph. Search: "font-synthesis", "synthetic oblique typography".
+- **Revisit if:** emphasis inside answers needs a true italic; then load Source Serif 4 italic without preloading it, so it arrives only when an answer actually uses it.
 
 ## Code Cleanup
 

@@ -1,5 +1,7 @@
 /*
- * Learn Orthodoxy — global styles (UI-007; traditional redesign UI-013, UI-014).
+ * Learn Orthodoxy — global styles (UI-007; traditional redesign UI-013, UI-014, UI-016).
+ * Italic marks quoted and titled matter inside an answer only (emphasis, block quotes and book
+ * titles in the Sources list); no label, question, prompt or placeholder is italic.
  * A printed-book look: warm paper, umber ink, antique gold hairlines, rubric red used sparingly.
  * No cards, pills or heavy shadows: sections are separated by space, hairlines and a small
  * ornament. Every color, font, size and radius comes from the tokens below; a dark theme only
@@ -40,9 +42,6 @@
 
   /* Typography: EB Garamond for display and labels, Source Serif 4 for reading (UI-013) */
   --font-display: var(--font-garamond), Garamond, "Times New Roman", serif;
-  /* The italic face is scoped to the pages that use it (app/font-italic.tsx); elsewhere this
-     falls back to the roman file with a synthetic slant. */
-  --font-display-italic: var(--font-garamond-italic, var(--font-garamond)), Garamond, "Times New Roman", serif;
   --font-reading: var(--font-serif), var(--font-naskh), Georgia, "Times New Roman", serif;
   --font-ui: var(--font-garamond), Garamond, "Times New Roman", serif;
   /* Small functional text (lists, tables, sources) stays in the sturdier reading face. */
@@ -90,7 +89,6 @@
 /* Arabic: Naskh leads, and needs a little more size and line height to read comfortably. */
 :root:lang(ar) {
   --font-display: var(--font-amiri), var(--font-naskh), "Times New Roman", serif;
-  --font-display-italic: var(--font-amiri), var(--font-naskh), "Times New Roman", serif;
   --font-reading: var(--font-naskh), var(--font-serif), "Times New Roman", serif;
   --font-ui: var(--font-naskh), var(--font-garamond), "Times New Roman", serif;
   --font-text: var(--font-naskh), var(--font-serif), "Times New Roman", serif;
@@ -116,17 +114,6 @@
 }
 
 /* ---------- Base ---------- */
-
-/* Carries the italic font variable without adding a layout box. The token is redefined here
-   because a custom property is resolved where it is declared (:root has no italic variable). */
-.font-scope {
-  display: contents;
-  --font-display-italic: var(--font-garamond-italic), var(--font-garamond), Garamond, "Times New Roman", serif;
-}
-
-:root:lang(ar) .font-scope {
-  --font-display-italic: var(--font-amiri), var(--font-naskh), "Times New Roman", serif;
-}
 
 *,
 *::before,
@@ -578,14 +565,9 @@ textarea:focus-visible {
 .hero-note {
   margin: var(--space-3) 0 0;
   color: var(--color-ink-faint);
-  font-family: var(--font-display-italic);
+  font-family: var(--font-display);
   font-size: var(--text-base);
-  font-style: italic;
   line-height: var(--leading-normal);
-}
-
-:root:lang(ar) .hero-note {
-  font-style: normal;
 }
 
 .section-label {
@@ -632,16 +614,11 @@ textarea:focus-visible {
   border: none;
   background: transparent;
   color: var(--color-ink);
-  font-family: var(--font-display-italic);
+  font-family: var(--font-display);
   font-size: var(--text-question);
-  font-style: italic;
   line-height: 1.35;
   text-align: start;
   transition: color 0.15s ease, background-color 0.15s ease;
-}
-
-:root:lang(ar) .toc-row {
-  font-style: normal;
 }
 
 .toc-text {
@@ -852,18 +829,16 @@ textarea:focus-visible {
   outline: none;
 }
 
-/* Garamond is optically smaller than the reading face, so the italic placeholder is set larger. */
+/* Garamond is optically smaller than the reading face, so the placeholder is set larger. */
 .chat-input::placeholder {
   color: var(--color-ink-faint);
-  font-family: var(--font-display-italic);
+  font-family: var(--font-display);
   font-size: 1.1875rem;
-  font-style: italic;
   opacity: 1;
 }
 
 :root:lang(ar) .chat-input::placeholder {
   font-size: inherit;
-  font-style: normal;
 }
 
 .chat-submit {
@@ -1208,13 +1183,8 @@ textarea:focus-visible {
   align-items: center;
   gap: var(--space-3);
   color: var(--color-ink-soft);
-  font-family: var(--font-display-italic);
+  font-family: var(--font-display);
   font-size: var(--text-lg);
-  font-style: italic;
-}
-
-:root:lang(ar) .typing-indicator {
-  font-style: normal;
 }
 
 .chat-alert {
@@ -1607,9 +1577,8 @@ textarea:focus-visible {
   border-bottom: 1px solid var(--color-line);
   background: transparent;
   color: var(--color-ink);
-  font-family: var(--font-display-italic);
+  font-family: var(--font-display);
   font-size: var(--text-question);
-  font-style: italic;
   line-height: 1.35;
   text-align: start;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -1622,10 +1591,6 @@ textarea:focus-visible {
   height: 1px;
   margin-inline-end: var(--space-3);
   background: var(--color-gold-antique);
-}
-
-:root:lang(ar) .message-option-chip {
-  font-style: normal;
 }
 
 .message-option-chip:hover {
@@ -1717,12 +1682,7 @@ textarea:focus-visible {
 
 .saints-search-input::placeholder {
   color: var(--color-ink-faint);
-  font-family: var(--font-display-italic);
-  font-style: italic;
-}
-
-:root:lang(ar) .saints-search-input::placeholder {
-  font-style: normal;
+  font-family: var(--font-display);
 }
 
 /* The selected saint reads as an entry in the encyclopedia: ruled above and below. */
@@ -1912,14 +1872,9 @@ textarea:focus-visible {
   border-top: 1px solid var(--color-line);
   background: transparent;
   color: var(--color-ink);
-  font-family: var(--font-display-italic);
+  font-family: var(--font-display);
   font-size: var(--text-question);
-  font-style: italic;
   text-align: start;
-}
-
-:root:lang(ar) .catechism-prompt-card {
-  font-style: normal;
 }
 
 .catechism-prompt-card::before {
@@ -2014,14 +1969,9 @@ textarea:focus-visible {
 .credits-doxology {
   margin-top: var(--space-7);
   color: var(--color-primary);
-  font-family: var(--font-display-italic);
+  font-family: var(--font-display);
   font-size: var(--text-lg);
-  font-style: italic;
   text-align: center;
-}
-
-:root:lang(ar) .credits-doxology {
-  font-style: normal;
 }
 
 .credits-portrait {
@@ -2046,13 +1996,8 @@ textarea:focus-visible {
 .credits-portrait figcaption {
   margin-top: var(--space-2);
   color: var(--color-ink-soft);
-  font-family: var(--font-display-italic);
+  font-family: var(--font-display);
   font-size: var(--text-base);
-  font-style: italic;
-}
-
-:root:lang(ar) .credits-portrait figcaption {
-  font-style: normal;
 }
 
 .credits-mobile-sidebar {
