@@ -2,6 +2,7 @@
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { IconSend } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
 
 type ChatShellProps = {
@@ -118,7 +119,7 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
           aria-label={t("sendMessage")}
           title={t("sendMessage")}
         >
-          →
+          <IconSend size={20} />
         </button>
       </div>
     </div>

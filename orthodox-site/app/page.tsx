@@ -104,10 +104,10 @@ export default function HomePage() {
 
   return (
     <main className="home-page">
-      <div className="home-layout">
+      <div className="home-layout home-layout-with-sidebar">
         <section className="hero">
           <Image
-            src="/cross.png"
+            src="/cross-mark.png"
             alt="Coptic cross"
             width={280}
             height={280}

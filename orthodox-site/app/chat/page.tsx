@@ -2,8 +2,8 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import ChatShell from "../../components/ChatShell";
+import { IconChevronDown, IconCopy, IconCheck, IconSearch } from "../../components/Icons";
 import ChatSidebar from "../../components/ChatSidebar";
 import AnswerWithSources from "../../components/AnswerWithSources";
 import { useLanguage } from "../../components/LanguageProvider";
@@ -973,19 +973,12 @@ function ChatPageContent() {
                         <div className={`message-actions ${message.role === "user" ? "user-actions" : "assistant-actions"}`}>
                           <button
                             type="button"
-                            className="message-action-btn"
+                            className="icon-button message-action-btn"
                             onClick={() => void copyMessage(message.id, message.content)}
                             aria-label={copiedMessageId === message.id ? t("copied") : t("copyMessage")}
                             title={copiedMessageId === message.id ? t("copied") : t("copy")}
                           >
-                            <Image
-                              src={copiedMessageId === message.id ? "/icons/checkmark.svg" : "/icons/copy.svg"}
-                              alt=""
-                              aria-hidden="true"
-                              width={24}
-                              height={24}
-                              className={`message-copy-icon ${copiedMessageId === message.id ? "message-copy-icon-copied" : ""}`}
-                            />
+                            {copiedMessageId === message.id ? <IconCheck size={18} /> : <IconCopy size={18} />}
                           </button>
                         </div>
                       ) : null}
@@ -1010,7 +1003,7 @@ function ChatPageContent() {
                         <span className="catechism-topic-title">{topic.title}</span>
                         <span className="catechism-topic-description">{topic.description}</span>
                       </span>
-                      <span className="catechism-topic-chevron" aria-hidden="true" />
+                      <IconChevronDown className="catechism-topic-chevron" size={20} />
                     </summary>
                     <div className="catechism-prompt-grid">
                       {topic.prompts.map((item) => (
@@ -1023,7 +1016,6 @@ function ChatPageContent() {
                             void handleSendMessage(item.prompt, { mode: "catechism" });
                           }}
                         >
-                          <span className="catechism-prompt-label">{item.label}</span>
                           <span className="catechism-prompt-text">{item.prompt}</span>
                         </button>
                       ))}
@@ -1040,7 +1032,7 @@ function ChatPageContent() {
                     <h2 className="saint-detail-title">{displaySaintName(selectedSaint, language)}</h2>
                     <button
                       type="button"
-                      className="saint-detail-close"
+                      className="button button-secondary saint-detail-close"
                       onClick={() => {
                         setSelectedSaint("");
                         setSaintDetail(null);
@@ -1094,7 +1086,7 @@ function ChatPageContent() {
                         <div className="saint-detail-actions">
                           <button
                             type="button"
-                            className="saint-learn-more"
+                            className="button button-primary saint-learn-more"
                             onClick={() => {
                               const saintName = selectedSaint.trim();
                               if (!saintName) return;
@@ -1121,8 +1113,10 @@ function ChatPageContent() {
               ) : null}
 
               <div className="saints-tab-search">
+                <IconSearch className="saints-search-icon" size={18} />
                 <input
-                  type="text"
+                  type="search"
+                  aria-label={t("searchSaints")}
                   className="saints-search-input"
                   value={saintSearch}
                   onChange={(event) => setSaintSearch(event.target.value)}
@@ -1153,7 +1147,7 @@ function ChatPageContent() {
                 {!saintsError && hasMoreSaints ? (
                   <button
                     type="button"
-                    className="saints-load-more"
+                    className="button button-secondary saints-load-more"
                     onClick={() => void loadSaintsPage({ query: saintSearch, offset: saints.length })}
                     disabled={saintsLoading}
                   >

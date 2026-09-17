@@ -5,15 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
+import { IconMenu } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
+
+type ChatMode = "chat" | "catechism" | "saints";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { language, setLanguage, t } = useLanguage();
   const [hash, setHash] = useState("");
 
-  const hasSidebarOffset = pathname === "/" || pathname === "/chat";
-  const showsMobileSidebarToggle = hasSidebarOffset || pathname === "/credits" || pathname === "/contact";
+  const showsMobileSidebarToggle =
+    pathname === "/" || pathname === "/chat" || pathname === "/credits" || pathname === "/contact";
   const chatModeHash = hash || "#chat";
 
   useEffect(() => {
@@ -23,22 +26,19 @@ export default function Navbar() {
 
     syncHash();
     window.addEventListener("hashchange", syncHash);
+    window.addEventListener("chat:setMode", syncHash);
     return () => {
       window.removeEventListener("hashchange", syncHash);
+      window.removeEventListener("chat:setMode", syncHash);
     };
   }, [pathname]);
 
   function openMobileSidebar() {
-    if (typeof window === "undefined") return;
     window.dispatchEvent(new CustomEvent("chat:openSidebar"));
   }
 
-  function navLinkClass(isActive: boolean) {
-    return `nav-link ${isActive ? "nav-link-active" : ""}`;
-  }
-
-  function selectChatMode(mode: "chat" | "catechism" | "saints", event: MouseEvent<HTMLAnchorElement>) {
-    if (pathname !== "/chat" || typeof window === "undefined") return;
+  function selectChatMode(mode: ChatMode, event: MouseEvent<HTMLAnchorElement>) {
+    if (pathname !== "/chat") return;
 
     event.preventDefault();
     const nextHash = `#${mode}`;
@@ -47,79 +47,83 @@ export default function Navbar() {
     window.dispatchEvent(new CustomEvent("chat:setMode", { detail: { mode } }));
   }
 
+  const modes: Array<{ id: ChatMode; label: string }> = [
+    { id: "chat", label: t("chat") },
+    { id: "catechism", label: t("catechism") },
+    { id: "saints", label: t("saintsSearch") },
+  ];
+
   return (
     <header className="site-header">
-      <nav className={`navbar ${hasSidebarOffset ? "navbar-sidebar-offset" : ""}`}>
+      <nav className="navbar" aria-label={t("mainNavigation")}>
         {showsMobileSidebarToggle ? (
           <button
             type="button"
-            className="mobile-sidebar-toggle navbar-sidebar-toggle"
+            className="icon-button mobile-sidebar-toggle navbar-sidebar-toggle"
             onClick={openMobileSidebar}
             aria-label={t("openChatsPanel")}
           >
-            <span />
-            <span />
-            <span />
+            <IconMenu size={24} />
           </button>
         ) : null}
 
         <Link href="/" className="nav-brand">
-          <Image
-            src="/cross.png"
-            alt="Coptic cross"
-            width={34}
-            height={34}
-            className="nav-cross"
-            priority
-          />
+          <Image src="/cross-mark.png" alt="" width={32} height={32} className="nav-cross" priority />
           <span className="nav-title">{t("appName")}</span>
         </Link>
 
-        <div className="language-toggle" aria-label={t("language")}>
+        <div className="nav-links">
+          <div className="nav-modes">
+            {modes.map((mode) => {
+              const active = pathname === "/chat" && chatModeHash === `#${mode.id}`;
+              return (
+                <Link
+                  key={mode.id}
+                  href={`/chat#${mode.id}`}
+                  className={`nav-link nav-mode ${active ? "nav-link-active" : ""}`}
+                  aria-current={active ? "page" : undefined}
+                  onClick={(event) => selectChatMode(mode.id, event)}
+                >
+                  {mode.label}
+                </Link>
+              );
+            })}
+          </div>
+          <Link
+            href="/credits"
+            className={`nav-link ${pathname === "/credits" ? "nav-link-active" : ""}`}
+            aria-current={pathname === "/credits" ? "page" : undefined}
+          >
+            {t("credits")}
+          </Link>
+          <Link
+            href="/contact"
+            className={`nav-link ${pathname === "/contact" ? "nav-link-active" : ""}`}
+            aria-current={pathname === "/contact" ? "page" : undefined}
+          >
+            {t("contact")}
+          </Link>
+        </div>
+
+        <div className="language-toggle" role="group" aria-label={t("language")}>
           <button
             type="button"
+            lang="en"
             className={`language-toggle-btn ${language === "en" ? "language-toggle-btn-active" : ""}`}
+            aria-pressed={language === "en"}
             onClick={() => setLanguage("en")}
           >
             English
           </button>
           <button
             type="button"
+            lang="ar"
             className={`language-toggle-btn ${language === "ar" ? "language-toggle-btn-active" : ""}`}
+            aria-pressed={language === "ar"}
             onClick={() => setLanguage("ar")}
           >
             العربية
           </button>
-        </div>
-
-        <div className="nav-links">
-          <Link
-            href="/chat#chat"
-            className={navLinkClass(pathname === "/chat" && chatModeHash === "#chat")}
-            onClick={(event) => selectChatMode("chat", event)}
-          >
-            {t("chat")}
-          </Link>
-          <Link
-            href="/chat#catechism"
-            className={navLinkClass(pathname === "/chat" && chatModeHash === "#catechism")}
-            onClick={(event) => selectChatMode("catechism", event)}
-          >
-            {t("catechism")}
-          </Link>
-          <Link
-            href="/chat#saints"
-            className={navLinkClass(pathname === "/chat" && chatModeHash === "#saints")}
-            onClick={(event) => selectChatMode("saints", event)}
-          >
-            {t("saintsSearch")}
-          </Link>
-          <Link href="/credits" className={navLinkClass(pathname === "/credits")}>
-            {t("credits")}
-          </Link>
-          <Link href="/contact" className={navLinkClass(pathname === "/contact")}>
-            {t("contact")}
-          </Link>
         </div>
       </nav>
     </header>

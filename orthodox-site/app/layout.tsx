@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { fontVariables } from "./fonts";
 import Navbar from "../components/Navbar";
 import { LanguageProvider } from "../components/LanguageProvider";
 
@@ -59,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr">
+    <html lang="en" dir="ltr" className={fontVariables}>
       <body>
         <LanguageProvider>
           <Navbar />

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type { MouseEvent } from "react";
 import { ConversationSummary } from "../lib/chat-types";
+import { IconClose, IconPlus, IconTrash } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
 
 type ChatMode = "chat" | "catechism" | "saints";
@@ -61,19 +62,24 @@ export default function ChatSidebar({
       <div className="chat-sidebar-details">
         <div className="chat-sidebar-header">
           <Link href="/" className="chat-sidebar-home-link" onClick={onClose} aria-label={t("home")}>
-            <Image src="/cross.png" alt="" width={28} height={28} className="chat-sidebar-home-cross" />
+            <Image src="/cross-mark.png" alt="" width={28} height={28} className="chat-sidebar-home-cross" />
           </Link>
           <div className="chat-sidebar-title">{t("chats")}</div>
           {onClose ? (
-            <button type="button" className="chat-sidebar-close-btn" onClick={onClose} aria-label={t("closeChatsPanel")}>
-              x
+            <button
+              type="button"
+              className="icon-button chat-sidebar-close-btn"
+              onClick={onClose}
+              aria-label={t("closeChatsPanel")}
+            >
+              <IconClose size={22} />
             </button>
           ) : null}
         </div>
 
         <div className="chat-sidebar-panel">
           {showAppNav ? (
-            <nav className="chat-sidebar-nav" aria-label="Learn Orthodoxy modes">
+            <nav className="chat-sidebar-nav" aria-label={t("sectionsNavigation")}>
               {modes.map((mode) => (
                 <Link
                   key={mode.id}
@@ -123,7 +129,8 @@ export default function ChatSidebar({
               onClose?.();
             }}
           >
-            {t("newChat")}
+            <IconPlus size={18} />
+            <span>{t("newChat")}</span>
           </button>
 
           <div className="chat-sidebar-section-label">{t("pastChats")}</div>
@@ -164,7 +171,7 @@ export default function ChatSidebar({
                       }}
                       aria-label={`${t("deleteChat")}: ${session.title || t("chat")}`}
                     >
-                      x
+                      <IconTrash size={17} />
                     </span>
                   ) : null}
                 </button>

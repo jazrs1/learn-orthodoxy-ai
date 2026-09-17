@@ -172,11 +172,9 @@ export default function ContactPage() {
           />
         ) : null}
 
-        <div className="section-heading left contact-heading">
-          <h1>{t("contact")}</h1>
-          <p>
-            {t("contactIntro")}
-          </p>
+        <div className="page-header contact-heading">
+          <h1 className="page-title">{t("contact")}</h1>
+          <p className="page-subtitle">{t("contactIntro")}</p>
         </div>
 
         <form className="contact-form" onSubmit={handleSubmit}>
@@ -228,7 +226,7 @@ export default function ContactPage() {
           ) : null}
 
           <div className="contact-actions">
-            <button type="submit" className="contact-submit" disabled={isSending}>
+            <button type="submit" className="button button-primary contact-submit" disabled={isSending}>
               {isSending ? t("sending") : t("sendMessage")}
             </button>
             {state.message ? <div className={statusClassName}>{state.message}</div> : null}

@@ -64,6 +64,8 @@ export const translations = {
     showAllSources: "Show all {count} sources",
     showFewerSources: "Show fewer sources",
     tableLabel: "Table",
+    mainNavigation: "Main",
+    sectionsNavigation: "Sections",
   },
   ar: {
     appName: "تعلّم الأرثوذكسية",
@@ -126,6 +128,8 @@ export const translations = {
     showAllSources: "عرض كل المصادر ({count})",
     showFewerSources: "عرض مصادر أقل",
     tableLabel: "جدول",
+    mainNavigation: "القائمة الرئيسية",
+    sectionsNavigation: "الأقسام",
   },
 } as const;
 

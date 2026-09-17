@@ -73,6 +73,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-004: Fixes ranked by first-time-visitor impact; showing sources is priority one](#ui-004-fixes-ranked-by-first-time-visitor-impact-showing-sources-is-priority-one)
   - [UI-005: Three design directions proposed; the choice is pending](#ui-005-three-design-directions-proposed-the-choice-is-pending)
   - [UI-006: Citations link to a per-answer Sources list; books shown as text, not PDF links](#ui-006-citations-link-to-a-per-answer-sources-list-books-shown-as-text-not-pdf-links)
+  - [UI-007: Design foundation — self-hosted fonts, color and type tokens, logical CSS, real icons](#ui-007-design-foundation--self-hosted-fonts-color-and-type-tokens-logical-css-real-icons)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -910,6 +911,27 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:** `orthodox-site/lib/sources.ts` (new), `orthodox-site/lib/remark-citations.ts` (new), `orthodox-site/components/AnswerWithSources.tsx` (new), `orthodox-site/components/InteractiveAnswer.tsx`, `orthodox-site/lib/chat-types.ts`, `orthodox-site/lib/i18n.ts`, `orthodox-site/app/chat/page.tsx`, `orthodox-site/app/globals.css`, `ui-audit/tools/fixtures.json` (sources now keep `n` and `label`).
 - **Concept to learn:** *AST transforms for rendered Markdown.* Changing the syntax tree (mdast) instead of the raw string keeps the change out of code spans and link text and survives tables. `data.hName` tells the HTML step which element to emit. Search: "remark plugin mdast hName".
 - **Revisit if:** the backend starts returning one entry per cited passage, or an entry name; or permission to publish the PDFs is granted (then add `#page=` links).
+
+### UI-007: Design foundation — self-hosted fonts, color and type tokens, logical CSS, real icons
+- **Date / Part:** 2026-09-16, UI refresh fix 2
+- **Audit ref:** UI_AUDIT §2, §6 (contrast, focus), prioritized fix 4
+- **Context:** Merriweather loaded through a render-blocking CSS `@import`. There was no Arabic font. `globals.css` had 71 hard-coded `rgba()` values, subtitles were dimmed with `opacity` (3.07:1), and text inputs removed their focus outline. "x" and "→" were used as icons, and the layout was forced left-to-right even in Arabic.
+- **Options considered:** patch the existing 2,100-line stylesheet; move to Tailwind utilities (Tailwind 4 is installed but unused, and moving means rewriting every component); rewrite `globals.css` around CSS custom properties while keeping the existing class names.
+- **Decision:**
+  - **Fonts.** `app/fonts.ts` loads three families through `next/font/google`, self-hosted at build time with size-adjusted fallbacks: Source Serif 4 (reading and headings), Inter (interface), and Noto Naskh Arabic (Arabic, not preloaded, so English pages never download it). Inter wasn't in the owner's list but is part of direction B; it keeps small UI text (labels, buttons, tables) crisp.
+  - **Font stacks.** `--font-reading` and `--font-ui` put Naskh second, so Arabic glyphs always get Naskh. Under `:lang(ar)` Naskh comes first, and sizes and line height step up (reading 19px / 1.9).
+  - **Tokens.** One `:root` block defines surfaces, ink, brand, lines, focus and status colors, a type scale, spacing, radii, shadows and layout sizes. A future dark theme only has to redefine the `--color-*` tokens.
+  - **Accents.** Coptic red (`#9a2f24`) is used only for citation markers, the active-nav underline, focus rings and the active drawer item. Gold (`#b08a3e`) is used only for the cross, the rule under page titles, list bullets and the source highlight.
+  - **Contrast.** Every text token passes AA on the backgrounds it's used on (ink 16.3:1, soft 7.1:1, faint/placeholder 5.5:1, red 7.0:1). Gold is never used for text.
+  - **Focus.** A global `:focus-visible` outline in red, including text inputs. The composer draws its ring on the whole field (`:focus-within`).
+  - **Layout.** The header is the same full-width bar on every page, and the chat sidebar now sits under it instead of beside it, so the brand no longer moves between pages. All spacing uses logical properties (`inset-inline-start`, `padding-inline`, `border-inline-end`) and the old `direction: ltr` overrides are gone. In Arabic the whole shell mirrors: sidebar on the right, the user's messages on the left, and a drawer that slides in from the right.
+  - **Answers.** Assistant answers are article cards (full column width, 46rem measure, 17px serif at 1.7 line height). The user's question is an umber bubble. Tables use the UI font, sit in a bordered scroll box with edge shadows that hint at more columns, and follow-up suggestions are real chips.
+  - **Icons.** `components/Icons.tsx` holds inline SVG icons (send, close, trash, copy, check, menu, plus, chevron, search, retry, arrow, book, alert); they inherit `currentColor`. The send icon is an up arrow, so it doesn't need flipping in Arabic. Directional icons get `.icon-directional`, which mirrors under `[dir=rtl]`.
+  - **Other.** Catechism prompt cards drop the uppercase pill labels that repeated the question. `public/cross-mark.png` is a trimmed square 512 px version of the cross, made with `sharp` (already a Next dependency), so the 30 px header mark isn't mostly transparent padding. The header language toggle is a `role="group"` with `aria-pressed`, and the nav links carry `aria-current`. Reduced motion is respected globally.
+- **Not done here:** dark mode (owner: tokens only), the nested sidebar button and the other state fixes (fix 3), and the landing page (fix 4). `public/cross.png` and `public/icons/*.svg` are now unused and can be deleted in a cleanup pass.
+- **Files changed:** `orthodox-site/app/fonts.ts` (new), `orthodox-site/components/Icons.tsx` (new), `orthodox-site/public/cross-mark.png` (new), `orthodox-site/app/globals.css` (rewritten), `orthodox-site/app/layout.tsx`, `orthodox-site/components/Navbar.tsx`, `orthodox-site/components/ChatShell.tsx`, `orthodox-site/components/ChatSidebar.tsx`, `orthodox-site/app/chat/page.tsx`, `orthodox-site/app/contact/page.tsx`, `orthodox-site/app/page.tsx`, `orthodox-site/lib/i18n.ts`.
+- **Concept to learn:** *CSS logical properties.* `margin-inline-start` means "the side where lines start", which is left in English and right in Arabic, so one stylesheet serves both directions without `[dir=rtl]` overrides. Search: "CSS logical properties RTL".
+- **Revisit if:** dark mode is requested (add a `[data-theme="dark"]` / `prefers-color-scheme` block that redefines the color tokens), or Tailwind is adopted (map the tokens into `@theme`).
 
 ## Code Cleanup
 
