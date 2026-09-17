@@ -4,7 +4,7 @@ import { Inter, Noto_Naskh_Arabic, Source_Serif_4 } from "next/font/google";
 // --font-reading / --font-ui tokens in globals.css.
 
 export const serif = Source_Serif_4({
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   variable: "--font-serif",
   display: "swap",
 });

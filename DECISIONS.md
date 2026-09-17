@@ -77,6 +77,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-008: Broken states fixed; language remembered in a cookie and rendered on the server](#ui-008-broken-states-fixed-language-remembered-in-a-cookie-and-rendered-on-the-server)
   - [UI-009: A landing page that explains the site; the empty history column is hidden for new visitors](#ui-009-a-landing-page-that-explains-the-site-the-empty-history-column-is-hidden-for-new-visitors)
   - [UI-010: Sharing and SEO — one site URL, per-page metadata, a real social card, no debug logging](#ui-010-sharing-and-seo--one-site-url-per-page-metadata-a-real-social-card-no-debug-logging)
+  - [UI-011: Font loading trimmed after the first "after" measurement](#ui-011-font-loading-trimmed-after-the-first-after-measurement)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1004,6 +1005,15 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:** `orthodox-site/lib/site.ts` (new), `orthodox-site/app/{page,chat/page,credits/page,contact/page}.tsx` (new server wrappers), `orthodox-site/app/{home-page,chat/chat-page,credits/credits-page,contact/contact-page}.tsx` (moved), `orthodox-site/app/layout.tsx`, `orthodox-site/app/sitemap.ts`, `orthodox-site/app/robots.ts`, `orthodox-site/app/manifest.ts` (new), `orthodox-site/app/icon.png`, `orthodox-site/app/apple-icon.png`, `orthodox-site/public/og-image.png` (new), `orthodox-site/app/not-found.tsx`, `orthodox-site/next.config.ts`, `orthodox-site/eslint.config.mjs`, `orthodox-site/app/api/chat/route.ts`, `orthodox-site/app/api/contact/route.ts`, `ui-audit/tools/og-image.html` and `og-image.mjs` (new); `orthodox-site/app/about/page.tsx` and `app/sources/page.tsx` deleted.
 - **Concept to learn:** *Canonical URLs.* A canonical tag tells search engines which URL is the original. Pointing every page at the home page tells them the other pages are duplicates, which can drop them from the index. Search: "rel canonical best practices", "Open Graph protocol".
 - **Revisit if:** Arabic gets its own URLs (add `alternates.languages` / `hreflang`), or the domain changes (edit `SITE_URL` and the Google verification token).
+
+### UI-011: Font loading trimmed after the first "after" measurement
+- **Date / Part:** 2026-09-17, UI refresh follow-up (found by the after-pass Lighthouse run)
+- **Context:** With fixes 1–5 in place, mobile first paint halved (about 2.9s to 1.4s) and layout shift fell to 0. But Lighthouse's simulated mobile LCP rose from 3.1–3.6s to 4.1–4.4s on `/chat`, `/credits` and `/contact`. The real (unthrottled) LCP was about 0.1s; the estimate was driven by font downloads. English pages preloaded three font files (Source Serif `latin` and `latin-ext`, Inter `latin`), and the "العربية" label in the language toggle made every English page download the 92 KB Noto Naskh Arabic file.
+- **Decision:** Source Serif loads the `latin` subset only (the English books and answers don't need `latin-ext`; any rare accented letter falls back to Georgia). On English pages the toggle's Arabic label uses the system Arabic face; Arabic pages keep Naskh. English pages now load two font files.
+- **Result (Lighthouse mobile, two runs each):** home 90–92, chat 90–91, credits 92–93; FCP 0.8s; LCP 3.2–3.6s. The full before/after table is in the UI refresh summary.
+- **Files changed:** `orthodox-site/app/fonts.ts`, `orthodox-site/app/globals.css`.
+- **Concept to learn:** *Font subsetting and `unicode-range`.* The browser downloads a web font file only when the page uses a character in that file's range, so a single Arabic word on an English page pulls in the whole Arabic file. Search: "unicode-range font loading", "Lighthouse LCP font preload".
+- **Revisit if:** English answers start showing missing accented letters (add `latin-ext` back without preloading it).
 
 ## Code Cleanup
 

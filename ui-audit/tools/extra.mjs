@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-const OUT = "C:/Users/johnb/Projects/learn-orthodoxy-ai/ui-audit/before/";
+const OUT = (process.argv[2] || "C:/Users/johnb/Projects/learn-orthodoxy-ai/ui-audit/before") + "/";
 const b = await chromium.launch({ executablePath: process.env.CHROME_BIN });
 let ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
 let p = await ctx.newPage();

@@ -356,8 +356,14 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
+/* On English pages this label is the only Arabic text; a system face avoids downloading
+   Noto Naskh (92 KB) just for it (UI-011). Arabic pages have the font already. */
 .language-toggle-btn[lang="ar"] {
-  font-family: var(--font-naskh), var(--font-ui);
+  font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+}
+
+:root:lang(ar) .language-toggle-btn[lang="ar"] {
+  font-family: var(--font-naskh), system-ui, sans-serif;
 }
 
 .language-toggle-btn:hover {
