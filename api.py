@@ -33,6 +33,7 @@ from saint_index_overrides import (
 )
 from arabic_saints_index import ARABIC_SAINTS_INDEX
 from task_analysis import TaskAnalysis, analyze_request
+from entity_check import check_subjects
 
 load_dotenv()
 
@@ -90,10 +91,12 @@ CHAT_TEMPERATURE = _env_float("OPENAI_CHAT_TEMPERATURE", 0.2)
 # --- Retrieval scoring (DECISIONS.md RET-002/RET-003) ---
 # Chroma returns squared L2 distance between unit-length embeddings (0 = identical,
 # 2 = opposite). If the best chunk across all queries is farther than this, the
-# question is treated as having no relevant source. 1.0 was chosen from the eval
-# data: every answerable English question had a best distance <= 0.971 and every
-# out-of-corpus question >= 1.053. 0 disables the check.
-VECTOR_DISTANCE_THRESHOLD = _env_float("VECTOR_DISTANCE_THRESHOLD", 1.0)
+# question is treated as having no relevant source. Since phase 4 the named-subject
+# check (GEN-006) handles near misses, so this only catches clearly off-topic requests:
+# 1.25 sits above every answerable tune question (<= 0.984 after the request analysis,
+# <= 1.246 for a raw keyword if the analysis call fails) and below every easy
+# off-topic one (>= 1.455). See RET-009. 0 disables the check.
+VECTOR_DISTANCE_THRESHOLD = _env_float("VECTOR_DISTANCE_THRESHOLD", 1.25)
 # Arabic embeddings were built from un-normalised glyph text (AUDIT C2); their
 # distances do not separate relevant from irrelevant, so the check is off by default.
 ARABIC_VECTOR_DISTANCE_THRESHOLD = _env_float("ARABIC_VECTOR_DISTANCE_THRESHOLD", 0.0)
@@ -105,6 +108,9 @@ HISTORY_TURNS_FOR_MODEL = _env_int("HISTORY_TURNS_FOR_MODEL", 6)
 TASK_ANALYSIS_ENABLED = _env_flag("TASK_ANALYSIS_ENABLED", "1")
 TASK_ANALYSIS_MODEL = os.getenv("TASK_ANALYSIS_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
 TASK_ANALYSIS_TIMEOUT_SECONDS = _env_float("TASK_ANALYSIS_TIMEOUT_SECONDS", 8.0)
+
+# --- Named-subject check (DECISIONS.md GEN-006) ---
+ENTITY_CHECK_ENABLED = _env_flag("ENTITY_CHECK_ENABLED", "1")
 
 # --- Broad and list requests (DECISIONS.md RET-007) ---
 # Broad requests retrieve more chunks, from the main query plus the analysis sub-queries.
@@ -798,6 +804,7 @@ def _retrieve_documents(
                 [{"id": chunk_id, "distance": dist} for chunk_id, dist in zip(ids, distances)],
                 collection=collection_label,
                 where=metadata_filter,
+                where_document=where_document,
                 n_results=top_k,
             )
 
@@ -1316,6 +1323,9 @@ REFUSAL_OPENINGS = (
     "the passages do not mention",
     "the loaded sources do not mention",
     "the provided passages do not mention",
+    "the sources do not cover",
+    "the passages do not cover",
+    "the loaded sources do not cover",
 )
 PARTIAL_MARKERS = (
     "do not cover",
@@ -1362,6 +1372,57 @@ def _compared_tradition_terms(question: str, analysis: TaskAnalysis) -> List[str
         if re.search(pattern, text, flags=re.IGNORECASE):
             terms.extend(term for term in substrings if term not in terms)
     return terms[:3]
+
+
+def _check_named_subjects(analysis: TaskAnalysis, docs: List[str], language: str) -> Dict[str, Any] | None:
+    """Named-subject presence in the passages (GEN-006); logged as `entity_check`."""
+    if not ENTITY_CHECK_ENABLED or not analysis.named_subjects:
+        return None
+    texts = [_normalize_arabic_context_text(doc) for doc in docs] if language == "ar" else list(docs)
+    result: Dict[str, Any] = dict(check_subjects(analysis.named_subjects, texts))
+    if result["absent"] and not result["present"]:
+        result["action"] = "decline"
+    elif result["absent"]:
+        result["action"] = "note_missing"
+    else:
+        result["action"] = "none"
+    trace = current_trace()
+    if trace is not None:
+        trace.set(entity_check=result)
+    return result
+
+
+def _entity_note(result: Dict[str, Any] | None, language: str) -> str | None:
+    if not result or not result["absent"]:
+        return None
+    missing = ", ".join(result["absent"])
+    if language == "ar":
+        if result["action"] == "decline":
+            return (
+                f"لا يذكر أي مقطع: {missing}. ابدأ ردّك بعبارة \"لم أجد معلومات كافية عن {missing} في المصادر العربية المتاحة.\" "
+                "ولا تصف ذلك من الذاكرة. يمكنك بعدها ذكر ما تغطيه المقاطع قريبًا منه مع الاستشهاد."
+            )
+        return f"لا يذكر أي مقطع: {missing}. قل إن المصادر لا تغطي ذلك ولا تصفه من الذاكرة."
+    if result["action"] == "decline":
+        return (
+            f"None of the passages mentions: {missing}. Begin your reply with "
+            f"\"I could not find anything about {missing} in the loaded sources.\" and do not describe it from memory. "
+            "You may then say what the passages cover nearby, with citations."
+        )
+    return f"None of the passages mentions: {missing}. Say that the sources do not cover it, and do not describe it from memory."
+
+
+def _enforce_entity_decline(answer: str, result: Dict[str, Any] | None, language: str) -> str:
+    """If no named subject is in the passages, the reply must be a decline, whatever the model wrote."""
+    if not result or result.get("action") != "decline":
+        return answer
+    if _response_grounding_status(answer, ["-"]) == "no-source":
+        return answer
+    missing = ", ".join(result["absent"])
+    result["action"] = "decline_enforced"
+    if language == "ar":
+        return f"لم أجد معلومات كافية عن {missing} في المصادر العربية المتاحة."
+    return f"I could not find anything about {missing} in the loaded sources."
 
 
 def _answer_max_tokens(analysis: TaskAnalysis, broad: bool) -> int:
@@ -3050,6 +3111,11 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 and ARABIC_VECTOR_DISTANCE_THRESHOLD > 0
                 and (best_distance is None or best_distance > ARABIC_VECTOR_DISTANCE_THRESHOLD)
             )
+            # Arabic has no usable distance threshold (RET-003), so the analysis' scope flag is
+            # the guard against off-topic questions answered from an incidental word (GEN-006).
+            if docs and not no_relevant_source and not analysis.in_scope:
+                trace.set(outcome="refused", refusal=True, refusal_reason="out_of_scope")
+                return {"answer": _no_source_answer("ar"), "sources": [], "entities": [], "options": [], "can_learn_more": False}
             if no_relevant_source:
                 trace.set(outcome="refused", refusal=True, refusal_reason="no_relevant_source")
                 answer = (
@@ -3066,9 +3132,11 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 }
 
             context, numbered_sources = _build_numbered_context(docs, metas, normalize=_normalize_arabic_context_text)
-            messages = _build_chat_messages(
-                ARABIC_SYSTEM_PROMPT, history, original_question, context, "ar", note=_format_note(analysis, "ar")
-            )
+            entity_result = _check_named_subjects(analysis, docs, "ar")
+            note = "\n".join(
+                part for part in (_entity_note(entity_result, "ar"), _format_note(analysis, "ar")) if part
+            ) or None
+            messages = _build_chat_messages(ARABIC_SYSTEM_PROMPT, history, original_question, context, "ar", note=note)
             trace.set(
                 context_chunks=len(docs),
                 context_chars=len(context),
@@ -3086,7 +3154,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             trace.set_generation(resp, CHAT_MODEL)
             trace.lap("generation")
 
-            answer = resp.choices[0].message.content or ""
+            answer = _enforce_entity_decline(resp.choices[0].message.content or "", entity_result, "ar")
             followup_options: List[str] = []
             if mode == "catechism":
                 followup_options = _catechism_followup_options(answer, original_question, language="ar")
@@ -3300,6 +3368,8 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             and VECTOR_DISTANCE_THRESHOLD > 0
             and (best_distance is None or best_distance > VECTOR_DISTANCE_THRESHOLD)
         )
+        # English off-topic questions are caught by the distance threshold; the analysis' scope
+        # flag is only enforced for Arabic (it flagged an answerable calendar question here).
         if no_relevant_source:
             trace.set(outcome="refused", refusal=True, refusal_reason="nothing_retrieved" if not docs else "distance_above_threshold")
             return {
@@ -3313,7 +3383,11 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         # Numbered passages the model cites as [n]; the last few turns go in as real messages
         # so pronouns and follow-ups resolve naturally (DECISIONS.md GEN-001..003).
         context, numbered_sources = _build_numbered_context(docs, metas)
-        note = "\n".join(part for part in (list_note, _format_note(analysis, "en")) if part) or None
+        # Named-subject check (GEN-006): not for saint lists, which are selected by name already.
+        entity_result = _check_named_subjects(analysis, docs, "en") if retrieval_plan != "saint_list" else None
+        note = "\n".join(
+            part for part in (list_note, _entity_note(entity_result, "en"), _format_note(analysis, "en")) if part
+        ) or None
         messages = _build_chat_messages(ENGLISH_SYSTEM_PROMPT, history, original_question, context, "en", note=note)
         trace.set(
             context_chunks=len(docs),
@@ -3332,7 +3406,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         trace.set_generation(resp, CHAT_MODEL)
         trace.lap("generation")
 
-        answer = resp.choices[0].message.content or ""
+        answer = _enforce_entity_decline(resp.choices[0].message.content or "", entity_result, "en")
         followup_options: List[str] = []
         if mode == "catechism":
             followup_options = _catechism_followup_options(answer, original_question, language=detected_language)

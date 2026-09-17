@@ -55,12 +55,14 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-006: One analysis call separates the retrieval query from the requested task](#ret-006-one-analysis-call-separates-the-retrieval-query-from-the-requested-task)
   - [RET-007: Broad requests retrieve wider; saint lists are built from the saint index](#ret-007-broad-requests-retrieve-wider-saint-lists-are-built-from-the-saint-index)
   - [RET-008: Comparisons with another church also retrieve the passages that name it](#ret-008-comparisons-with-another-church-also-retrieve-the-passages-that-name-it)
+  - [RET-009: Distance threshold 1.25, as an off-topic guard only](#ret-009-distance-threshold-125-as-an-off-topic-guard-only)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
   - [GEN-003: Conversation history is sent as real messages](#gen-003-conversation-history-is-sent-as-real-messages)
   - [GEN-004: Prompt v3 — flexible about format and task, strict about content](#gen-004-prompt-v3--flexible-about-format-and-task-strict-about-content)
   - [GEN-005: Generation model: gpt-4.1-mini recommended over gpt-4o-mini](#gen-005-generation-model-gpt-41-mini-recommended-over-gpt-4o-mini)
+  - [GEN-006: Named-subject check before generation, plus a scope gate for Arabic](#gen-006-named-subject-check-before-generation-plus-a-scope-gate-for-arabic)
 - [Frontend](#frontend)
   - [FE-001: Follow-up chips are ordinary user turns in the conversation's own mode](#fe-001-follow-up-chips-are-ordinary-user-turns-in-the-conversations-own-mode)
   - [FE-002: Answers are rendered as Markdown (GFM tables), wide tables scroll inside the bubble](#fe-002-answers-are-rendered-as-markdown-gfm-tables-wide-tables-scroll-inside-the-bubble)
@@ -672,6 +674,25 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Concept to learn:** *Filtered / hybrid retrieval.* Combining a metadata or keyword filter with vector ranking retrieves passages that are relevant *and* satisfy a hard constraint, which pure similarity cannot guarantee for rare mentions. Search: "hybrid search keyword filter vector", "Chroma where_document".
 - **Revisit if:** a lexical (BM25) index is added for English (then fuse with RRF instead of a contains filter).
 
+### RET-009: Distance threshold 1.25, as an off-topic guard only
+- **Date / Part:** 2026-09-16, Phase 4 Step 5
+- **Audit ref:** RET-003, RET-004, RET-005, open question 18
+- **Context:** The threshold (1.0 in code, 1.1 in production since RET-005) was carrying two jobs: stopping off-topic requests and stopping near misses. It could not do the second (RET-004), and at 1.0/1.1 it refused real short questions ("What is prayer" 1.058; "confession" 1.246). With the request analysis (RET-006) and the named-subject check (GEN-006) in place, it only needs to catch clearly off-topic input.
+- **Method (tune only):** a tune run with the threshold switched off (`20260916-215250`, gpt-4.1-mini, entity check on) so that every question has a real answer and an English best distance. A threshold refusal happens before generation, so `eval/threshold_analysis.py --simulate` replays each candidate threshold exactly on those outcomes. The best distance now comes from the *analysed* query (RET-006), not the raw text.
+- **Data (tune, English: 47 answerable with a vector search + 1 saint list, 24 negatives):**
+  - Largest answerable best distances: KW-08 "confession" 0.984, MP-02 0.976, KW-01 "What is prayer" 0.972, KW-07 "eucharist" 0.952, CAT-12 0.921.
+  - Negatives in order: near misses 0.454–1.237 (OOC-16 0.454 … OOC-13 1.237), together with the on-topic-sounding trap OOC-06 (cryptocurrency, 1.053); every one of them refused by the model or the entity check except OOC-25 (0.744, declined with "The sources do not cover …", counted as a refusal after GEN-006) and OOC-26 (0.809, correct premise rejection); the other easy off-topic questions 1.455 (nirvana), 1.480, 1.605 (sourdough), 1.633, 1.741.
+  - Sweep: at 0.90 five answerable questions are blocked (CAT-12, MP-02, KW-01, KW-07, KW-08), at 0.95 four; **from 1.00 to 1.40 nothing changes** — 0 answerable blocked, all 7 easy (6 English + the Arabic one, which has no distance check), 14/16 near-miss and 3/3 task-style negatives refused — because everything between 1.0 and 1.45 is a near miss that the entity check and the prompt already decline.
+  - Production phrases through the new pipeline (local, same index): "What is prayer" 0.972 (raw 1.059), "fasting" 0.624 (raw 0.912), "eucharist" 0.952 (raw 0.965), "confession" 0.984 (raw 1.246), "create a table with all saints whos names start with g" saint list, no distance (raw 1.042), the Catholic-differences table 0.842 (raw 0.900), the Easter question 0.827 (raw 0.955), "How do I make sourdough bread" **1.582** (raw 1.619) → refused.
+- **Options considered:** 1.0 (no gain, least margin: the largest raw keyword distance is 1.246, which production sees whenever the analysis call fails and falls back to the raw text); 1.1 (current production value, same problem for "confession"); 1.25 (above the largest *raw* answerable keyword distance, 0.20 below the nearest easy negative); 1.4 (maximum margin to answerable, only 0.055 below nirvana).
+- **Decision:** `VECTOR_DISTANCE_THRESHOLD` default **1.25** in code; set the same value on Railway (or delete the variable to use the default). Arabic stays off (RET-003), with the scope gate (GEN-006) instead.
+- **Answerable questions blocked, by either check, on tune: none.** (Threshold: 0 of 47 at 1.25; entity check: 0 of 55.)
+- **Result:** the step 5 tune run at 1.25 (`20260916-220035`) matches the simulation: 0 % answerable refused, 96.2 % of negatives refused, easy negatives refused by the threshold before any model call (as before) and near misses by the model/entity check.
+- **Weak points:** the analysis call can fail (then the raw question is embedded; 1.25 still passes every raw keyword on tune, the largest being 1.246, a thin 0.004 margin for that fallback case); there is still no tune data between 1.24 and 1.45; 19 English negatives is a small sample.
+- **Files changed:** `api.py` (default), `eval/threshold_analysis.py` (`--simulate`), `eval/results/20260916-215250.json`, `eval/results/20260916-220035.json`.
+- **Concept to learn:** *Defence in depth for refusals.* Use the cheapest signal (distance) only where it is reliable (clearly off-topic), and give the hard cases (near misses) to a check that can actually see the difference (entity presence). Re-derive a threshold whenever an upstream stage changes the scores it sees (here, the query rewrite lowered them). Search: "cascade classifier thresholds", "answerability RAG".
+- **Revisit if:** production logs show answerable requests between 1.2 and 1.25 (raise it), off-topic requests below 1.25 that the model answers, re-ingestion changes chunk size, or the analysis failure rate becomes noticeable.
+
 ## Prompting & Generation
 
 ### GEN-001: System prompts live in versioned files under prompts/
@@ -756,6 +777,40 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Concept to learn:** *Model selection by eval, not by vibes.* Swap one component, rerun the same set, and compare the metrics you care about, including the failure modes the cheaper model avoids. Search: "LLM model selection evaluation cost quality tradeoff".
 - **Revisit if:** Step 6 faithfulness is worse for 4.1-mini, the monthly bill matters more than coverage, or a newer small model is available (rerun the tune set).
 
+### GEN-006: Named-subject check before generation, plus a scope gate for Arabic
+- **Date / Part:** 2026-09-16, Phase 4 Step 5
+- **Audit ref:** RET-004, open question 12, GEN-004/GEN-005 regressions
+- **Context:** Distance measures topical closeness, not whether the specific saint or doctrine is in the books (RET-004). With gpt-4.1-mini and prompt v3, four doctrine questions (papal infallibility, sola scriptura, filioque, Immaculate Conception) were answered from general knowledge with a Coptic framing, and the Arabic "capital of France" question (no Arabic threshold, RET-003) was answered from a passage about Poitiers.
+- **Options considered:**
+  1. *Ask the model to decide* (prompt only) — it already had that rule and still answered.
+  2. *A second LLM call judging "is X in these passages"* — robust, but another ~1 s and a second opinion from a similar model.
+  3. *Deterministic presence check* of the subjects the analysis call already extracts (`named_subjects`, RET-006), plus a decline instruction and a hard fallback.
+  4. *Block on any unmatched word of the question* — would block formats and broad categories, which the brief forbids.
+- **Decision:** Option 3, in `entity_check.py`.
+  - *Subjects:* the analysis prompt now always fills `named_subjects` with named saints, people, doctrines, councils, feasts, rites or terms (with worked examples: "the Catholic doctrine of papal infallibility" → ["papal infallibility"]), and never with presentation words, broad categories ("saints", "differences", "fasts") or the churches being compared. On the tune set it extracted a subject for every near-miss negative and for no format/category request (checked on all 81 tune questions before wiring it in).
+  - *Matching:* titles and filler words dropped (St., Saint, Abba, Anba, Pope, the, of …, Arabic القديس/الانبا/البابا …); roman numerals and words under three letters dropped; each remaining word stemmed (≥ 7 letters: last three dropped; 5–6: last one; Arabic: leading ال dropped); text compared with all spaces and punctuation removed (pypdf's "sufferin g" still matches) after NFKC and Arabic letter folding. A subject is present when one passage contains all its core words (all but one when it has three or more).
+  - *Action:* no subjects → nothing. All subjects absent → a NOTE tells the model the subject is not in any passage and to begin with "I could not find anything about X in the loaded sources." (it may add what the sources cover nearby, with citations); if the reply nonetheless does not open with a decline, it is replaced by that sentence (`decline_enforced`). Some absent → a NOTE to say those are not covered. Saint lists (RET-007) are exempt; they are selected by name already. Logged as `entity_check` {present, absent, action}. `ENTITY_CHECK_ENABLED` (default on).
+  - *Scope gate (Arabic only):* the analysis also returns `in_scope` (false only for requests clearly outside Christian faith and life, including topics the catechism itself treats); in the Arabic path an out-of-scope request is declined before generation (`refusal_reason=out_of_scope`). It is not used for English: it flagged TSK-14 ("the ancient Egyptian calendar and the Julian calendar") as out of scope even after the prompt listed calendars, and English off-topic requests are already stopped by distance (≥ 1.45 on tune, RET-009).
+  - *Refusal detection:* "The sources do not cover …" at the start of a reply now also counts as a decline (OOC-25 declined with that wording).
+- **Result (tune, coverage-only, gpt-4.1-mini; step 4 `20260916-213948` → step 5 `20260916-220035`, threshold 1.25):**
+
+| metric | step 4 (4.1-mini) | step 5 |
+|---|---|---|
+| coverage (all answerable) | 73.0% | 71.3% |
+| off-target | 5.5% | 7.3% |
+| answerable refused | 0.0% | **0.0%** |
+| out-of-corpus refused | 76.9% | **96.2%** |
+| … easy / near-miss / task | 85.7 / 75.0 / 66.7 | **100 / 93.8 / 100** |
+| format followed | 100% | 100% |
+| mean latency | 3.7 s | 3.8 s |
+
+  - Newly refused: OOC-10 (scope gate), OOC-21, 22, 24, 38 (entity check: papal infallibility, sola scriptura, filioque, Immaculate Conception absent from the passages; the model complied with the note in every case, so the hard fallback never fired). The only negative still answered is OOC-26 ("St. Paul the First Hermit did not have a wife … There is no mention of a wife"), which is a correct premise rejection that does not open with a decline.
+  - **Answerable questions blocked by the entity check: none** (0 of 55 on tune). Actions on tune: 13 declines, all on negatives; 4 "note missing" (OOC-13, OOC-25, OOC-29 and one answerable, AR-08, where "بركات المعمودية" — "the blessings of baptism" — was treated as a named subject; the answer was still given).
+  - Coverage moved within the generation noise measured in RET-007 (KW-01 0.83 → 0.50 and KW-08 1.00 → 0.67 with identical retrieval; SNT-11 0.57 → 0.93).
+- **Files changed:** `entity_check.py` (new), `task_analysis.py`, `api.py`.
+- **Concept to learn:** *Entity grounding / attribution gating.* Before generating, confirm that the thing the user named is in the evidence; if it is not, the honest answer is a decline, and a cheap lexical check is enough because the analysis step already isolated the names. Search: "entity linking RAG hallucination", "answerability detection".
+- **Revisit if:** the saint index gains aliases (then match subjects against aliases too), a false block appears in production logs (`entity_check.action=decline` on an answerable question), or phrase-level subjects like AR-08's cause visible hedging.
+
 ## Frontend
 
 _(See also SEC-003, SEC-005, SEC-006 for the Next.js route changes.)_
@@ -814,10 +869,10 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 9. **Arabic distance check is off.** Until Arabic is re-embedded from normalised text, an off-topic Arabic question reaches the model with ten irrelevant chunks and relies on the prompt to refuse. (Phase 2)
 10. **Frontend still pastes the previous answer into follow-up questions** (`orthodox-site/app/chat/page.tsx`, `followUpBackendQuestion`). Now that history goes to the model as messages, that hack pollutes the retrieval query and should be removed in the frontend part. (Phase 2)
 11. **Answer length and cost.** v2 answers average ~1,700 characters and ~380 completion tokens; if that is too long for the chat UI, add a length target to the prompt rather than a token cap. (Phase 2)
-12. **Near-miss refusals (Phase 3).** Four doctrine questions and one same-name question were answered from general knowledge although the corpus never discusses them; the distance threshold cannot catch them (RET-004). Candidate fixes: an entity/term-presence check on the retrieved passages before generation, a prompt instruction to state explicitly when the passages do not mention the subject asked about, or using the faithfulness judge's unsupported-claim signal at request time.
+12. **~~Near-miss refusals (Phase 3).~~ Largely resolved in GEN-006 (tune: 15 of 16 near misses refused, the remaining one a correct premise rejection).** Four doctrine questions and one same-name question were answered from general knowledge although the corpus never discusses them; the distance threshold cannot catch them (RET-004). Candidate fixes: an entity/term-presence check on the retrieved passages before generation, a prompt instruction to state explicitly when the passages do not mention the subject asked about, or using the faithfulness judge's unsupported-claim signal at request time.
 13. **Coverage vs recall gap (Phase 3).** CAT-13 and CAT-15 retrieve their expected page at rank 1–4 yet score 10–17 % coverage: the model writes from neighbouring pages. Options: rerank so the best page is passage [1], tell the prompt to prefer passages that answer the question directly, or shrink chunks so the relevant paragraph dominates.
 14. **Unsupported claims are mostly filler (Phase 3).** The unsupported 7–11 % of claims are generic characterisations rather than invented facts; a prompt line "do not add general characterisations that the passages do not state" is the cheapest experiment.
 15. **Judge cost and rate limits (Phase 3).** Faithfulness sends the full context per answer (~10k tokens); a full run needs ~40 minutes under the 30k tokens-per-minute limit and two runs must not overlap. Consider gpt-4.1-mini for faithfulness after checking agreement with gpt-4.1 on the 10-answer sheet.
 16. **Rate-limit keys for shared networks.** 20/min per IP may be too low for a church group on one Wi-Fi network; keying on the anonymous session cookie (forwarded from Next.js) would be fairer.
 17. **~~Keyword questions are unverified (RET-005).~~ Resolved in EVAL-015: all ten verified against the PDFs.** KW-01…KW-10 have pages located by searching stored chunk text and key facts drafted from that text; they need a hand check (pages and facts) before their coverage scores are trusted. Until then, read their best distances, not their coverage.
-18. **Short queries and the threshold (RET-005).** 1.1 rests on one production data point. Options if single-word queries still sit above it: raise it once the entity check exists, or let the phase 4 query rewrite expand short queries into full questions before embedding (this avoids moving the threshold at all).
+18. **~~Short queries and the threshold (RET-005).~~ Resolved in RET-006/RET-009: the analysis call expands short queries (largest answerable distance 0.984) and the threshold is 1.25.** 1.1 rests on one production data point. Options if single-word queries still sit above it: raise it once the entity check exists, or let the phase 4 query rewrite expand short queries into full questions before embedding (this avoids moving the threshold at all).

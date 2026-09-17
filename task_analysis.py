@@ -9,6 +9,7 @@ One cheap chat call turns the user's message (plus recent history, when there is
     sub_queries        for broad requests, 2-4 narrower search queries (used by RET-007)
     saint_name_filter  {"starts_with": ...} or {"contains": ...} for "saints whose names ..." (RET-007)
     named_subjects     specific saints/doctrines/councils/terms the user asks about (GEN-006)
+    in_scope           false only for requests clearly outside Christian faith and life (GEN-006)
 
 The retrieval query is what gets embedded; the model still sees the user's original words,
 so "make a table" reaches the answer prompt but no longer drags the embedding away from the
@@ -42,7 +43,8 @@ ANALYSIS_SYSTEM_PROMPT = """You prepare a user's message for a search over two C
 "broad": true if a good answer needs many separate entries or passages (listing saints by some criterion, all the fasts, differences between two churches, a study guide on a whole topic); false for a question about one person, term or teaching.
 "sub_queries": if broad is true, 2 to 4 short search queries that together cover the request, each about one aspect the user actually named or implied; do not introduce new topics. When the request compares the Coptic Church with another church or tradition, make one sub-query just that church's name as a book would write it (e.g. "Roman Catholic Church"). Otherwise [].
 "saint_name_filter": only when the user wants SEVERAL saints chosen by their name: {"starts_with": "<letters>"} (e.g. saints whose names start with G) or {"contains": "<name>"} (e.g. all the saints named Gregory). null for a question about one saint, and null otherwise.
-"named_subjects": the specific saints, people, doctrines, councils, feasts, rites or technical terms the message asks about, written as the user wrote them (e.g. ["St. Anthony of Padua"], ["purgatory"], ["filioque"], ["Council of Nicaea"]). Do not include presentation words, broad categories ("saints", "differences", "teachings"), or churches and traditions being compared ("Catholic Church", "Protestants", "Coptic Orthodox Church"). Use [] if there are none."""
+"named_subjects": the specific saints, people, doctrines, councils, feasts, rites, objects or technical terms the message asks about, written as the user wrote them. Always fill this when the message names such a thing, including doctrines of other churches and things outside religion. Examples: "Who was St. Anthony of Padua?" -> ["St. Anthony of Padua"]; "the Catholic doctrine of papal infallibility" -> ["papal infallibility"]; "the Protestant principle of sola scriptura" -> ["sola scriptura"]; "a table of Catholic teachings on purgatory" -> ["purgatory"]; "why did the Coptic Church reject the filioque" -> ["filioque"]; "teaching on cryptocurrency" -> ["cryptocurrency"]; "the Council of Nicaea" -> ["Council of Nicaea"]. Leave out presentation words, broad categories ("saints", "differences", "teachings", "fasts"), and the churches or traditions themselves ("Catholic Church", "Protestants", "Coptic Orthodox Church"): "differences between Catholicism and the Coptic Church" -> []; "saints whose names start with G" -> []. Use [] if there are none.
+"in_scope": false only if the message is clearly not about Christianity: not about God, Scripture, the Church (any Christian church), prayer, worship, sacraments, saints, Church Fathers, Church history, Christian life and ethics, or anything the Coptic catechism itself discusses (calendars and feasts, church buildings and icons, hymns and music, the history of Egypt and the Copts). Examples of false: sports results, geography, recipes, technology, novels, another religion's own teachings. Otherwise true; when unsure, true."""
 
 
 @dataclass
@@ -53,6 +55,7 @@ class TaskAnalysis:
     sub_queries: List[str] = field(default_factory=list)
     saint_name_filter: Optional[Dict[str, str]] = None
     named_subjects: List[str] = field(default_factory=list)
+    in_scope: bool = True
     ok: bool = False
     used_history: bool = False
     error: Optional[str] = None
@@ -108,6 +111,7 @@ def _parse(data: Dict[str, Any], question: str) -> TaskAnalysis:
         sub_queries=sub_queries,
         saint_name_filter=name_filter,
         named_subjects=subjects,
+        in_scope=data.get("in_scope") is not False,
         ok=True,
     )
 
