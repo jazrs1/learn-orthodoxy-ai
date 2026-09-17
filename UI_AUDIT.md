@@ -518,3 +518,36 @@ ornamental divider. I'd suggest that unless you want the full manuscript look.
 
 **Next step:** pick a direction (A, B, C, or a hybrid) and tell me which of the top-5 fixes to
 include in the first implementation pass. No site code will change until then.
+
+---
+
+## After the UI refresh (2026-09-17)
+
+The top five fixes and one font follow-up are on `ui-refresh` (DECISIONS.md UI-006 to UI-011). The
+same capture scripts produced `ui-audit/after/`, with file names that match `before/`. Neither
+folder is committed; rerun `ui-audit/tools` to regenerate them. OpenAI calls: 0.
+
+| Measure | Before | After |
+|---|---|---|
+| Lighthouse performance, mobile (home / chat / credits / contact) | 81 / 90 / 86 / 87 | 91 / 89 / 91 / 92 |
+| Lighthouse performance, desktop | 98 / 99 / 98 / 98 | 100 / 99 / 100 / 100 |
+| Mobile first contentful paint | 1.6–2.9 s | 0.8 s |
+| Mobile largest contentful paint (simulated) | 3.1–4.2 s | 3.3–3.7 s |
+| Layout shift, worst page | 0.107 (credits) | 0 |
+| Accessibility / SEO (Lighthouse) | 100 / 100 | 100 / 100 |
+| axe violations across 32 states | 4 rules, 64 nodes | 0 |
+| Pages with horizontal overflow | Arabic contact (10,000 px), Arabic 404 | none |
+| Distinct page titles | 1 | 5 |
+| Debug `console.log` lines in the browser | 17 kinds | 0 |
+
+Best Practices stays at 96 on both runs only because the audit server's dead database and
+backend return 500s.
+
+**Still open** (not part of the top five):
+- The mobile language toggle is 36 px tall.
+- Wide tables on phones still show about 1.5 columns; an edge shadow hints that they scroll.
+- Deleting a chat has no confirmation or undo.
+- The Saints browser has no letter index and no per-saint URL.
+- On-screen keyboard behavior on iOS is untested.
+- The backend doesn't send saint entry names (open question 22).
+- Publishing the PDFs is still pending permission (open question 20).

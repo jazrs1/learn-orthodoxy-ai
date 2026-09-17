@@ -302,6 +302,6 @@ try {
     await run(vp, lang);
   }
 } finally {
-  fs.writeFileSync(path.join(OUT, "_report.json"), JSON.stringify(report, null, 1));
+  fs.writeFileSync(path.join(OUT, "_capture-report.json"), JSON.stringify(report, null, 1));
   await browser.close();
 }
