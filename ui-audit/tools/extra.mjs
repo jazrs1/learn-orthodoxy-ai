@@ -9,6 +9,7 @@ await p.screenshot({ path: OUT + "en-desktop-22-about-orphan.png" });
 await ctx.close();
 // Server-rendered HTML with JS off: what an Arabic visitor sees before hydration.
 ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, javaScriptEnabled: false });
+await ctx.addCookies([{ name: "lo_lang", value: "ar", url: "http://localhost:3217" }]);
 p = await ctx.newPage();
 await p.goto("http://localhost:3217/", { waitUntil: "load" });
 await p.screenshot({ path: OUT + "ar-mobile-23-first-paint-before-hydration.png" });

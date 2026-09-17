@@ -74,6 +74,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-005: Three design directions proposed; the choice is pending](#ui-005-three-design-directions-proposed-the-choice-is-pending)
   - [UI-006: Citations link to a per-answer Sources list; books shown as text, not PDF links](#ui-006-citations-link-to-a-per-answer-sources-list-books-shown-as-text-not-pdf-links)
   - [UI-007: Design foundation — self-hosted fonts, color and type tokens, logical CSS, real icons](#ui-007-design-foundation--self-hosted-fonts-color-and-type-tokens-logical-css-real-icons)
+  - [UI-008: Broken states fixed; language remembered in a cookie and rendered on the server](#ui-008-broken-states-fixed-language-remembered-in-a-cookie-and-rendered-on-the-server)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -932,6 +933,34 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:** `orthodox-site/app/fonts.ts` (new), `orthodox-site/components/Icons.tsx` (new), `orthodox-site/public/cross-mark.png` (new), `orthodox-site/app/globals.css` (rewritten), `orthodox-site/app/layout.tsx`, `orthodox-site/components/Navbar.tsx`, `orthodox-site/components/ChatShell.tsx`, `orthodox-site/components/ChatSidebar.tsx`, `orthodox-site/app/chat/page.tsx`, `orthodox-site/app/contact/page.tsx`, `orthodox-site/app/page.tsx`, `orthodox-site/lib/i18n.ts`.
 - **Concept to learn:** *CSS logical properties.* `margin-inline-start` means "the side where lines start", which is left in English and right in Arabic, so one stylesheet serves both directions without `[dir=rtl]` overrides. Search: "CSS logical properties RTL".
 - **Revisit if:** dark mode is requested (add a `[data-theme="dark"]` / `prefers-color-scheme` block that redefines the color tokens), or Tailwind is adopted (map the tokens into `@theme`).
+
+### UI-008: Broken states fixed; language remembered in a cookie and rendered on the server
+- **Date / Part:** 2026-09-16, UI refresh fix 3
+- **Audit ref:** UI_AUDIT §3 (errors, question marks, composer), §4–§6 (Arabic contact overflow, 404, nested button, live regions, English first paint), prioritized fix 3
+- **Decisions:**
+  - **Honeypot.** It's hidden with `clip-path: inset(50%)` and `opacity: 0` at `inset-inline-start: 0` inside the (now `position: relative`) form. Nothing is placed off-screen, so there's no sideways scroll in either direction: the Arabic contact page's document width is 390 px on a 390 px phone (was 10,390). The field stays in the DOM, so bots still fill it.
+  - **Question marks.** `followUpToUserMessage` (which strips "?" and rewrites "Would you like to…" as "I would like to…") now runs only on follow-up chips, not on what the user types.
+  - **Composer.** The textarea resizes to its content on every change (a layout effect sets `height` from `scrollHeight`) up to the CSS `max-height`, then scrolls. It has an accessible name. While empty it takes the page direction, so the Arabic placeholder reads right-to-left; typed text keeps `dir="auto"`.
+  - **Errors.**
+    - A failed send no longer turns the typing placeholder into a fake answer, and no longer repeats the error as a top banner. It shows one `role="alert"` card under the question, with a Retry button that resends the same question and options (the failed optimistic message is replaced, not duplicated).
+    - `lib/chat-client.ts` throws `ApiError` with the HTTP status, and `lib/errors.ts` maps it to a translated message: 429 means busy, 400 "too long" means shorten your question, a network failure means check your connection, and anything else gets a generic message. Server text is never displayed, so strings like "Set ORTHODOX_API_URL" can't reach a visitor.
+    - The same rule applies to loading chats, deleting chats, the saints list and saint details (the saints list previously showed the "unable to load chats" text).
+    - The contact form maps the route's error codes. Validation messages are shown as written in English (and a generic translated message in Arabic); rate-limit and captcha messages are translated; configuration and provider errors show the generic message.
+  - **Auto-open loop (found while testing).** `/chat` opens the most recent conversation when no `?chat=` is given. If that request failed, the effect ran again on every render and repeated the request forever. It's now attempted once per page load (`autoOpenAttemptedRef`).
+  - **404.** `app/not-found.tsx` is a server component: cross, "404", a heading, and "home" / "ask a question" buttons, in the visitor's language, inside `<main>`, `noindex`, and it returns HTTP 404.
+  - **Nested interactive.** Each sidebar chat is an `<li>` holding two sibling buttons (open, delete), with `aria-current` on the open chat.
+  - **Screen readers.**
+    - A visually hidden `role="status"` region announces "Searching the books…" when a question is sent and "Answer ready." when it arrives. Errors use `role="alert"`.
+    - The chat page has a visually hidden `<h1>` naming the current tab, and the Sources heading level follows the outline (h2 in chat, h3 under a saint title).
+    - The typing indicator shows the same "Searching the books…" text visibly.
+    - The contact status line is a polite live region.
+  - **Language.** `LanguageProvider` writes the choice to a `lo_lang` cookie (one year, `SameSite=Lax`) as well as localStorage. The root layout reads the cookie with `cookies()` and renders `lang`, `dir` and every translated string on the server, so an Arabic visitor never sees English first. Visitors who chose Arabic before this change only have localStorage; on their first visit the provider copies it into the cookie and switches once, and from then on the server renders Arabic.
+  - **Hard-coded English removed.** The "Learn more" button (now "Ask more about this saint"), the typing label, the table region label and the navigation labels are translated.
+- **Trade-off:** reading a cookie in the root layout makes every page dynamically rendered instead of static. These pages are small and already client-heavy, so the cost is a few milliseconds of server time per request on Vercel. The alternative (locale URLs such as `/ar/...`) is a bigger routing change and was not requested.
+- **Verification:** Playwright on the production build: Arabic `/contact` scroll width equals the viewport (390 and 1440); with JavaScript disabled and the Arabic cookie, the home page is served as `lang="ar" dir="rtl"` with Arabic text; `/no-such-page` returns 404 with the Arabic heading; a four-line question grows the composer from 26 to 104 px; a mocked 500 whose body names `ORTHODOX_API_URL` shows one translated alert, keeps "What is fasting?" with its question mark, and never puts the server text in the page; Retry sends the same question once more, leaving one user message and no alert; the live region reads "Searching the books…" and then "Answer ready."; axe on that page reports no violations (after the heading-level fix).
+- **Files changed:** `orthodox-site/lib/errors.ts` (new), `orthodox-site/lib/request-language.ts` (new), `orthodox-site/app/not-found.tsx` (new), `orthodox-site/app/layout.tsx`, `orthodox-site/components/LanguageProvider.tsx`, `orthodox-site/components/ChatShell.tsx`, `orthodox-site/components/ChatSidebar.tsx`, `orthodox-site/components/AnswerWithSources.tsx`, `orthodox-site/app/chat/page.tsx`, `orthodox-site/app/contact/page.tsx`, `orthodox-site/app/page.tsx`, `orthodox-site/app/credits/page.tsx`, `orthodox-site/lib/chat-client.ts`, `orthodox-site/lib/i18n.ts`, `orthodox-site/app/globals.css`, `ui-audit/tools/capture.mjs` and `extra.mjs` (set the cookie too).
+- **Concept to learn:** *Error messages are UI, not logs.* Map failures to what the user can do next (wait, shorten, reconnect, retry) and keep diagnostic text in server logs. Search: "error message UX guidelines", "WAI-ARIA live regions".
+- **Revisit if:** the site adds locale URLs (then the cookie becomes a redirect hint only), or the backend starts returning structured error codes (map those instead of HTTP status).
 
 ## Code Cleanup
 

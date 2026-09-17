@@ -58,9 +58,9 @@ export default function HomePage() {
         if (!cancelled) {
           setConversations(nextConversations);
         }
-      } catch (loadError) {
+      } catch {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : t("unableToLoadChats"));
+          setError(t("unableToLoadChats"));
         }
       } finally {
         if (!cancelled) {
@@ -97,8 +97,8 @@ export default function HomePage() {
     try {
       await deleteConversationRequest(sessionId);
       setConversations((prev) => prev.filter((conversation) => conversation.id !== sessionId));
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : t("unableToDeleteChat"));
+    } catch {
+      setError(t("unableToDeleteChat"));
     }
   }
 

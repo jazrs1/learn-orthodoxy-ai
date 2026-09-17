@@ -12,6 +12,8 @@ type AnswerWithSourcesProps = {
   sources?: SourceRef[];
   entities?: string[];
   saintLookup?: Set<string>;
+  /** Level of the "Sources" heading, so it fits the page outline. */
+  headingLevel?: 2 | 3;
 };
 
 const COLLAPSED_COUNT = 5;
@@ -23,12 +25,14 @@ export default function AnswerWithSources({
   sources,
   entities,
   saintLookup,
+  headingLevel = 2,
 }: AnswerWithSourcesProps) {
   const { language, t } = useLanguage();
   const items = useMemo(() => toDisplaySources(sources), [sources]);
   const [expanded, setExpanded] = useState(false);
   const [highlighted, setHighlighted] = useState<number | null>(null);
   const highlightTimer = useRef<number | undefined>(undefined);
+  const Heading = headingLevel === 3 ? "h3" : "h2";
 
   useEffect(() => () => window.clearTimeout(highlightTimer.current), []);
 
@@ -81,9 +85,9 @@ export default function AnswerWithSources({
       />
       {items.length > 0 ? (
         <section className="answer-sources" aria-labelledby={`${sourceDomId(answerId, 0)}-heading`}>
-          <h3 className="answer-sources-heading" id={`${sourceDomId(answerId, 0)}-heading`}>
+          <Heading className="answer-sources-heading" id={`${sourceDomId(answerId, 0)}-heading`}>
             {t("answerSources")}
-          </h3>
+          </Heading>
           <ol className="answer-sources-list">
             {visibleItems.map((source) => {
               const details = sourceDetails(source, language);

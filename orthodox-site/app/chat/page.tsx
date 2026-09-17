@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ChatShell from "../../components/ChatShell";
-import { IconChevronDown, IconCopy, IconCheck, IconSearch } from "../../components/Icons";
+import { IconAlert, IconChevronDown, IconCopy, IconCheck, IconRetry, IconSearch } from "../../components/Icons";
 import ChatSidebar from "../../components/ChatSidebar";
 import AnswerWithSources from "../../components/AnswerWithSources";
 import { useLanguage } from "../../components/LanguageProvider";
@@ -16,6 +16,8 @@ import {
   sendChatRequest,
 } from "../../lib/chat-client";
 import { ChatMessage, ConversationDetail, ConversationSummary, SourceRef } from "../../lib/chat-types";
+import { chatErrorKey } from "../../lib/errors";
+import type { TranslationKey } from "../../lib/i18n";
 import { displaySaintName } from "../../lib/saint-display";
 
 type SaintsListResponse = {
@@ -34,6 +36,22 @@ type SaintDetailResponse = {
 
 type ChatMode = "chat" | "saints" | "catechism";
 
+type SendOptions = {
+  displayMessage?: string;
+  mode?: ChatMode;
+  hideUserMessage?: boolean;
+  /** Id of a failed user message this send replaces (Retry). */
+  retryOf?: string;
+};
+
+// A failed send: shown once as an alert under the thread with a Retry button (UI-008).
+type SendFailure = {
+  messageKey: TranslationKey;
+  question: string;
+  options?: SendOptions;
+  failedUserMessageId: string;
+};
+
 type CatechismPrompt = {
   label: string;
   prompt: string;
@@ -46,8 +64,6 @@ type CatechismTopic = {
 };
 
 const SAINTS_PAGE_SIZE = 200;
-const DEFAULT_ERROR =
-  "Sorry — I could not reach the Orthodox AI server. Please try again in a moment.";
 const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
 const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
 const CATECHISM_TOPICS: CatechismTopic[] = [
@@ -303,6 +319,9 @@ function ChatPageContent() {
   const [conversationLoading, setConversationLoading] = useState(false);
   const [conversationError, setConversationError] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sendFailure, setSendFailure] = useState<SendFailure | null>(null);
+  // Polite screen-reader announcement for the chat ("Searching…", "Answer ready.").
+  const [liveMessage, setLiveMessage] = useState("");
   const [isDraftChat, setIsDraftChat] = useState(false);
   const [composerInitialValue, setComposerInitialValue] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState("");
@@ -334,6 +353,8 @@ function ChatPageContent() {
   const createdConversationRef = useRef(false);
   const processedQuestionRef = useRef("");
   const handledChatRef = useRef("");
+  // Opening the most recent chat is attempted once; a failed load must not retry in a loop.
+  const autoOpenAttemptedRef = useRef(false);
 
   const saintLookup = useMemo(() => buildSaintLookup(saints), [saints]);
   const messages = useMemo(() => currentConversation?.messages || [], [currentConversation]);
@@ -364,8 +385,8 @@ function ChatPageContent() {
       const nextConversations = await fetchConversationList();
       setConversations(nextConversations);
       return nextConversations;
-    } catch (error) {
-      setConversationsError(error instanceof Error ? error.message : t("unableToLoadChats"));
+    } catch {
+      setConversationsError(t("unableToLoadChats"));
       return [];
     } finally {
       setConversationsLoading(false);
@@ -380,8 +401,8 @@ function ChatPageContent() {
       setCurrentConversation(conversation);
       setActiveConversationId(conversation.id);
       return conversation;
-    } catch (error) {
-      setConversationError(error instanceof Error ? error.message : t("unableToLoadChat"));
+    } catch {
+      setConversationError(t("unableToLoadChat"));
       return null;
     } finally {
       setConversationLoading(false);
@@ -483,9 +504,9 @@ function ChatPageContent() {
         setSaints((prev) => (reset ? nextNames : mergeUniqueSaints(prev, nextNames)));
         setSaintsTotal(typeof data.total === "number" ? data.total : nextNames.length);
         setSaintsError("");
-      } catch (error) {
+      } catch {
         if (requestId !== saintsRequestIdRef.current) return;
-        setSaintsError(error instanceof Error ? error.message : t("unableToLoadChats"));
+        setSaintsError(t("unableToLoadSaints"));
       } finally {
         if (requestId === saintsRequestIdRef.current) {
           saintsLoadingRef.current = false;
@@ -573,16 +594,17 @@ function ChatPageContent() {
           setActiveConversationId("");
           setCurrentConversation(null);
         }
-      } catch (error) {
-        setConversationsError(error instanceof Error ? error.message : t("unableToDeleteChat"));
+      } catch {
+        setConversationsError(t("unableToDeleteChat"));
       }
     },
     [activeConversationId, t]
   );
 
   const handleSendMessage = useCallback(
-    async (rawQuestion: string, options?: { displayMessage?: string; mode?: ChatMode; hideUserMessage?: boolean }) => {
-      const question = followUpToUserMessage(rawQuestion.trim());
+    async (rawQuestion: string, options?: SendOptions) => {
+      // The user's own wording is kept as typed, question mark included (UI-008).
+      const question = rawQuestion.trim();
       if (!question || submittingRef.current) return;
       const displayQuestion = options?.displayMessage?.trim() || question;
       const hideUserMessage = Boolean(options?.hideUserMessage);
@@ -598,7 +620,9 @@ function ChatPageContent() {
       const optimisticUserId = crypto.randomUUID();
       const optimisticAssistantId = crypto.randomUUID();
       const nextMessages = [
-        ...((currentConversation?.id === localConversationId ? currentConversation.messages : []) || []),
+        ...((currentConversation?.id === localConversationId ? currentConversation.messages : []) || []).filter(
+          (message) => message.id !== options?.retryOf
+        ),
         ...(hideUserMessage ? [] : [optimisticMessage(optimisticUserId, "user", displayQuestion)]),
         { ...optimisticMessage(optimisticAssistantId, "assistant", ""), isTyping: true },
       ];
@@ -622,6 +646,8 @@ function ChatPageContent() {
         setActiveConversationId(conversationId);
       }
       setConversationError("");
+      setSendFailure(null);
+      setLiveMessage(t("searchingSources"));
       submittingRef.current = true;
       setIsSending(true);
       const requestMode = options?.mode || activeTab;
@@ -690,19 +716,23 @@ function ChatPageContent() {
           };
         });
         setActiveConversationId(result.conversation.id);
+        setLiveMessage(t("answerReady"));
         router.replace(`/chat?chat=${encodeURIComponent(result.conversation.id)}`, { scroll: false });
       } catch (error) {
-        const message = error instanceof Error ? error.message : DEFAULT_ERROR;
-        setConversationError(message);
+        const messageKey = chatErrorKey(error);
+        setSendFailure({
+          messageKey,
+          question,
+          options,
+          failedUserMessageId: hideUserMessage ? "" : optimisticUserId,
+        });
+        setLiveMessage("");
+        // Drop the typing placeholder; the question stays visible above the alert.
         setCurrentConversation((prev) => {
           if (!prev) return prev;
           return {
             ...prev,
-            messages: prev.messages.map((entry) =>
-              entry.id === optimisticAssistantId
-                ? { ...entry, content: message, isTyping: false }
-                : entry
-            ),
+            messages: prev.messages.filter((entry) => entry.id !== optimisticAssistantId),
           };
         });
       } finally {
@@ -728,7 +758,16 @@ function ChatPageContent() {
       return;
     }
 
-    if (!chatId && !hasPendingDraft && conversations.length > 0 && !activeConversationId && !conversationLoading && !isDraftChat) {
+    if (
+      !chatId &&
+      !hasPendingDraft &&
+      conversations.length > 0 &&
+      !activeConversationId &&
+      !conversationLoading &&
+      !isDraftChat &&
+      !autoOpenAttemptedRef.current
+    ) {
+      autoOpenAttemptedRef.current = true;
       void loadConversationDetail(conversations[0].id);
     }
   }, [
@@ -841,14 +880,14 @@ function ChatPageContent() {
         body: JSON.stringify({ name: trimmed, language }),
       });
       const data = (await response.json().catch(() => ({}))) as SaintDetailResponse;
-      if (!response.ok) throw new Error(data.error || "Unable to load saint details right now.");
+      if (!response.ok) throw new Error("saint detail failed");
       setSaintDetail(data);
-    } catch (error) {
-      setSaintDetailError(error instanceof Error ? error.message : "Unable to load saint details right now.");
+    } catch {
+      setSaintDetailError(t("unableToLoadSaint"));
     } finally {
       setSaintDetailLoading(false);
     }
-  }, [language]);
+  }, [language, t]);
 
   const submitSaintLookup = useCallback((name: string) => {
     const trimmed = name.trim();
@@ -870,7 +909,7 @@ function ChatPageContent() {
       // backend receives it with the server-side history, so "it"/"this" resolve from the
       // previous turns. No answer text is pasted into the question any more (AUDIT C14/C31),
       // and the request keeps the mode the conversation is already in.
-      void handleSendMessage(option, { mode: conversationMode });
+      void handleSendMessage(followUpToUserMessage(option), { mode: conversationMode });
     },
     [conversationMode, handleSendMessage, saintLookup, submitSaintLookup]
   );
@@ -882,6 +921,14 @@ function ChatPageContent() {
     },
     [loadSaintDetail, saintLookup]
   );
+
+  const retryFailedSend = useCallback(() => {
+    if (!sendFailure) return;
+    void handleSendMessage(sendFailure.question, {
+      ...sendFailure.options,
+      retryOf: sendFailure.failedUserMessageId || undefined,
+    });
+  }, [handleSendMessage, sendFailure]);
 
   const copyMessage = useCallback(async (messageId: string, content: string) => {
     const trimmed = content.trim();
@@ -900,11 +947,22 @@ function ChatPageContent() {
 
   return (
     <main className="chat-page">
+      <h1 className="sr-only">{t(activeTab === "catechism" ? "catechism" : activeTab === "saints" ? "saintsSearch" : "chat")}</h1>
+      <div className="sr-only" role="status" aria-live="polite">
+        {liveMessage}
+      </div>
       <div className="chat-layout">
         <section className="chat-window">
           {activeTab === "chat" ? (
             <div className="chat-messages" ref={chatMessagesRef}>
-              {conversationError ? <div className="chat-empty-state">{conversationError}</div> : null}
+              {conversationError ? (
+                <div className="chat-alert" role="alert">
+                  <IconAlert className="chat-alert-icon" size={20} />
+                  <div className="chat-alert-body">
+                    <p className="chat-alert-text">{conversationError}</p>
+                  </div>
+                </div>
+              ) : null}
               {conversationLoading ? <div className="chat-empty-state">{t("loadingChat")}</div> : null}
               {!conversationLoading && messages.length ? (
                 messages.map((message) => (
@@ -928,10 +986,13 @@ function ChatPageContent() {
                       >
                         {message.role === "assistant" ? (
                           message.isTyping ? (
-                            <div className="typing-dots" aria-label="Assistant is typing" role="status">
-                              <span />
-                              <span />
-                              <span />
+                            <div className="typing-indicator">
+                              <span className="typing-dots" aria-hidden="true">
+                                <span />
+                                <span />
+                                <span />
+                              </span>
+                              <span>{t("searchingSources")}</span>
                             </div>
                           ) : (
                             <>
@@ -985,8 +1046,27 @@ function ChatPageContent() {
                     </div>
                   </div>
                 ))
-              ) : !conversationLoading && !conversationError ? (
+              ) : !conversationLoading && !conversationError && !sendFailure ? (
                 <div className="chat-empty-state">{t("startByAsking")}</div>
+              ) : null}
+              {sendFailure ? (
+                <div className="chat-alert" role="alert">
+                  <IconAlert className="chat-alert-icon" size={20} />
+                  <div className="chat-alert-body">
+                    <p className="chat-alert-text">{t(sendFailure.messageKey)}</p>
+                    <div className="chat-alert-actions">
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={retryFailedSend}
+                        disabled={isSending}
+                      >
+                        <IconRetry size={16} />
+                        <span>{t("retry")}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ) : null}
             </div>
           ) : activeTab === "catechism" ? (
@@ -1044,10 +1124,13 @@ function ChatPageContent() {
                   </div>
                   {saintDetailLoading ? (
                     <div className="chat-empty-state">
-                      <div className="typing-dots" aria-label={t("loading")} role="status">
-                        <span />
-                        <span />
-                        <span />
+                      <div className="typing-indicator" role="status">
+                        <span className="typing-dots" aria-hidden="true">
+                          <span />
+                          <span />
+                          <span />
+                        </span>
+                        <span>{t("loading")}…</span>
                       </div>
                     </div>
                   ) : null}
@@ -1057,6 +1140,7 @@ function ChatPageContent() {
                       <div className="saint-detail-answer" dir="auto">
                         <AnswerWithSources
                           answerId="saint-detail"
+                          headingLevel={3}
                           answer={saintDetail.answer}
                           sources={saintDetail.sources}
                           entities={saintDetail.entities}
@@ -1103,7 +1187,7 @@ function ChatPageContent() {
                               void handleSendMessage(question, { mode: "saints" });
                             }}
                           >
-                            Learn more
+                            {t("learnMore")}
                           </button>
                         </div>
                       ) : null}

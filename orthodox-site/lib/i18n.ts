@@ -1,6 +1,8 @@
 export type Language = "en" | "ar";
 
 export const LANGUAGE_STORAGE_KEY = "learn-orthodoxy-language";
+/** Read by the root layout so the server renders the chosen language (UI-008). */
+export const LANGUAGE_COOKIE = "lo_lang";
 
 export const translations = {
   en: {
@@ -66,6 +68,24 @@ export const translations = {
     tableLabel: "Table",
     mainNavigation: "Main",
     sectionsNavigation: "Sections",
+    errorGeneric: "Something went wrong while preparing the answer. Please try again.",
+    errorBusy: "Many people are asking right now. Please wait a moment and try again.",
+    errorTooLong: "That question is too long. Please shorten it to under 1,000 characters.",
+    errorOffline: "Couldn't reach Learn Orthodoxy. Check your connection and try again.",
+    retry: "Try again",
+    questionLabel: "Your question",
+    searchingSources: "Searching the books…",
+    answerReady: "Answer ready.",
+    unableToLoadSaints: "Couldn't load the list of saints. Please refresh the page.",
+    unableToLoadSaint: "Couldn't load this saint right now. Please try again.",
+    learnMore: "Ask more about this saint",
+    contactCheckFields: "Please check the form and try again.",
+    contactRateLimited: "Too many messages. Please wait a few minutes and try again.",
+    contactCaptchaFailed: "The verification check failed. Please try again.",
+    notFoundTitle: "Page not found",
+    notFoundText: "The page you were looking for doesn't exist or has moved.",
+    backHome: "Back to the home page",
+    startChat: "Ask a question",
   },
   ar: {
     appName: "تعلّم الأرثوذكسية",
@@ -130,6 +150,24 @@ export const translations = {
     tableLabel: "جدول",
     mainNavigation: "القائمة الرئيسية",
     sectionsNavigation: "الأقسام",
+    errorGeneric: "حدث خطأ أثناء إعداد الإجابة. حاول مرة أخرى.",
+    errorBusy: "هناك أسئلة كثيرة الآن. انتظر قليلًا ثم حاول مرة أخرى.",
+    errorTooLong: "السؤال طويل جدًا. اختصره إلى أقل من 1000 حرف.",
+    errorOffline: "تعذّر الوصول إلى الموقع. تحقّق من اتصالك وحاول مرة أخرى.",
+    retry: "حاول مرة أخرى",
+    questionLabel: "سؤالك",
+    searchingSources: "جارٍ البحث في الكتب…",
+    answerReady: "الإجابة جاهزة.",
+    unableToLoadSaints: "تعذّر تحميل قائمة القديسين. أعد تحميل الصفحة.",
+    unableToLoadSaint: "تعذّر تحميل سيرة هذا القديس الآن. حاول مرة أخرى.",
+    learnMore: "اسأل المزيد عن هذا القديس",
+    contactCheckFields: "تحقّق من البيانات وحاول مرة أخرى.",
+    contactRateLimited: "رسائل كثيرة. انتظر بضع دقائق ثم حاول مرة أخرى.",
+    contactCaptchaFailed: "فشل التحقق. حاول مرة أخرى.",
+    notFoundTitle: "الصفحة غير موجودة",
+    notFoundText: "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+    backHome: "العودة إلى الصفحة الرئيسية",
+    startChat: "اطرح سؤالًا",
   },
 } as const;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { IconSend } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
@@ -34,11 +34,19 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
   const [message, setMessage] = useState(initialValue);
   const pathname = usePathname();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { t } = useLanguage();
+  const { dir, t } = useLanguage();
 
   useEffect(() => {
     setMessage(initialValue);
   }, [initialValue]);
+
+  // Grow with the text up to the CSS max-height, then scroll inside (UI-008).
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [message]);
 
   useEffect(() => {
     function handleInsertText(event: Event) {
@@ -107,9 +115,12 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t("askPlaceholder")}
+          aria-label={t("questionLabel")}
           rows={1}
           disabled={isSubmitting}
-          dir="auto"
+          // An empty field follows the page direction so the placeholder reads correctly;
+          // typed text picks its own direction.
+          dir={message ? "auto" : dir}
         />
         <button
           type="button"

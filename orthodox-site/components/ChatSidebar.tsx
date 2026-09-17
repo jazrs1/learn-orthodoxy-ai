@@ -140,42 +140,42 @@ export default function ChatSidebar({
             ) : error ? (
               <div className="chat-sidebar-empty">{error}</div>
             ) : sessions.length ? (
-              sessions.map((session) => (
-                <button
-                  key={session.id}
-                  type="button"
-                  className={`chat-sidebar-item ${
-                    session.id === activeSessionId ? "chat-sidebar-item-active" : ""
-                  }`}
-                  onClick={() => {
-                    onSelectSession(session.id);
-                    onClose?.();
-                  }}
-                >
-                  <span className="chat-sidebar-item-title">{session.title || t("newChat")}</span>
-                  {onDeleteSession ? (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="chat-sidebar-item-delete"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onDeleteSession(session.id);
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          onDeleteSession(session.id);
-                        }
-                      }}
-                      aria-label={`${t("deleteChat")}: ${session.title || t("chat")}`}
-                    >
-                      <IconTrash size={17} />
-                    </span>
-                  ) : null}
-                </button>
-              ))
+              <ul className="chat-sidebar-items">
+                {sessions.map((session) => {
+                  const title = session.title || t("newChat");
+                  const active = session.id === activeSessionId;
+                  // Open and delete are sibling buttons: a button inside a button is invalid
+                  // and unreachable for many screen readers (UI-008).
+                  return (
+                    <li key={session.id} className={`chat-sidebar-item ${active ? "chat-sidebar-item-active" : ""}`}>
+                      <button
+                        type="button"
+                        className="chat-sidebar-item-open"
+                        aria-current={active ? "true" : undefined}
+                        onClick={() => {
+                          onSelectSession(session.id);
+                          onClose?.();
+                        }}
+                      >
+                        <span className="chat-sidebar-item-title" dir="auto">
+                          {title}
+                        </span>
+                      </button>
+                      {onDeleteSession ? (
+                        <button
+                          type="button"
+                          className="icon-button chat-sidebar-item-delete"
+                          onClick={() => onDeleteSession(session.id)}
+                          aria-label={`${t("deleteChat")}: ${title}`}
+                          title={t("deleteChat")}
+                        >
+                          <IconTrash size={17} />
+                        </button>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
             ) : (
               <div className="chat-sidebar-empty">{t("noSavedChats")}</div>
             )}

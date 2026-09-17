@@ -51,9 +51,9 @@ export default function CreditsPage() {
         if (!cancelled) {
           setConversations(nextConversations);
         }
-      } catch (loadError) {
+      } catch {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : "Unable to load chats.");
+          setError(t("unableToLoadChats"));
         }
       } finally {
         if (!cancelled) {
@@ -66,7 +66,7 @@ export default function CreditsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   function openSession(sessionId: string) {
     setMobileSidebarOpen(false);
@@ -82,8 +82,8 @@ export default function CreditsPage() {
     try {
       await deleteConversationRequest(sessionId);
       setConversations((prev) => prev.filter((conversation) => conversation.id !== sessionId));
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete chat.");
+    } catch {
+      setError(t("unableToDeleteChat"));
     }
   }
 

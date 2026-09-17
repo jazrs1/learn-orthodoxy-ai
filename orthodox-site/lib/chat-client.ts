@@ -15,10 +15,18 @@ type ChatResponse = {
   assistantMessage: ChatMessage;
 };
 
+/** A failed API call. `message` is the server's text and is not meant for display (UI-008). */
+export class ApiError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function readJson<T>(response: Response): Promise<T> {
   const data = (await response.json().catch(() => ({}))) as T & { error?: string };
   if (!response.ok) {
-    throw new Error((data as { error?: string }).error || "Request failed.");
+    throw new ApiError((data as { error?: string }).error || "Request failed.", response.status);
   }
   return data;
 }

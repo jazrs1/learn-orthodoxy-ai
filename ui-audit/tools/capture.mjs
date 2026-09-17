@@ -123,6 +123,8 @@ async function newPage(vp, lang, mockOpts, colorScheme = "light") {
   await ctx.addInitScript((l) => {
     try { localStorage.setItem("learn-orthodoxy-language", l); } catch {}
   }, lang);
+  // The site reads the language from a cookie on the server since UI-008; older builds use localStorage.
+  await ctx.addCookies([{ name: "lo_lang", value: lang, url: BASE }]);
   const page = await ctx.newPage();
   const logs = [];
   page.on("console", (m) => logs.push(`[${m.type()}] ${m.text().slice(0, 300)}`));

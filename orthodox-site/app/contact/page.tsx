@@ -7,10 +7,30 @@ import ChatSidebar from "../../components/ChatSidebar";
 import { useLanguage } from "../../components/LanguageProvider";
 import { deleteConversationRequest, fetchConversationList } from "../../lib/chat-client";
 import type { ConversationSummary } from "../../lib/chat-types";
+import type { Language, TranslationKey } from "../../lib/i18n";
 
 const DEFAULT_SUBJECT = "Learn Orthodoxy Contact";
 const AR_DEFAULT_SUBJECT = "تواصل مع تعلّم الأرثوذكسية";
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+
+// The route's validation messages are written for visitors (English only); configuration and
+// provider errors are not shown (UI-008).
+function contactErrorMessage(
+  result: { error?: string; message?: string },
+  language: Language,
+  t: (key: TranslationKey) => string
+) {
+  switch (result.error) {
+    case "validation_failed":
+      return language === "en" && result.message ? result.message : t("contactCheckFields");
+    case "rate_limited":
+      return t("contactRateLimited");
+    case "captcha_failed":
+      return t("contactCaptchaFailed");
+    default:
+      return t("unableToSend");
+  }
+}
 
 type SubmitState = {
   status: "idle" | "sending" | "success" | "error";
@@ -76,9 +96,9 @@ export default function ContactPage() {
         if (!cancelled) {
           setConversations(nextConversations);
         }
-      } catch (loadError) {
+      } catch {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : t("unableToLoadChats"));
+          setError(t("unableToLoadChats"));
         }
       } finally {
         if (!cancelled) {
@@ -107,8 +127,8 @@ export default function ContactPage() {
     try {
       await deleteConversationRequest(sessionId);
       setConversations((prev) => prev.filter((conversation) => conversation.id !== sessionId));
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : t("unableToDeleteChat"));
+    } catch {
+      setError(t("unableToDeleteChat"));
     }
   }
 
@@ -143,7 +163,7 @@ export default function ContactPage() {
       if (!response.ok) {
         setState({
           status: "error",
-          message: result.message || result.error || t("unableToSend"),
+          message: contactErrorMessage(result, language, t),
         });
         return;
       }
@@ -229,7 +249,9 @@ export default function ContactPage() {
             <button type="submit" className="button button-primary contact-submit" disabled={isSending}>
               {isSending ? t("sending") : t("sendMessage")}
             </button>
-            {state.message ? <div className={statusClassName}>{state.message}</div> : null}
+            <div className={statusClassName} role="status" aria-live="polite">
+              {state.message}
+            </div>
           </div>
         </form>
       </main>

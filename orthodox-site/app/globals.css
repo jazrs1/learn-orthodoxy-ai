@@ -628,6 +628,15 @@ textarea:focus-visible {
   overflow-y: auto;
 }
 
+.chat-sidebar-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .chat-sidebar-item {
   display: flex;
   align-items: center;
@@ -645,19 +654,6 @@ textarea:focus-visible {
 .chat-sidebar-item-active:hover {
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
-}
-
-/* Until the item markup is split (UI fix 3), the whole item is one button. */
-button.chat-sidebar-item {
-  width: 100%;
-  min-height: var(--tap-target);
-  padding: var(--space-2) var(--space-1) var(--space-2) var(--space-3);
-  border: none;
-  background: transparent;
-  color: var(--color-ink);
-  font-size: var(--text-sm);
-  text-align: start;
-  justify-content: space-between;
 }
 
 .chat-sidebar-item-open {
@@ -802,6 +798,48 @@ button.chat-sidebar-item {
 .chat-empty-state {
   padding: var(--space-4) 0;
   color: var(--color-ink-soft);
+}
+
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-ink-soft);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.chat-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid #efc9c2;
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-family: var(--font-ui);
+}
+
+.chat-alert-icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.chat-alert-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.chat-alert-text {
+  margin: 0;
+  color: var(--color-ink);
+  line-height: var(--leading-normal);
+}
+
+.chat-alert-actions {
+  margin-top: var(--space-3);
 }
 
 /* ---------- Answer content (Markdown) ---------- */
@@ -1515,6 +1553,42 @@ button.chat-sidebar-item {
   display: none;
 }
 
+/* 404 */
+
+.not-found-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: var(--space-8);
+}
+
+.not-found-cross {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--space-4);
+}
+
+.not-found-code {
+  margin: 0 0 var(--space-2);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.not-found-title::after {
+  margin-inline: auto;
+}
+
+.not-found-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
 /* Contact */
 
 .contact-form {
@@ -1557,12 +1631,23 @@ button.chat-sidebar-item {
   resize: vertical;
 }
 
+/* Hidden from people without moving it off-screen: an off-screen `left` created 10,000px of
+   sideways scroll in RTL (UI-008). Bots still see and fill the field. */
+.contact-form {
+  position: relative;
+}
+
 .contact-honeypot {
   position: absolute;
-  left: -10000px;
+  top: 0;
+  inset-inline-start: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .contact-captcha {

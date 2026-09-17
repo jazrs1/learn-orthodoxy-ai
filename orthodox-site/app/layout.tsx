@@ -3,6 +3,8 @@ import "./globals.css";
 import { fontVariables } from "./fonts";
 import Navbar from "../components/Navbar";
 import { LanguageProvider } from "../components/LanguageProvider";
+import { directionForLanguage } from "../lib/i18n";
+import { getRequestLanguage } from "../lib/request-language";
 
 const siteUrl = "https://learnorthodoxy.net";
 const siteDescription =
@@ -54,15 +56,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Server-render the visitor's chosen language so Arabic pages never flash English (UI-008).
+  const language = await getRequestLanguage();
   return (
-    <html lang="en" dir="ltr" className={fontVariables}>
+    <html lang={language} dir={directionForLanguage(language)} className={fontVariables}>
       <body>
-        <LanguageProvider>
+        <LanguageProvider initialLanguage={language}>
           <Navbar />
           {children}
         </LanguageProvider>
