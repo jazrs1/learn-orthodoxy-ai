@@ -22,3 +22,13 @@ REPO_ROOT=/path/to/repo CHROME_BIN=/path/to/chrome node og-image.mjs
 
 `fixtures.json` holds real answers copied from the phase 4 eval runs plus the saint name
 indexes; no script calls OpenAI.
+
+## Brand assets (design-traditional, UI-012)
+
+`brand.mjs` builds the logo SVGs, PNG renders and comparison sheets in `ui-audit/brand/`. It needs
+`fontkit`, `sharp` and `playwright`, and EB Garamond's variable font
+(`EBGaramond[wght].ttf` from github.com/google/fonts, `ofl/ebgaramond`, saved as `EBGaramond-VF.ttf`):
+
+```sh
+FONT_DIR=/path/to/fonts REPO_ROOT=/path/to/repo CHROME_BIN=/path/to/chrome node brand.mjs ../ui-audit/brand
+```

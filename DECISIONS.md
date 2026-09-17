@@ -78,6 +78,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-009: A landing page that explains the site; the empty history column is hidden for new visitors](#ui-009-a-landing-page-that-explains-the-site-the-empty-history-column-is-hidden-for-new-visitors)
   - [UI-010: Sharing and SEO — one site URL, per-page metadata, a real social card, no debug logging](#ui-010-sharing-and-seo--one-site-url-per-page-metadata-a-real-social-card-no-debug-logging)
   - [UI-011: Font loading trimmed after the first "after" measurement](#ui-011-font-loading-trimmed-after-the-first-after-measurement)
+  - [UI-012: Traditional redesign on its own branch; logo redrawn as outlined SVG (proposal)](#ui-012-traditional-redesign-on-its-own-branch-logo-redrawn-as-outlined-svg-proposal)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1014,6 +1015,30 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:** `orthodox-site/app/fonts.ts`, `orthodox-site/app/globals.css`.
 - **Concept to learn:** *Font subsetting and `unicode-range`.* The browser downloads a web font file only when the page uses a character in that file's range, so a single Arabic word on an English page pulls in the whole Arabic file. Search: "unicode-range font loading", "Lighthouse LCP font preload".
 - **Revisit if:** English answers start showing missing accented letters (add `latin-ext` back without preloading it).
+
+### UI-012: Traditional redesign on its own branch; logo redrawn as outlined SVG (proposal)
+- **Date / Part:** 2026-09-17, design-traditional Step 1
+- **Context:** The owner felt parts of the refreshed site look "AI-generated" and asked for a look based on liturgical books and printed catechisms. The owner's logos (`orthodox-site/public/brand/*2.png`) mixed two type families, the candlestick base overlapped the "O" of ORTHODOXY, the files had wide empty margins, and there was no small icon.
+- **Decision:** Work on `design-traditional` (off the deployed `main`), frontend only, no OpenAI calls. `ui-audit/tools/brand.mjs` rebuilds the logo as SVG with the letters converted to outlines, so the files display the same everywhere without a font:
+  - **Wordmark:** "Learn" and "ORTHODOXY" are set in EB Garamond SemiBold. The tagline "A Coptic Orthodox Study Guide" is in spaced small caps, tracked to the width of ORTHODOXY. The candlestick is redrawn so it stands clear of the letters, and the margins are trimmed. The original wording, "A Coptic Orthodox Catechism Resource", is kept as `wordmark-alt`.
+  - **Lettermark:** both letters are EB Garamond ExtraBold, and the O gets a speech-bubble tail. There are two cross versions: a Latin budded cross (as in the original) and an equal-armed Coptic cross with three points per arm.
+  - **Icon:** the O bubble alone. Its counter is filled with the background color, so the cross stays visible on light and dark browser tabs. From 180 px up, the icon uses the lettermark's O. At 16 and 32 px, a separate version is drawn on the pixel grid with whole-pixel strokes and a plain cross. The app icon is the same art on a square background.
+  - **Palette:**
+    - Paper #F8F3EA.
+    - Umber #4B3A22 (9.9:1 on paper).
+    - Gold #E4AE48 (1.8:1, large marks only).
+    - Antique gold #866426 (4.9:1, for small gold text and hairlines).
+    - Rubric red #8E2A1E (7.6:1).
+    - Dark versions: night #2A2117 with ivory #F4ECDC and gold (7.9:1).
+  - **Dark versions:** every variant also comes light-on-dark.
+- **Why:**
+  - Outlined SVG stays sharp at any size and needs no font.
+  - The mixed type families and the candlestick collision were the most visible flaws.
+  - A detailed cross turns into a gray smudge at 16 px, so the smallest sizes need their own drawing rather than a scaled-down copy.
+- **Status:** Proposal only. Renders and comparison sheets are in `ui-audit/brand/`. Nothing on the site uses the new files yet, and the original PNGs are kept. The owner still needs to choose the cross and the tagline.
+- **Files changed:** `ui-audit/tools/brand.mjs` (new), `ui-audit/tools/README.md`, `ui-audit/brand/` (new), `orthodox-site/public/brand/` (the owner's original PNGs, now committed), `.gitignore`.
+- **Concept to learn:** *Optical sizing and pixel hinting.* Small sizes need heavier strokes and simpler shapes. A stroke aligned to whole pixels stays sharp; one that falls between pixels is drawn as a gray blur. Search: "favicon design pixel grid", "optical size typography".
+- **Revisit if:** the owner redraws the logo in a design tool (then keep `brand.mjs` only as a reference), or the site gets a dark theme (the `-dark` files are ready for it).
 
 ## Code Cleanup
 
