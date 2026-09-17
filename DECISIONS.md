@@ -1123,7 +1123,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - **How it works:** numbered with Roman numerals in rubric red; Arabic uses Arabic-Indic digits. "Before you start" is a ruled note with em-dash markers instead of a tinted box.
   - **Ornament:** `components/Ornament.tsx` draws two antique-gold rules around the brand cross. It is used only between the home page's major sections and under the 404 title.
   - **Answers:**
-    - No card. The question is set in italic Garamond beside a gold rule, and each new question is separated from the previous answer by a hairline.
+    - No card for the answer. The question sits in a warm panel (surface tone, hairline border, 3 px corners) in the site serif, aligned to the end of the line, so it stays clearly apart from the answer; each new question is also separated from the previous answer by a hairline. (Set in italic beside a gold rule at first; the owner asked for a filled panel before the branch was pushed.)
     - The first paragraph of a left-to-right answer gets a two-line drop cap in rubric red (`initial-letter`, with a float fallback). Arabic gets none, because it would break the joined letters.
     - Headings are in Garamond, with small caps for the minor levels. Numbered-list markers are red, bullet markers gold.
     - Tables use book rules (a heavy rule above and below, a light rule under the header, no grid).

@@ -602,9 +602,9 @@ backend return 500s.
   instead of 3.0 s. The cause is the same extra font.
 - **Arabic pages also preload that italic (47 KB) without using it.** next/font preloads per
   route, not per language. Arabic pages already preloaded the two Latin fonts before this change.
-- **Your own questions are no longer in a filled, right-aligned bubble.** They are italic lines
-  with a gold rule, like a catechism question. The page reads more like a book, but who said what
-  now depends on italic type, the gold rule and the hairline between turns.
+- **Your own questions look different from before**, though they remain a filled panel aligned to
+  the end of the line: a warm surface tone with a hairline border and the site serif, instead of
+  the dark umber bubble with white text.
 - **Small-caps labels in EB Garamond are lighter than the old Inter labels.** On 1× Windows
   screens the navigation, buttons and form labels look thinner, although their contrast is still
   at least 7.3:1.

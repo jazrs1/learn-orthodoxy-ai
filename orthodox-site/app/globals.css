@@ -1129,6 +1129,10 @@ textarea:focus-visible {
   border-top: 1px solid var(--color-line);
 }
 
+.user-row {
+  justify-content: flex-end;
+}
+
 .message-stack {
   display: flex;
   flex-direction: column;
@@ -1137,29 +1141,37 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+/* The question is a panel of its own, set to its text and aligned to the end of the line. */
+.user-row .message-stack {
+  width: auto;
+  max-width: min(85%, 34rem);
+  align-items: flex-end;
+}
+
 .message-bubble {
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
 }
 
-/* The question reads like a catechism question: italic, under a gold rule at the start. */
+/* The question sits in a warm panel in the site serif, so it stays clearly apart from the
+   answer that follows it. */
 .user-bubble {
-  padding-inline-start: var(--space-4);
-  border-inline-start: 2px solid var(--color-gold-antique);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
   color: var(--color-primary);
-  font-family: var(--font-display-italic);
-  font-size: 1.5rem;
-  font-style: italic;
-  line-height: 1.3;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  line-height: 1.35;
   white-space: pre-wrap;
   scroll-margin-top: var(--space-6);
 }
 
 :root:lang(ar) .user-bubble {
-  font-size: 1.625rem;
-  font-style: normal;
-  line-height: 1.6;
+  font-size: 1.5rem;
+  line-height: 1.7;
 }
 
 /* Answers are set as book text: no box. */
@@ -1173,6 +1185,11 @@ textarea:focus-visible {
 .message-actions {
   display: flex;
   margin-inline-start: calc(var(--space-2) * -1);
+}
+
+.user-actions {
+  justify-content: flex-end;
+  margin-inline: 0 calc(var(--space-2) * -1);
 }
 
 .message-action-btn {
@@ -2314,7 +2331,11 @@ textarea:focus-visible {
   }
 
   .user-bubble {
-    font-size: 1.3125rem;
+    font-size: 1.25rem;
+  }
+
+  .user-row .message-stack {
+    max-width: 90%;
   }
 
   .answer-table-wrap th,
