@@ -1,0 +1,26 @@
+{
+  "about": "Hand-checked links from Katameros story ids to saints index names (CAL-003). They cover well-known saints the conservative matcher cannot link because the index spells them differently. null removes an automatic link. Each name must exist in saints-index.snapshot.json; the extractor fails otherwise.",
+  "links": {
+    "52101": { "en": "St. Mary", "ar": "السيدة العذراء مريم", "why": "Departure of the Virgin St. Mary (Tobi 21)" },
+    "90101": { "en": "St. Mary", "ar": "السيدة العذراء مريم", "why": "Nativity of the Virgin St. Mary (Pashons 1)" },
+    "82301": { "en": "St. George, the Capaducian", "ar": "القديس جرجس", "why": "St. George, prince of martyrs, of Cappadocia (Parmoute 23)" },
+    "52201": { "ar": "الأنبا أنطونيوس الكبير", "why": "St. Anthony the Great; English matched automatically" },
+    "90701": { "en": "St. Athanasius", "ar": "الأنبا أثناسيوس الرسولي", "why": "St. Athanasius the Apostolic, 20th pope (Pashons 7)" },
+    "31501": { "en": "St. Mina, the Wonder-maker", "ar": "القديس مينا العجائبي", "why": "St. Mina the wonder-worker (Hathor 15)" },
+    "51302": { "ar": "القديسة دميانة", "why": "St. Demiana (Tobi 13); no English index entry" },
+    "110701": { "en": "St. Shenouda, the Archmandrite, Abba", "ar": "الأنبا شنودة رئيس المتوحدين", "why": "St. Shenouda the Archimandrite (Epip 7)" },
+    "110801": { "ar": "الأنبا بيشوي", "why": "St. Pishoy (Epip 8); no English index entry" },
+    "102401": { "en": "St. Moses, the Black", "ar": "الأنبا موسى الأسود", "why": "St. Moses the Black, called the Ethiopian (Paone 24)" },
+    "40802": { "en": "St. Barbara", "ar": "القديسة بربارة", "why": "Sts. Barbara and Juliana (Koiahk 8); links to St. Barbara" },
+    "92601": { "ar": "القديس توماس الرسول", "why": "St. Thomas the Apostle (Pashons 26); the English index entry 'St. Thomas' is not clearly the apostle" },
+    "10103": { "ar": "برثولماوس الرسول", "why": "St. Bartholomew the Apostle (Thout 1); no English index entry" },
+    "21202": { "en": "St. Matthew, the Apostle", "ar": "متى الرسول", "why": "St. Matthew the Evangelist (Paope 12)" },
+    "40401": { "en": "St. Andrew, the Apostle", "ar": "أندراوس الرسول", "why": "St. Andrew the Apostle (Koiahk 4)" },
+    "50401": { "en": "St. John, the Apostle", "ar": "يوحنا الرسول", "why": "St. John the Evangelist (Tobi 4)" },
+    "83001": { "ar": "مارمرقس الرسول", "why": "St. Mark the Apostle and Evangelist (Parmoute 30); no English index entry" },
+    "112401": { "en": "St. Abanoub El-nehissy", "why": "St. Abanoub of Nahisa (Epip 24); Arabic matched automatically" },
+    "112302": { "en": "St. Marina", "ar": "مارينا الشهيدة", "why": "St. Marina the martyr of Antioch (Epip 23); the hermit is a separate entry" },
+    "32501": { "en": "St. Philopater Mercurius", "ar": "فيلوباتير مرقوريوس الشهيد", "why": "St. Mercurius, Abu Sefein (Hathor 25)" },
+    "72702": { "ar": "مقاريوس الكبير القديس", "why": "St. Macarius the Great (Paremhat 27); English matched automatically" }
+  }
+}

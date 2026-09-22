@@ -1,0 +1,7446 @@
+{
+ "source": "Local Chroma store via api._build_saint_record_index / api._build_arabic_saint_name_index",
+ "taken": "2026-09-22",
+ "en": [
+  {
+   "name": "St. Aaraby Ibn-doweil",
+   "aliases": []
+  },
+  {
+   "name": "St. Abachum",
+   "aliases": []
+  },
+  {
+   "name": "St. Abadion, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Abadir",
+   "aliases": []
+  },
+  {
+   "name": "St. Abahor",
+   "aliases": []
+  },
+  {
+   "name": "St. Abahor, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Abamon",
+   "aliases": []
+  },
+  {
+   "name": "St. Abamon Al-tukhy",
+   "aliases": []
+  },
+  {
+   "name": "St. Abanoub El-nehissy",
+   "aliases": []
+  },
+  {
+   "name": "St. Abanoub, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Abaskhiron Al-qualini",
+   "aliases": []
+  },
+  {
+   "name": "St. Abba Apellen",
+   "aliases": []
+  },
+  {
+   "name": "St. Abd-el Mesih, the Ethiopian",
+   "aliases": []
+  },
+  {
+   "name": "St. Abdel Mesih Salib El-massoudy",
+   "aliases": []
+  },
+  {
+   "name": "St. Abdel-malak El-hawary",
+   "aliases": []
+  },
+  {
+   "name": "St. Abdel-malek Tawadros, the Righteous",
+   "aliases": []
+  },
+  {
+   "name": "St. Abdel-mesih El-manahry, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Abdel-mesih El-masoudy, the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Abdel-mesih Ibn Abd-el-malak El-massoudy",
+   "aliases": []
+  },
+  {
+   "name": "St. Abdel-messih El-masoudy, the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Abe-fam",
+   "aliases": []
+  },
+  {
+   "name": "St. Abe-fam El-tahawy",
+   "aliases": []
+  },
+  {
+   "name": "St. Abe-fam of Ausim",
+   "aliases": []
+  },
+  {
+   "name": "St. Abercius",
+   "aliases": []
+  },
+  {
+   "name": "St. Abibus of Edessa",
+   "aliases": []
+  },
+  {
+   "name": "St. Abibus of Hermopolis",
+   "aliases": []
+  },
+  {
+   "name": "St. Abra, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Abraam, Bishop of Fayoum",
+   "aliases": []
+  },
+  {
+   "name": "St. Abraam, Disciple of Sisoes",
+   "aliases": []
+  },
+  {
+   "name": "St. Abraames, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Abramius",
+   "aliases": []
+  },
+  {
+   "name": "St. Abricius, Bishop of Hierapolis",
+   "aliases": []
+  },
+  {
+   "name": "St. Absadi, Bishop of Ebsay",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Al-hassan Al-amah",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Al-karam",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Al-makarem",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Al-malih",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Al-tayeb",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Al-yomn Yousef",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Daqn",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu El-saiid Al-kateb",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu El-yossrah",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Saad Mansour",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Salem Al-malaty",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Yassr El-qastal",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Zechariah Yehya Ebn-maqarah",
+   "aliases": []
+  },
+  {
+   "name": "St. Abu Zekry",
+   "aliases": []
+  },
+  {
+   "name": "St. Abundius",
+   "aliases": []
+  },
+  {
+   "name": "St. Acacios, Bishop of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. Acacius, Bishop of Caesarea",
+   "aliases": []
+  },
+  {
+   "name": "St. Acacius, Patriarch of Constantinople",
+   "aliases": []
+  },
+  {
+   "name": "St. Acacius, the Righteous",
+   "aliases": []
+  },
+  {
+   "name": "St. Acepsima",
+   "aliases": []
+  },
+  {
+   "name": "St. Achilleus",
+   "aliases": []
+  },
+  {
+   "name": "St. Acladius",
+   "aliases": []
+  },
+  {
+   "name": "St. Adactius",
+   "aliases": []
+  },
+  {
+   "name": "St. Adolius of Tarsus",
+   "aliases": []
+  },
+  {
+   "name": "St. Aemilius",
+   "aliases": []
+  },
+  {
+   "name": "St. Afra",
+   "aliases": []
+  },
+  {
+   "name": "St. Agabitus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Agabus, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Agape",
+   "aliases": []
+  },
+  {
+   "name": "St. Agapitus",
+   "aliases": []
+  },
+  {
+   "name": "St. Agapius",
+   "aliases": []
+  },
+  {
+   "name": "St. Agatha, the Chaste Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Agathangelus",
+   "aliases": []
+  },
+  {
+   "name": "St. Agathangelus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Agathodus",
+   "aliases": []
+  },
+  {
+   "name": "St. Agathon",
+   "aliases": []
+  },
+  {
+   "name": "St. Agathon, the Stylite",
+   "aliases": []
+  },
+  {
+   "name": "St. Agathonis",
+   "aliases": []
+  },
+  {
+   "name": "St. Agathus",
+   "aliases": []
+  },
+  {
+   "name": "St. Agnes",
+   "aliases": []
+  },
+  {
+   "name": "St. Agrippina",
+   "aliases": []
+  },
+  {
+   "name": "St. Akhila",
+   "aliases": []
+  },
+  {
+   "name": "St. Al-asăad Abu-al-kheir",
+   "aliases": []
+  },
+  {
+   "name": "St. Al-aĥzam Al-sheikh",
+   "aliases": []
+  },
+  {
+   "name": "St. Al-saiid Baraka Ben Wageh El-mahr",
+   "aliases": []
+  },
+  {
+   "name": "St. Alban",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexander",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexander Akimetes",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexander of Cappadocia",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexander, the Coal-miner Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexander, the Roman Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandra, the Queen",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandra, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandros",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandros of Licopolis",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandros, Bishop of Constantinople",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandros, Bishop of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandros, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Alexandros, the Soldier",
+   "aliases": []
+  },
+  {
+   "name": "St. Alladius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Alonis, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Alphetarius",
+   "aliases": []
+  },
+  {
+   "name": "St. Alypius",
+   "aliases": []
+  },
+  {
+   "name": "St. Amandus, Bishop of Bordeaux",
+   "aliases": []
+  },
+  {
+   "name": "St. Amator, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Amatus",
+   "aliases": []
+  },
+  {
+   "name": "St. Ambrosius",
+   "aliases": []
+  },
+  {
+   "name": "St. Ambrosius of Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. Ammonathas, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Ammonius",
+   "aliases": []
+  },
+  {
+   "name": "St. Ammonius, Bishop of Esnah",
+   "aliases": []
+  },
+  {
+   "name": "St. Ammonius, the Sakas",
+   "aliases": []
+  },
+  {
+   "name": "St. Amois",
+   "aliases": []
+  },
+  {
+   "name": "St. Amon Al-tukhy",
+   "aliases": []
+  },
+  {
+   "name": "St. Amon of Thebes, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Amon the Great, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Amon, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Amon, the Rythian",
+   "aliases": []
+  },
+  {
+   "name": "St. Amonas",
+   "aliases": []
+  },
+  {
+   "name": "St. Amphilochius, the Bishop of Iconium",
+   "aliases": []
+  },
+  {
+   "name": "St. Ampikos, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Anacletus, the Bishop of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Anania, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Anasimon",
+   "aliases": []
+  },
+  {
+   "name": "St. Anastasia",
+   "aliases": []
+  },
+  {
+   "name": "St. Anastasia Patricia",
+   "aliases": []
+  },
+  {
+   "name": "St. Anatolia",
+   "aliases": []
+  },
+  {
+   "name": "St. Anatolius",
+   "aliases": []
+  },
+  {
+   "name": "St. Anatolius, Bishop of Laodicea",
+   "aliases": []
+  },
+  {
+   "name": "St. Andrew, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Andronicus, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Anicetus, Bishop of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Anoratus, Bishop of Arles",
+   "aliases": []
+  },
+  {
+   "name": "St. Ansanus",
+   "aliases": []
+  },
+  {
+   "name": "St. Anterus, Bishop of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Anthimus, Bishop of Nicomedia",
+   "aliases": []
+  },
+  {
+   "name": "St. Anthony, Father of the Monks",
+   "aliases": [
+    "Abba Anthony",
+    "Anthony the Great",
+    "Saint Anthony the Great",
+    "Saint Anthony, Father of the Monks",
+    "St. Abba Anthony",
+    "St. Abba Anthony the Great",
+    "St. Anthony the Great",
+    "الأنبا أنطونيوس",
+    "الأنبا أنطونيوس الكبير"
+   ]
+  },
+  {
+   "name": "St. Antipas, Bishop of Pergamos",
+   "aliases": []
+  },
+  {
+   "name": "St. Anton Abu-taqiah, Muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Anysia of Thessalonica",
+   "aliases": []
+  },
+  {
+   "name": "St. Anysius, Bishop of Thessalonica",
+   "aliases": []
+  },
+  {
+   "name": "St. Apamon of Tarnut",
+   "aliases": []
+  },
+  {
+   "name": "St. Aphraates",
+   "aliases": []
+  },
+  {
+   "name": "St. Aphrates, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Aphronia",
+   "aliases": []
+  },
+  {
+   "name": "St. Apiphan",
+   "aliases": []
+  },
+  {
+   "name": "St. Apoli",
+   "aliases": []
+  },
+  {
+   "name": "St. Apollinaria",
+   "aliases": []
+  },
+  {
+   "name": "St. Apollinarius, Bishop of Ravenna",
+   "aliases": []
+  },
+  {
+   "name": "St. Apollonia",
+   "aliases": []
+  },
+  {
+   "name": "St. Apollonius, the Apologist",
+   "aliases": []
+  },
+  {
+   "name": "St. Apollonius, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Apphia",
+   "aliases": []
+  },
+  {
+   "name": "St. Apraxius",
+   "aliases": []
+  },
+  {
+   "name": "St. Apronia, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Apronianus",
+   "aliases": []
+  },
+  {
+   "name": "St. Aptalmaos",
+   "aliases": []
+  },
+  {
+   "name": "St. Aquilina",
+   "aliases": []
+  },
+  {
+   "name": "St. Arcadius",
+   "aliases": []
+  },
+  {
+   "name": "St. Archelaus",
+   "aliases": []
+  },
+  {
+   "name": "St. Archiledis, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Ardalio",
+   "aliases": []
+  },
+  {
+   "name": "St. Areston of Pella, the Apologist",
+   "aliases": []
+  },
+  {
+   "name": "St. Ari of Shatanouf",
+   "aliases": []
+  },
+  {
+   "name": "St. Arianus, Governor of Ansenah",
+   "aliases": []
+  },
+  {
+   "name": "St. Aristides, the Apologist",
+   "aliases": []
+  },
+  {
+   "name": "St. Aristobulus, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Ariston",
+   "aliases": []
+  },
+  {
+   "name": "St. Arkanius, Governor of Samannoud",
+   "aliases": []
+  },
+  {
+   "name": "St. Arminius, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Arnobius of Sicca",
+   "aliases": []
+  },
+  {
+   "name": "St. Arsecius, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Arsenius, Sousnius’ Slave",
+   "aliases": []
+  },
+  {
+   "name": "St. Arsenius, the Imperial Tutor",
+   "aliases": []
+  },
+  {
+   "name": "St. Artemius",
+   "aliases": []
+  },
+  {
+   "name": "St. Artimas",
+   "aliases": []
+  },
+  {
+   "name": "St. Asclas",
+   "aliases": []
+  },
+  {
+   "name": "St. Aspanius",
+   "aliases": []
+  },
+  {
+   "name": "St. Asterias, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Asterius",
+   "aliases": []
+  },
+  {
+   "name": "St. Asterius, the Sophist",
+   "aliases": []
+  },
+  {
+   "name": "St. Athanasius",
+   "aliases": [
+    "Athanasius the Apostolic",
+    "Saint Athanasius",
+    "Saint Athanasius the Apostolic",
+    "St. Athanasius of Alexandria",
+    "St. Athanasius the Apostolic",
+    "أثناسيوس الرسولي",
+    "البابا أثناسيوس"
+   ]
+  },
+  {
+   "name": "St. Athanasius the Apostolic,",
+   "aliases": [
+    "Athanasius the Apostolic",
+    "Saint Athanasius",
+    "Saint Athanasius the Apostolic",
+    "St. Athanasius",
+    "St. Athanasius of Alexandria",
+    "St. Athanasius the Apostolic",
+    "أثناسيوس الرسولي",
+    "البابا أثناسيوس"
+   ]
+  },
+  {
+   "name": "St. Athanasius, Bishop of Qus",
+   "aliases": []
+  },
+  {
+   "name": "St. Athanasius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Athenagoras, the Philosopher",
+   "aliases": []
+  },
+  {
+   "name": "St. Athreh, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Atrasis",
+   "aliases": []
+  },
+  {
+   "name": "St. Augustine",
+   "aliases": []
+  },
+  {
+   "name": "St. Aurelius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Austerius, Bishop of Amasia",
+   "aliases": []
+  },
+  {
+   "name": "St. Autimus",
+   "aliases": []
+  },
+  {
+   "name": "St. Autonomsy, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Awgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Axoua",
+   "aliases": []
+  },
+  {
+   "name": "St. Babylas",
+   "aliases": []
+  },
+  {
+   "name": "St. Bacchus",
+   "aliases": []
+  },
+  {
+   "name": "St. Bachiarius",
+   "aliases": []
+  },
+  {
+   "name": "St. Badaba, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Badasuis",
+   "aliases": []
+  },
+  {
+   "name": "St. Bademius",
+   "aliases": []
+  },
+  {
+   "name": "St. Bagoush",
+   "aliases": []
+  },
+  {
+   "name": "St. Balana, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Balbina, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Banamon",
+   "aliases": []
+  },
+  {
+   "name": "St. Bar-daisan",
+   "aliases": []
+  },
+  {
+   "name": "St. Barbara",
+   "aliases": []
+  },
+  {
+   "name": "St. Barbasymas, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Barhadbesaba",
+   "aliases": []
+  },
+  {
+   "name": "St. Barlaam",
+   "aliases": []
+  },
+  {
+   "name": "St. Barnabas",
+   "aliases": []
+  },
+  {
+   "name": "St. Barnabas, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Barsaba",
+   "aliases": []
+  },
+  {
+   "name": "St. Barsas, Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Barsenophius",
+   "aliases": []
+  },
+  {
+   "name": "St. Barsimaeus, Bishop of Edessa",
+   "aliases": []
+  },
+  {
+   "name": "St. Barsuma, Bishop of Nassibins",
+   "aliases": []
+  },
+  {
+   "name": "St. Barsumas, the Syrian Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Basadi, the Martyr",
+   "aliases": []
+  },
+  {
+   "name": "St. Basil",
+   "aliases": []
+  },
+  {
+   "name": "St. Basil the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Basil, Bishop of Ancyra",
+   "aliases": []
+  },
+  {
+   "name": "St. Basil, Metropolitan of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. Basilaos, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Basilides",
+   "aliases": []
+  },
+  {
+   "name": "St. Basilissa",
+   "aliases": []
+  },
+  {
+   "name": "St. Baudelius",
+   "aliases": []
+  },
+  {
+   "name": "St. Beatrice",
+   "aliases": []
+  },
+  {
+   "name": "St. Beatus",
+   "aliases": []
+  },
+  {
+   "name": "St. Bemen, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Benignus of Dijon",
+   "aliases": []
+  },
+  {
+   "name": "St. Benjamin, the Blessed Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Bertanuba, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Besada, the Bishop, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Bessarion the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Bibiana, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Biblias",
+   "aliases": []
+  },
+  {
+   "name": "St. Bikhipps El-ashmouny",
+   "aliases": []
+  },
+  {
+   "name": "St. Bipha, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Bishai Anoub",
+   "aliases": []
+  },
+  {
+   "name": "St. Bishai of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Bishai, the Hermit, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Blaesilla",
+   "aliases": []
+  },
+  {
+   "name": "St. Blandina",
+   "aliases": []
+  },
+  {
+   "name": "St. Blasius",
+   "aliases": []
+  },
+  {
+   "name": "St. Boctor",
+   "aliases": []
+  },
+  {
+   "name": "St. Boctor, the Prince",
+   "aliases": []
+  },
+  {
+   "name": "St. Boctor, the Roman",
+   "aliases": []
+  },
+  {
+   "name": "St. Boniface of Tarsus",
+   "aliases": []
+  },
+  {
+   "name": "St. Bonosus",
+   "aliases": []
+  },
+  {
+   "name": "St. Bonosus, the Anchorite",
+   "aliases": []
+  },
+  {
+   "name": "St. Boulus El-booshy, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Boulus Ibn El-ragaa",
+   "aliases": []
+  },
+  {
+   "name": "St. Boulus, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Brice, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Caecillianus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Caesarius",
+   "aliases": []
+  },
+  {
+   "name": "St. Caesarius of Nazianzus",
+   "aliases": []
+  },
+  {
+   "name": "St. Caius, the Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Calepodius",
+   "aliases": []
+  },
+  {
+   "name": "St. Callinicus",
+   "aliases": []
+  },
+  {
+   "name": "St. Calliopius",
+   "aliases": []
+  },
+  {
+   "name": "St. Candia",
+   "aliases": []
+  },
+  {
+   "name": "St. Canon",
+   "aliases": []
+  },
+  {
+   "name": "St. Capitolina",
+   "aliases": []
+  },
+  {
+   "name": "St. Capiton",
+   "aliases": []
+  },
+  {
+   "name": "St. Caprasius",
+   "aliases": []
+  },
+  {
+   "name": "St. Caprasius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Capreolus, Bishop of Carthage",
+   "aliases": []
+  },
+  {
+   "name": "St. Carion, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Carpocrates, the Gnostic",
+   "aliases": []
+  },
+  {
+   "name": "St. Carpus",
+   "aliases": []
+  },
+  {
+   "name": "St. Cassian of Imola",
+   "aliases": []
+  },
+  {
+   "name": "St. Cassian of Tangier",
+   "aliases": []
+  },
+  {
+   "name": "St. Cassian, John",
+   "aliases": []
+  },
+  {
+   "name": "St. Cassiodorus, Magnus Aurelius",
+   "aliases": []
+  },
+  {
+   "name": "St. Castor, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Castor, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Castorina",
+   "aliases": []
+  },
+  {
+   "name": "St. Castrutius of Pannonia, the Blind",
+   "aliases": []
+  },
+  {
+   "name": "St. Castulus",
+   "aliases": []
+  },
+  {
+   "name": "St. Cecilius",
+   "aliases": []
+  },
+  {
+   "name": "St. Celsus",
+   "aliases": []
+  },
+  {
+   "name": "St. Cerdo",
+   "aliases": []
+  },
+  {
+   "name": "St. Cerinthus, the Heretic",
+   "aliases": []
+  },
+  {
+   "name": "St. Christina of Bolsena",
+   "aliases": []
+  },
+  {
+   "name": "St. Christodoulas",
+   "aliases": []
+  },
+  {
+   "name": "St. Christopher",
+   "aliases": []
+  },
+  {
+   "name": "St. Christopher, the Bearer of Christ",
+   "aliases": []
+  },
+  {
+   "name": "St. Christophorus, the Bearer of Christ",
+   "aliases": []
+  },
+  {
+   "name": "St. Chronius",
+   "aliases": []
+  },
+  {
+   "name": "St. Chrysippus",
+   "aliases": []
+  },
+  {
+   "name": "St. Chrysogonus",
+   "aliases": []
+  },
+  {
+   "name": "St. Chrysologus, Peter",
+   "aliases": []
+  },
+  {
+   "name": "St. Claudia",
+   "aliases": []
+  },
+  {
+   "name": "St. Clement of Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. Clement, Bishop of Ancyra",
+   "aliases": []
+  },
+  {
+   "name": "St. Cleopas, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Cletus, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Colluthus",
+   "aliases": []
+  },
+  {
+   "name": "St. Colluthus of Ansenah",
+   "aliases": []
+  },
+  {
+   "name": "St. Collyris",
+   "aliases": []
+  },
+  {
+   "name": "St. Columba, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Commodianus",
+   "aliases": []
+  },
+  {
+   "name": "St. Companions",
+   "aliases": []
+  },
+  {
+   "name": "St. Conan",
+   "aliases": []
+  },
+  {
+   "name": "St. Concordius",
+   "aliases": []
+  },
+  {
+   "name": "St. Conita",
+   "aliases": []
+  },
+  {
+   "name": "St. Constantine the Great, Emperor",
+   "aliases": []
+  },
+  {
+   "name": "St. Cornelius, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Cornelius, the Centurion",
+   "aliases": []
+  },
+  {
+   "name": "St. Cornius, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Cragon, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Cronius, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyprian, Bishop of Carthage",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyriacus",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyriacus, Bishop of Bahnassa",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyriacus, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyril Maqar, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyril of Caesarea",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyril, Metropolitan of Ethiopia",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyril, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Cyrus",
+   "aliases": []
+  },
+  {
+   "name": "St. Dabamon",
+   "aliases": []
+  },
+  {
+   "name": "St. Dacianus",
+   "aliases": []
+  },
+  {
+   "name": "St. Dadiso, the Persian",
+   "aliases": []
+  },
+  {
+   "name": "St. Dalosham",
+   "aliases": []
+  },
+  {
+   "name": "St. Damian",
+   "aliases": []
+  },
+  {
+   "name": "St. Daniel",
+   "aliases": []
+  },
+  {
+   "name": "St. Daniel, Hegumen of Scetis",
+   "aliases": []
+  },
+  {
+   "name": "St. Daniel, the Stylite",
+   "aliases": []
+  },
+  {
+   "name": "St. Daoud El-macary",
+   "aliases": []
+  },
+  {
+   "name": "St. Daoud Ibn-gabriel, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Dasius",
+   "aliases": []
+  },
+  {
+   "name": "St. Dasya, the Soldier",
+   "aliases": []
+  },
+  {
+   "name": "St. Degnianus, the Governor",
+   "aliases": []
+  },
+  {
+   "name": "St. Delphinus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Demetrias, the Noble Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Demetrius",
+   "aliases": []
+  },
+  {
+   "name": "St. Demophilus of Constantinople",
+   "aliases": []
+  },
+  {
+   "name": "St. Denis of Paris",
+   "aliases": []
+  },
+  {
+   "name": "St. Deodora",
+   "aliases": []
+  },
+  {
+   "name": "St. Desideratus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Desiderius, the Presbyter",
+   "aliases": []
+  },
+  {
+   "name": "St. Dianus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Didymus",
+   "aliases": []
+  },
+  {
+   "name": "St. Didymus, the Blind",
+   "aliases": []
+  },
+  {
+   "name": "St. Didymus, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Didymus, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Dimas, the Good Thief",
+   "aliases": []
+  },
+  {
+   "name": "St. Dimides",
+   "aliases": []
+  },
+  {
+   "name": "St. Diocles",
+   "aliases": []
+  },
+  {
+   "name": "St. Diodore, Bishop of Tarsus",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionesa, the Deaconess",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionisius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionysia",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionysius",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionysius Bar-salibi",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionysius Exiguus",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionysius, Bishop of Corinth",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionysius, Bishop of Milan",
+   "aliases": []
+  },
+  {
+   "name": "St. Dionysius, the Areopagite",
+   "aliases": []
+  },
+  {
+   "name": "St. Dioscorus",
+   "aliases": []
+  },
+  {
+   "name": "St. Dioscorus of Thebes, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Dolagi, Mother",
+   "aliases": []
+  },
+  {
+   "name": "St. Domadius, the Syrian",
+   "aliases": []
+  },
+  {
+   "name": "St. Dometius, the Persian",
+   "aliases": []
+  },
+  {
+   "name": "St. Dominica, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Domninus",
+   "aliases": []
+  },
+  {
+   "name": "St. Donatus Magnus, Bishop of Carthage",
+   "aliases": []
+  },
+  {
+   "name": "St. Donatus, Bishop of Arezzo",
+   "aliases": []
+  },
+  {
+   "name": "St. Dorothea",
+   "aliases": []
+  },
+  {
+   "name": "St. Dorotheus",
+   "aliases": []
+  },
+  {
+   "name": "St. Dorotheus of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Dorotheus, Bishop of Thessalonica",
+   "aliases": []
+  },
+  {
+   "name": "St. Dorotheus, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Dorotheus, the Nestorian",
+   "aliases": []
+  },
+  {
+   "name": "St. Dorotheus, the Tabaisy",
+   "aliases": []
+  },
+  {
+   "name": "St. Dorothy, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Dositheus, the Heretic",
+   "aliases": []
+  },
+  {
+   "name": "St. Dracontius",
+   "aliases": []
+  },
+  {
+   "name": "St. Dulcidius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Al-abaĥ",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Al-barakat",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Al-dohieri",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Al-makin",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Al-miqat",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Al-oskof",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Al-saăed",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Baqar",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Kabar",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Kalil",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Katama",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Kateb Qaisar",
+   "aliases": []
+  },
+  {
+   "name": "St. Ebn Sebaă",
+   "aliases": []
+  },
+  {
+   "name": "St. Ecclesiastical Terms",
+   "aliases": []
+  },
+  {
+   "name": "St. Elian El-ĥemsy",
+   "aliases": []
+  },
+  {
+   "name": "St. Elijah, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Elijah, the Anchorite",
+   "aliases": []
+  },
+  {
+   "name": "St. Elijah, the Eunuch",
+   "aliases": []
+  },
+  {
+   "name": "St. Elijah, the Hermit, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Elijah, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Elligizbius, Bishop of Herapolis",
+   "aliases": []
+  },
+  {
+   "name": "St. Elpidius",
+   "aliases": []
+  },
+  {
+   "name": "St. Encratis",
+   "aliases": []
+  },
+  {
+   "name": "St. Ephothes",
+   "aliases": []
+  },
+  {
+   "name": "St. Ephraim",
+   "aliases": []
+  },
+  {
+   "name": "St. Ephraim the Syrian",
+   "aliases": []
+  },
+  {
+   "name": "St. Epima",
+   "aliases": []
+  },
+  {
+   "name": "St. Epimachus Al-farmi",
+   "aliases": []
+  },
+  {
+   "name": "St. Epiphanius, Bishop of Salamis",
+   "aliases": []
+  },
+  {
+   "name": "St. Erasmus, Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Eucarbus, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Eucherius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Eudocia",
+   "aliases": []
+  },
+  {
+   "name": "St. Eugenia, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Eugenius",
+   "aliases": []
+  },
+  {
+   "name": "St. Eugraphus of Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. Eulalia, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Eulalius, Bishop of Nazianzus",
+   "aliases": []
+  },
+  {
+   "name": "St. Eulogius, the Confessor Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Eulogius, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Eulogius, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Eulogius, the Stone-cutter",
+   "aliases": []
+  },
+  {
+   "name": "St. Euphemia",
+   "aliases": []
+  },
+  {
+   "name": "St. Euphrasia",
+   "aliases": []
+  },
+  {
+   "name": "St. Euphrasia, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Euphrosina",
+   "aliases": []
+  },
+  {
+   "name": "St. Euphrosyna, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Euplius",
+   "aliases": []
+  },
+  {
+   "name": "St. Eupraxia",
+   "aliases": []
+  },
+  {
+   "name": "St. Eupraxis, the Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Euprepios",
+   "aliases": []
+  },
+  {
+   "name": "St. Eupsychius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius of Cremona",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius, Bishop of Caesarea Cappadocia",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius, Bishop of Caesarea Palestine",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius, Bishop of Laodicea",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius, Bishop of Samosata",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius, Bishop of Vercelli",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusebius, the Priest of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Eusegnius, the Soldier",
+   "aliases": []
+  },
+  {
+   "name": "St. Eustathius, Patriarch of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Eustochium",
+   "aliases": []
+  },
+  {
+   "name": "St. Euthalia",
+   "aliases": []
+  },
+  {
+   "name": "St. Euthalius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Euthymius, the Great Abbot",
+   "aliases": []
+  },
+  {
+   "name": "St. Eutropius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Eutropius, the Eunuch",
+   "aliases": []
+  },
+  {
+   "name": "St. Eutropius, the Reader of Constantinople",
+   "aliases": []
+  },
+  {
+   "name": "St. Eutyches",
+   "aliases": []
+  },
+  {
+   "name": "St. Eutychia",
+   "aliases": []
+  },
+  {
+   "name": "St. Eutychia, the Repentant",
+   "aliases": []
+  },
+  {
+   "name": "St. Eutychian, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Eutychus",
+   "aliases": []
+  },
+  {
+   "name": "St. Evantius",
+   "aliases": []
+  },
+  {
+   "name": "St. Exsuperantius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Exsuperius, Bishop of Toulouse",
+   "aliases": []
+  },
+  {
+   "name": "St. Ezekiel, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Fabian, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Fabiola",
+   "aliases": []
+  },
+  {
+   "name": "St. Fabius",
+   "aliases": []
+  },
+  {
+   "name": "St. Fahd Ibn Ibrahim",
+   "aliases": []
+  },
+  {
+   "name": "St. Faith, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Fam of Osim",
+   "aliases": []
+  },
+  {
+   "name": "St. Fathers",
+   "aliases": []
+  },
+  {
+   "name": "St. Fausta",
+   "aliases": []
+  },
+  {
+   "name": "St. Fausta, the Honorable",
+   "aliases": []
+  },
+  {
+   "name": "St. Faustus, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Fawziah Isĥaq, the Righteous Woman",
+   "aliases": []
+  },
+  {
+   "name": "St. Febronia, the Syrian",
+   "aliases": []
+  },
+  {
+   "name": "St. Febronia, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Feinsinsius",
+   "aliases": []
+  },
+  {
+   "name": "St. Felician, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Felicissimus, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Felicitas",
+   "aliases": []
+  },
+  {
+   "name": "St. Felicity",
+   "aliases": []
+  },
+  {
+   "name": "St. Felicula",
+   "aliases": []
+  },
+  {
+   "name": "St. Felix",
+   "aliases": []
+  },
+  {
+   "name": "St. Felix II, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Felix, Bishop of Bagai",
+   "aliases": []
+  },
+  {
+   "name": "St. Felix, Bishop of Thiabara",
+   "aliases": []
+  },
+  {
+   "name": "St. Felix, Bishop of Trier",
+   "aliases": []
+  },
+  {
+   "name": "St. Felix, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Ferreolus",
+   "aliases": []
+  },
+  {
+   "name": "St. Festus",
+   "aliases": []
+  },
+  {
+   "name": "St. Fidelis",
+   "aliases": []
+  },
+  {
+   "name": "St. Fidentius",
+   "aliases": []
+  },
+  {
+   "name": "St. Fidentius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Firmilian, Bishop of Caesarea",
+   "aliases": []
+  },
+  {
+   "name": "St. Firminus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Firmus",
+   "aliases": []
+  },
+  {
+   "name": "St. Florentius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Florian",
+   "aliases": []
+  },
+  {
+   "name": "St. Florina",
+   "aliases": []
+  },
+  {
+   "name": "St. Fortunatus",
+   "aliases": []
+  },
+  {
+   "name": "St. Fostina",
+   "aliases": []
+  },
+  {
+   "name": "St. Freska, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Fromentius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Frontasius",
+   "aliases": []
+  },
+  {
+   "name": "St. Fronton",
+   "aliases": []
+  },
+  {
+   "name": "St. Fructuosus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Fusca",
+   "aliases": []
+  },
+  {
+   "name": "St. Gabriel Ibn Nagaĥ, the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Gadanus, the Palestinian",
+   "aliases": []
+  },
+  {
+   "name": "St. Gadid",
+   "aliases": []
+  },
+  {
+   "name": "St. Gallicanus",
+   "aliases": []
+  },
+  {
+   "name": "St. Gatian, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Gawargy",
+   "aliases": []
+  },
+  {
+   "name": "St. Gelasius",
+   "aliases": []
+  },
+  {
+   "name": "St. Gelasius of Caesarea",
+   "aliases": []
+  },
+  {
+   "name": "St. Gelasius of Cyzicus",
+   "aliases": []
+  },
+  {
+   "name": "St. Gelasius, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Genesius of Arles",
+   "aliases": []
+  },
+  {
+   "name": "St. Genesius, the Clown",
+   "aliases": []
+  },
+  {
+   "name": "St. Genevieve",
+   "aliases": []
+  },
+  {
+   "name": "St. Gennadius I of Constantinople",
+   "aliases": []
+  },
+  {
+   "name": "St. Genulf",
+   "aliases": []
+  },
+  {
+   "name": "St. George of Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. George, the Capaducian",
+   "aliases": []
+  },
+  {
+   "name": "St. George, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Germanicus",
+   "aliases": []
+  },
+  {
+   "name": "St. Germanus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Ghalion, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Ghaly, the Muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Ghlukos, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Gisslimier",
+   "aliases": []
+  },
+  {
+   "name": "St. Glathinos",
+   "aliases": []
+  },
+  {
+   "name": "St. Glyceria, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Gordios",
+   "aliases": []
+  },
+  {
+   "name": "St. Gorgonia",
+   "aliases": []
+  },
+  {
+   "name": "St. Gorgonius",
+   "aliases": []
+  },
+  {
+   "name": "St. Gregory of Nazianzus",
+   "aliases": []
+  },
+  {
+   "name": "St. Gregory of Nyssa",
+   "aliases": []
+  },
+  {
+   "name": "St. Gregory of Spoleto",
+   "aliases": []
+  },
+  {
+   "name": "St. Gregory the Armenian",
+   "aliases": []
+  },
+  {
+   "name": "St. Gregory, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Gregory, the Wonder Maker",
+   "aliases": []
+  },
+  {
+   "name": "St. Grimonia, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Guadentius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Guirgis Abu Mansour El-tuchi, the Archon",
+   "aliases": []
+  },
+  {
+   "name": "St. Guirgis El-gohary",
+   "aliases": []
+  },
+  {
+   "name": "St. Guirgis El-mozaĥem",
+   "aliases": []
+  },
+  {
+   "name": "St. Guirgis Ibn-el-ăamid",
+   "aliases": []
+  },
+  {
+   "name": "St. Guirgis, the Ascetic",
+   "aliases": []
+  },
+  {
+   "name": "St. Habibus",
+   "aliases": []
+  },
+  {
+   "name": "St. Hadrian",
+   "aliases": []
+  },
+  {
+   "name": "St. Halias, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Hanania, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Hananias",
+   "aliases": []
+  },
+  {
+   "name": "St. Hannah",
+   "aliases": []
+  },
+  {
+   "name": "St. Hanolius, the Prince",
+   "aliases": []
+  },
+  {
+   "name": "St. Hanus",
+   "aliases": []
+  },
+  {
+   "name": "St. Hegemonius",
+   "aliases": []
+  },
+  {
+   "name": "St. Hegesippus, the Historian",
+   "aliases": []
+  },
+  {
+   "name": "St. Helena, the Empress",
+   "aliases": []
+  },
+  {
+   "name": "St. Helias, the Eunuch",
+   "aliases": []
+  },
+  {
+   "name": "St. Heliconia",
+   "aliases": []
+  },
+  {
+   "name": "St. Helidorus, Bishop of Altinum",
+   "aliases": []
+  },
+  {
+   "name": "St. Heliodorus, Bishop of Bezabde",
+   "aliases": []
+  },
+  {
+   "name": "St. Helpis, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Hemetherius",
+   "aliases": []
+  },
+  {
+   "name": "St. Henana",
+   "aliases": []
+  },
+  {
+   "name": "St. Hepatius, Bishop of Gangra",
+   "aliases": []
+  },
+  {
+   "name": "St. Heracleon",
+   "aliases": []
+  },
+  {
+   "name": "St. Heraclides",
+   "aliases": []
+  },
+  {
+   "name": "St. Hermes",
+   "aliases": []
+  },
+  {
+   "name": "St. Hermes, Bishop of Salona",
+   "aliases": []
+  },
+  {
+   "name": "St. Hermias",
+   "aliases": []
+  },
+  {
+   "name": "St. Hermogenes, Bishop of Farma",
+   "aliases": []
+  },
+  {
+   "name": "St. Hero",
+   "aliases": []
+  },
+  {
+   "name": "St. Hero, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Hesychius",
+   "aliases": []
+  },
+  {
+   "name": "St. Hesychius of Egypt",
+   "aliases": []
+  },
+  {
+   "name": "St. Hesychius of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. Hesychius, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Hieracas, the Heretic",
+   "aliases": []
+  },
+  {
+   "name": "St. Hieraiisy, the Nun",
+   "aliases": []
+  },
+  {
+   "name": "St. Hierax, the Teacher",
+   "aliases": []
+  },
+  {
+   "name": "St. Hierothius",
+   "aliases": []
+  },
+  {
+   "name": "St. Hilaria",
+   "aliases": []
+  },
+  {
+   "name": "St. Hilarion the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Hilarius, Bishop of Aquileia",
+   "aliases": []
+  },
+  {
+   "name": "St. Hilarius, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Hilary, Bishop of Arles",
+   "aliases": []
+  },
+  {
+   "name": "St. Hilary, Bishop of Poitiérs",
+   "aliases": []
+  },
+  {
+   "name": "St. Hilary, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Hippolytus",
+   "aliases": []
+  },
+  {
+   "name": "St. Hippolytus of Portus",
+   "aliases": []
+  },
+  {
+   "name": "St. Hippolytus, the Roman Pope",
+   "aliases": []
+  },
+  {
+   "name": "St. Honoratus of Arles",
+   "aliases": []
+  },
+  {
+   "name": "St. Hor, the Abbot",
+   "aliases": []
+  },
+  {
+   "name": "St. Hormisdas",
+   "aliases": []
+  },
+  {
+   "name": "St. Horsiesius",
+   "aliases": []
+  },
+  {
+   "name": "St. Hosius, Bishop of Cordoba",
+   "aliases": []
+  },
+  {
+   "name": "St. Hosna, the Jewish Chaste",
+   "aliases": []
+  },
+  {
+   "name": "St. Hyacinth",
+   "aliases": []
+  },
+  {
+   "name": "St. Hydra, Bishop of Aswan",
+   "aliases": []
+  },
+  {
+   "name": "St. Hyginus, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Hypatius, the Abbot",
+   "aliases": []
+  },
+  {
+   "name": "St. Hyperechius",
+   "aliases": []
+  },
+  {
+   "name": "St. Iambus, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Ibn-abu-alfada’el, Al-mufaddal Al-masry",
+   "aliases": []
+  },
+  {
+   "name": "St. Ibrahim Al-gohary",
+   "aliases": []
+  },
+  {
+   "name": "St. Ibrahim Bek Nakhla",
+   "aliases": []
+  },
+  {
+   "name": "St. Ibrahim Raphael Al-tukhy",
+   "aliases": []
+  },
+  {
+   "name": "St. Ibrahim, the Anchorite",
+   "aliases": []
+  },
+  {
+   "name": "St. Ignatius, the Theophorus",
+   "aliases": []
+  },
+  {
+   "name": "St. Innocent, Bishop of Tortona",
+   "aliases": []
+  },
+  {
+   "name": "St. Innocent, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Irenaeus, Bishop of Lyon",
+   "aliases": []
+  },
+  {
+   "name": "St. Irene",
+   "aliases": []
+  },
+  {
+   "name": "St. Irenus",
+   "aliases": []
+  },
+  {
+   "name": "St. Iris",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac Al-defrawy",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac Al-hourini",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac Al-tabaisy",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac of Shama",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac, Priest of the Cells",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac, Priest of the Scetis",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaac, the Syrian",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaak",
+   "aliases": []
+  },
+  {
+   "name": "St. Isaiah of the Scetis, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Ischyion",
+   "aliases": []
+  },
+  {
+   "name": "St. Isidore of Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. Isidore of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Isidore of Farma",
+   "aliases": []
+  },
+  {
+   "name": "St. Isidore, Priest of Scetis, St.1",
+   "aliases": []
+  },
+  {
+   "name": "St. Isidore, the Soldier",
+   "aliases": []
+  },
+  {
+   "name": "St. Isy",
+   "aliases": []
+  },
+  {
+   "name": "St. Jacob Baradaeus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Jacob El-meshreqi, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Jacob, Bishop of Cairo",
+   "aliases": []
+  },
+  {
+   "name": "St. Jacob, Bishop of Nassibin",
+   "aliases": []
+  },
+  {
+   "name": "St. Jacob, the Repentant",
+   "aliases": []
+  },
+  {
+   "name": "St. Jacob, the Young Man",
+   "aliases": []
+  },
+  {
+   "name": "St. Jacobus",
+   "aliases": []
+  },
+  {
+   "name": "St. James the Great, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. James the Just, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. James, the Mangled",
+   "aliases": []
+  },
+  {
+   "name": "St. James, the Patriarch of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Januarius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Jared, the Ethiopian",
+   "aliases": []
+  },
+  {
+   "name": "St. Jason, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Jennadius, Priest of Marseille",
+   "aliases": []
+  },
+  {
+   "name": "St. Jeremiah",
+   "aliases": []
+  },
+  {
+   "name": "St. Jeremiah, the Monk of Menoufia",
+   "aliases": []
+  },
+  {
+   "name": "St. Jerome",
+   "aliases": []
+  },
+  {
+   "name": "St. Joanna, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Joannes",
+   "aliases": []
+  },
+  {
+   "name": "St. Joannes, Bishop of Burullus",
+   "aliases": []
+  },
+  {
+   "name": "St. Joannes, the Hegumenus of Scetis",
+   "aliases": []
+  },
+  {
+   "name": "St. Joannes, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Joannes, the Scribe",
+   "aliases": []
+  },
+  {
+   "name": "St. Joannes, the Short",
+   "aliases": []
+  },
+  {
+   "name": "St. Job, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. John",
+   "aliases": []
+  },
+  {
+   "name": "St. John Chrysostom",
+   "aliases": []
+  },
+  {
+   "name": "St. John El-qallubi, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. John II, Bishop of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. John Kama",
+   "aliases": []
+  },
+  {
+   "name": "St. John Neămat-allah, Bishop of Burullus",
+   "aliases": []
+  },
+  {
+   "name": "St. John of Heraclea",
+   "aliases": []
+  },
+  {
+   "name": "St. John of Kilex",
+   "aliases": []
+  },
+  {
+   "name": "St. John of Lycopolis",
+   "aliases": []
+  },
+  {
+   "name": "St. John of Nicomedia",
+   "aliases": []
+  },
+  {
+   "name": "St. John of Nikiou, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. John of Persia",
+   "aliases": []
+  },
+  {
+   "name": "St. John of Sinai",
+   "aliases": []
+  },
+  {
+   "name": "St. John the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. John, Bishop of Gaza",
+   "aliases": []
+  },
+  {
+   "name": "St. John, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. John, the Egyptian Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. John, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. John, the Officer",
+   "aliases": []
+  },
+  {
+   "name": "St. John, the Soldier",
+   "aliases": []
+  },
+  {
+   "name": "St. Jonah, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Jonias, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Jonius",
+   "aliases": []
+  },
+  {
+   "name": "St. Joseph Barsabas, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Joseph of Anifo, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Joseph of Arimathea",
+   "aliases": []
+  },
+  {
+   "name": "St. Joseph of Palestine",
+   "aliases": []
+  },
+  {
+   "name": "St. Judas Iscariot, the Traitor",
+   "aliases": []
+  },
+  {
+   "name": "St. Judas, Bishop of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. Jude, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Julia of Corsica",
+   "aliases": []
+  },
+  {
+   "name": "St. Julian",
+   "aliases": []
+  },
+  {
+   "name": "St. Julian of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Julian Sabas",
+   "aliases": []
+  },
+  {
+   "name": "St. Juliana",
+   "aliases": []
+  },
+  {
+   "name": "St. Julianus of Ancyra",
+   "aliases": []
+  },
+  {
+   "name": "St. Julianus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Julianus, the Repentant",
+   "aliases": []
+  },
+  {
+   "name": "St. Julitta",
+   "aliases": []
+  },
+  {
+   "name": "St. Julius El-aqfahsy",
+   "aliases": []
+  },
+  {
+   "name": "St. Julius Sextus Africanus",
+   "aliases": []
+  },
+  {
+   "name": "St. Justiana, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Justina",
+   "aliases": []
+  },
+  {
+   "name": "St. Justinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Justus",
+   "aliases": []
+  },
+  {
+   "name": "St. Justus, Bishop of Lyons",
+   "aliases": []
+  },
+  {
+   "name": "St. Justus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Justus, the Young Youth",
+   "aliases": []
+  },
+  {
+   "name": "St. Juvenal, Bishop of Narni",
+   "aliases": []
+  },
+  {
+   "name": "St. Kaleb, the King",
+   "aliases": []
+  },
+  {
+   "name": "St. Kaoo",
+   "aliases": []
+  },
+  {
+   "name": "St. Karas, the Hermit Saint",
+   "aliases": []
+  },
+  {
+   "name": "St. Kesenthia, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Kiel, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Kiswis, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Klug, the Priest, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Kosma, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Kyria, Mother",
+   "aliases": []
+  },
+  {
+   "name": "St. Lactantius, the African",
+   "aliases": []
+  },
+  {
+   "name": "St. Lampetius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Latronianus",
+   "aliases": []
+  },
+  {
+   "name": "St. Latson",
+   "aliases": []
+  },
+  {
+   "name": "St. Laurence",
+   "aliases": []
+  },
+  {
+   "name": "St. Lazarus, Jesus’ Friend",
+   "aliases": []
+  },
+  {
+   "name": "St. Lazarus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Leander",
+   "aliases": []
+  },
+  {
+   "name": "St. Leocadia, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Leonatius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Leonides",
+   "aliases": []
+  },
+  {
+   "name": "St. Leonilla",
+   "aliases": []
+  },
+  {
+   "name": "St. Leontius",
+   "aliases": []
+  },
+  {
+   "name": "St. Leontius of Tripoli",
+   "aliases": []
+  },
+  {
+   "name": "St. Leopardus",
+   "aliases": []
+  },
+  {
+   "name": "St. Libaria",
+   "aliases": []
+  },
+  {
+   "name": "St. Liberalis",
+   "aliases": []
+  },
+  {
+   "name": "St. Linus, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Lipanius",
+   "aliases": []
+  },
+  {
+   "name": "St. Liqanus",
+   "aliases": []
+  },
+  {
+   "name": "St. Loman, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Longinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Longinus, the Soldier",
+   "aliases": []
+  },
+  {
+   "name": "St. Lot, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Lotf-allah Abu-shaker",
+   "aliases": []
+  },
+  {
+   "name": "St. Lotf-allah Abu-yousef",
+   "aliases": []
+  },
+  {
+   "name": "St. Lucas",
+   "aliases": []
+  },
+  {
+   "name": "St. Lucia, the Intercessor of the Blind",
+   "aliases": []
+  },
+  {
+   "name": "St. Lucian",
+   "aliases": []
+  },
+  {
+   "name": "St. Lucian of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Lucius, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Lucius, King of Britain",
+   "aliases": []
+  },
+  {
+   "name": "St. Lucius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Luke, the Stylite",
+   "aliases": []
+  },
+  {
+   "name": "St. Lupus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Lyariah",
+   "aliases": []
+  },
+  {
+   "name": "St. Lycia",
+   "aliases": []
+  },
+  {
+   "name": "St. Macarius",
+   "aliases": []
+  },
+  {
+   "name": "St. Macarius Magnes",
+   "aliases": []
+  },
+  {
+   "name": "St. Macarius of Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. Macarius, Bishop of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. Macarius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Macarius, the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Macarius, the Libyan",
+   "aliases": []
+  },
+  {
+   "name": "St. Macarius, the Son of Basilides",
+   "aliases": []
+  },
+  {
+   "name": "St. Macedonius",
+   "aliases": []
+  },
+  {
+   "name": "St. Macedonius, the Heretic",
+   "aliases": []
+  },
+  {
+   "name": "St. Macrina the Elder, the Widow",
+   "aliases": []
+  },
+  {
+   "name": "St. Macrina the Younger, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Macrobius",
+   "aliases": []
+  },
+  {
+   "name": "St. Magdi Faris Malek",
+   "aliases": []
+  },
+  {
+   "name": "St. Magna, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Maharsapor",
+   "aliases": []
+  },
+  {
+   "name": "St. Majorinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Makrawy, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Malachi",
+   "aliases": []
+  },
+  {
+   "name": "St. Malaty, the Muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Malchus",
+   "aliases": []
+  },
+  {
+   "name": "St. Mallonus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Mamadius",
+   "aliases": []
+  },
+  {
+   "name": "St. Mamas",
+   "aliases": []
+  },
+  {
+   "name": "St. Mammaty, the Muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Mani, the Gnostic",
+   "aliases": []
+  },
+  {
+   "name": "St. Mania",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcella",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcella, the Widow",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcellina, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcellinus, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcellinus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcellus, Bishop of Paris",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcellus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcellus, the Centurion",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcia",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcian",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcian, Bishop of Heraclea",
+   "aliases": []
+  },
+  {
+   "name": "St. Marciana, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcorius, the Muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcus Ibn Qanbar, the Dissenter",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcus Mincucius Felix",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcus, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcus, the Egyptian Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcus, the Governor",
+   "aliases": []
+  },
+  {
+   "name": "St. Marcus, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Mariaam, the Righteous",
+   "aliases": []
+  },
+  {
+   "name": "St. Marina",
+   "aliases": []
+  },
+  {
+   "name": "St. Marina, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Marinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Mark, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Mark, the Confessor Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Maro",
+   "aliases": []
+  },
+  {
+   "name": "St. Martha",
+   "aliases": []
+  },
+  {
+   "name": "St. Martha, the Egyptian Saint",
+   "aliases": []
+  },
+  {
+   "name": "St. Martial, Bishop of Limoges",
+   "aliases": []
+  },
+  {
+   "name": "St. Martin, Bishop of Tours",
+   "aliases": []
+  },
+  {
+   "name": "St. Martinian, the Anchorite",
+   "aliases": []
+  },
+  {
+   "name": "St. Marturinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Akhmim",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Ancyra, the Seven Virgins",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Ansenah",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Atrib",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Cairo",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Crete, the Ten",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Dandara",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Edessa",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Esnah",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Lyons",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Nicomedia",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Pepnosah",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Persia",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Rome Under Nero",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Samosata, the Seven",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Scetis, the Elders",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Scillium",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Sebaste",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of the Arian Heresy",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of the Serapeum",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of the Theban Legion",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Tuna El-gabal, the Hermits",
+   "aliases": []
+  },
+  {
+   "name": "St. Martyrs of Tyre, the Egyptians",
+   "aliases": []
+  },
+  {
+   "name": "St. Maruta, the Syrian Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Maruthas, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Mary",
+   "aliases": [
+    "Holy Virgin Mary",
+    "Mother of God",
+    "Saint Mary",
+    "St. Mary Theotokos",
+    "St. Mary the Virgin",
+    "St. Mary, the Virgin Theotokos",
+    "Theotokos",
+    "Virgin Mary",
+    "السيدة العذراء مريم",
+    "العذراء مريم"
+   ]
+  },
+  {
+   "name": "St. Mary Magdalene",
+   "aliases": []
+  },
+  {
+   "name": "St. Mary, the Armenian",
+   "aliases": []
+  },
+  {
+   "name": "St. Mary, the Egyptian",
+   "aliases": []
+  },
+  {
+   "name": "St. Mary, the Israelite",
+   "aliases": []
+  },
+  {
+   "name": "St. Mary, the Repentant",
+   "aliases": []
+  },
+  {
+   "name": "St. Mary, the Shut-in Ascetic",
+   "aliases": []
+  },
+  {
+   "name": "St. Mary, the Virgin Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Mary, the Virgin Theotokos",
+   "aliases": [
+    "Holy Virgin Mary",
+    "Mother of God",
+    "Saint Mary",
+    "St. Mary",
+    "St. Mary Theotokos",
+    "St. Mary the Virgin",
+    "Theotokos",
+    "Virgin Mary",
+    "السيدة العذراء مريم",
+    "العذراء مريم"
+   ]
+  },
+  {
+   "name": "St. Mathoy, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Matra",
+   "aliases": []
+  },
+  {
+   "name": "St. Matrona, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Matthew Basily, Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Matthew, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Matthew, the Poor",
+   "aliases": []
+  },
+  {
+   "name": "St. Matthias",
+   "aliases": []
+  },
+  {
+   "name": "St. Matthias Tawadros, the Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Matthias, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Mawhoub Ibn Mansur, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Maxentina, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Maximilian",
+   "aliases": []
+  },
+  {
+   "name": "St. Maximinus of Aix",
+   "aliases": []
+  },
+  {
+   "name": "St. Maximinus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Maximus",
+   "aliases": []
+  },
+  {
+   "name": "St. Maximus, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Maximus, the Confessor Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Maăani Abu Al-makarem Ibn Barakat",
+   "aliases": []
+  },
+  {
+   "name": "St. Meathius, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Mehrael",
+   "aliases": []
+  },
+  {
+   "name": "St. Melania, the Elder",
+   "aliases": []
+  },
+  {
+   "name": "St. Meletius, the Archbishop of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Melicius, the Hermit Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Melitius, the Dissented Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Melito, Bishop of Sardis",
+   "aliases": []
+  },
+  {
+   "name": "St. Menassa Yuĥanna, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Mercury",
+   "aliases": []
+  },
+  {
+   "name": "St. Merob",
+   "aliases": []
+  },
+  {
+   "name": "St. Mesrop, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Methodius, Bishop of Olympus",
+   "aliases": []
+  },
+  {
+   "name": "St. Metrophanes, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Mezricus, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Michael El-beĥeri, the Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Michael El-tuchi, the Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Michael Guirgis, Muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Michael Ibrahim, Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Michael Mina, Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Michael, Bishop of Naqadah",
+   "aliases": []
+  },
+  {
+   "name": "St. Michael, Bishop of Tanis",
+   "aliases": []
+  },
+  {
+   "name": "St. Michael, Metropolitan of Damietta",
+   "aliases": []
+  },
+  {
+   "name": "St. Milas, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Miltiades, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Mina",
+   "aliases": []
+  },
+  {
+   "name": "St. Mina, the Ascetic",
+   "aliases": []
+  },
+  {
+   "name": "St. Mina, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Mina, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Mina, the Wonder-maker",
+   "aliases": []
+  },
+  {
+   "name": "St. Mios, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Moises, Bishop of Osim",
+   "aliases": []
+  },
+  {
+   "name": "St. Montanus, the Dissent",
+   "aliases": []
+  },
+  {
+   "name": "St. Moses the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Moses, the Black",
+   "aliases": []
+  },
+  {
+   "name": "St. Moses, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Moses, the Libyan",
+   "aliases": []
+  },
+  {
+   "name": "St. Moses, the Recluse Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Motius",
+   "aliases": []
+  },
+  {
+   "name": "St. Mucius",
+   "aliases": []
+  },
+  {
+   "name": "St. Muqaddem Ibn Malek, the Hashemite",
+   "aliases": []
+  },
+  {
+   "name": "St. Mustiola",
+   "aliases": []
+  },
+  {
+   "name": "St. Myron, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Nadia Eusina",
+   "aliases": []
+  },
+  {
+   "name": "St. Nakhla Ibrahim, Muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Namphamo",
+   "aliases": []
+  },
+  {
+   "name": "St. Narcissus, Bishop of Gerona",
+   "aliases": []
+  },
+  {
+   "name": "St. Narcissus, Bishop of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. Nasera",
+   "aliases": []
+  },
+  {
+   "name": "St. Nearchus",
+   "aliases": []
+  },
+  {
+   "name": "St. Nectarius, Patriarch of Constantinople",
+   "aliases": []
+  },
+  {
+   "name": "St. Nehroua",
+   "aliases": []
+  },
+  {
+   "name": "St. Nestor, Bishop of Magida",
+   "aliases": []
+  },
+  {
+   "name": "St. Nestor, the Heretic",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicarete, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicephorus",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicetas, Bishop of Remesiana",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicetas, the Gothic",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicholas, Bishop of Myra",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicholas, the Fallen Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicomedes",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicostratus",
+   "aliases": []
+  },
+  {
+   "name": "St. Nicostratus, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Niketa",
+   "aliases": []
+  },
+  {
+   "name": "St. Nikita, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Nikon, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Nilammon, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Nilammon, the Lock-up Recluse",
+   "aliases": []
+  },
+  {
+   "name": "St. Nilus of Sinai",
+   "aliases": []
+  },
+  {
+   "name": "St. Nilus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Nimmia",
+   "aliases": []
+  },
+  {
+   "name": "St. Ninian, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Nino, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Niola Sadonita, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Nipus, the Heretic Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Niqam, the Repentant",
+   "aliases": []
+  },
+  {
+   "name": "St. Nistherous, Abbot",
+   "aliases": []
+  },
+  {
+   "name": "St. Nitra, Bishop of Faran, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Nofer, the Hermit Anchorite",
+   "aliases": []
+  },
+  {
+   "name": "St. Nonna",
+   "aliases": []
+  },
+  {
+   "name": "St. Numidicus, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Nymphodora",
+   "aliases": []
+  },
+  {
+   "name": "St. Ogharitus, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Oladius",
+   "aliases": []
+  },
+  {
+   "name": "St. Olympas, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Olympias, the Deaconess",
+   "aliases": []
+  },
+  {
+   "name": "St. Optatus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Origen",
+   "aliases": []
+  },
+  {
+   "name": "St. Others",
+   "aliases": []
+  },
+  {
+   "name": "St. Pachomius the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Pachum of Akhmim, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Pacian of Barcelona",
+   "aliases": []
+  },
+  {
+   "name": "St. Paesa",
+   "aliases": []
+  },
+  {
+   "name": "St. Paesius",
+   "aliases": []
+  },
+  {
+   "name": "St. Palladius, the Bishop of Ireland",
+   "aliases": []
+  },
+  {
+   "name": "St. Palladius, the Historian",
+   "aliases": []
+  },
+  {
+   "name": "St. Pammachius",
+   "aliases": []
+  },
+  {
+   "name": "St. Pamphilus",
+   "aliases": []
+  },
+  {
+   "name": "St. Pancras",
+   "aliases": []
+  },
+  {
+   "name": "St. Pancras of Taormina",
+   "aliases": []
+  },
+  {
+   "name": "St. Panicarus, the Persian",
+   "aliases": []
+  },
+  {
+   "name": "St. Pansophe",
+   "aliases": []
+  },
+  {
+   "name": "St. Pantaenus",
+   "aliases": []
+  },
+  {
+   "name": "St. Pantaleon",
+   "aliases": []
+  },
+  {
+   "name": "St. Panteleimon, the Physician",
+   "aliases": []
+  },
+  {
+   "name": "St. Paphnutius",
+   "aliases": []
+  },
+  {
+   "name": "St. Paphnutius of Upper Egypt",
+   "aliases": []
+  },
+  {
+   "name": "St. Paphnutius, Bishop of Thebes",
+   "aliases": []
+  },
+  {
+   "name": "St. Paphnutius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Paphnutius, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Paphnutius, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Papias, Bishop of Hierapolis",
+   "aliases": []
+  },
+  {
+   "name": "St. Papilas",
+   "aliases": []
+  },
+  {
+   "name": "St. Parsanuphius, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Pasantaos, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Pasantaos, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Pastaurus",
+   "aliases": []
+  },
+  {
+   "name": "St. Patra, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Paul",
+   "aliases": []
+  },
+  {
+   "name": "St. Paul the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Paul, the First Hermit, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Paul, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Paul, the Simple",
+   "aliases": []
+  },
+  {
+   "name": "St. Paul, the Syrian",
+   "aliases": []
+  },
+  {
+   "name": "St. Paula, the Elder",
+   "aliases": []
+  },
+  {
+   "name": "St. Paulinus, Bishop of Nola",
+   "aliases": []
+  },
+  {
+   "name": "St. Paulinus, Bishop of Treves",
+   "aliases": []
+  },
+  {
+   "name": "St. Pelagia of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Pelagia of Tarsus",
+   "aliases": []
+  },
+  {
+   "name": "St. Pelagia, the Penitent Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Pelagius, the Heretic",
+   "aliases": []
+  },
+  {
+   "name": "St. Peleus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Pelosianus",
+   "aliases": []
+  },
+  {
+   "name": "St. Pergentinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Perpetua",
+   "aliases": []
+  },
+  {
+   "name": "St. Persian",
+   "aliases": []
+  },
+  {
+   "name": "St. Petarpemtis, the Blessed",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter Balsam",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter Chrysologus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter El-gamil, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter El-ruhawy, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter, Bishop of Braga",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter, Bishop of Sebasteia",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter, Metropolitan of Ethiopia",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter, the Martyr",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Peter, the Worshipper",
+   "aliases": []
+  },
+  {
+   "name": "St. Petronilla",
+   "aliases": []
+  },
+  {
+   "name": "St. Petronius",
+   "aliases": []
+  },
+  {
+   "name": "St. Petronius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Philaeas, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Philastorguis",
+   "aliases": []
+  },
+  {
+   "name": "St. Philastrius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Philemon",
+   "aliases": []
+  },
+  {
+   "name": "St. Philemon, the Flute Player",
+   "aliases": []
+  },
+  {
+   "name": "St. Philip",
+   "aliases": []
+  },
+  {
+   "name": "St. Philip, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Philip, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Philo, the Persian Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Philogonius, the Patriarch",
+   "aliases": []
+  },
+  {
+   "name": "St. Philopater Mercurius",
+   "aliases": []
+  },
+  {
+   "name": "St. Philoromus",
+   "aliases": []
+  },
+  {
+   "name": "St. Philotheus",
+   "aliases": []
+  },
+  {
+   "name": "St. Phocas, the Gardner",
+   "aliases": []
+  },
+  {
+   "name": "St. Phoebe, the Deaconess",
+   "aliases": []
+  },
+  {
+   "name": "St. Photinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Piamon, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Pierius",
+   "aliases": []
+  },
+  {
+   "name": "St. Pior, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Pisora, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Pisus, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Pithyrion, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Plato",
+   "aliases": []
+  },
+  {
+   "name": "St. Poemen, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Pollio",
+   "aliases": []
+  },
+  {
+   "name": "St. Polycarpus",
+   "aliases": []
+  },
+  {
+   "name": "St. Polyeuctus",
+   "aliases": []
+  },
+  {
+   "name": "St. Pontianus, the Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Pontinus, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Pontinus, the Martyr",
+   "aliases": []
+  },
+  {
+   "name": "St. Porphyrios",
+   "aliases": []
+  },
+  {
+   "name": "St. Porphyrius, Bishop of Gaza",
+   "aliases": []
+  },
+  {
+   "name": "St. Possidius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Possidonius",
+   "aliases": []
+  },
+  {
+   "name": "St. Potamon, the Confessor Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Pralius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Praxedes, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Priscilla",
+   "aliases": []
+  },
+  {
+   "name": "St. Probus",
+   "aliases": []
+  },
+  {
+   "name": "St. Proclus, the Patriarch",
+   "aliases": []
+  },
+  {
+   "name": "St. Proconius",
+   "aliases": []
+  },
+  {
+   "name": "St. Procopius",
+   "aliases": []
+  },
+  {
+   "name": "St. Prophorius",
+   "aliases": []
+  },
+  {
+   "name": "St. Protus",
+   "aliases": []
+  },
+  {
+   "name": "St. Ptolemaeus",
+   "aliases": []
+  },
+  {
+   "name": "St. Publia",
+   "aliases": []
+  },
+  {
+   "name": "St. Publius",
+   "aliases": []
+  },
+  {
+   "name": "St. Quadratus",
+   "aliases": []
+  },
+  {
+   "name": "St. Quadratus, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Quinta",
+   "aliases": []
+  },
+  {
+   "name": "St. Quintinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Quintus",
+   "aliases": []
+  },
+  {
+   "name": "St. Quirinus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Rafla Guirgis, the Archon",
+   "aliases": []
+  },
+  {
+   "name": "St. Ragheb Sawires, the Archdeacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Regina, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Regulus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Reparata, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Restituta, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Reticius, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Rhais",
+   "aliases": []
+  },
+  {
+   "name": "St. Riparius",
+   "aliases": []
+  },
+  {
+   "name": "St. Rizk, El-muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Rogatian",
+   "aliases": []
+  },
+  {
+   "name": "St. Rogatianus, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Rogatus",
+   "aliases": []
+  },
+  {
+   "name": "St. Rohom, the Noble Daughter of Azmaă",
+   "aliases": []
+  },
+  {
+   "name": "St. Romanus",
+   "aliases": []
+  },
+  {
+   "name": "St. Romanus of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Romanus, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Romanus, the Recluse",
+   "aliases": []
+  },
+  {
+   "name": "St. Romulus",
+   "aliases": []
+  },
+  {
+   "name": "St. Roweiss",
+   "aliases": []
+  },
+  {
+   "name": "St. Rufinianus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Rufinus, Bishop of Aquileia",
+   "aliases": []
+  },
+  {
+   "name": "St. Rumulus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Saba of Jericho",
+   "aliases": []
+  },
+  {
+   "name": "St. Saba, the Goth",
+   "aliases": []
+  },
+  {
+   "name": "St. Sabbatius",
+   "aliases": []
+  },
+  {
+   "name": "St. Sabbatius, the Novatian",
+   "aliases": []
+  },
+  {
+   "name": "St. Sabillius, the Heretic Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Sabina",
+   "aliases": []
+  },
+  {
+   "name": "St. Sabinian",
+   "aliases": []
+  },
+  {
+   "name": "St. Sabinus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Sadeq Raphael, the Righteous Man",
+   "aliases": []
+  },
+  {
+   "name": "St. Safina, the Transcriber Nun",
+   "aliases": []
+  },
+  {
+   "name": "St. Salamanes, the Recluse",
+   "aliases": []
+  },
+  {
+   "name": "St. Saleĥ Nakhla, Archon",
+   "aliases": []
+  },
+  {
+   "name": "St. Salib",
+   "aliases": []
+  },
+  {
+   "name": "St. Salvanus, the Actor",
+   "aliases": []
+  },
+  {
+   "name": "St. Salvian, the Priest of Marseilles",
+   "aliases": []
+  },
+  {
+   "name": "St. Salvina",
+   "aliases": []
+  },
+  {
+   "name": "St. Salvius",
+   "aliases": []
+  },
+  {
+   "name": "St. Samson of Constantinople",
+   "aliases": []
+  },
+  {
+   "name": "St. Samuel",
+   "aliases": []
+  },
+  {
+   "name": "St. Samuel, Bishop of Osim",
+   "aliases": []
+  },
+  {
+   "name": "St. Samuel, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Samăan Ibn-kalil, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Samăan, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Samăan, the Tanner",
+   "aliases": []
+  },
+  {
+   "name": "St. Sanaa, the Soldier",
+   "aliases": []
+  },
+  {
+   "name": "St. Sanctus, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Sarah",
+   "aliases": []
+  },
+  {
+   "name": "St. Sarah, the Descendant of Sennacherib",
+   "aliases": []
+  },
+  {
+   "name": "St. Sarmatas",
+   "aliases": []
+  },
+  {
+   "name": "St. Saturninus",
+   "aliases": []
+  },
+  {
+   "name": "St. Saturninus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Saturninus, the Gnostic",
+   "aliases": []
+  },
+  {
+   "name": "St. Saturus",
+   "aliases": []
+  },
+  {
+   "name": "St. Satyrius",
+   "aliases": []
+  },
+  {
+   "name": "St. Sawires Ibn El-muqaffaă, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Saăd Soliman, the Righteous",
+   "aliases": []
+  },
+  {
+   "name": "St. Saăid Ibn Kateb El-farghani",
+   "aliases": []
+  },
+  {
+   "name": "St. Sebastian",
+   "aliases": []
+  },
+  {
+   "name": "St. Secundinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Secundus",
+   "aliases": []
+  },
+  {
+   "name": "St. Secundus, the Gnostic",
+   "aliases": []
+  },
+  {
+   "name": "St. Sehma",
+   "aliases": []
+  },
+  {
+   "name": "St. Seleucus",
+   "aliases": []
+  },
+  {
+   "name": "St. Serabamon, Bishop of Khartum",
+   "aliases": []
+  },
+  {
+   "name": "St. Serabamon, Bishop of Menufyya",
+   "aliases": []
+  },
+  {
+   "name": "St. Serabamon, Bishop of Nicius",
+   "aliases": []
+  },
+  {
+   "name": "St. Serabamon, the Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Serapion, Bishop of Thmuis",
+   "aliases": []
+  },
+  {
+   "name": "St. Serapion, Patriarch of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Serapion, the Abbot",
+   "aliases": []
+  },
+  {
+   "name": "St. Serapion, the Corinthian Martyr",
+   "aliases": []
+  },
+  {
+   "name": "St. Serapion, the Egyptian Martyr",
+   "aliases": []
+  },
+  {
+   "name": "St. Serapion, the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Serapion, the Repentant",
+   "aliases": []
+  },
+  {
+   "name": "St. Serapion, the Selfless Traveller",
+   "aliases": []
+  },
+  {
+   "name": "St. Serenus, the Gardener",
+   "aliases": []
+  },
+  {
+   "name": "St. Sergius, the Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Servatius, Bishop of Tongres",
+   "aliases": []
+  },
+  {
+   "name": "St. Severianus, Bishop of Gabala",
+   "aliases": []
+  },
+  {
+   "name": "St. Severianus, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Severinus, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Severus, Patriarch of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Severus, Sulpicius",
+   "aliases": []
+  },
+  {
+   "name": "St. Shams El-reʹaasa Abu El-barakat",
+   "aliases": []
+  },
+  {
+   "name": "St. Shenouda",
+   "aliases": []
+  },
+  {
+   "name": "St. Shenouda El-bahnassawi",
+   "aliases": []
+  },
+  {
+   "name": "St. Shenouda, the Archmandrite, Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Shenouda, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Shenousi, the Young Man",
+   "aliases": []
+  },
+  {
+   "name": "St. Shirin",
+   "aliases": []
+  },
+  {
+   "name": "St. Sidaros Akhnokh, the Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Sidhom Bishai",
+   "aliases": []
+  },
+  {
+   "name": "St. Silas, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Silbone",
+   "aliases": []
+  },
+  {
+   "name": "St. Silco, King of Nubia",
+   "aliases": []
+  },
+  {
+   "name": "St. Silvanus, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Silvanus, the Bishop of Gaza",
+   "aliases": []
+  },
+  {
+   "name": "St. Silvanus, the Bishop of Homs",
+   "aliases": []
+  },
+  {
+   "name": "St. Simeon Clopas, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Simeon of Menouf",
+   "aliases": []
+  },
+  {
+   "name": "St. Simeon, the Armenian Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Simeon, the Elder",
+   "aliases": []
+  },
+  {
+   "name": "St. Simeon, the Stylite",
+   "aliases": []
+  },
+  {
+   "name": "St. Simon the Cananite, the Apostle",
+   "aliases": []
+  },
+  {
+   "name": "St. Simplician, the Bishop of Milan",
+   "aliases": []
+  },
+  {
+   "name": "St. Simplicius, the Bishop of Autun",
+   "aliases": []
+  },
+  {
+   "name": "St. Siricius, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Sisinnius",
+   "aliases": []
+  },
+  {
+   "name": "St. Sisinnius, the Martyr",
+   "aliases": []
+  },
+  {
+   "name": "St. Sisoes, the Great",
+   "aliases": []
+  },
+  {
+   "name": "St. Sisoes, the Theban",
+   "aliases": []
+  },
+  {
+   "name": "St. Socrates, the Historian",
+   "aliases": []
+  },
+  {
+   "name": "St. Soliman",
+   "aliases": []
+  },
+  {
+   "name": "St. Solutor",
+   "aliases": []
+  },
+  {
+   "name": "St. Sophia",
+   "aliases": []
+  },
+  {
+   "name": "St. Sophronius, Bishop of Jerusalem",
+   "aliases": []
+  },
+  {
+   "name": "St. Soroor El-galal, Muăallem",
+   "aliases": []
+  },
+  {
+   "name": "St. Sosenius, the Eunuch",
+   "aliases": []
+  },
+  {
+   "name": "St. Sosenius, the Noble",
+   "aliases": []
+  },
+  {
+   "name": "St. Soteris, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Sozomen, the Historian",
+   "aliases": []
+  },
+  {
+   "name": "St. Sozon",
+   "aliases": []
+  },
+  {
+   "name": "St. Spiridion, Bishop of Trimythus",
+   "aliases": []
+  },
+  {
+   "name": "St. Stephana, the Fallen Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Steven, the Libyan",
+   "aliases": []
+  },
+  {
+   "name": "St. Stratonice",
+   "aliases": []
+  },
+  {
+   "name": "St. Susan",
+   "aliases": []
+  },
+  {
+   "name": "St. Susanna",
+   "aliases": []
+  },
+  {
+   "name": "St. Susanna, the Roman",
+   "aliases": []
+  },
+  {
+   "name": "St. Symphorian",
+   "aliases": []
+  },
+  {
+   "name": "St. Syncletica",
+   "aliases": []
+  },
+  {
+   "name": "St. Synesius, Metropolitan of Pentapolis",
+   "aliases": []
+  },
+  {
+   "name": "St. Synosius, the Martyr",
+   "aliases": []
+  },
+  {
+   "name": "St. Tadros, Bishop of Bahnasa, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Tadros, Bishop of El-misa",
+   "aliases": []
+  },
+  {
+   "name": "St. Tadros, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Taiis",
+   "aliases": []
+  },
+  {
+   "name": "St. Takla Haymanot, the Ethiopian",
+   "aliases": []
+  },
+  {
+   "name": "St. Talida, the Blessed Mother",
+   "aliases": []
+  },
+  {
+   "name": "St. Taor, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Tatian",
+   "aliases": []
+  },
+  {
+   "name": "St. Tatian, the Syrian",
+   "aliases": []
+  },
+  {
+   "name": "St. Tatiana",
+   "aliases": []
+  },
+  {
+   "name": "St. Tatiana of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Tatianus Dulas",
+   "aliases": []
+  },
+  {
+   "name": "St. Telesphorus, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Thalelaeus",
+   "aliases": []
+  },
+  {
+   "name": "St. Thalelaeus, the Epiklautos",
+   "aliases": []
+  },
+  {
+   "name": "St. Tharacus",
+   "aliases": []
+  },
+  {
+   "name": "St. Tharsicius",
+   "aliases": []
+  },
+  {
+   "name": "St. Thecla of Egypt",
+   "aliases": []
+  },
+  {
+   "name": "St. Thecla of Palestine",
+   "aliases": []
+  },
+  {
+   "name": "St. Thecla, the Egyptian",
+   "aliases": []
+  },
+  {
+   "name": "St. Thecla, the Persian",
+   "aliases": []
+  },
+  {
+   "name": "St. Thecla, the Roman",
+   "aliases": []
+  },
+  {
+   "name": "St. Thecusa, the Virgin",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodora of Baetica",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodora of Constantinople",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodora, Ammas",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodora, Empress",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodora, the Canoness",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodora, the Repentant",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore El-meshriqy, the Prince",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore of Alexandria",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore of Eleutheropolis",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore of Enaton",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore Tiro",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, Bishop of Cappadocia",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, Bishop of Constantia",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, Bishop of Corinth",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, Bishop of Egypt",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, Bishop of Pentapolis",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, Disciple of Ammon",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, El-pyramy",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, El-rahawy",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, El-shotepy, the Prince",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, Son of Julius El-aqfahsy",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, the Egyptian Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodore, the Roman",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodoret",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodoret, the Nestorian Historian",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodosia",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodota",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodotus, Bishop of Ancyra",
+   "aliases": []
+  },
+  {
+   "name": "St. Theodulus, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Theognosta",
+   "aliases": []
+  },
+  {
+   "name": "St. Theognostus",
+   "aliases": []
+  },
+  {
+   "name": "St. Theon, the Blessed Abba",
+   "aliases": []
+  },
+  {
+   "name": "St. Theonas, Abbot",
+   "aliases": []
+  },
+  {
+   "name": "St. Theopemptus, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Theopesti",
+   "aliases": []
+  },
+  {
+   "name": "St. Theophilus, Bishop of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Theranion, the Bishop of Tyre",
+   "aliases": []
+  },
+  {
+   "name": "St. Thomaies",
+   "aliases": []
+  },
+  {
+   "name": "St. Thomas",
+   "aliases": []
+  },
+  {
+   "name": "St. Thomas Aquinas",
+   "aliases": []
+  },
+  {
+   "name": "St. Thomas, Bishop of Marash",
+   "aliases": []
+  },
+  {
+   "name": "St. Thomas, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Tia",
+   "aliases": []
+  },
+  {
+   "name": "St. Tiburtius",
+   "aliases": []
+  },
+  {
+   "name": "St. Tigrius, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Tikhon, Bishop of Amathus",
+   "aliases": []
+  },
+  {
+   "name": "St. Timothy, Bishop of Ansenah",
+   "aliases": []
+  },
+  {
+   "name": "St. Timothy, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Timothy, the Anchorite",
+   "aliases": []
+  },
+  {
+   "name": "St. Timothy, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Titus, Bishop of Bostra",
+   "aliases": []
+  },
+  {
+   "name": "St. Triphyllius, Bishop of Nicosia",
+   "aliases": []
+  },
+  {
+   "name": "St. Ulfilas, the German Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Ulpianus",
+   "aliases": []
+  },
+  {
+   "name": "St. Unknown Recluse Woman!",
+   "aliases": []
+  },
+  {
+   "name": "St. Uranus, the Bishop of Akhmim",
+   "aliases": []
+  },
+  {
+   "name": "St. Urbanus",
+   "aliases": []
+  },
+  {
+   "name": "St. Ursicinus",
+   "aliases": []
+  },
+  {
+   "name": "St. Ursula",
+   "aliases": []
+  },
+  {
+   "name": "St. Valens",
+   "aliases": []
+  },
+  {
+   "name": "St. Valens, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Valentine",
+   "aliases": []
+  },
+  {
+   "name": "St. Valentine, Bishop of Passau",
+   "aliases": []
+  },
+  {
+   "name": "St. Valentinus, the Gnostic Poet",
+   "aliases": []
+  },
+  {
+   "name": "St. Valentio",
+   "aliases": []
+  },
+  {
+   "name": "St. Valerian",
+   "aliases": []
+  },
+  {
+   "name": "St. Valeriana",
+   "aliases": []
+  },
+  {
+   "name": "St. Valerianus, the Bishop of Aquileia",
+   "aliases": []
+  },
+  {
+   "name": "St. Valerius, the Confessor Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Vasey",
+   "aliases": []
+  },
+  {
+   "name": "St. Venerius, Bishop of Milan",
+   "aliases": []
+  },
+  {
+   "name": "St. Verena",
+   "aliases": []
+  },
+  {
+   "name": "St. Veronica",
+   "aliases": []
+  },
+  {
+   "name": "St. Vettius Epagathus",
+   "aliases": []
+  },
+  {
+   "name": "St. Victor",
+   "aliases": []
+  },
+  {
+   "name": "St. Victor Maurus",
+   "aliases": []
+  },
+  {
+   "name": "St. Victor Tununensis, the African",
+   "aliases": []
+  },
+  {
+   "name": "St. Victor, the Officer",
+   "aliases": []
+  },
+  {
+   "name": "St. Victorinus, Gaius Marius",
+   "aliases": []
+  },
+  {
+   "name": "St. Victorinus, the Bishop of Pettau",
+   "aliases": []
+  },
+  {
+   "name": "St. Victricius, the Bishop of Rouen",
+   "aliases": []
+  },
+  {
+   "name": "St. Vigilius, the Bishop of Trent",
+   "aliases": []
+  },
+  {
+   "name": "St. Vincent",
+   "aliases": []
+  },
+  {
+   "name": "St. Vincent, the Bishop of Saragossa",
+   "aliases": []
+  },
+  {
+   "name": "St. Vitalius, the Bishop of Antioch",
+   "aliases": []
+  },
+  {
+   "name": "St. Waches",
+   "aliases": []
+  },
+  {
+   "name": "St. Warshenofius",
+   "aliases": []
+  },
+  {
+   "name": "St. Wasilides",
+   "aliases": []
+  },
+  {
+   "name": "St. Wissa",
+   "aliases": []
+  },
+  {
+   "name": "St. Xene",
+   "aliases": []
+  },
+  {
+   "name": "St. Xvi",
+   "aliases": []
+  },
+  {
+   "name": "St. Yacob Nakhla Ruphila Bek",
+   "aliases": []
+  },
+  {
+   "name": "St. Yacobos, Bishop of Babylon",
+   "aliases": []
+  },
+  {
+   "name": "St. Yamata",
+   "aliases": []
+  },
+  {
+   "name": "St. Yassa Michael, the Hegomen",
+   "aliases": []
+  },
+  {
+   "name": "St. Yassa Ăbdel-messiĥ, the Scholar",
+   "aliases": []
+  },
+  {
+   "name": "St. Yasser Ibn El-qastal, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Yehnes Al-senhouti",
+   "aliases": []
+  },
+  {
+   "name": "St. Youlita, the Lycaonian",
+   "aliases": []
+  },
+  {
+   "name": "St. Younan Nakhla El-doweiry, the Archon",
+   "aliases": []
+  },
+  {
+   "name": "St. Yousef Abu-daqn El-manufi",
+   "aliases": []
+  },
+  {
+   "name": "St. Yousef El-zir of Birma, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Yousef of Thebes",
+   "aliases": []
+  },
+  {
+   "name": "St. Yousef Ĥabib, the Deacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Yousef, Father",
+   "aliases": []
+  },
+  {
+   "name": "St. Yousef, Priest of Ashkelon",
+   "aliases": []
+  },
+  {
+   "name": "St. Yoĥanna Damascene, the Theologian",
+   "aliases": []
+  },
+  {
+   "name": "St. Yoĥanna El-ĥomy, the Hegumenus",
+   "aliases": []
+  },
+  {
+   "name": "St. Yoĥanna Ibn Abu El-fadl, the Archon",
+   "aliases": []
+  },
+  {
+   "name": "St. Yoĥanna Ibn Zechariah Ibn El-sebaă",
+   "aliases": []
+  },
+  {
+   "name": "St. Yusab El-abaĥ, the Bishop",
+   "aliases": []
+  },
+  {
+   "name": "St. Yusab, Bishop of Fowwa",
+   "aliases": []
+  },
+  {
+   "name": "St. Zachariah, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Zachariah, the Little Boy",
+   "aliases": []
+  },
+  {
+   "name": "St. Zachariah, the Monk",
+   "aliases": []
+  },
+  {
+   "name": "St. Zacharias, Rhetor of Mytilene",
+   "aliases": []
+  },
+  {
+   "name": "St. Zacharias, the Bishop of Sakha",
+   "aliases": []
+  },
+  {
+   "name": "St. Zara Yaăqub",
+   "aliases": []
+  },
+  {
+   "name": "St. Zekry, the Hermit",
+   "aliases": []
+  },
+  {
+   "name": "St. Zeno, the Bishop of Majuma",
+   "aliases": []
+  },
+  {
+   "name": "St. Zeno, the Bishop of Verona",
+   "aliases": []
+  },
+  {
+   "name": "St. Zeno, the Confessor",
+   "aliases": []
+  },
+  {
+   "name": "St. Zenobius, the Bishop of Aegae",
+   "aliases": []
+  },
+  {
+   "name": "St. Zenobius, the Bishop of Florence",
+   "aliases": []
+  },
+  {
+   "name": "St. Zenobius, the Priest",
+   "aliases": []
+  },
+  {
+   "name": "St. Zephyrinus, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Zoaras",
+   "aliases": []
+  },
+  {
+   "name": "St. Zocomus, the Tribe Head",
+   "aliases": []
+  },
+  {
+   "name": "St. Zosima",
+   "aliases": []
+  },
+  {
+   "name": "St. Zosimus, Pope of Rome",
+   "aliases": []
+  },
+  {
+   "name": "St. Zosimus, the Historian",
+   "aliases": []
+  },
+  {
+   "name": "St. Ăssal’s Sons",
+   "aliases": []
+  },
+  {
+   "name": "St. Ĥabib El-masry, the Archon",
+   "aliases": []
+  },
+  {
+   "name": "St. Ĥabib Farag, the Righteous",
+   "aliases": []
+  },
+  {
+   "name": "St. Ĥabib Guirgis, the Archdeacon",
+   "aliases": []
+  },
+  {
+   "name": "St. Ĥadid, the Priest",
+   "aliases": []
+  }
+ ],
+ "ar": [
+  "السيدة العذراء مريم",
+  "مارمرقس الرسول",
+  "الأنبا أنطونيوس الكبير",
+  "الأنبا بولا أول السواح",
+  "الأنبا أثناسيوس الرسولي",
+  "البابا كيرلس الكبير",
+  "الأنبا شنودة رئيس المتوحدين",
+  "الأنبا بيشوي",
+  "الأنبا موسى الأسود",
+  "القديس مينا العجائبي",
+  "القديسة دميانة",
+  "القديسة بربارة",
+  "القديس جرجس",
+  "القديس أبانوب",
+  "القديس توماس الرسول",
+  "القديس بطرس الرسول",
+  "القديس بولس الرسول",
+  "أبا أبان",
+  "أبا أبيللين",
+  "أبا أموناثاس",
+  "أبا كراجون الشهيد",
+  "أبا كلوج القس",
+  "أباخوم الشهيد",
+  "أبادير الشهيد",
+  "أباديون الأسقف",
+  "أباكير الشهيد",
+  "أباكير ويوحنا الشهيدان",
+  "أبالي الشهيد",
+  "أبامون الترنوطي",
+  "أبامون الشهيد",
+  "أبامون الطوخي",
+  "أبانوب المعترف",
+  "أبانوب النهيسي",
+  "أباهور الشهيد",
+  "أبجر الخامس الملك",
+  "أبرا البتول",
+  "أبراكسية القديسة",
+  "إبراكسيوس",
+  "أبراكيوس القديس",
+  "ابرآم الأسقف القديس",
+  "ابرآم بن زرعة",
+  "إبرام تلميذ شيشوي",
+  "أبرآم وجاورجي القديسان",
+  "أبراميوس",
+  "إبراهيم الجوهري المعلم",
+  "إبراهيم القيدوني",
+  "إبراهيم المتوحد القديس",
+  "إبراهيم بك نخلة",
+  "إبراهيم روفائيل الطوخي",
+  "أبركيوس الأب",
+  "أبرونيانوس",
+  "أبسخيرون القليني الشهيد",
+  "إبصادى أسقف أبصاي",
+  "أبطلماوس الشهيد",
+  "أبفيّة الشهيدة",
+  "ابن الأبح",
+  "ابن الأسقف",
+  "ابن الدهيري",
+  "ابن الصاعد",
+  "ابن المكين",
+  "ابن الميقاط",
+  "ابن بقر",
+  "ابن سباع",
+  "ابن كاتب قيصر",
+  "ابن كبر",
+  "ابن كتامة",
+  "ابن كليل",
+  "أبو البركات",
+  "أبو الحسن الأمح",
+  "أبو السعيد الكاتب",
+  "أبو الطيب",
+  "أبو الكرم",
+  "أبو المكارم",
+  "أبو المليح",
+  "أبو اليسرى",
+  "أبو اليمن يوسف",
+  "أبو ذقن",
+  "أبو ذكري",
+  "أبو زكريا يحيى",
+  "أبو سالم الملطي",
+  "أبو سعد منصور",
+  "أبو فانا",
+  "أبو نفر",
+  "أبو ياسر",
+  "أبوللو و أبيب",
+  "أبوللو وآمون القديسان",
+  "أبوللو ويوحنا القديسان",
+  "أبوللونيا الشهيدة",
+  "أبوللونيوس الراهب",
+  "أبوللونيوس المدافع",
+  "أبولليناريا القديسة",
+  "أبولليناريوس أسقف",
+  "أبولليناريوس الأسقف",
+  "أبوليدس البطريرك",
+  "أبونديوس الشهيد",
+  "إبيبوديوس وإسكندر الشهيدان",
+  "أبيبوس الشهيد",
+  "أبيرؤوه وأثوم الشهيدان",
+  "إبيستيمي وغلاكتيون الشهيدان",
+  "أبيفان الشهيد",
+  "أبيفانيوس أسقف",
+  "أبيما الشهيد",
+  "أبيماخوس الفرمي",
+  "أبيماخوس وعزاريانوس الشهيدان",
+  "أبيماخيوس الفرمي",
+  "أبيماخيوس والكسندر الشهيدان",
+  "إتروبيوس القارئ",
+  "أتوربيوس الخصي",
+  "أتونومسي الأسقف",
+  "أثريه الأب",
+  "أثناسيوس أسقف",
+  "أثناسيوس الأسقف",
+  "أثناسيوس الثالث",
+  "أثناسيوس الثاني",
+  "أثناسيوس الرسولي",
+  "أثناسيوس الشهيد",
+  "أثناسيوس القديس",
+  "أثيناغوراس الفيلسوف",
+  "أثينوجينيس الشهيد",
+  "أجريكولا الشهيد",
+  "أجنس الشهيدة",
+  "أخيلاس القديس",
+  "أخيلاوس الشهيد",
+  "أداكتيوس الشهيد",
+  "آداي وماري",
+  "أدروسيس الشهيدة",
+  "أدريان وناتاليا القديسان",
+  "أدوليوس الطرسوسي",
+  "إراسموس الأسقف",
+  "أرتيماس الشهيد",
+  "أرتيميوس",
+  "أرداليو الشهيد",
+  "أرساكيوس المعترف",
+  "أرسانيوس القديس",
+  "أرسانيوس مملوك",
+  "أرسانيوس وأولوجيوس الشهيدان",
+  "أرسانيوس وفيليمون الشهيدان",
+  "أرستون الشهيد",
+  "أرستيديس المدافع",
+  "أرسطو المدافع",
+  "أرسطوبولوس الرسول هو أحد السبعين",
+  "أرسطوس الرسول",
+  "أرسفيوس وأركياس الشهيدان",
+  "أرشليدس القديس",
+  "أرشيلاوس",
+  "أرشيلاوس القديس",
+  "أركاديوس الشهيد",
+  "أركانيوس والي سمنود",
+  "أرمانيوس الأب",
+  "إرميا الشهيد",
+  "أرنُبيوس",
+  "آري الشطانوفي",
+  "أريانا والي أنصنا",
+  "أسبانيوس",
+  "أستيروس الكاهن",
+  "استيريوس أسقف",
+  "أستيريوس السوفسطائي",
+  "أستيريوس الشهيد",
+  "أستيريوس القديس",
+  "إسحق",
+  "إسحق التبايسي",
+  "إسحق الدفراوي",
+  "إسحق السرياني",
+  "إسحق \"الكبير \"",
+  "إسحق المُعترِف",
+  "إسحق الهوريني",
+  "إسحق قس",
+  "إسخيون الشهيد",
+  "أسطاسيوس الشهيد",
+  "إسطفانا الساقط",
+  "إسطفانوس الأول",
+  "إسطفانوس الليبي",
+  "أسكلابيوس الشهيد",
+  "أسكلاس الشهيد",
+  "إسماعيل ورفيقاه الشهداء",
+  "إشعياء وبسويس الأسبانيان",
+  "إشعياء وهور وبولس",
+  "أغابوس",
+  "أغابي الشهيدة",
+  "أغابيطوس الأسقف",
+  "أغابيطوس الشهيد",
+  "أغابيوس الشهيد",
+  "أغاتودرس الشهيد",
+  "أغاثانجيلوس الشهيد",
+  "أغاثوبس وثيؤديلوس الشهيدان",
+  "أغاثوس الشهيد",
+  "أغاثون البابا",
+  "أغاثون الشهيد",
+  "أغاثون العمودي",
+  "أغاثون القديس",
+  "أغاثونيس الشهيدة",
+  "أغربينا الشهيدة",
+  "أغربينوس البابا",
+  "إغريغوريوس (غريغوريوس ) أسقف",
+  "إغريغوريوس (غريغوريوس ) الراهب",
+  "إغريغوريوس (غريغوريوس ) العجائبي",
+  "إغريغوريوس (غريغوريوس ) النزينزي",
+  "أغسطينوس القديس",
+  "أغناطيوس الثيؤفورس",
+  "أفانتيوس الشهيد",
+  "إفبربيوس اتسم الأب افبربيوس",
+  "أفتيخوس القديس",
+  "إفخارستوس",
+  "أفدوكيا الشهيدة",
+  "أفرا الشهيدة",
+  "أفراحات القديس",
+  "أفراسيا القديسة",
+  "أفراطس الأب",
+  "افرام السرياني",
+  "أفرام الشهيد",
+  "أفركيوس أسقف",
+  "أفروسينا القديسة",
+  "أفروسينى القديسة",
+  "أفرونيا الشهيدة",
+  "أفرونيا العذراء",
+  "أفستراتيوس الشهيد",
+  "أفلاطون الشهيد",
+  "أفلمبيوس وأفلمبية القديسان",
+  "إفوذس الشهيد",
+  "أقلاديوس الشهيد",
+  "أكاكيوس أسقف",
+  "أكاكيوس البار",
+  "أكاكيوس بطريرك",
+  "أكبسيما الشهيد",
+  "أكساني القديسة",
+  "إكسوا الشهيدة",
+  "أكسيوبرانتيوس الأسقف",
+  "إكسيوبريوس أسقف",
+  "أكسيوبريوس وزوجته زوئي",
+  "اكليمنضس أسقف",
+  "إكليمنضس الروماني",
+  "إكليمنضس السكندري",
+  "أكندينوس ورفقاؤه الشهداء",
+  "أكويلينا الشهيدة",
+  "الأب آمون",
+  "الأحزم الشيخ",
+  "الأحزم بن",
+  "الأسعد أبو",
+  "الأنبا آمون",
+  "الأنبا أنانيه",
+  "ألبان الشهيد",
+  "إلبيدوس القديس",
+  "ألبينوس الطوباوي",
+  "الحميريون )اليمنيون( الشهداء",
+  "السعيد بركة",
+  "الشهداء أباهور وأبا",
+  "ألفان وميدويون",
+  "الفتاريوس الشهيد",
+  "الكسندر الأب",
+  "الكسندر الروماني",
+  "الكسندر الشهيد",
+  "الكسندر الطيبي",
+  "الكسندر الفح َّام",
+  "الكسندر الكبادوكي",
+  "الكسندرا العذراء",
+  "الكسندرا الملكة",
+  "الكسندروس أسقف",
+  "الكسندروس الأكيميتي",
+  "الكسندروس الأول",
+  "الكسندروس الثاني",
+  "ألكسندروس الجندي",
+  "الكسندروس من ليكوبوليس",
+  "الكسيوس القديس",
+  "اللاديوس الأسقف",
+  "ألماخوس الشهيد",
+  "المفضل المصري",
+  "ألونيس الأب",
+  "أليبوس القديس",
+  "أليدورس أسقف",
+  "أليعازر الشهيد",
+  "أماتاس القديس",
+  "أماتور الأسقف",
+  "أمانديوس الأسقف",
+  "أمبروسيوس السكندري",
+  "أمبروسيوس القديس",
+  "أمبيرة الشهيدة",
+  "أمبيكوس الأب",
+  "إمساح القفطي",
+  "أمفيلوشيوس أسقف",
+  "آمون أسقف",
+  "آمون الشهيد",
+  "آمون الطوخي",
+  "آمون بهرموبوليس",
+  "آمونا الشهيدة",
+  "أموناس الأب",
+  "أمونيوس",
+  "أمونيوس أسقف",
+  "أمونيوس الأب",
+  "أمونيوس السقاص",
+  "أمونيوس الطويل",
+  "أمويس القديس",
+  "أميجديوس الأسقف",
+  "أميليوس الشهيد",
+  "أناتوليا الشهيدة",
+  "أناتوليس الشهيد",
+  "أناتوليوس أسقف",
+  "أناثاس الشهيدة",
+  "أناسيمون القديسة",
+  "أنبا إشعياء",
+  "أنبا آمون",
+  "أنبا إهرون",
+  "أنتروس القديس",
+  "أنتيباس الأسقف",
+  "أنثيموس أسقف",
+  "أندرآس القديس",
+  "أندراوس الرسول",
+  "أندراوس المحامي",
+  "أندراوس وأونانيوس الشهيدان",
+  "أندراوس وبولس وبطرس",
+  "أندرونيقوس البابا",
+  "أندرونيقوس الرسول",
+  "أندرونيقوس الشهيد",
+  "أنسانيوس الشهيد",
+  "أنستاسيا الشهيدة",
+  "أنستاسيا باتريكيا",
+  "أنستاسيا وباسيليسا",
+  "أنستاسيا وخريسغونس يلقبها الغرب بأنستاسيا",
+  "أنستاسيا وكيرلس الشهيدان",
+  "أنستاسية الشهيدة",
+  "أنسطاسيوس البابا",
+  "أنسيمُس الشهيد",
+  "أنطون أبو",
+  "أنطونيوس الشهيد",
+  "أنطونيوس القديس",
+  "أنطيخوس وسيرياس الشهيدان",
+  "أنقراطيس الشهيدة",
+  "أنوراتوس أسقف",
+  "أنوسنت أسقف",
+  "أنوسنت الأول",
+  "أنيانوس البابا",
+  "أنيستوس أسقف",
+  "أنيسيا الشهيدة",
+  "أنيسياس أسقف",
+  "أهل مغارة أفسس",
+  "أوبتاتيوس الأسقف",
+  "أوبليوس الشهيد",
+  "أوتروبيوس أو",
+  "أوتيموس الشهيد",
+  "أوجرافيوس الشهيد",
+  "أوجين القديس",
+  "أوجينيا الشهيدة",
+  "أوجينيوس الشهيد",
+  "أور الأب",
+  "أورانوس الأسقف",
+  "أوربان الأسقف",
+  "أورسولا الشهيدة",
+  "أورسيسيوس القديس",
+  "أوري الشطانوفي",
+  "أوريجينوس العلامة",
+  "أوريليوس الأسقف",
+  "أوسابيوس أسقف",
+  "أوسابيوس السموساطي",
+  "أوسابيوس القيصري",
+  "أوسابيوس الكاهن",
+  "أوسابيوس النيقوميدي",
+  "أوساغينوس الشهيد",
+  "أوساويوس الشهيد",
+  "أوستخيوم القديسة",
+  "أوسطاثيوس بطريرك",
+  "أوطيخيان الأسقف",
+  "أوغاريتوس الأب",
+  "أوغريس البنطي",
+  "أوفيمية الشهيدة",
+  "أوفيمية القديسة",
+  "أولاد العسال",
+  "أولاديوس الأب",
+  "أولجيوس الأب",
+  "أولجيوس الناسك",
+  "أولجيوس قاطع الأحجار",
+  "أولجيوس والكسيح",
+  "أولمباس الرسول",
+  "أولمبياس الشماسة",
+  "أولمبياس ومكسيموس الشهيدان",
+  "أومانيوس البابا",
+  "أيا الشهيدة",
+  "إيبريخوس الأب",
+  "إيجبيزبيوس أسقف",
+  "إيروثيوس القديس",
+  "إيرونيموس القديس",
+  "إيريس الشهيدة",
+  "إيريني الشهيدة",
+  "إيريني القديسة",
+  "إيرينيؤس أسقف",
+  "إيرينيؤس وميستيولا الشهيدان",
+  "إيرينيس",
+  "إيساك الأب",
+  "إيسنت الشهيد",
+  "إيسي الشهيد",
+  "إيسيذورس الأنطاكي",
+  "إيسيذورس السكندري",
+  "إيسيذورس الشهيد",
+  "إيسيذورس القديس",
+  "إيسيذورس المعترف",
+  "إيسيذورس وسنا الشهيدان",
+  "إيلاري أسقف",
+  "إيلارية القديسة",
+  "إيلاريون الكبير",
+  "إيلاليا البتول",
+  "إيلودورس أسقف",
+  "إيليا الأب",
+  "إيليا الكاهن",
+  "إيليا المتوحد",
+  "إيلياس الأب",
+  "إيلياس الأسقف",
+  "إيلياس الخصى",
+  "إيليان الحِمْصي",
+  "إينوسنت الراهب",
+  "أيوب الأب",
+  "بائيسة القديسة",
+  "بائيسوس",
+  "بابياس الأسقف",
+  "بابياس ورفقاؤه الشهداء",
+  "بابيلاس الشهيد",
+  "بابيلاس القديس",
+  "باخوس الشهيد",
+  "باخوم الإخميمي",
+  "باخوميوس القديس",
+  "باخياروس",
+  "باديموس الشهيد",
+  "بارديسيان",
+  "بارساس الأسقف",
+  "باركلاس الشهيد",
+  "بارهادبيسابا الشهيد",
+  "باستور ويسطس الشهيدان",
+  "باسيان القديس",
+  "باسيدي الشهيد",
+  "باسيلاؤس الأسقف",
+  "باسيليدس",
+  "باسيليدس الشهيد",
+  "باسيليسا الشهيدة",
+  "باسيليسا ويوليان القديسان",
+  "باسيليوس أسقف",
+  "باسيليوس الشهيد",
+  "باسيليوس الكبير",
+  "باسيليوس مطران القدس",
+  "باشليلية الشهيدة",
+  "بافنوتيوس أسقف",
+  "بافنوتيوس الأسقف",
+  "بافنوتيوس الراهب",
+  "بافنوتيوس الشماس",
+  "بافنوتيوس الشهيد",
+  "بافنوتيوس الصعيدى",
+  "بافنوتيوس القديس",
+  "بافنوتيوس المتوحد",
+  "بافنوتيوس الناسك",
+  "بالاديوس الأسقف",
+  "بالاديوس القديس",
+  "بالاريانوس الشهيد",
+  "بالبينا العذراء",
+  "باماخيوس",
+  "بامبو الأب",
+  "بامفيليوس الشهيد",
+  "بانساريون الشهيد",
+  "بانسوف القديس",
+  "بانكراس الشهيد",
+  "بانيكاروس الفارسي",
+  "بانينا وباناو الشهيدان",
+  "باولا القديسة",
+  "ببلياس الشهيدة",
+  "ببيانة البتول",
+  "بترا الأب",
+  "بترا الشهيد",
+  "بتروكليوس الشهيد",
+  "بترونيلا الشهيدة",
+  "بترونيوس الأسقف",
+  "بترونيوس القديس",
+  "بتوليماوس الشهيد",
+  "بتوليماوس )بطليموس( المصري",
+  "بجوج الشهيد",
+  "بجوش الشهيد",
+  "بداسيوس القديس",
+  "براكسيدس البتول",
+  "براكسية العذراء",
+  "براليوس الأسقف",
+  "برايس الأسقف",
+  "بربارة الشهيدة",
+  "برباسيماس الشهيد",
+  "بربتوا",
+  "برتانوبا البتول",
+  "برثولماوس الرسول",
+  "برجنتينوس الشهيد",
+  "برسابا الشهيد",
+  "برسوم العريان القديس",
+  "برسوما أسقف",
+  "برسوما الأب",
+  "برسيماوس الأسقف",
+  "برصنوفيوس الأب",
+  "برصنوفيوس الشهيد",
+  "برفوريوس الشهيد",
+  "برلعام الشهيد",
+  "برلعام ويهوشفاط القديسان",
+  "برنابا الرسول",
+  "برناباس الأسقف",
+  "برناباس القديس",
+  "بروتاس الشهيد",
+  "بروتاسيوس وجرفاسيوس الشهيدان",
+  "بروثاؤس اللاتيني القديس",
+  "بروخورس الرسول",
+  "بروكلس البطريرك",
+  "بروكوبيوس القديس",
+  "بروكونيوس الشهيد",
+  "بريسكلا القديسة",
+  "بريسكوس الشهيد",
+  "بريموس وفيليكيانوس الشهيدان",
+  "بسادة الأسقف الشهيد",
+  "بسطوروس الشهيد",
+  "بسنتاؤس الأسقف",
+  "بسنتاؤس الناسك",
+  "بسوثي الأسقف الشهيد",
+  "بشاي القديس",
+  "بشاي الناسك القديس",
+  "بشاي أنوب الشهيد",
+  "بشاي من إنطاكية",
+  "بضابا الأسقف الشهيد",
+  "بطرس أسقف براغ",
+  "بطرس الأول البابا السابع عشر",
+  "بطرس البوهي الشهيد",
+  "بطرس الثالث",
+  "بطرس الثاني البابا الحادي والعشرون",
+  "بطرس الخامس",
+  "بطرس الرابع",
+  "بطرس الراهب",
+  "بطرس الرهاوي الأسقف",
+  "بطرس السابع البابا المائة والتاسع",
+  "بطرس السادس البابا المائة والرابع",
+  "بطرس الشماس",
+  "بطرس الشهيد",
+  "بطرس العابد",
+  "بطرس بلسم",
+  "بطرس خريسولوغوس الأسقف",
+  "بطرس مطران الحبشة",
+  "بطرس ورفقاؤه الشهداء",
+  "بطلان الطبيب",
+  "بقطر الأمير",
+  "بقطر الروماني",
+  "بقطر الشهيد",
+  "بقطر ورفقاؤه الشهداء",
+  "بقيرة الكاتب",
+  "بلاسيوس الأسقف الشهيد",
+  "بلامون الأب",
+  "بلامون السائح",
+  "بلانا القس الشهيد",
+  "بلاندينا الشهيدة",
+  "بليسيلا القديسة",
+  "بنامون القديس",
+  "بنتينوس القديس",
+  "بنجينوس القديس",
+  "بنداليمون الشهيد",
+  "بنيامين الأول البابا الثامن والثلاثون",
+  "بنيامين الثاني البابا الثاني والثمانون",
+  "بنيامين الطوباوي",
+  "بنيامين وأودكسية أخته",
+  "بهنام وسارة الشهيدان",
+  "بوبليا القديسة",
+  "بوتامون الأسقف المعترف",
+  "بوتامينا الشهيدة",
+  "بوثينوس ورفقاؤه الشهداء",
+  "بوديليوس الشهيد",
+  "بورفيروس الأسقف",
+  "بوسفوريا وهيرونيون",
+  "بوسيدونيوس القديس",
+  "بوسيديوس الأسقف",
+  "بولا الطموهي",
+  "بولا القديس",
+  "بولس",
+  "بولس البسيط",
+  "بولس البوشي",
+  "بولس الراهب",
+  "بولس السرياني الشهيد",
+  "بولس الشهيد",
+  "بولس الكبير الأب",
+  "بولس المعترف",
+  "بولس )الواضح( بن",
+  "بولس بطريرك",
+  "بولس وسلفانا الشهيدان",
+  "بولس ويوحنا الشهيدان",
+  "بوليكتيوس الشهيد",
+  "بوليكربوس الأسقف",
+  "بولينوس أسقف",
+  "بوليو الشهيد",
+  "بونتيانوس أسقف",
+  "بونتيوس الشماس",
+  "بونتيوس الشهيد",
+  "بونوسيوس الشهيد",
+  "بونوسيوس المتوحد",
+  "بونيفاسيوس الأول البطريرك",
+  "بونيفاسيوس الطرسوسي الشهيد",
+  "بياتريس الشهيدة",
+  "بيامون القديسة",
+  "بيبليوس الأب",
+  "بيتربيمتيس الطوباوى",
+  "بيتوس القديس",
+  "بيثيرون الأب",
+  "بيجول الجندي",
+  "بيجيمي القديس",
+  "بيخيبس الأشموني",
+  "بيريوس القديس",
+  "بيسورا الأسقف",
+  "بيسوس الراهب",
+  "بيشوي الأب",
+  "بيصاريون الكبير القديس",
+  "بيفا الشهيد",
+  "بيفام الأوسيمي الشهيد",
+  "بيفام الشهيد",
+  "بيفام الطحاوي الشهيد",
+  "بيلاجيا الطرسوسية الشهيدة",
+  "بيلاجيا )بيلاجية( التائبة",
+  "بيلاجية الأنطاكية الشهيدة",
+  "بيلوسيانوس القديس",
+  "بيليوس الشهيد",
+  "بيمانون الشهيد",
+  "بيمن القديس",
+  "بيمن المعترف",
+  "بينوفيوس القس القديس",
+  "بيهور الأب",
+  "بيوخا وبناين القديسان",
+  "بيوس أسقف روما",
+  "تاؤبستي القديسة",
+  "تاؤدوسية الشهيدة",
+  "تاتيان",
+  "تاتيان أو",
+  "تاتيانا",
+  "تاتينوس دولاس الشهيد",
+  "تادرس أسقف",
+  "تادرس أسقف كورنثوس",
+  "تادرس ال",
+  "تادرس الأسقف",
+  "تادرس الأسقف الشهيد",
+  "تادرس الإسكندري",
+  "تادرس الاناتوني",
+  "تادرس الأنطاكي",
+  "تادرس البرامي",
+  "تادرس الراهب",
+  "تادرس الرهاوي",
+  "تادرس الرومي",
+  "تادرس الشُطبي",
+  "تادرس الطابنسيني",
+  "تادرس الكبادوكي",
+  "تادرس المشرقي",
+  "تادرس بن",
+  "تادرس تلميذ",
+  "تادرس تيرو",
+  "تادرس )ثيؤدور( أسقف",
+  "تادرس )ثيؤدورس( الأسقف",
+  "تادرس عريان الأرخن",
+  "تادرس من اليثيروبوليس",
+  "تارسيكوس الشهيد",
+  "تاليدا الأم",
+  "تأور البتول",
+  "تاييس القديسة",
+  "تداؤس الرسول",
+  "تراخوس الشهيد",
+  "ترتليان العلامة",
+  "تريفيلليوس النيقوسي القديس",
+  "تكلا الرومانية الشهيدة",
+  "تكلا العذراء",
+  "تكلا الفارسية الشهيدة",
+  "تكلا الفلسطينية الشهيدة",
+  "تكلا القديسة",
+  "تكلا المصرية",
+  "تكلا المصرية الشهيدة",
+  "تكلا وإيسي الشهيدان",
+  "تكلا وزوجها بونيفاس",
+  "تكلا وموجي الشهيدتان",
+  "تكلاهيمانوت الأثيوبي",
+  "تليسفوروس الأسقف الشهيد",
+  "تُوَج َّه",
+  "توما أسقف",
+  "توما الإكويني",
+  "توما الرسول",
+  "توماس السائح",
+  "توماس الشهيد",
+  "توماييس الشهيدة",
+  "تيّا الشهيد",
+  "تيبرتيوس الشهيد",
+  "تيبرتيوس ورفقاؤه الشهداء",
+  "تيجريوس الكاهن",
+  "تيخون أسقف أماثوس",
+  "تيرانيون الشهيد",
+  "تيطس الأسقف",
+  "تيطس الرسول",
+  "تيموثاؤس المصري الشهيد",
+  "تيموثاوس أسقف",
+  "تيموثاوس الأب",
+  "تيموثاوس الأول البابا الثاني والعشرون",
+  "تيموثاوس الثالث البابا الثاني والثلاثون",
+  "تيموثاوس الثاني البابا السادس والعشرون",
+  "تيموثاوس القديس السائح",
+  "تيموثاوس الكاهن",
+  "تيموثاوس ومورا الشهيدان",
+  "تيمون الرسول",
+  "ثاؤذورس الرومي الشهيد",
+  "ثاؤضوطس الأسقف القديس",
+  "ثاؤفيلس الراهب القديس",
+  "ثاؤفيلس وزوجته الشهيدان",
+  "ثاؤكليا الشهيدة",
+  "ثاليليؤس الأبيكلوتوس",
+  "ثاليليئوس الشهيد",
+  "ثاوفيلس الأنطاكي القديس",
+  "ثاوفيلس البابا الثالث",
+  "ثيؤبمبتس الراهب",
+  "ثيؤدتا النيقية الشهيدة",
+  "ثيؤدوتا الشهيدة",
+  "ثيؤدوتس الأب",
+  "ثيؤدور البابا الخامس والأربعون",
+  "ثيؤدورا",
+  "ثيؤدورا الأم القديسة",
+  "ثيؤدورا الأولى الإمبراطورة",
+  "ثيؤدورا التائبة",
+  "ثيؤدورا وديديموس الشهيدان",
+  "ثيؤدورت الكاهن الشهيد",
+  "ثيؤدورت النسطوري",
+  "ثيؤدوسيا الشهيدة",
+  "ثيؤدوسيوس الأول",
+  "ثيؤدوسيوس الثانى",
+  "ثيؤدولس الكاهن",
+  "ثيؤدولس ويوليان الشهيدان",
+  "ثيؤدولوس وأغاثوبوس الشهيدان",
+  "ثيؤغنستس",
+  "ثيؤغنستس الأب",
+  "ثيؤفانيوس البابا الستون",
+  "ثيؤن الأب",
+  "ثيؤناس الأب",
+  "ثيؤناس البابا السادس",
+  "ثيئودورس الأسقف المعترف",
+  "ثيكوسا الشهيدة",
+  "ثيودوسيوس أسقف",
+  "جاتيان",
+  "جاّلا الشهيد",
+  "جاّلا القديسة",
+  "جالاتيون",
+  "جاليكانوس",
+  "جانواريوس",
+  "جانواريوس و فستوس",
+  "جاودنتيوس",
+  "جاودنتيوس الأسقف",
+  "جاورجي",
+  "جاورجيوس",
+  "جاياناو رهيبسيمى والعذارى",
+  "جدانوس",
+  "جديد",
+  "جراتيانوس",
+  "جراسيموس و أثناسيوس",
+  "جرجس",
+  "جرجس العابد",
+  "جرجس بن العميد",
+  "جرمانيكوس",
+  "جريجوري )إغريغوريوس( القديس",
+  "جريمونا العذراء",
+  "جلاسيوس",
+  "جلاسيوس سوزيكوس Gelasius",
+  "جليسيريا",
+  "جنفياف القديسة",
+  "جورج و فرونتو",
+  "جورجونيا القديسة",
+  "جورجونيوس الشهيد",
+  "جورجونيوس و بطرس",
+  "جوردياس الشهيد",
+  "جورديان الروماني",
+  "جورديانوس الشهيد",
+  "جورديوس الشهيد",
+  "جورياس و ساموناس",
+  "جوستا وروفينا الشهيدتان",
+  "جوسوينوس الشهيد",
+  "جوفنتينوس وماكسيمينوس الشهيدان",
+  "جوفيتا و فستينوس",
+  "جوفينال الأسقف",
+  "جوكوندوس الشهيد",
+  "جوليا الشهيدة",
+  "جوليان",
+  "جوليان الشهيد",
+  "جوليان و قيصاريوس",
+  "جوليان وثيؤدولس",
+  "جوليان )يوليان(",
+  "جوليان )يوليان( الأنطاكي",
+  "جوليان )يوليان( وكرونيون",
+  "جوليانا",
+  "جوليتّا",
+  "جوليتّا الشهيدة",
+  "جوليتّا وقرياقوس",
+  "جوليوس",
+  "جوليوس )يوليوس( وهارون",
+  "جونا",
+  "جوناس",
+  "جونيلاّ الشهيدة",
+  "جيتوليوس",
+  "جيرفاز",
+  "جيروم القديس",
+  "جيريون ورفقاؤه الشهداء",
+  "جيسليمييه الشهيد",
+  "جيناديوس الأول أسقف",
+  "جيناديوس كاهن مارسيليا",
+  "جينتيانوس و فيكتوريانوس",
+  "جينيسيوس الشهيد",
+  "جينيسيوس المهرج الشهيد",
+  "حانانا )حينانا( Henana",
+  "حبصة ورفيقتاها الشهيدات",
+  "حبيب المصري الأرخن",
+  "حبيب جرجس الأرشيدياكون",
+  "حبيب فرج البار",
+  "حديد القس",
+  "حزقيال",
+  "حزقيوس",
+  "حسنة العفيفة اليهودية",
+  "حلفا وزكا الشهيدان",
+  "حنانيا الرسول والشهيد",
+  "حنانيا الشهيد",
+  "حنس الشهيد",
+  "حنة القديسة",
+  "خائيل الأول البابا السادس والأربعون",
+  "خائيل الثالث البابا السادس والخمسون",
+  "خائيل الثاني البابا الثالث والخمسون",
+  "خرستوذولس",
+  "خرستوذولس البابا السادس والستون",
+  "خروماتيوس كروماتيوس(",
+  "خريسبوس)كريسبوس",
+  "خريستوجونس)كريستوجونس الشهيد",
+  "خريستوظُلو",
+  "خريستوفوروس الشهيد",
+  "خريسولوجوس )كريسولوجوس(",
+  "خوزي و هرواج",
+  "دابامون الشهيدة",
+  "داتيفوس و ساتورنينوس ورفقاؤهم",
+  "داديثو الفارسي",
+  "داريا وخريسانثوس الشهيدان",
+  "داسيه الجندي الشهيد",
+  "داسيوس الشهيد",
+  "داكيانوس الشهيد",
+  "داكيوس وبقطر وإيريني",
+  "داماسوس الأول أسقف",
+  "دانيال الشهيد",
+  "دانيال العمودي القديس",
+  "دانيال قمص شيهيت",
+  "داود المقاري القس",
+  "داود بن غبريال",
+  "داوساس ورفقاؤه الشهداء",
+  "دجنيانوس الوالي القديس",
+  "دراكونتيوس",
+  "دروسيس ويؤنَا الشهيدتان",
+  "دِسيدراتُس الأسقف القديس",
+  "دَلماتيوس العابد القديس",
+  "دميان الشهيد",
+  "دميان و قزمان",
+  "دميانة الشهيدة والأربعون عذارى الشهيدات",
+  "دميانوس البابا الخامس والثلاثون",
+  "دهوم وابنتها وحفيدتها",
+  "دوروتاها )دوروثي( العذراء والشهيدة",
+  "دوروثيؤس الأب",
+  "دوروثيؤس الأنطاكي",
+  "دوروثيؤس الشهيد",
+  "دوروثيئوس وبطرس و",
+  "دوروثيا القديسة",
+  "دوروثيوس أسقف تسالونيك",
+  "دوروثيوس النسطوري",
+  "دوريثيؤس التبايسي القديس",
+  "دوسيثوس الهرطوقي )دونيثوس الغنوصي(",
+  "دولاجي الأم الشهيدة",
+  "دولاس",
+  "دولسيديوس الأسقف القديس",
+  "دوماديوس السرياني الشهيد",
+  "دوماديوس ومكسيموس القديسان",
+  "دومِتيوس الفارسي الشهيد",
+  "دومنينا وثيؤنيلا الشهيدتان",
+  "دومنينُس الشهيد",
+  "دوميتيللاونيريوس و أخيليوس الشهداء",
+  "دوميكيوس الشهيد",
+  "دومينيكا العذراء الشهيدة",
+  "دوناتُس أسقف أريزو",
+  "دوناتس أسقف قرطاجنة",
+  "دوناتيان وروجاتيان الشهيدان",
+  "دوناتيلا وماكسيما وسيكوندا",
+  "دونيثوس الغنوصي",
+  "ديؤدور أسقف",
+  "ديؤدورة الشهيدة",
+  "ديانوس أسقف قيصرية",
+  "ديدرا وابناها الشهداء",
+  "ديديموس الشهيد",
+  "ديديموس الضرير القديس",
+  "ديديموس الكاهن الشهيد",
+  "ديديموس الناسك القديس",
+  "ديسقورس الشهيد",
+  "ديسقورس الطيبي",
+  "ديسقورس وسكلابيوس أخوه",
+  "ديسيدورس الكاهن",
+  "ديماس ) ديسماس(",
+  "ديمترياس الشريفة",
+  "ديمتريوس الأول",
+  "ديمتريوس الثاني",
+  "ديمتريوس الشهيد",
+  "ديموفيلس بطريرك القسطنطينية",
+  "ديميدس الشهيد",
+  "دينة وبولس ولنجينوس",
+  "دينيس",
+  "ديوكليس القديس",
+  "ديونيزيا الشهيدة",
+  "ديونيسة الشماسة",
+  "ديونيسيوس",
+  "ديونيسيوس أسقف",
+  "ديونيسيوس أسقف كورنثوس",
+  "ديونيسيوس الأريوباغي",
+  "ديونيسيوس البابا الرابع عشر",
+  "ديونيسيوس الشهيد",
+  "ديونيسيوس المفسر",
+  "ديونيسيوس بن صليبا",
+  "ديونيسيوس، روستيكوس وإيليوثيريوس",
+  "ديونيسيوس ورفقاؤه الشهداء",
+  "ذكري السائح",
+  "راغب ساويرس الأرشيدياكون",
+  "رايس",
+  "رجيولُس الأسقف القديس",
+  "رزق المعلم",
+  "رستيتيوتا",
+  "رفقة وأولادها الشهداء",
+  "رفله جرجس الأرخن",
+  "رهيبسيمي وجايانا والعذارى",
+  "روجاتُس الشهيد",
+  "روجاتيان الشهيد",
+  "روجاتيانوس",
+  "روفوس وزوسيموس الشهيدان",
+  "روفينا وجوستا الشهيدتان",
+  "روفينا وسِكوندا الشهيدتان",
+  "روفينوس أسقف أكويلا",
+  "روفينوس وفالريوس الشهيدان",
+  "روفينيانُس الأسقف",
+  "رومانوس",
+  "رومانوس الإنطاكي الشهيد",
+  "رومانوس الشهيد",
+  "رومانوس المعترف",
+  "روميلوس الأسقف الشهيد",
+  "روميولوس الشهيد",
+  "روهوم بنت أزمع",
+  "ريباراتا العذراء الشهيدة",
+  "ريباريوس",
+  "ريتيكيوس القديس",
+  "ريجينا العذراء الشهيدة",
+  "ريماس وإيناس وبيناس",
+  "سابا",
+  "سابا الغوصي )القوطي(",
+  "سابا من أريحا",
+  "سابّاتيوس",
+  "ساباتيوس النوفاتياني",
+  "سابور واسحق الأسقفان",
+  "سابيليوس المبتدع",
+  "سابينا الشهيدة",
+  "سابينوس الأسقف القديس",
+  "سابينوس الأسقف ورفقاؤه",
+  "سابينيان",
+  "سابينيسيوس أسقف القيروان",
+  "ساتورُس",
+  "ساتورنينوس",
+  "ساتورنينوس الأسقف",
+  "ساتورنينوس )ساتورنيلس( الغنوصي",
+  "ساتورنينوس وداتيفوس ورفقاءهما",
+  "ساتيروس القديس",
+  "سادوث الأسقف الشهيد",
+  "سارماتاس الشهيد",
+  "سارة ابنة سنحاريب",
+  "سارة الشهيدة",
+  "سارة القديسة",
+  "سارة وولداها الشهداء",
+  "سافين القديس",
+  "سالامانس",
+  "سالفيان )سلفيانوس( كاهن",
+  "سالفينا )سيلفينا(",
+  "سالفيوس",
+  "سامان و أوسابيوس",
+  "ساموناس و جورياس وأبيبوس",
+  "سانكتوس الشماس الشهيد",
+  "ساويرس البطريرك القديس",
+  "ساويرس بن المقفع",
+  "ساينيسيوس الأسقف",
+  "سبيراتوس ورفقاؤه الشهداء",
+  "سبيريديون الأسقف القديس",
+  "سبيوسيب َّس واليوسيب َّس وميليوسيب َّس",
+  "ستراتونيس",
+  "سِدراك الأنطوني ورفقاؤه",
+  "سرجيوس الإتريبي ورفقاؤه",
+  "سرجيوس القمص",
+  "سرجيوس وواخس الشهيدان",
+  "سرفاتيوس الأسقف القديس",
+  "سرور الجلال المعلم",
+  "سعد سليمان البار",
+  "سعيد بن كاتب",
+  "سِفِرينوس الأسقف",
+  "سفينة الراهبة الناسخة",
+  "سقراط المؤرخ",
+  "سكلابيوس و ديسقورس أخوه",
+  "سلبيسيوس ساويرس",
+  "سلستين الأول أسقف",
+  "سلفانوس الممثل القديس",
+  "سلوانس )سيلفانوس( القديس",
+  "سليمان القديس",
+  "سِليوكُس الشهيد",
+  "سمعان ابن كليل",
+  "سمعان الأرمني الأسقف",
+  "سمعان الأسقف",
+  "سمعان الدباغ القديس",
+  "سمعان العمودي القديس",
+  "سمعان القانوي الرسول",
+  "سمعان المنوفي الشهيد",
+  "سمعان بارسابا الأسقف",
+  "سمعان كلوبا الرسول",
+  "سمعان و يوحنا",
+  "سِن ِّن و عبدون",
+  "سنا الجندي الشهيد",
+  "سوتيريس العذراء الشهيدة",
+  "سورس وانطوكيون ومشهوري",
+  "سوريانوس الأسقف القديس",
+  "سوزومين",
+  "سوزون الشهيد",
+  "سوسن القديسة",
+  "سوسنة الشهيدة",
+  "سوسنيوس الخصي القديس",
+  "سوليوتُر الشهيد",
+  "سيباستيان الشهيد",
+  "سيبريللا ولوسي وأروا",
+  "سيداروس أخنوخ القمص",
+  "سيدهم بشاي الشهيد",
+  "سيرابيون أسقف تيمي",
+  "سيرابيون الأب",
+  "سيرابيون الأسقف القديس",
+  "سيرابيون التائب",
+  "سيرابيون الشهيد",
+  "سيرابيون القديس",
+  "سيرابيون الكبير",
+  "سيريكوس أسقف روما",
+  "سيريناس البستاني الشهيد",
+  "سيريناس القديس",
+  "سيسوي )صيصوي( الأب",
+  "سيسيليا )سيسيلي أو",
+  "سيسيليانوس الأسقف",
+  "سيسيليوس القديس",
+  "سيسينيوس الشهيد",
+  "سيسينيوس القديس",
+  "سيسينيوس ومارتيريوس وألكسندر",
+  "سيفيريانوس المعترف",
+  "سيكستوس الأول",
+  "سيكستوس الثاني أسقف",
+  "سيكوندا وماكسيما ودوناتيلا",
+  "سيكوندس",
+  "سيكوندس الغنوصي",
+  "سيكوندينوس القديس",
+  "سيلا الرسول",
+  "سيلبون",
+  "سيلفانوس",
+  "سيلفستر الأول أسقف",
+  "سيلكو الملك",
+  "سيليرينس المعترف",
+  "سيمبليسيان الأسقف القديس",
+  "سيمبليسيوس الأسقف القديس",
+  "سيمفوروزا وأولادها السبعة",
+  "سيمفوريان الشهيد",
+  "سيمون الأول البابا الثاني والأربعون",
+  "سيمون الثاني البابا الحادي والخمسون",
+  "سينسيوس أو ساينيسيوس مطران بنتابوليس )المدن",
+  "سينكليتيكي القديسة",
+  "سينوسيوس الشهيد",
+  "سيهما القديس",
+  "سيونيه و أغابي",
+  "شمس الرئاسة أبو",
+  "شمشون القسطنطيني القديس",
+  "شنودة الأول البابا الخامس والخمسون",
+  "شنودة البهنساوي الشهيد",
+  "شنودة الثاني البابا الخامس والستون",
+  "شنودة الراهب القديس",
+  "شنودة الشهيد",
+  "شنودة رئيس المتوحدين",
+  "شنوسي الفتى الشهيد",
+  "شهداء أتريب",
+  "شهداء أخميم",
+  "شهداء إسنا",
+  "شهداء أفسس",
+  "شهداء الإسكندرية",
+  "شهداء الإسكندرية أثناء اضطهاد الإمبراطور",
+  "شهداء الحميريّون )اليمنيون(",
+  "شهداء الرُها",
+  "شهداء السيرابيون",
+  "شهداء الفرس",
+  "شهداء القاهرة",
+  "شهداء الكتيبة الطيبية",
+  "شهداء الوباء في",
+  "شهداء أنصنا",
+  "شهداء أنصنا الرهبان",
+  "شهداء ببنوسة",
+  "شهداء بسبب البدعة",
+  "شهداء تونة الجبل",
+  "شهداء جبل القديس",
+  "شهداء جبل سيناء",
+  "شهداء حكم نيرون",
+  "شهداء دندرة",
+  "شهداء ساموساطا السبعة",
+  "شهداء سبسطية",
+  "شهداء سكيلّيام",
+  "شهداء شيهيت الشيوخ",
+  "شهداء صور المصريين",
+  "شهداء فارس",
+  "شهداء كريت العشر",
+  "شهداء ليون",
+  "شهداء نيقوميديا",
+  "شهيدات",
+  "شهيدات أسيوط",
+  "شورة الصبي الشهيد",
+  "شيرين القديسة",
+  "شيونية و أغابي",
+  "صادق روفائيل البار",
+  "صادوق ورفقاؤه الشهداء",
+  "صالح نخلة الأُرخُن",
+  "صرابامون أسقف الخرطوم",
+  "صرابامون أسقف المنوفية",
+  "صرابامون الأسقف الشهيد",
+  "صرابامون القمص القديس",
+  "صفرونيوس الأسقف",
+  "صلسس Celsus",
+  "صليب الشهيد",
+  "صموئيل",
+  "صموئيل أسقف أوسيم",
+  "صموئيل الأثيوبي القديس",
+  "صوفية الشهيدة",
+  "صوفية القديسة",
+  "صوفية القديسة وبناتها العذارى الشهيدات",
+  "صوفية والخمسون عذراء الشهيدات",
+  "صوفيةو آمون الشهيدان",
+  "صيصوي )الأنبا شيشوي(",
+  "صيصوي الطيبي القديس",
+  "ضالوشام الشهيدة",
+  "طاتباني الشهيدة",
+  "طاطس وكوبتلاس وأكسوا",
+  "طوركواتُس ورفقاؤه",
+  "طوسيا وأولادها الشهداء",
+  "عبد",
+  "عبد المسيح",
+  "عبد المسيح المسعودي",
+  "عبد المسيح المناهري",
+  "عبد الملاك",
+  "عبد الملك تواضروس",
+  "عبدون",
+  "عربي بن دويل",
+  "عزاريانوس و أبيماخوس الشهيدان",
+  "عوض القبطي المعلم",
+  "غالي المعلم",
+  "غاليون السائح",
+  "غبريال الأول البابا السابع والخمسون",
+  "غبريال الثالث البابا السابع والسبعون",
+  "غبريال الثامن البابا السابع والتسعون",
+  "غبريال الثاني البابا",
+  "غبريال الخامس البابا الثامن والثمانون",
+  "غبريال الرابع البابا السادس والثمانون",
+  "غبريال السابع البابا الخامس والتسعون",
+  "غبريال السادس البطريرك الحادي والتسعون",
+  "غبريال بن نجاح",
+  "غلوكوس الأسقف الشهيد",
+  "فابيانوس أسقف",
+  "فابيوس الشهيد",
+  "فابيولا القديسة",
+  "فاروس الشهيد",
+  "فاسي الشهيدة",
+  "فالريانا الشهيدة",
+  "فالريانوس الأسقف",
+  "فالريوس",
+  "فالريوس الأسقف المعترف",
+  "فالنتين الأسقف القديس",
+  "فالنتين الشهيد",
+  "فالنتينا وزميلتها الشهيدتان",
+  "فالنتينوس الغنوصي الشاعر",
+  "فالنتيو الشهيد",
+  "فالنس الراهب",
+  "فالنس الشهيد",
+  "فام الأوسيمي الشهيد",
+  "فاوستا الشريفة",
+  "فاوستا الشهيدة",
+  "فاوستوس الكاهن الشهيد",
+  "فاوستوس وجانواريوس ومارتيال",
+  "فاوستينوس وجوفيتا الشهيدان",
+  "فبرونيا الشهيدة السورية",
+  "فبرونيا العذراء الشهيدة",
+  "فُرتوناتوس الشهيد",
+  "فرَكتيوسُس الأسقف الشهيد",
+  "فرمليانوس أسقف قيصرية",
+  "فرنسانسيوس الشهيد",
+  "فرومنتيوس الأسقف القديس",
+  "فرونتاسيوس الشهيد",
+  "فرونتو وجورج الأسقفان",
+  "فرونتون القديس",
+  "فريسكا الرسول",
+  "فستوس الشهيد",
+  "فلاكسيلا الإمبراطورة القديسة",
+  "فلورُس ولاورُس الشهيدان",
+  "فلورنتيوس الأسقف الشهيد",
+  "فلورنتيوس ورفقاؤه الشهداء",
+  "فلوريان الشهيد",
+  "فلورينا الشهيدة",
+  "فليستي )فيليستياس( الشهيدة",
+  "فليمون",
+  "فليمون القديس",
+  "فليمون القس",
+  "فليمون وأبفية الشهيدان",
+  "فوتينا ورفقاؤها الشهداء",
+  "فوتينوس",
+  "فوزية اسحق",
+  "فوستينا الشهيدة",
+  "فوسكا الشهيدة",
+  "فوشيان وفيكتوريكوس وجنتيان",
+  "فوكاس البستاني",
+  "فيبي الشماسة",
+  "فيتاليس وأجريكولا الشهيدان",
+  "فيتاليوس",
+  "فيتُس ورفيقاه الشهداء",
+  "فيتّيوس إيباغاثوس",
+  "فيث العذراء",
+  "فيجيليوس الأسقف",
+  "فيدنتيوس الأسقف",
+  "فيدنتيوس الشهيد",
+  "فيديليس الشهيد",
+  "فيرموس الشهيد",
+  "فيرميليانوس الأسقف",
+  "فيرمينوس الأسقف",
+  "فيرمينوس ورفقاؤه الشهداء",
+  "فيرونيا العذراء",
+  "فيرونيكا القديسة",
+  "فيرينا القديسة",
+  "فيريولُس الشهيد",
+  "فيريولُس وفيرّوتيو الشهيدان",
+  "فيفيان الشهيدة",
+  "فيكتريكيوس الأسقف",
+  "فيكتور الأفريقي",
+  "فيكتور الأول أسقف",
+  "فيكتور الشهيد",
+  "فيكتور مورُس الشهيد",
+  "فيكتوريا وأكيسكْلَس الشهيدان",
+  "فيكتوريا وأناتوليا الشهيدتان",
+  "فيكتورينوس الأسقف",
+  "فيكتورينوس )غايوس ماريوس(",
+  "فيكتورينوس ورفقاؤه الشهداء",
+  "فيلاستريوس الأسقف",
+  "فيلاستورجيوس Philastorguis",
+  "فيلبس الأسقف",
+  "فيلبس الرسول",
+  "فيلبس الشماس",
+  "فيلبس المقاري",
+  "فيلبس ورفقاؤه الشهداء",
+  "فيلكس أسقف",
+  "فيلكس الأسقف",
+  "فيلكس الثاني",
+  "فيلكس الكاهن الشهيد",
+  "فيلكس )فيليكوس( القديس",
+  "فيلكس و نابور",
+  "فيلكس ورفقاؤه الشهداء",
+  "فيلكس وفرتناتوس الشهيدان",
+  "فيلكس وكبريانوس ورفقاؤهما",
+  "فيلو الأسقف",
+  "فيلوباتير مرقوريوس الشهيد",
+  "فيلوثاؤس البابا الثالث والستون",
+  "فيلوثاؤس الشهيد",
+  "فيلوثاؤس بغدادي صالح",
+  "فيلوثاؤس و هيبّارخوس",
+  "فيلوجونيوس",
+  "فيلوروموس الشهيد",
+  "فيليب )فيلبس( المؤرخ",
+  "فيليس ِّيسيموس المعترف",
+  "فيليستياس الشهيدة",
+  "فيليسيتاس الشهيدة",
+  "فيليسيتي وأبناؤها الشهداء",
+  "فيليشيان الأسقف الشهيد",
+  "فيليشيان وبريموس الشهيدان",
+  "فيليكيولا الشهيدة",
+  "فينسنت الشهيد",
+  "فينيريوس الأسقف القديس",
+  "قدراطُس الرسول",
+  "قديسون باسم بامبو",
+  "قديسون وشهداء بذات",
+  "قرياقوس أسقف",
+  "قرياقوس السائح",
+  "قرياقوس وجوليتّا )يوليطة(",
+  "قرياقوس ورفقاؤه",
+  "قزما الأسقف",
+  "قزمان الثالث",
+  "قزمان الثاني",
+  "قزمان السينائي",
+  "قزمان الطحاوي",
+  "قزمان )قسما( الأول",
+  "قزمان ودميان واخوتهما",
+  "قسطنطين الملك",
+  "قسطور الأسقف",
+  "قسطور القس",
+  "قورش ويوحنا الشهيدان",
+  "قونا الشماس",
+  "قيصريوس الشهيد",
+  "قيصريوس النيزينزي",
+  "قيصريوس وجوليان )يوليان(",
+  "كاؤو الشهيد",
+  "كابراسيوس الأسقف الشهيد",
+  "كابراسيوس القديس",
+  "كابريولُس الأسقف",
+  "كابيتولينا الشهيدة",
+  "كابيتون القديس",
+  "كاترين وفوستينا الشهيدتان",
+  "كاراس السائح",
+  "كاربوس القديس",
+  "كاربوس وبابيلوس وأغاثونيس",
+  "كاربوكراتس الغنوصي",
+  "كارتيريوس ورفقاؤه الشهداء",
+  "كاريون الأب",
+  "كاستريتروس الضرير",
+  "كاستورينا",
+  "كاستوس وإميليوس الشهيدان",
+  "كاستولوس الشهيد",
+  "كاسيان الشهيد",
+  "كاسيودورس",
+  "كالب الملك القديس",
+  "كاللينيكوس الشهيد",
+  "كالوسيرُس وبارثينيوس الشهيدان",
+  "كاليبوديوس الشهيد",
+  "كاليستوس أسقف روما",
+  "كاليوبيوس الشهيد",
+  "كانتيوس وكانتيانوس وكانتيانيللا",
+  "كانديا القديسة",
+  "كانون الشهيد",
+  "كايريمون وإيسكيريون الشهيدان",
+  "كايوس )غايوس( أسقف",
+  "كبريانوس أسقف قرطاجنة",
+  "كبريانوس و فيلكس",
+  "كتيفان ملكة جورجيا",
+  "كردونوس البطريرك الرابع",
+  "كُرنيليوس البطريرك",
+  "كُرنيليوس البطريرك الشهيد",
+  "كرنيليوس القائد القديس",
+  "كرونيوس القديس",
+  "كرونيون و جوليان",
+  "كرياكوس القديس",
+  "كريسانتوس وداريا الشهيدان",
+  "كريسبين وكريسبينيان الشهيدان",
+  "كريسبينا الشهيدة",
+  "كريستوفُر الشهيد",
+  "كريستين الشهيدة",
+  "كريستينا العذراء الشهيدة",
+  "كريمنتيوس ورفقاؤه الشهداء",
+  "كسنثيا الأب",
+  "كسويس الأب",
+  "كلاديانوس البطريرك التاسع",
+  "كلافدية )كلوديا أو",
+  "كلستينوس أسقف روما",
+  "كلوديا أو كلودين",
+  "كلوديوس )أقلاديوس( وأخواه",
+  "كلوديوس ورفقاؤه الشهداء",
+  "كلوديوس وهيلاريا ورفقاؤهم",
+  "كلوديوس وهيلاريا ورفقاؤهما",
+  "كليتوس أسقف روما",
+  "كليوباترا الأرملة القديسة",
+  "كليوباس الرسول",
+  "كنديكا وأرتيموس وابنتهما",
+  "كوادراتس القديس",
+  "كوبرس وبتاربِموتس القديسان",
+  "كوتيلاس واكسوا وطاطس",
+  "كودراتُس ورفقاؤه الشهداء",
+  "كورنيوس الكاهن القديس",
+  "كورونا الشهيدة",
+  "كولوتس الأنصناوي الشهيد",
+  "كولومبا العذراء",
+  "كوليثوس",
+  "كوليريس",
+  "كوموديانوس",
+  "كونكورديوس الشهيد",
+  "كونن القديس",
+  "كونيتا الشهيدة",
+  "كويتيريا العذراء",
+  "كويرينس الأسقف الشهيد",
+  "كوينتا الشهيدة",
+  "كوينتوس",
+  "كوينتينوس الشهيد",
+  "كيردو",
+  "كيرس الأب",
+  "كيرلس أسقف إنطاكية",
+  "كيرلس أسقف أورشليم",
+  "كيرلس الأول البابا الرابع والعشرون",
+  "كيرلس الثالث البابا الخامس والسبعون",
+  "كيرلس الثاني البابا السابع والستين",
+  "كيرلس الخامس البابا المائة والثاني",
+  "كيرلس الرابع البابا",
+  "كيرلس السادس البابا المائة والسادس",
+  "كيرلس الشماس الشهيد",
+  "كيرلس القيصري الشهيد",
+  "كيرلس مطران إثيوبيا",
+  "كيرلس مقار الأسقف",
+  "كيرلس وأناسطاسيا الشهيدان",
+  "كيرياكوس وجوليتّا الشهيدان",
+  "كيرينثوس الهرطوقي",
+  "كيريّة الأم",
+  "كيليدونيوس و إيميتيريوس الشهيدان",
+  "لاترونيانوس الشهيد",
+  "لاتصون القديس",
+  "لازاروس )لعازر( الأسقف",
+  "لاكتانتيوس الأفريقي",
+  "لامبتيوس الأسقف",
+  "لاورُس وفلورُس الشهيدان",
+  "لاون وباريغوريوس الشهيدان",
+  "لاونديانوس الشهيد",
+  "لاونديوس الشامي الشهيد",
+  "لطف الله أبو",
+  "لعازر القديس",
+  "لوبُس الأسقف القديس",
+  "لورنس )لورنتيوس( الشهيد",
+  "لوسيا الشهيدة شفيعة المكفوفين",
+  "لوسيان )لوقيان( الشهيد",
+  "لوسيان )لوقيان( ومارقيان",
+  "لوسيان )لوقيانوس( الإنطاكي",
+  "لوسيليان ورفقاؤه الشهداء",
+  "لوسيوس",
+  "لوسيوس الأسقف الشهيد",
+  "لوسيوس الملك",
+  "لوط الأب",
+  "لوقا الإنجيلي",
+  "لوقا العمودي القديس",
+  "لوقيوس وتادرس الأسقف",
+  "لوكاس الشهيد",
+  "لوكزوريوس، سيسيلَس وكاميرينَس",
+  "لوكيانوس الشهيد",
+  "لوكيانوس )لوقيانوس( الأنطاكي",
+  "لومان الأسقف القديس",
+  "لونجينوس",
+  "لونجينوس الأب",
+  "لونجينوس الأسقف ويوليانوس الراهب الكارزان",
+  "لونجينوس القائد الشهيد",
+  "ليارية الشهيدة",
+  "لياندر الشهيد",
+  "ليباريا الشهيدة",
+  "ليبانيوس القديس",
+  "ليبرالس القديس",
+  "ليقانوس القديس",
+  "ليكية الشهيدة",
+  "ليمنَيوس وثالاسيوس القديسان",
+  "لينُس البطريرك",
+  "ليوباردوس الشهيد",
+  "ليوكاديا العذراء الشهيدة",
+  "ليونتيوس الأسقف القديس",
+  "ليونيدس الشهيد",
+  "ليونيللا الشهيدة",
+  "مابّاليكوس ورفقاؤه الشهداء",
+  "ماتوي أو ماطوس",
+  "ماجستريانوس الشهيد",
+  "ماجنا البتول",
+  "ماجورينوس",
+  "مارتان الأسقف القديس",
+  "مارتورينوس القديس",
+  "مارتيال الأسقف القديس",
+  "مارتيال و فاوستوس و",
+  "مارتينيان",
+  "مارتينيان ورفقاؤه الشهداء",
+  "مارسِل ِّينا العذراء القديسة",
+  "مارسِللينوس أسقف روما",
+  "مارسِللينوس الأسقف القديس",
+  "مارسللينوس الشهيد",
+  "مارسللينوس وبطرس الشهيدان",
+  "مارسيللا )مارسيل( الأرملة",
+  "مارسيللا )مارسيل( الشهيدة",
+  "مارسيللوس الأسقف الشهيد",
+  "مارسيللوس الأسقف القديس",
+  "مارسيللوس الأول أسقف",
+  "مارسيللوس القائد الشهيد",
+  "مارسيللوس وأبوليوس الشهيدان",
+  "مارسيللوس ورفقاؤه الشهداء",
+  "مارسيللوس وفالريان الشهيدان",
+  "مارقس منكوكيوس فيلكس",
+  "مارقيان الشهيد",
+  "مارقيان القديس",
+  "مارقيان و لوسيان",
+  "مارقيان ونيكاندر الشهيدان",
+  "مارك أسقف روما",
+  "مارك ومارسيليان الشهيدان",
+  "ماركيانا العذراء الشهيدة",
+  "مارو القديس",
+  "ماروتا الأسقف القديس",
+  "ماروثا السرياني الراهب",
+  "ماروثاس الأسقف القديس",
+  "ماري )مريم( العذراء",
+  "ماري و آداي",
+  "ماريام الصالح القديس",
+  "ماريان ويعقوب الشهيدان",
+  "مارينا الشهيدة",
+  "مارينا الناسكة القديسة",
+  "مارينوس القديس",
+  "مارينوس وأستيريوس الشهيدان",
+  "مارية القديسة",
+  "ماريوس الفارسي وأسرته",
+  "ماكرينا العذراء القديسة",
+  "ماكرينا الكبرى الأرملة",
+  "ماكسنتينا العذراء الشهيدة",
+  "ماكسيما ودوناتيلا وسيكوندا",
+  "ماكسيميان وبونوسيوس الشهيدان",
+  "ماكسيميليان الأسقف الشهيد",
+  "ماكسيميليان الشهيد",
+  "ماكسيمينوس الأسقف القديس",
+  "ماكسيمينوس وجوفنتينوس الشهيدان",
+  "مالخُس القديس",
+  "مالّونَس الأسقف القديس",
+  "ماماديوس الشهيد",
+  "ماماس الشهيد",
+  "مانحة الشهيدة",
+  "ماني الغنوصي أو",
+  "مانيا القديسة",
+  "ماهارسابور الشهيد",
+  "متاؤس الأول",
+  "متاؤس الثالث",
+  "متاؤس الثاني",
+  "متاؤس الرابع البابا المائة واثنان",
+  "متروفانِس الأسقف القديس",
+  "متى الرسول",
+  "متى المسكين القديس",
+  "متى باسيلي القمص",
+  "متياس الرسول",
+  "متياس الشهيد",
+  "متياس تاوضروس القمص",
+  "مرتا الشهيدة",
+  "مرتيانوس القديس",
+  "مرتيانوس ومرقوريوس الشهيدان",
+  "مرتينوس الأسقف القديس",
+  "مرثا الفارسية وماريوس وابناهما الشهداء",
+  "مرثا القديسة",
+  "مرثا المصرية القديسة",
+  "مرسلا الأرملة القديسة",
+  "مرقس أسقف إسنا",
+  "مرقس الأب تلميذ",
+  "مرقس الأسقف المعترف",
+  "مرقس الأنطوني القديس",
+  "مرقس الثالث ابن",
+  "مرقس الثامن البابا المائة وثمانية",
+  "مرقس الثاني البابا التاسع والأربعون",
+  "مرقس الخامس البابا الثامن والتسعون",
+  "مرقس الرابع البابا الرابع والثمانون",
+  "مرقس الرسول",
+  "مرقس السابع البابا السادس بعد",
+  "مرقس السادس البابا المائة وواحد",
+  "مرقس المتوحد القديس",
+  "مرقس المصري الأب",
+  "مرقس الناسك القديس",
+  "مرقس الوالي الشهيد",
+  "مرقس بن قنبر",
+  "مرقورة الأسقف",
+  "مرقوريوس المعلم",
+  "مرقوريوس وافرآم الشهيدان",
+  "مرقيانوس )مركيانوس( ومرقوريوس",
+  "مِركوري الشهيد",
+  "مركيا القديس محبته للبتولية",
+  "مركيانوس البطريرك )البابا( الثامن",
+  "مركيانوس ومرقوريوس الشهيدان",
+  "مريم الأرمنية الشهيدة",
+  "مريم الإسرائيلية الشهيدة",
+  "مريم التائبة القديسة",
+  "مريم الحبيسة القديسة",
+  "مريم الشهيدة",
+  "مريم العذراء",
+  "مريم المجدلية القديسة",
+  "مريم المصرية القديسة",
+  "مريم وأفخارستوس الباران",
+  "مطرا الشهيد",
+  "مطرونة العذراء الشهيدة",
+  "معاني أبو المكارم",
+  "مقاريوس الأسقف الشهيد",
+  "مقاريوس السكندري القديس",
+  "مقاريوس الشهيد",
+  "مقاريوس الكبير القديس",
+  "مقاريوس الليبي الشهيد",
+  "مقاريوس ماغنس",
+  "مقدم ابن ملك",
+  "مقدونيوس القديس",
+  "مقروفيوس القديس",
+  "مكاريوس أسقف أورشليم",
+  "مكاريوس الأول البابا التاسع والخمسون",
+  "مكاريوس الثالث البابا المائة والرابع",
+  "مكاريوس الثاني البابا التاسع والستون",
+  "مكاريوس القديس",
+  "مكاريوس بن باسيليدس",
+  "مكدونيوس )مقدونيوس( المبتدع",
+  "مكراوي الأسقف الشهيد",
+  "مكسيموس الأسقف المعترف",
+  "مكسيموس البابا الخامس عشر",
+  "مكسيموس الشهيد",
+  "مكسيموس القديس",
+  "مكسيموس المعترف",
+  "مكسيموس ورفقاؤه الشهداء",
+  "ملاتيوس الاسقف القديس",
+  "ملاخي الشهيد",
+  "ملطي المعلم الشهيد",
+  "مماتي المعلم",
+  "منسى يوحنا القس",
+  "منصور بن بطرس",
+  "مهرائيل الشهيدة",
+  "موتيوس الأب الراهب وعدم الظهور",
+  "موجي الشهيدة",
+  "مورا وبريجيد الشهيدتان",
+  "مورا وتيموثاوس الشهيدان",
+  "موريس ورفقاؤه الشهداء",
+  "موسى الأسقف المتوحد",
+  "موسى الأسود الشهيد",
+  "موسى السائح",
+  "موسى الليبي القديس",
+  "موسى المتوحد القديس",
+  "موسى المعترف",
+  "موسى المعترف أو",
+  "موسيوس الشهيد",
+  "مونتانُس المنشق",
+  "مونتانُس ولوسيوس ورفقائهما",
+  "مونيكا القديسة",
+  "موهوب بن منصور",
+  "مويسيس أسقف أوسيم",
+  "مويسيس وسارة أخته",
+  "مياثيوس الأب",
+  "ميثوديوس أسقف اوليمبيس",
+  "ميخائيل إبراهيم القمص",
+  "ميخائيل أسقف البهنسا",
+  "ميخائيل أسقف تنيس",
+  "ميخائيل أسقف دمياط",
+  "ميخائيل أسقف مليج",
+  "ميخائيل الأول البابا السادس والأربعون",
+  "ميخائيل البحيري القمص",
+  "ميخائيل الثالث البابا الواحد والسبعون",
+  "ميخائيل الثاني البابا الثامن والستون",
+  "ميخائيل الرابع البابا الثاني والتسعون",
+  "ميخائيل الطوخي القمص",
+  "ميخائيل جرجس المعلم",
+  "ميخائيل مطران دمياط",
+  "ميخائيل مينا القمص",
+  "ميديوس الشهيد",
+  "ميروب الشهيدة",
+  "ميرون الكاهن الشهيد",
+  "ميستيولا الشهيدة",
+  "ميسروب الأسقف القديس",
+  "ميصائيل السائح",
+  "ميلاس الأسقف القديس",
+  "ميلانيا الأميرة القديسة",
+  "ميلانيا الصغرى القديسة",
+  "ميلتيادس البطريرك القديس",
+  "ميليتو الأسقف القديس",
+  "ميليتوس الأسقف المنشق",
+  "ميليتيوس بطريرك إنطاكية",
+  "ميليسيوس الأب",
+  "ميليوس البابا",
+  "ميليوس الناسك الشهيد",
+  "مينا الأسقف القديس",
+  "مينا الأول البابا السابع والأربعون",
+  "مينا الراهب الشهيد",
+  "مينا الزاهد القديس",
+  "مينا الشهيد",
+  "مينا العجائبي الشهيد",
+  "مينا القديس",
+  "ميناس وهيرموجينيس ويوجرافوس",
+  "مينودورا ومِترودورا ونيمفودورا",
+  "ميّوس الأب الطاعة",
+  "نابور وفيلكس الشهيدان",
+  "ناتاليا وهادريان )أدريان(",
+  "نادية يوسينا",
+  "نارسيسوس )ناركيسُس( أسقف",
+  "ناصرة الشهيدة",
+  "نامفامو الشهيد",
+  "نايسفورُس )نيسفورُس( الشهيد",
+  "نترا الأب",
+  "نثنائيل القديس",
+  "نخلة المعلم",
+  "نرسِس الأسقف ورفقاؤه",
+  "نرسِس العظيم الأول",
+  "نركيسوس الأسقف القديس",
+  "نسطور الأسقف الشهيد",
+  "نسطور المبتدع",
+  "نسطور و يوسابيوس ونِستابُس",
+  "نِكتاريوس البطريرك القديس",
+  "نُكيطا الشهيدة",
+  "نهروه الشهيد",
+  "نوبي المعترف وأباهور",
+  "نوفاتوس القس الروماني",
+  "نوفير السائح القديس",
+  "نوميتيوس ورفقاؤه الشهداء",
+  "نوميديكوس المعترف",
+  "نونّا القديسة",
+  "نيبوس المبتدع",
+  "نيرشوس الشهيد",
+  "نيريوس وأكيليوس ودوميتيللا",
+  "نيسثيروس )نسطور( الأب",
+  "نيسيتاس الأسقف القديس",
+  "نيقام الشهيد التائب",
+  "نيقوستراتُس الشماس",
+  "نيقوستراتُس الشهيد",
+  "نيقولاوس الأسقف القديس",
+  "نيقولاوس الشماس",
+  "نيقوميدس الشهيد",
+  "نيكارتي العذراء القديسة",
+  "نيكاسيوس الأسقف ورفقاؤه",
+  "نيكاندر وماركيان الشهيدان",
+  "نيكون الأب",
+  "نيكيتا الأب",
+  "نيكيتاس القوطي الشهيد",
+  "نيلامون الأسقف",
+  "نيلامون الحبيس القديس",
+  "نيلوس الأسقف الشهيد",
+  "نيلوس السينائي القديس",
+  "نيمفودورا الشهيدة",
+  "نيميا الشهيدة",
+  "نيميسيوس ورفقاؤه الشهداء",
+  "نينو العذراء القديسة",
+  "نينيان الأسقف القديس",
+  "نيولا سادونيتا المعترفة",
+  "هابيبوس الشهيد",
+  "هاتس الشهيدة",
+  "هادريان الشهيد",
+  "هالياس الأسقف الشهيد",
+  "هانوليوس الأمير الشهيد",
+  "هدرا الأسقف القديس",
+  "هدريان الشهيد",
+  "هرسيوس بصول الشهيد",
+  "هِرماجوراس وفورتوناتُس الشهيدان",
+  "هرماس",
+  "هرماس الأسقف الشهيد",
+  "هِرماس الشهيد",
+  "هرموجينيس الأسقف",
+  "هرمياس الشهيد",
+  "هرنيون وزوجته القديسان",
+  "هرواج وحنانيا وخوزي",
+  "هرواج ورفقاؤه الشهداء",
+  "هلبيس العذراء الشهيدة",
+  "هِليكونيا",
+  "هليودوروس الأسقف",
+  "هليودوروس الأسقف الشهيد",
+  "هور",
+  "هور القديس",
+  "هورميسداس الشهيد",
+  "هوسيوس الأسقف القديس",
+  "هونوراتُس أسقف آرل",
+  "هياكينث وبروتُس الشهيدان",
+  "هيباتيوس الأب",
+  "هيباتيوس الأسقف الشهيد",
+  "هيبّارخوس وفيلوثاؤس الشهيدان",
+  "هيبّوليتُس الأسقف الشهيد",
+  "هيبوليتس الروماني القديس",
+  "هيبّوليتَس الشهيد",
+  "هيبوليستوس الشهيد",
+  "هيجيسيبّوس المؤرخ",
+  "هيجيمونيوس",
+  "هيجينوس البطريرك القديس",
+  "هيراقلاس أو ياروكلاس البابا الثالث عشر",
+  "هيراقليدس الشهيد",
+  "هيراقليون",
+  "هيراكس المُعلم",
+  "هيراكس الهرطوقي",
+  "هيرايسي الراهبة الشهيدة",
+  "هيرموجينيس وميناس ويوجرافوس )أوجرافوس( الشهداء",
+  "هيرو",
+  "هيرو الشهيد",
+  "هيزيكيوس ورفقاؤه الأساقفة",
+  "هيسيخوس",
+  "هيسيخوس الأسقف الشهيد",
+  "هيسيخوس الراهب القديس",
+  "هيسيخوس الشهيد",
+  "هيسيخوس )حزقيوس( الأورشليمي",
+  "هيلاري أسقف",
+  "هيلارية الشهيدة",
+  "هيلاريوس الأسقف",
+  "هيلاريوس الشماس",
+  "هيلاريون القديس",
+  "هيلانة الملكة",
+  "هيلياس الخصي الشهيد",
+  "هيميثيريوس الشهيد",
+  "واخس الشهيد",
+  "واسيليدس الشهيد",
+  "ودامون الشهيد",
+  "ورشنوفيوس الشهيد",
+  "ويصا القديس",
+  "يا الشهيدة ورفقاؤها",
+  "يارد الإثيوبي",
+  "ياروكلاس",
+  "ياسر بن القسطال",
+  "ياسون الرسول",
+  "ياكوبوس",
+  "ياكوبوس أسقف بابيلون",
+  "يامبس المعترف",
+  "يحنس السنهوتي الشهيد",
+  "يسطس",
+  "يسطس الأسقف الشهيد",
+  "يسطس الأنطوني الراهب",
+  "يسطس الشهيد",
+  "يسطس )جوستوس( الأسقف",
+  "يسطس )جوستوس( الفتى",
+  "يسطس وباستور الشهيدان",
+  "يسّى عبد المسيح",
+  "يسى ميخائيل القمص",
+  "يشوع ويوسف الشهيدان",
+  "يعقوب أسقف مصر",
+  "يعقوب أسقف نصيبين",
+  "يعقوب الأب",
+  "يعقوب الأمير )الجنرال(",
+  "يعقوب البار",
+  "يعقوب البرادعي الأسقف",
+  "يعقوب التائب القديس",
+  "يعقوب الراهب القديس",
+  "يعقوب الشهيد",
+  "يعقوب الصبي الشهيد",
+  "يعقوب الكبير",
+  "يعقوب المشرقي المعترف",
+  "يعقوب المقطع الشهيد",
+  "يعقوب بطريرك إنطاكية",
+  "يعقوب نخلة روفيلة",
+  "يعقوب وماريان الشهيدان",
+  "يلبيانوس الشهيد",
+  "يهوذا الأسخريوطي الخائن",
+  "يهوذا الرسول",
+  "يهوذا قرياقوص الأسقف",
+  "يهوشافاط وبرلعام القديسان",
+  "يوأنّا العذراء الشهيدة",
+  "يوأنس أسقف البرلس",
+  "يوأنس الأول",
+  "يوأنس التاسع",
+  "يوأنس التاسع عشر",
+  "يوأنس الثالث",
+  "يوأنس الثالث عشر",
+  "يوأنس الثامن",
+  "يوأنس الثامن عشر",
+  "يوأنس الثاني",
+  "يوأنس الثاني عشر",
+  "يوأنس الحادي عشر",
+  "يوأنس الخامس",
+  "يوأنس الخامس عشر",
+  "يوأنس الرابع",
+  "يوأنس الرابع عشر",
+  "يوأنس السابع",
+  "يوأنس السابع عشر",
+  "يوأنس السادس",
+  "يوأنس السادس عشر",
+  "يوأنس الشهيد",
+  "يوأنس العاشر",
+  "يوأنس القصير القديس",
+  "يوأنس الكاتب",
+  "يوأنس الكاهن",
+  "يوأنس قمص شيهيت",
+  "يوبسيكيوس الأسقف الشهيد",
+  "يوبلُس الشهيد",
+  "يوتروبيوس الأسقف الشهيد",
+  "يوتيخوس )أوطيخا( الشهيد",
+  "يوثاليا الشهيدة",
+  "يوثاليوس الأسقف",
+  "يوثيميوس )أوثيميوس( الكبيرالأب",
+  "يوجرافوس وهيرموجينيس وميناس",
+  "يوجينيا العذراء الشهيدة",
+  "يوحنا",
+  "يوحنا أبو نجاح",
+  "يوحنا أسقف البرلس",
+  "يوحنا أسقف أورشليم",
+  "يوحنا البستاني القديس",
+  "يوحنا التبايسي )الطيبي(",
+  "يوحنا الجندي الشهيد",
+  "يوحنا الجندي القديس",
+  "يوحنا الدمشقي اللاهوتي",
+  "يوحنا الذهبي الفم",
+  "يوحنا الرسول",
+  "يوحنا السائح",
+  "يوحنا السينائي أوالسُلّمي",
+  "يوحنا الشهيد",
+  "يوحنا الفارسي الأب",
+  "يوحنا القديس",
+  "يوحنا القليوبي الراهب",
+  "يوحنا الكيليكس الأب",
+  "يوحنا المصري المعترف",
+  "يوحنا المعترف",
+  "يوحنا النيقوميدي الشهيد",
+  "يوحنا النيقيوسي الأسقف",
+  "يوحنا الهرقلي الشهيد",
+  "يوحنا بن أبي",
+  "يوحنا بن زكريا",
+  "يوحنا صاحب الإنجيل",
+  "يوحنا كاسيان القديس",
+  "يوحنا كاما القديس",
+  "يوحنا كليماكوس القديس",
+  "يوحنا نعمة الله",
+  "يوحنا وبولس الشهيدان",
+  "يوحنا وحلفا وزكا",
+  "يوحنا وسمعان الشهيدان",
+  "يوحنا ويعقوب الأسقفان",
+  "يوخاريوس )أوخاريوس( الأسقف",
+  "يوخيريوس )أوخيريوس( الأسقف",
+  "يوربان",
+  "يوربانوس الشهيد",
+  "يورسيسينوس الشهيد",
+  "يوساب أسقف",
+  "يوساب الأبحّ الأسقف",
+  "يوساب الأول",
+  "يوساب الثاني",
+  "يوساب السائح",
+  "يوسابيوس أسقف ساموساطا",
+  "يوسابيوس أسقف فيرسيللي",
+  "يوسابيوس أسقف قيصرية",
+  "يوسابيوس أسقف لاودكية",
+  "يوسابيوس الأسقف",
+  "يوسابيوس البطريرك القديس",
+  "يوسابيوس الروماني القديس",
+  "يوسابيوس من كريمونا",
+  "يوسابيوس ونِستابُس وزينون",
+  "يوستاثيوس )أوستاثيوس( الأسقف",
+  "يوستاس ورفقاؤه الشهداء",
+  "يوستراتيوس وأوكسنتيوس ورفقاؤهما",
+  "يوستوكيوم )يوستوخيوم( القديسة",
+  "يوستينا الشهيدة",
+  "يوستينا )جوستينا( العذراء",
+  "يوستينوس الشهيد",
+  "يوستينوس الفيلسوف الشهيد",
+  "يوسف",
+  "يوسف أبو",
+  "يوسف الأب أخ",
+  "يوسف الأب الذي",
+  "يوسف الأب المعاصر",
+  "يوسف الأسقف",
+  "يوسف الإسقيطي الأب",
+  "يوسف الرامي القديس",
+  "يوسف الزير البرماوي",
+  "يوسف الطيبي الأب",
+  "يوسف الفلسطيني القديس",
+  "يوسف حبيب الشماس",
+  "يوسف قس أسكالون",
+  "يوسيغنيوس الشهيد",
+  "يوسيفوس القديس",
+  "يوفراسيا )أوفراسيا( العذراء",
+  "يوفروسينا )أوفروسينا( الناسكة",
+  "يوكاربوس الراهب سقوط الحبيس",
+  "يولاليا العذراء الشهيدة",
+  "يولاليوس الأسقف",
+  "يولامبيوس ويولامبيا الشهيدان",
+  "يولفيلاس الأسقف",
+  "يولوجيوس )أولوجيوس( الأسقف",
+  "يولوجيوس )أولوجيوس( الراهب",
+  "يوليانا الشهيدة",
+  "يوليانوس الأسقف الشهيد",
+  "يوليانوس البابا الحادي عشر",
+  "يوليانوس التائب القديس",
+  "يوليانوس الشهيد",
+  "يوليطة الأيقونية الشهيدة",
+  "يوليوس أفريقيانوس",
+  "يوليوس الأقفهصي الشهيد",
+  "يونان الراهب القديس",
+  "يونان نخلة الدويري",
+  "يونياس الرسول",
+  "يونيوس الشهيد",
+  "قديسون آخرون"
+ ]
+}

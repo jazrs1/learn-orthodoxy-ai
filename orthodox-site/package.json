@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "node scripts/migrate-postgres.mjs",
-    "db:deploy": "node scripts/migrate-postgres.mjs"
+    "db:deploy": "node scripts/migrate-postgres.mjs",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test \"lib/**/*.test.ts\"",
+    "calendar:generate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/calendar/generate-calendar.ts",
+    "calendar:saints": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/calendar/extract-katameros-saints.ts"
   },
   "dependencies": {
     "next": "16.2.1",
@@ -26,6 +29,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "coptic-calendar": "^1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",

@@ -86,6 +86,10 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
+- [Calendar](#calendar)
+  - [CAL-001: Calendar data source — compute feasts and fasts ourselves; saints from Katameros only once permission is given](#cal-001-calendar-data-source--compute-feasts-and-fasts-ourselves-saints-from-katameros-only-once-permission-is-given)
+  - [CAL-002: Feasts and fasts generated from written-out rules into a static file; coptic-calendar only converts dates](#cal-002-feasts-and-fasts-generated-from-written-out-rules-into-a-static-file-coptic-calendar-only-converts-dates)
+  - [CAL-003: Katameros saint titles extracted once into one swappable file, linked conservatively to our saints index](#cal-003-katameros-saint-titles-extracted-once-into-one-swappable-file-linked-conservatively-to-our-saints-index)
 - [Open questions](#open-questions)
 
 ---
@@ -1221,6 +1225,222 @@ _(Deferred to a later phase; see AUDIT.md §3.)_
 - **Files changed:** `api.py`, `.env.example`, `README.md`.
 - **Concept to learn:** *Twelve-factor config:* configuration that varies between deployments belongs in the environment, not in code. Search: "12-factor app config".
 - **Revisit if:** the number of knobs grows; then group them in a settings object (e.g. `pydantic-settings`).
+
+## Calendar
+
+### CAL-001: Calendar data source — compute feasts and fasts ourselves; saints from Katameros only once permission is given
+- **Date / Part:** 2026-09-22, read-only evaluation before the calendar feature is built. No app code changed, no dependencies added to `orthodox-site`, 0 OpenAI calls. The libraries were installed and run in a scratch folder outside the repo.
+- **Context:** The planned feature is a slim "Today" banner on the home page (today's saint(s) plus any feast or fast) and a `/calendar` page for Jan 2026 – Dec 2027, in English and Arabic. We compared four sources:
+  1. the owner's `.ics` export;
+  2. `coptic-calendar` (npm);
+  3. coptic.io;
+  4. Katameros, which was evaluated for readings but turned out to hold a synaxarium too.
+
+  The `.ics` was not at `orthodox-site/data/calendar/`. The copy used here is `~/Downloads/Coptic Calendar 1743 Coptic.ics`, and it was not added to the repo.
+
+#### Candidates at a glance
+
+| | `.ics` (Coptic year 1743) | `coptic-calendar` 1.0.0 | coptic.io (`@coptic/core`, `@coptic/data`) | Katameros API |
+|---|---|---|---|---|
+| **Code license** | none (a Google Calendar export) | Unlicense (public domain) | MIT, but `LICENSE.md` names no copyright holder | MIT, "Copyright (c) 2022 katameros" |
+| **Content license** | none stated; author unknown | none. Synaxarium text is third-party (see provenance) | none. The data package also bundles the NKJV, which is copyrighted, so the MIT label does not reliably describe the content | none. The database also holds copyrighted Bibles (NKJV, Einheitsübersetzung, HSV, CEI 2008), so again the MIT label does not cover the content |
+| **Synaxarium provenance** | unknown. Created 2026-08-27 from a CSV (`CSVConvert` UIDs) | A code comment says St-Takla.org. The English entries are identical, entry for entry on all 366 days, to coptic.io's copy of CopticChurch.net | Scraped from CopticChurch.net (`scripts/scrape-arabic-synaxarium.ts`; English and Arabic full text). English and Arabic were paired using a DeepSeek LLM script | Not stated. Commit history shows English added 2022-12, Arabic 2023-02, both reworked 2026-09. Arabic titles follow the Church's standard Arabic synaxarium wording (as on St-Takla). Unconfirmed |
+| **Feast/fast provenance** | none (no feasts) | Rules citing SUS Copts, St-Takla, Coptic Heritage, Tasbeha.org | Rules citing CopticChurch.net and St-Takla, validated by a script against CopticChurch.net | Feast list checked against St-Takla and the LA diocese (commit `22693d9`) |
+| **Maintenance** | one-off file | One person (22 commits, 1 star). Created Apr 2026, last commit 2026-06-06. Only release is 1.0.0 (Apr 19); 4 later fixes are unpublished. 0 open issues | Essentially one person (182 of 186 commits). Very active (commits today). No releases, and `@coptic/*` is **not published on npm** (issue #24, open since 2023). 2 open issues, 2 open PRs | One person (169 commits). Active: 78 commits in the last year, the last on 2026-09-15; readings bugs are fixed within days. 1 open issue |
+| **Integration** | static file | ESM-only, zero deps, TypeScript types. Core is 4.4 KB min (1.9 KB gz); with the synaxarium and occasions plugins, 56 KB min (16 KB gz). Fully offline | Core has zero deps, 4.9 KB min (2.0 KB gz), and would have to be vendored from source. Synaxarium names only (EN+AR) are 83 KB (25 KB gz); the full text is 3.3 MB. A public API (`api.coptic.io`) is up | .NET + a 94 MB SQLite database, no npm/TS package. Offline use means a one-time export of the titles (EN+AR 149 KB, 30 KB gz). A public API (`api.katameros.app`) is up |
+| **Languages** | Coptic script only | English synaxarium only (the Arabic call silently returns English); Arabic for 23 feast/fast names | English and Arabic synaxarium (Arabic misses 13 Baba) | English, Arabic and 7 more; the titles in different languages are linked to the same entry by a shared story id |
+| **Can we use it publicly (non-commercial)?** | Unclear; ask the owner where it came from | Code yes. Synaxarium text **unclear** | Code yes, with the MIT notice. Synaxarium text **unclear** | Code yes, with the MIT notice. Synaxarium text **unclear** |
+
+The upstream sites state no license either. CopticChurch.net's synaxarium pages carry only "Sponsored by St. Mark's Coptic Orthodox Church, Jersey City, NJ", and the St-Takla pages fetched showed no terms of use. **None of the candidates has clear licensing for the saint lists.** The feast and fast dates are different: they are facts produced by a published rule (the computus plus fixed Coptic dates), so we can compute them without depending on anyone's data.
+
+#### Accuracy: Gregorian ↔ Coptic conversion
+- The `.ics` has 1,095 events:
+  - 366 date markers (`* Thoout 1, 1743 *` … `* Nesi 6, 1743 *`), one per day from 2026-09-11 to 2027-09-11;
+  - 727 saint entries across 360 days (8 days have none);
+  - 2 stray events outside the year: 2026-03-26 "Abba Sarapamon the metropolitan" and 2026-06-18 "Abba Michael the hegumen".
+- The test covered all 366 markers plus 4 boundary dates: Thoout 1 1744 = 2027-09-12 (1743 is a leap year, since Nesi 6 exists), Thoout 1 1742 = 2025-09-11, Thoout 1 1740 = 2023-09-12, and 2028-01-01. Every date was checked both ways.
+- **Result: 0 mismatches for both libraries in both directions**, including the Sep 11/12 leap-year shift. The published `coptic-calendar` and its GitHub HEAD agree.
+- **Time zone traps (integration note).** Each library reads a JS `Date` differently.
+  - `coptic-calendar` reads UTC fields. A local-midnight `Date` is off by one day in every zone east of UTC (370/370 wrong in Cairo and Auckland), and a local-noon `Date` still fails in Auckland (190/370).
+  - coptic.io reads local fields, so `new Date('2026-09-11')` is off by one in every zone west of UTC (370/370 wrong in Toronto).
+  - Rule for the build: always pass a plain `YYYY-MM-DD` string/triple for a date chosen in one explicit time zone. Never pass a `Date` object.
+
+#### Accuracy: synaxarium on 15 sample days
+The `.ics` names are Coptic; they were transliterated and glossed by hand. `coptic-calendar` and coptic.io share one English list (CopticChurch.net), so they have one column. ✓ = the `.ics` saint is present; ✗ = missing. The encyclopedia column is the English *Encyclopedia of the Saints and Fathers of the Church* in our corpus, where the entry states a date.
+
+| Coptic day (1743) | Date | `.ics` (transliterated) | `coptic-calendar` / coptic.io EN | coptic.io AR | Katameros EN/AR | Encyclopedia |
+|---|---|---|---|---|---|---|
+| Thoout 1 | 2026-09-11 | Bartholomew the apostle; Job the righteous; Pope Mark (V); Pope Milius | Nayrouz, Bartholomew ✓, Milius ✓; Job ✗, Mark V ✗ | all 4 ✓ + Nayrouz | all 4 ✓ + Nayrouz | Milius "reposed in the 1st of Tout" ✓ |
+| Thoout 26 | 2026-10-06 | John the Baptist | Annunciation of John's birth ✓ | ✓ | ✓ | — |
+| Paope 12 | 2026-10-22 | Pope Demetrius I; Archangel Michael; Matthew the evangelist | all 3 ✓ | all 3 ✓ | all 3 ✓ | entry gives no date |
+| Hathor 12 | 2026-11-21 | John the Syrian; Michael | Michael ✓; John ✗ | both ✓ | both ✓ | — |
+| Hathor 27 | 2026-12-06 | Apa Victor the martyr; James the Persian | James ✓; Victor ✗ | James ✓; Victor ✗ | James ✓; "consecration of the church of St. Victor" ✓ | James the Mangled "on the 27th of Hator" ✓ |
+| Koiahk 29 | 2027-01-07 | Martyrs of Akhmim (the `.ics` omits the Nativity) | Nativity only; Akhmim ✗ | Nativity + Akhmim ✓, plus 2 article titles scraped as saints | Nativity + Akhmim ✓ | — |
+| Tobe 11 | 2027-01-19 | Pope John (VI); Pope Benjamin (II) | Theophany only; both ✗ | Theophany + both ✓ | Theophany + both ✓ | entries give no date |
+| Meshir 8 | 2027-02-15 | Simeon the elder | Presentation in the Temple only; Simeon ✗ | Presentation + Simeon ✓ | Presentation + Simeon ✓ (+ modern Coptic martyrs) | entry gives no date |
+| Paremhotep 29 | 2027-04-07 | (none) | Annunciation; Resurrection | same | same | — |
+| Parmoute 23 | 2027-05-01 | St George | ✓ | ✓ | ✓ | one sentence in the George entry says "23rd of … Baramhat"; needs a look |
+| Pashons 24 | 2027-06-01 | (none) | **"St. Simon the Stylite"** | Entry of the Lord into Egypt; Habakkuk; Pishnouna | same as coptic.io AR | — (SUS also lists "Entry of the Lord into Egypt" on Jun 1, so the English list looks wrong here) |
+| Paone 12 | 2027-06-19 | Pope Cyril II; Pope Justus; Michael | all 3 ✓ + Euphemia | Michael ✓ + Euphemia; Cyril II ✗, Justus ✗ | all 3 ✓ + Euphemia | Cyril II ✓, Justus ✓, Euphemia ✓ (all "12th of Paona") |
+| Epep 5 | 2027-07-12 | Peter & Paul; Mark the martyr | Peter & Paul ✓; Mark ✗ | Peter & Paul ✓; Mark ✗ | both ✓ ("Mark, governor of el-Borolus, father of St. Demiana") | — |
+| Mesore 16 | 2027-08-22 | the Virgin Mary (Assumption); Pope Matthew IV | both ✓ | both ✓ | both ✓ | — |
+| Nesi 3 | 2027-09-08 | Pope John (XIV); Andrianus and companions; Archangel Raphael | all 3 ✓ | all 3 ✓ | all 3 ✓ | — |
+| **`.ics` saints found** | | **27** | **18 / 27** | **23 / 27** | **27 / 27** (Victor through his church's consecration) | |
+
+Across the whole year, the English list has 697 entries, coptic.io's Arabic 856 (14 with raw HTML entities such as `&quot;`), and Katameros 868 English / 867 Arabic. The `.ics` is not complete either: it leaves out feasts by design, and on Paone 12 it omits Euphemia, whom all three sources and the encyclopedia give.
+
+#### Accuracy: feasts and fasts, 2026 and 2027
+The reference is suscopts.org/coptic-orthodox/fasts-and-feasts, rendered with Playwright for 2026, 2027 and 2028.
+
+| | SUS 2026 | SUS 2027 | `coptic-calendar` | coptic.io |
+|---|---|---|---|---|
+| Nativity | Jan 7 | Jan 7 | ✓ ✓ | ✓ ✓ |
+| Theophany | Jan 19 | Jan 19 | ✓ ✓ | ✓ ✓ |
+| Jonah's Fast | Feb 2–4 | Feb 22–24 | ✓ ✓ | ✓ ✓ |
+| Great Lent | Feb 16 – Apr 3 | Mar 8 – Apr 23 | start ✓ ✓; "Great Lent" runs on to Holy Saturday (Apr 11 / May 1) | start ✓ ✓; season ends Apr 4 / Apr 24 (takes in Lazarus Saturday), then "Holy Week" |
+| Pascha | Apr 12 | May 2 | ✓ ✓ | ✓ ✓ |
+| Pentecost | May 31 | Jun 20 | ✓ ✓ | ✓ ✓ |
+| Apostles' Fast | Jun 1 – Jul 11 | Jun 21 – Jul 11 | ✓ ✓ | ends **Jul 12** both years (the feast day itself) |
+| St. Mary's Fast | Aug 7–21 | Aug 7–21 | ✓ ✓ | ✓ ✓ |
+| Nativity Fast (extra check) | Nov 25 – Jan 6 | Nov 26 – Jan 6 | ✓ ✓ | ✓ ✓ |
+
+Mismatches:
+1. **Great Lent end date** is off in both libraries: `coptic-calendar` runs it 8 days long, coptic.io 1 day. Both get the start right.
+2. **Apostles' Fast** ends a day late in coptic.io.
+3. **Annunciation 2026** (Apr 7, Tuesday of Holy Week): SUS says "Not celebrated this year". Both libraries still show it.
+4. **Lazarus Saturday and the Holy Pascha days** are listed by SUS. `coptic-calendar` has neither; coptic.io has only a "Holy Week" season.
+5. **Outside our range, but a trap:** SUS gives the Nativity in 2028 as Jan 7–8 and ends the 2027 Nativity Fast on Jan 6. Both libraries put the Nativity only on Jan 8, 2028 (Koiahk 29 after the 1743 leap year). This must be handled before the calendar extends past 2027.
+
+#### Name quality (10 days, first entry of each; the `.ics` first entry is not always the same saint)
+
+| Day | `.ics` (Coptic → transliterated) | EN: `coptic-calendar` = coptic.io | AR: coptic.io | EN: Katameros | AR: Katameros |
+|---|---|---|---|---|---|
+| Paope 3 | ⲡⲓⲁⲅⲓⲟⲥ Ⲓⲱⲁⲛⲛⲏⲥ ⲡⲓⲙⲁⲧⲟⲓ (piagios Iōannēs pimatoi) | The Departure of St. Simon II, 51st Pope of the See of St. Mark. | نياحة البابا سيمون الثاني 51 سنة 546ش | The Departure of St. Siemon II, 51st Pope of the See of St. Mark | نياحة البابا سيمون الثاني البطريرك الحادي والخمسون من بطاركة الكرازة المرقسية |
+| Hathor 8 | ⲡⲉⲛⲓⲱⲧ Ⲛⲓⲕⲁⲛⲇⲣⲟⲥ ⲡⲓⲟⲩⲏⲃ (peniōt Nikandros pioyēv) | The Commemoration of the Four Incorporeal Beasts | تذكار الاربعة حيوانات الغير متجسدين | The Commemoration of the Four Incorporeal Creatures | تذكار الأربعة المخلوقات غير المتجسدين |
+| Koiahk 4 | Ⲁⲛⲇ̀ⲣⲉⲁⲥ ⲡⲓⲁ̀ⲡⲟⲥⲧⲟⲗⲟⲥ (Andreas piapostolos) | The Martyrdom of St. Andrew the Apostle, the Brother of St. Peter. | استشهاد القديس اندراوس أحد الاثنى عشر رسولا | The Martyrdom of St. Andrew, One of the Twelve Apostles | إستشهاد القديس أندراوس أحد الاثنى عشر رسولاً |
+| Tobe 22 | ⲁⲃⲃⲁ Ⲁⲛⲧⲱⲛⲓⲟⲥ … (avva Antōnios pikhēvs nte timetmonachos) | The Departure of St. Anthony the Great (Antonius). | نياحة القديس العظيم انبا **انطونبوس** اب جميع الرهبان (typo) | The Departure of the Great Saint Anba Anthony (Antonius) the Father of all Monks | نياحة القديس العظيم الأنبا أنطونيوس أب جميع الرهبان |
+| Meshir 15 | Ⲁⲃⲃⲁ ⲡⲁⲫⲛⲟⲩⲑⲓ ⲡⲓⲙⲟⲛⲁⲭⲟⲥ (Avva Paphnoythi pimonachos) | The Departure of St. Zechariah, the Prophet. | نياحة القديس بفنوتيوس الراهب | The Departure of St. Paphnoute, the Monk | نياحة القديس بفنوتيوس الراهب |
+| Paremhotep 9 | Ⲁⲃⲃⲁ Ⲕⲟⲩⲑⲱⲛ ⲡⲓⲟ̀ⲙⲟⲗⲟⲅⲓⲧⲏⲥ (Avva Koythōn piomologitēs) | The Departure of St. Konan. | نياحة القديس **كوش** المجاهد العظيم | The Departure of St. Konan, the Confessor | نياحة القديس كونن المعترف |
+| Parmoute 17 | Ⲓⲁⲕⲱⲃⲟⲥ ⲡϣⲏⲣⲓ ⲛ̀ⲅⲉⲃⲉⲇⲉⲟⲥ (Iakōvos pshēri ngevedeos) | The Martyrdom of St. James the Apostle Brother of St. John the Apostle. | استشهاد القديس يعقوب بن زبدى الرسول | The Martyrdom of St. James One of the Twelve Apostles and the Brother of St. John the Beloved | أستشهاد القديس يعقوب الكبير أحد الإثني عشر رسولاً وشقيق القديس يوحنا الحبيب |
+| Pashons 2 | ⲡⲓⲁ̀ⲅⲓⲟⲥ Ⲫⲓⲗⲟⲑⲉⲟⲥ ⲡⲓⲙⲁⲣⲧⲩⲣⲟⲥ (piagios Philotheos pimartyros) | The Departure of the righteous Job. | نياحة أيوب البار | The Departure of the Righteous Job | نياحة أيوب الصديق |
+| Paone 20 | ⲁⲃⲃⲁ Ⲕ̀ⲗⲟϫ ⲡⲓⲡ̀ⲣⲉⲥⲃⲩⲧⲉⲣⲟⲥ (avva Kloj pipresvyteros) | The Departure of Elisha, the Prophet. | نياحة القديس اليشع النبى | The Departure of Elisha, the Prophet | نياحة القديس أليشع النبى |
+| Epep 26 | ⲡⲁⲡⲁ ⲁⲃⲃⲁ Ⲧⲓⲙⲟⲑⲉⲟⲥ ⲡⲓϩⲟⲩⲓⲧ (papa avva Timotheos pihoyit) | Repose of St. Joseph the **Carpentar** | نياحة القديس يوسف البار | The Departure of the Upright St. Joseph, the Carpenter | نياحة القديس يوسف البار، خطيب القديسة مريم العذراء وخادم سر التجسد الإلهي |
+
+`coptic-calendar` has no Arabic synaxarium to sample. Its Arabic covers only 23 occasion names, which read correctly: عيد النيروز، عيد الصليب، عيد الميلاد، عيد الختان، عيد الغطاس، عرس قانا الجليل، دخول السيد المسيح الهيكل، عيد البشارة، دخول السيد المسيح أرض مصر، عيد التجلي.
+
+In summary:
+- The CopticChurch.net English list is terse and has typos ("Carpentar", "Incorporeal Beasts", "Lord christ").
+- coptic.io's Arabic is fuller but raw: typos, HTML entities, pope numbers and years pasted into titles, and article headings scraped as if they were saints. Its English and Arabic are separate lists, and they disagree on some days (e.g. Meshir 15).
+- Katameros is the cleanest in both languages, and its English and Arabic are linked entry by entry.
+
+#### Decision (recommendation)
+1. **Feasts, fasts and the Coptic date: compute them ourselves at build time into a static JSON** for Jan 2026 – Dec 2027. There are no runtime calls and nothing third-party ships to the browser.
+   - Use `coptic-calendar` (Unlicense, zero deps, TS) as a build-time dependency, or copy its ~100 lines of conversion and computus. It matched SUS on every date except the end of Great Lent, and it has Arabic names for the feasts.
+   - Add our own rules for:
+     - Great Lent ending the Friday before Lazarus Saturday;
+     - Lazarus Saturday and the Holy Pascha days;
+     - the Annunciation not being celebrated when it falls in Holy Week or the Holy Fifty;
+     - the Jan 7 Nativity after a Coptic leap year (needed from 2028).
+   - Then diff the generated file against the SUS tables for 2026 and 2027 in a test.
+2. **Saints: the Katameros synaxarium titles (English + Arabic) are the best data.** They found all 27 `.ics` saints on the sample days, agree with the encyclopedia wherever it gives a date, and have linked, clean bilingual titles.
+   - They should be exported once from its SQLite into a static JSON (~30 KB gz), **only after written permission** from the maintainer, who should also state where the text came from.
+   - Until then, the banner and `/calendar` show the Coptic date, feasts and fasts only, with no saint names.
+3. **coptic.io: not recommended.** It isn't on npm, and its Arabic needs cleaning. It adds nothing over (1) and (2), and its synaxarium has the same unclear rights.
+4. **The `.ics`: keep it as a cross-check only.** It has Coptic-script names only, covers one year, has no license and an unknown author.
+5. **Katameros daily readings (optional add-on): defer.** Showing them means either a runtime call to `api.katameros.app` or bundling Bible text, and the English Bible there is the NKJV, which needs Thomas Nelson's permission. Reading *references* only (e.g. "Luke 1:1–25") are facts and could be added later from the same export, with the same permission.
+
+#### Attribution to show
+- `coptic-calendar`: none required (Unlicense). A courtesy credit on the credits page is still good practice.
+- Katameros (if permission is given): "Saints of the day: Katameros synaxarium (katameros.app), used with permission". Also include the MIT notice "Copyright (c) 2022 katameros" wherever the exported data file lives, plus whatever upstream credit the maintainer names (e.g. St-Takla.org).
+- Dates: "Feast and fast dates checked against the Coptic Orthodox Metropolis of the Southern United States calendar" is a courtesy credit, not a license requirement.
+
+#### What to ask permission for
+1. **Katameros maintainer (Pierre Said, github.com/pierresaid):** permission to publish the English and Arabic synaxarium *titles* (not the stories) as a static file on a non-commercial educational site, the required credit line, and where the text came from.
+2. **If he points upstream:** CopticChurch.net (St. Mark's Coptic Orthodox Church, Jersey City) and/or St-Takla.org, for the same use.
+3. **The `.ics` author,** via the owner: who produced it, and whether its Coptic names may be shown. This matters only if we ever want Coptic-script names.
+
+#### Needs the priest's review before launch
+- Which saint(s) the banner shows on days with 3–7 entries, and whether monthly commemorations (Michael on the 12th, the Virgin on the 21st, "Annunciation, Nativity and Resurrection" on the 29th) count.
+- English spellings and titles (Katameros uses forms such as "Siemon II", "Youannes", "Kyrillos") and the Arabic titles.
+- The Great Lent, Holy Week and Holy Pascha labels; the Annunciation-in-Holy-Week rule; whether to show Paramoun days, the Jonah's Fast feast day and the Wednesday/Friday fasts.
+- When "today" rolls over: at midnight or at sunset (the liturgical day), and in which time zone.
+- The discrepancies found above:
+  - Pashons 24 (Simon the Stylite vs the Entry into Egypt);
+  - Hathor 27 (the `.ics` has St Victor);
+  - Epep 5 (Mark of el-Borolus);
+  - the encyclopedia's "23 Baramhat" sentence in the St George entry.
+- **Concept to learn:** *Facts vs expression in copyright.* A feast date computed from a rule is a fact anyone can use. A particular translated list of saint titles is someone's compilation and wording, and may be protected. An MIT or Unlicense file on the code does not grant rights to data its author scraped from elsewhere. Search: "copyright facts vs expression", "database compilation copyright", "license of scraped data".
+- **Revisit if:** the Katameros maintainer declines or can't confirm provenance. Then either ask CopticChurch.net directly or build our own title list from the `.ics` and the encyclopedia with the priest. Also revisit if the calendar extends beyond 2027 (the Jan 7 Nativity rule becomes mandatory).
+
+### CAL-002: Feasts and fasts generated from written-out rules into a static file; coptic-calendar only converts dates
+- **Date / Part:** 2026-09-22, calendar Step 1 (branch `calendar`)
+- **Context:** CAL-001 recommended computing the calendar ourselves rather than trusting either library's feast list. Both libraries got the core dates right but differed from the SUS table on the end of Great Lent, the Apostles' Fast, Holy Week and the 2026 Annunciation.
+- **Decision:**
+  - `coptic-calendar@1.0.0` (public domain) is a **devDependency**. It is used only for Gregorian ↔ Coptic conversion and the Alexandrian computus (Pascha), always called with plain `YYYY-MM-DD` strings.
+  - Every other rule is spelled out in `orthodox-site/lib/calendar/rules.ts`, so it can be read against the Church's tables:
+    - **Fixed feasts** on Coptic dates: Nayrouz; the Feast of the Cross (Thout 17–19, three days as SUS lists it); Circumcision; Theophany; Cana; the Entrance into the Temple; the Appearance of the Cross (Paremhat 10); the Annunciation; St. Mark (Parmoute 30); the Entry into Egypt; the Apostles; the Transfiguration; the Assumption.
+    - **Days counted from Pascha:** the Jonah feast, Holy Week days, Thomas Sunday, the Ascension and Pentecost.
+    - **Fasts:** Jonah; Great Lent; the Holy Week fast; the Apostles (to Epip 4); St. Mary (Mesori 1–15); the Nativity (Hathor 16 to Jan 6).
+    - **Fast-free periods:** the Holy Fifty, and from the Nativity to Theophany.
+    - **Wednesday/Friday fasts:** every Wednesday and Friday, except in a fast-free period, on a major feast of the Lord, or inside a longer fast.
+  - The four CAL-001 rules:
+    1. Great Lent ends at Pascha − 9, the Friday before Lazarus Saturday. Lazarus Saturday to Holy Saturday is its own "Holy Week fast".
+    2. Lazarus Saturday, Monday–Wednesday of Holy Pascha, Covenant Thursday, Good Friday and Joyous Saturday are listed.
+    3. The Annunciation is not celebrated between Palm Sunday and Holy Saturday. The day records it under `suppressed`, so the page can say why.
+    4. The Nativity is always Jan 7. When Kiahk 29 falls on Jan 8 (the year after a Coptic leap year, next in 2028), both days are marked and the fast still ends Jan 6.
+  - `npm run calendar:generate` writes `lib/calendar/data/calendar-2026-2027.json`. It has 730 days, one per line so rule changes show up as readable diffs, and it is committed. The site reads the JSON only. Month names are copied from the library's locale (a test keeps them in step), except that Arabic Nasie is spelled نسيء (the library has نسيئ).
+  - **Tests** use Node's built-in runner (`npm test`, Node 24 runs the `.ts` files directly), so no test framework was added. `tsconfig.json` gains `allowImportingTsExtensions` because Node needs the `.ts` in import paths. 110 tests pass:
+    - every row of the SUS 2026 and 2027 tables, stored as a fixture (`lib/calendar/fixtures/sus-2026-2027.json`), including each fast's day before and day after;
+    - the four rules;
+    - Wednesday/Friday and fast-free days;
+    - conversion edge cases (Thout 1 on Sep 11 or 12, Nasie 6 in 1743, round trips);
+    - a day-by-day continuity check over both years;
+    - the whole calendar regenerated in five time zones (UTC−12 to UTC+14) with identical output;
+    - a check that the committed JSON is up to date with the rules.
+- **Chosen without the priest, for his review:**
+  - the name "Holy Week fast" for Lazarus Saturday to Holy Saturday;
+  - Wednesday/Friday fasts kept on Nayrouz and minor feasts;
+  - Paramoun days not shown;
+  - Joyous Saturday listed;
+  - English month spellings (Thout, Paopi … Mesori, from the library).
+- **Why:** the rules are few and well known. Written out, they can be tested line by line against the SUS table and corrected in one place. A library's feast list would hide them.
+- **Files:** `orthodox-site/lib/calendar/{rules,dates,observances,types,coptic-months}.ts`, `lib/calendar/data/calendar-2026-2027.json`, `lib/calendar/fixtures/sus-2026-2027.json`, `lib/calendar/calendar.test.ts`, `scripts/calendar/generate-calendar.ts`, `package.json`, `tsconfig.json`.
+- **Concept to learn:** *Computus.* Pascha is computed from a fixed 19-year lunar cycle on the Julian calendar, not from astronomy, so it can be generated for any year. Search: "Alexandrian computus", "Julian Paschalion".
+- **Revisit if:** the calendar is extended past 2027. Rerun the generator with a new range and add that year's SUS table to the fixture.
+
+### CAL-003: Katameros saint titles extracted once into one swappable file, linked conservatively to our saints index
+- **Date / Part:** 2026-09-22, calendar Step 1
+- **Context:** The owner decided to use Katameros's English and Arabic saint titles now: bundled statically, titles only, credited with a link, while a courtesy permission request is pending. The data must be removable or replaceable without touching UI code.
+- **Decision:**
+  - `npm run calendar:saints -- <katameros-api clone>` reads the `Synaxarium` table from the repository's SQLite file with Node's built-in `node:sqlite`, reading the **Title column only**. English (LanguageId 2) and Arabic (3) are paired by `StoryId`. The output is `lib/calendar/data/saints.katameros.json`. The live API is never called.
+  - **Source recorded in the file:** repository, commit `87461f3266697d927a5f58792605ef6b9e25224c` (2026-09-15), file, table, license note, permission status, and the saints-index snapshot it was linked against.
+  - **Contents:** 366 days, 868 entries; one entry (Habib Girgis) has no Arabic title and shows its English one. Each entry is classified so the UI can choose what to show:
+    - 709 **saints**;
+    - 28 **monthly** commemorations (Michael on the 12th, the Virgin on the 21st, the three feasts on the 29th);
+    - 117 **events** (consecrations, relic translations, councils);
+    - 14 **feasts** that the rules already mark, which the UI hides so a feast doesn't appear twice.
+  - **Swappable:** UI code reads saints only through `lib/calendar/calendar.ts` → `commemorationsFor()` and `view.ts`. Replacing or removing the source means a new JSON of the same shape (or an empty `days`) plus the credit line.
+  - **Links to our saints index.** The index is built at runtime from Chroma, so `scripts/calendar/snapshot-saints-index.py` snapshots it (1,363 English and 1,937 Arabic names) through the backend's own index builders. It reads the local store only, creates no OpenAI client and makes no backend changes. The matcher is deliberately strict, because a wrong link is worse than none:
+    - every word of the index name must appear in the title;
+    - both must start with the same name;
+    - pope numbers must agree (Arabic ‑ون/‑ين endings unified);
+    - an entry that is only "name + the Bishop/Monk…" must match exactly unless the name is unique in both the index and the synaxarium;
+    - a one-word name must match the whole title and be unique;
+    - an index name claimed by two different saints is dropped.
+
+    Early drafts linked John the Baptist to "St. John", Pope Macarius II to Macarius of Alexandria, and St. Justus to St. Samuel; the rules above exclude all three. 21 hand-checked overrides with reasons (`scripts/calendar/saint-link-overrides.json`) cover major saints the index spells differently, such as the Virgin Mary, St. George, St. Mark, St. Athanasius, St. Mina and St. Shenouda. The extractor fails if an override names something not in the index. **Result: 87 English and 165 Arabic links.**
+  - **Tests:**
+    - the 15 CAL-001 sample days;
+    - Pashons 24 shows the Entry of the Lord into Egypt, and Simon the Stylite is on Pashons 29;
+    - the feast isn't repeated in the commemorations;
+    - source and commit present;
+    - titles only;
+    - every link exists in the snapshot and belongs to a saint;
+    - the hand-checked links.
+- **Why:** one file with its provenance in it keeps the licensing question contained. Titles alone are the minimum that serves the feature.
+- **Files:** `orthodox-site/scripts/calendar/{extract-katameros-saints.ts,snapshot-saints-index.py,saints-index.snapshot.json,saint-link-overrides.json,node-sqlite.d.ts}`, `lib/calendar/data/saints.katameros.json`, `lib/calendar/saints.test.ts`.
+- **Concept to learn:** *Precision over recall in entity linking.* When a false match misleads the reader, tune the matcher to link fewer items, and link those correctly. Search: "entity linking precision recall trade-off".
+- **Revisit if:** the maintainer answers (update `source.permission`, or remove the file); the saints index is rebuilt (retake the snapshot and rerun the extractor); or the priest wants more saints linked (add overrides).
 
 ---
 
