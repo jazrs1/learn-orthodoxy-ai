@@ -1,4 +1,5 @@
 import asyncio
+import contextvars
 import hmac
 import json
 import logging
@@ -8,7 +9,7 @@ import threading
 import time
 import unicodedata
 from collections import deque
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Deque, Dict, List, Set, Tuple
@@ -1066,6 +1067,55 @@ def _hit_pages(meta: Dict[str, Any] | None) -> Dict[str, Any]:
     return {"pdf": meta.get("pdf") or meta.get("url"), "page_start": meta.get("page_start"), "page_end": meta.get("page_end")}
 
 
+# The query vectors computed during one request, by query text (RET-014). A comparison question
+# searches the same text again once per tradition; a prefetched question (RET-015) is waiting here.
+# Values are vectors or futures of vectors.
+_request_embeddings: contextvars.ContextVar[Dict[str, Any] | None] = contextvars.ContextVar(
+    "request_embeddings", default=None
+)
+
+
+@contextmanager
+def _embedding_memo():
+    token = _request_embeddings.set({})
+    try:
+        yield
+    finally:
+        _request_embeddings.reset(token)
+
+
+def _embed_queries(texts: List[str]) -> List[Any] | None:
+    """Vectors for `texts`, each computed at most once per request; None without an embedding
+    function (tests with fake collections), when Chroma embeds `query_texts` itself as before."""
+    if embed_fn is None:
+        return None
+    memo = _request_embeddings.get()
+    known: Dict[str, Any] = {}
+    for text in texts:
+        value = memo.get(text) if memo is not None else None
+        if value is None:
+            continue
+        if hasattr(value, "result"):  # a prefetch still running, or failed
+            try:
+                value = value.result()
+            except Exception:
+                logger.warning("prefetched embedding failed; embedding again", exc_info=True)
+                continue
+        known[text] = value
+    missing = [text for text in texts if text not in known]
+    trace = current_trace()
+    if missing:
+        with trace.stage("embedding") if trace is not None else nullcontext():
+            fresh = embed_fn(missing)
+        known.update(zip(missing, fresh))
+        if memo is not None:
+            memo.update(zip(missing, fresh))
+    if trace is not None:
+        reused = len(texts) - len(missing)
+        trace.set(embeddings_reused=trace.fields.get("embeddings_reused", 0) + reused)
+    return [known[text] for text in texts]
+
+
 def _retrieve_documents(
     queries: List[str],
     top_k: int,
@@ -1110,7 +1160,12 @@ def _retrieve_documents(
         except Exception:
             collection_label = None
 
-    query_kwargs: Dict[str, Any] = {"query_texts": deduped_queries, "n_results": top_k}
+    vectors = _embed_queries(deduped_queries)
+    query_kwargs: Dict[str, Any] = (
+        {"query_embeddings": vectors, "n_results": top_k}
+        if vectors is not None
+        else {"query_texts": deduped_queries, "n_results": top_k}
+    )
     if metadata_filter:
         query_kwargs["where"] = metadata_filter
     if where_document:
@@ -2524,6 +2579,8 @@ arabic_collection = None
 oai_client = None
 # The same settings as `oai_client`, for /chat/stream (GEN-007).
 async_oai_client = None
+# The collections' embedding function, called directly so a request can reuse its vectors (RET-014).
+embed_fn = None
 saint_name_index: List[str] = []
 saint_record_index: List[Dict[str, Any]] = []
 arabic_saint_name_index: List[str] = []
@@ -2628,7 +2685,7 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
 
 @app.on_event("startup")
 def startup():
-    global chroma_client, collection, arabic_collection, oai_client, async_oai_client
+    global chroma_client, collection, arabic_collection, oai_client, async_oai_client, embed_fn
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -3870,7 +3927,7 @@ def _chat_errors(trace: RequestTrace):
 
 
 def _chat_impl(req: ChatRequest, trace: RequestTrace):
-    with _chat_errors(trace):
+    with _chat_errors(trace), _embedding_memo():
         prepared = _chat_prepare(req, trace)
         if not isinstance(prepared, PendingAnswer):
             return prepared
@@ -4452,7 +4509,7 @@ def _chat_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _prepare_or_http_error(req: ChatRequest, trace: RequestTrace) -> Dict[str, Any] | PendingAnswer:
-    with _chat_errors(trace):
+    with _chat_errors(trace), _embedding_memo():
         return _chat_prepare(req, trace)
 
 

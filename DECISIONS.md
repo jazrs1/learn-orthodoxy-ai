@@ -60,6 +60,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-011: Default saints for bare names; hand-written alias audit](#ret-011-default-saints-for-bare-names-hand-written-alias-audit)
   - [RET-012: Where a request's time goes, and what could make it faster (report, not changed)](#ret-012-where-a-requests-time-goes-and-what-could-make-it-faster-report-not-changed)
   - [RET-013: The Arabic lexical scan runs over an in-memory copy of the normalised chunks](#ret-013-the-arabic-lexical-scan-runs-over-an-in-memory-copy-of-the-normalised-chunks)
+  - [RET-014: Each query text is embedded once per request, and the search is given the vectors](#ret-014-each-query-text-is-embedded-once-per-request-and-the-search-is-given-the-vectors)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -957,6 +958,19 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - `tests/test_speed.py`: the same results with and without the index for three questions and three filters; the collection is read once per filter; a new collection is read again.
   - Backend suite: 199 passed.
 - **Files changed:** `api.py`, `tests/test_speed.py` (new), `eval/check_arabic_lexical_cache.py` (new).
+
+### RET-014: Each query text is embedded once per request, and the search is given the vectors
+- **Date / Part:** 2026-09-23, speed branch Part B3, change 4 of RET-012 (approved)
+- **Context:** Chroma embedded `query_texts` on every search. A comparison question searched the same rewritten question again once per tradition named (RET-008), so it paid for the same embedding (~0.25 s each) two or three times. The prefetch in RET-015 also needs somewhere to put a vector computed early.
+- **Decision:**
+  - `_retrieve_documents` gets its vectors from `_embed_queries`. That calls the collections' own embedding function (`embed_fn`, kept from startup) once for the texts it hasn't seen in this request, remembers them in a request-scoped memo (a context variable set around `_chat_prepare` by both `/chat` and `/chat/stream`), and passes `query_embeddings` to Chroma.
+  - Nothing is kept between requests.
+  - A value in the memo may be a future (RET-015). If it failed, the text is embedded again.
+  - Without an embedding function (tests with fake collections), Chroma embeds `query_texts` as before.
+  - The trace records a new sub-stage, `stages_ms.embedding` (time spent embedding, inside `retrieval`), and `embeddings_reused`.
+- **Why the results can't change:** Chroma's `query_texts` path calls the same embedding function and searches with its output. A test on the real v2 store, with a deterministic stand-in embedding, shows the same IDs and distances, in the same order, for both collections.
+- **Checks:** `tests/test_speed.py` covers three searches of one text in a request (one embedding call; the second search keeps its `where_document`), a new request embedding again, a failed prefetch being embedded again, the fallback without an embedding function, and the real-store equivalence. Backend suite: 203 passed.
+- **Files changed:** `api.py`, `tests/test_speed.py`.
 
 ## Prompting & Generation
 
