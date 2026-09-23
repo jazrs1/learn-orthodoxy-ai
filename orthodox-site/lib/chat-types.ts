@@ -16,6 +16,8 @@ export type SourceRef = {
   chunk_id?: string;
 };
 
+export type NamesakeLink = { label: string; name: string };
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
@@ -24,6 +26,9 @@ export type ChatMessage = {
   options?: string[];
   /** Saint menus: the entry ID behind each option ("" for a follow-up question), RET-010. */
   optionIds?: string[];
+  /** An answer about a bare name's default saint: the "Looking for a different St. X?" link
+   * (`name` is sent back as `namesakesOf`), RET-011. */
+  namesakes?: NamesakeLink;
   sources?: SourceRef[];
   createdAt?: string;
   isTyping?: boolean;

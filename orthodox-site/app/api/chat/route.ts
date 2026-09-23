@@ -5,7 +5,7 @@ import { getRecentHistory, saveChatTurn } from "../../../lib/conversations";
 import { getDatabaseConfigError } from "../../../lib/db";
 import { ChatMessage, SourceRef } from "../../../lib/chat-types";
 import { Language, normalizeLanguage } from "../../../lib/i18n";
-import { backendSaintSelection, optionsFromBackend } from "../../../lib/message-options";
+import { backendSaintSelection, namesakesFromBackend, optionsFromBackend } from "../../../lib/message-options";
 
 export const runtime = "nodejs";
 
@@ -18,6 +18,7 @@ type BackendChatResponse = {
   entities?: string[];
   options?: string[];
   option_ids?: string[];
+  namesakes?: { label?: string; name?: string } | null;
   sources?: SourceRef[];
 };
 
@@ -30,6 +31,7 @@ type ChatRequestBody = {
   hideUserMessage?: boolean;
   saintId?: string;
   saintName?: string;
+  namesakesOf?: string;
 };
 
 type ChatMode = "chat" | "saints" | "catechism";
@@ -41,6 +43,7 @@ function normalizeAssistantMessage(data: BackendChatResponse): Omit<ChatMessage,
     entities: Array.isArray(data.entities) ? data.entities : [],
     // Saint menus: each option's entry ID, sent back when the option is chosen (RET-010).
     ...optionsFromBackend(data),
+    ...(namesakesFromBackend(data) ? { namesakes: namesakesFromBackend(data) } : {}),
     sources: Array.isArray(data.sources)
       ? data.sources.filter(
           (source) =>

@@ -127,7 +127,7 @@ tail -f /app/chroma_db/v2-build.log   # reconnect and rerun the same command if 
    ```
 
    Each answer must have the expected outcome and v2-shaped sources:
-   - prayer, Athanasius the Apostolic, St. George (a namesake menu; the script chooses the Cappadocian by his entry ID, RET-010), the saints named Gregory, and a FIFA refusal (English);
+   - prayer, Athanasius the Apostolic, St. George (a bare name on `data/saint_defaults.json`: answered about the Cappadocian, with the "Looking for a different St. George?" link, whose menu is checked for free, RET-011), the saints named Gregory, and a FIFA refusal (English);
    - prayer, Paul the First Hermit, and a capital-of-France refusal (Arabic).
 3. In the browser, through the Vercel site:
    - one English and one Arabic answer. Sources show the question or saint and the printed pages. Arabic page ranges read in order ("118–119"; `ui-audit/tools/rtl-sources.mjs` checks this locally);

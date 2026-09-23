@@ -1,0 +1,13 @@
+{
+ "total_usd": 0.00524,
+ "max_spend": 0.02,
+ "entries": [
+  {
+   "label": "RET-011 retrieve-only defaults and alias check v2",
+   "usd": 0.00524,
+   "by_model": {
+    "gpt-4o-mini:analysis": 0.00524
+   }
+  }
+ ]
+}

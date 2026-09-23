@@ -135,14 +135,17 @@ def test_the_apostolic_goes_straight_to_him(v2):
     assert "option_ids" not in reply
 
 
-def test_bare_athanasius_shows_the_menu_and_each_choice_reaches_its_entry(v2):
-    menu = ask("Who was St. Athanasius?")
-    assert menu["options"][0] == "St. Athanasius the Apostolic, the 20th Pope of Alexandria"
-    assert "St. Athanasius (The martyr, vol. 1, p. 269)" in menu["options"]
-    assert not menu["sources"]
-    for label in ("St. Athanasius the Apostolic, the 20th Pope of Alexandria", "St. Athanasius (The martyr, vol. 1, p. 269)"):
-        saint_id, reply = pick("Who was St. Athanasius?", label)
-        assert_answer_about(reply, saint_id)
+def test_bare_athanasius_goes_to_the_apostolic_and_the_link_lists_the_others(v2):
+    # RET-011: bare "St. Athanasius" is the Apostolic (data/saint_defaults.json); the other six are
+    # one click away, and each choice reaches its entry by ID.
+    reply = ask("Who was St. Athanasius?")
+    assert_answer_about(reply, "athanasius-the-apostolic-the-20th-pope-of-alexandria")
+    link = reply["namesakes"]
+    menu = ask(link["label"], mode="saints", namesakes_of=link["name"])
+    assert len(menu["options"]) == 6 and not menu["sources"]
+    for label in ("St. Athanasius (The martyr, vol. 1, p. 269)", "St. Athanasius II, the 28th Pope of Alexandria"):
+        saint_id = choose(menu, label)
+        assert_answer_about(ask(f"search saint: {label}", mode="saints", saint_id=saint_id), saint_id)
 
 
 def test_the_reported_loop_is_gone(v2):
@@ -210,12 +213,15 @@ def test_arabic_apostolic_goes_straight_to_him(v2):
                         "athanasius-the-apostolic-the-20th-pope-of-alexandria", "ar")
 
 
-def test_arabic_bare_athanasius_menu_and_choice(v2):
-    menu = ask("من هو القديس أثناسيوس؟", language="ar")
-    assert menu["options"][0] == "أثناسيوس الرسولي البابا العشرون" and len(menu["options"]) == 7
-    saint_id, reply = pick("من هو القديس أثناسيوس؟", "أثناسيوس الشهيد", language="ar")
+def test_arabic_bare_athanasius_goes_to_the_apostolic_and_the_link_lists_the_others(v2):
+    reply = ask("من هو القديس أثناسيوس؟", language="ar")
+    assert_answer_about(reply, "athanasius-the-apostolic-the-20th-pope-of-alexandria", "ar")
+    link = reply["namesakes"]
+    menu = ask(link["label"], mode="saints", language="ar", namesakes_of=link["name"])
+    assert len(menu["options"]) == 6
+    saint_id = choose(menu, "أثناسيوس الشهيد")
     assert saint_id == "athanasius"
-    assert_answer_about(reply, saint_id, "ar")
+    assert_answer_about(ask("من هو أثناسيوس الشهيد؟", mode="saints", language="ar", saint_id=saint_id), saint_id, "ar")
 
 
 def test_arabic_agathons(v2):
@@ -234,12 +240,14 @@ def test_arabic_gregorys(v2):
 
 
 def test_arabic_anthonys(v2):
-    menu = ask("من هو القديس أنطونيوس؟", language="ar")
-    assert set(menu["options"]) == {"أنطونيوس الشهيد", "أنطونيوس القديس أب الرهبان"}
-    saint_id, reply = pick("من هو القديس أنطونيوس؟", "أنطونيوس القديس أب الرهبان", language="ar")
-    assert saint_id == "anthony-father-of-the-monks"
-    assert_answer_about(reply, saint_id, "ar")
-    assert_answer_about(ask("من هو الأنبا أنطونيوس الكبير؟", language="ar"), saint_id, "ar")
+    # Bare "أنطونيوس" is the Father of the Monks (RET-011); the martyr is behind the link.
+    reply = ask("من هو القديس أنطونيوس؟", language="ar")
+    assert_answer_about(reply, "anthony-father-of-the-monks", "ar")
+    menu = ask(reply["namesakes"]["label"], mode="saints", language="ar", namesakes_of=reply["namesakes"]["name"])
+    assert menu["options"] == ["أنطونيوس الشهيد"]
+    saint_id = choose(menu, "أنطونيوس الشهيد")
+    assert_answer_about(ask("من هو أنطونيوس الشهيد؟", mode="saints", language="ar", saint_id=saint_id), saint_id, "ar")
+    assert_answer_about(ask("من هو الأنبا أنطونيوس الكبير؟", language="ar"), "anthony-father-of-the-monks", "ar")
 
 
 def test_arabic_questions_about_other_things_get_no_menu(v2):
@@ -266,5 +274,7 @@ def test_v1_alias_table_no_longer_makes_the_apostolic_ambiguous(monkeypatch):
     assert (kind, [r["name"] for r in decided]) == ("entry", ["St. Athanasius the Apostolic,"])
     kind, decided = api._english_saint_decision("St. Athanasius of Alexandria")
     assert (kind, [r["name"] for r in decided]) == ("entry", ["St. Athanasius the Apostolic,"])
+    # Bare, it is the Apostolic by the defaults list (RET-011), with the other two behind the link.
     kind, decided = api._english_saint_decision("St. Athanasius")
-    assert kind == "menu" and {r["name"] for r in decided} == {r["name"] for r in records}
+    assert kind == "default" and [r["name"] for r in decided][0] == "St. Athanasius the Apostolic,"
+    assert {r["name"] for r in decided[1:]} == {"St. Athanasius", "St. Athanasius, Bishop of Qus"}

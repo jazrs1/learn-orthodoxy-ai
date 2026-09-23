@@ -1,0 +1,71 @@
+{
+  "about": "Bare saint names that, for a Coptic audience, mean one major saint (RET-011). A question naming only this name ('Who is St. Mary?', 'من هو مارمرقس؟') goes straight to that saint, and the answer ends with a link to the other saints of the name. Names not listed keep RET-010: a menu when several entries share the name. 'en' and 'ar' are the bare names as asked, without titles (St., القديس, الأنبا, مار are ignored); 'ar_titles' are epithets that name the saint alone ('العذراء') but are not names, so their namesakes stay out of the menu. 'target' is the v2 saint ID; 'v1_name' the v1 entry (null: v1 has no entry, so v1 keeps the menu). A line with \"active\": false is a proposal waiting for review and is not applied. Every line has a reason.",
+  "defaults": [
+    {
+      "name_en": "St. Mary", "name_ar": "مريم", "feminine": true,
+      "en": ["Mary"], "ar": ["مريم"], "ar_titles": ["العذراء"],
+      "target": "mary-the-virgin-theotokos", "v1_name": "St. Mary, the Virgin Theotokos",
+      "reason": "The Theotokos. The Church names every other Mary with her descriptor (Magdalene, of Egypt, the Armenian)."
+    },
+    {
+      "name_en": "St. Mark", "name_ar": "مرقس",
+      "en": ["Mark"], "ar": ["مرقس"],
+      "target": "marcus-the-apostle", "v1_name": null,
+      "reason": "The Apostle and Evangelist, founder of the Church of Alexandria. The Popes Mark II-VIII are named with their number. v1 has no entry for him."
+    },
+    {
+      "name_en": "St. George", "name_ar": "جرجس",
+      "en": ["George"], "ar": ["جرجس", "جاورجيوس"],
+      "target": "george-the-capaducian", "v1_name": "St. George, the Capaducian",
+      "reason": "The Great Martyr of Cappadocia (Mar Girgis, Prince of Martyrs)."
+    },
+    {
+      "name_en": "St. Athanasius", "name_ar": "أثناسيوس",
+      "en": ["Athanasius"], "ar": ["أثناسيوس"],
+      "target": "athanasius-the-apostolic-the-20th-pope-of-alexandria", "v1_name": "St. Athanasius the Apostolic,",
+      "reason": "The Apostolic, 20th Pope of Alexandria. Athanasius II and III are named with their number."
+    },
+    {
+      "name_en": "St. Anthony", "name_ar": "أنطونيوس",
+      "en": ["Anthony", "Antony"], "ar": ["أنطونيوس"],
+      "target": "anthony-father-of-the-monks", "v1_name": "St. Anthony, Father of the Monks",
+      "reason": "The Great, Father of the Monks."
+    },
+    {
+      "name_en": "St. Mina", "name_ar": "مينا",
+      "en": ["Mina", "Menas", "Mena"], "ar": ["مينا"],
+      "target": "mina-the-wonder-maker", "v1_name": "St. Mina, the Wonder-maker",
+      "reason": "Menas the Wonderworker, the martyr of Mariut. The Popes Mina I and II are named with their number."
+    },
+    {
+      "name_en": "St. Cyril", "name_ar": "كيرلس",
+      "en": ["Cyril"], "ar": ["كيرلس"],
+      "target": "cyril-i-the-24th-pope-of-alexandria", "v1_name": null,
+      "reason": "Cyril of Alexandria (Cyril I, 24th Pope), the Pillar of Faith. Review: 'Kyrillos' and 'البابا كيرلس' often mean Pope Kyrillos VI in modern use; the API reads 'Kyrillos' as 'Cyril', so they come here too. v1 has no entry for him."
+    },
+    {
+      "name_en": "St. Paul", "name_ar": "بولس", "active": false,
+      "en": ["Paul"], "ar": ["بولس"],
+      "target": null, "proposal": "abba-paul-the-first-hermit", "v1_name": null,
+      "reason": "For the priest to decide. 'St. Paul' usually means the Apostle, but neither dictionary has an entry for the Apostle, so he cannot be the default. The proposal is Paul the First Hermit (أنبا بولا), which risks answering about the wrong Paul. Until decided, 'St. Paul' keeps the menu. In Arabic the names differ (بولس the Apostle, بولا the Hermit)."
+    },
+    {
+      "name_en": "St. Moses", "name_ar": "موسى",
+      "en": ["Moses"], "ar": ["موسى"],
+      "target": "moses-the-black", "v1_name": "St. Moses, the Black",
+      "reason": "Moses the Black (the Strong). Moses the Prophet has no entry in either dictionary."
+    },
+    {
+      "name_en": "St. Macarius", "name_ar": "مقاريوس",
+      "en": ["Macarius"], "ar": ["مقاريوس", "مقار", "أبو مقار", "مكاريوس"],
+      "target": "macarius-the-great", "v1_name": "St. Macarius, the Great",
+      "reason": "Macarius the Great (Abu Maqar) of Scetis. The dictionary spells him مقاريوس; 'مكاريوس' is the Popes' spelling but is also said of him, so it comes here and the link lists the Popes."
+    },
+    {
+      "name_en": "St. Demiana", "name_ar": "دميانة", "feminine": true,
+      "en": ["Demiana", "Dimiana"], "ar": ["دميانة"],
+      "target": "demiana-and-the-fourty-virgins", "v1_name": null,
+      "reason": "The martyr with the forty virgins. Each dictionary has one entry, so there is no link; listed so a second entry added later does not turn her name into a menu."
+    }
+  ]
+}

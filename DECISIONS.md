@@ -57,6 +57,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-008: Comparisons with another church also retrieve the passages that name it](#ret-008-comparisons-with-another-church-also-retrieve-the-passages-that-name-it)
   - [RET-009: Distance threshold 1.25, as an off-topic guard only](#ret-009-distance-threshold-125-as-an-off-topic-guard-only)
   - [RET-010: Namesake menus select by saint ID; a menu only for genuinely shared names](#ret-010-namesake-menus-select-by-saint-id-a-menu-only-for-genuinely-shared-names)
+  - [RET-011: Default saints for bare names; hand-written alias audit](#ret-011-default-saints-for-bare-names-hand-written-alias-audit)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -787,6 +788,81 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Revisit if:**
   - bare-name menus prove too frequent: a name whose curated saint is overwhelmingly meant (St. Mary, St. Mark) could go straight to him with a "did you mean another?" line;
   - or the saints index is rebuilt: move the alias ownership into ingest and drop the copied v1 aliases there.
+
+### RET-011: Default saints for bare names; hand-written alias audit
+- **Date / Part:** 2026-09-23, follow-up to RET-010 before deploying `fix-saint-menu-loop`.
+- **OpenAI:** retrieve-only check $0.0052 (pre-approved up to $0.02; ledger `eval/results/spend-ret011.json`); smoke set ~$0.01.
+- **1. Defaults for bare names** (`data/saint_defaults.json`, reviewable, a reason per line):
+  - **Why:** for a Coptic audience some bare names are not ambiguous. "St. Mary" is the Theotokos and "مارمرقس" is the Apostle, so the RET-010 menu got in their way.
+  - **Behaviour:**
+    - A question naming only a listed name goes straight to the major saint, in English and Arabic.
+    - Titles are ignored: "St.", "القديس", "الأنبا", "مار".
+    - The answer ends with a small "Looking for a different St. X?" link, or "هل تبحث عن قديس آخر باسم …؟" in Arabic.
+    - The link opens a menu of every other saint of the name (up to 20, IDs attached, the major saint left out), and a choice works as in RET-010.
+    - Names not on the list keep RET-010.
+  - **The list:**
+
+    | Name | Default |
+    |---|---|
+    | St. Mary / مريم | the Theotokos; "العذراء" is an epithet that also names her, and its namesakes stay out of the menu |
+    | St. Mark / مرقس | the Apostle |
+    | St. George / جرجس, جاورجيوس | the Cappadocian |
+    | St. Athanasius | the Apostolic |
+    | St. Anthony / Antony | Father of the Monks |
+    | St. Mina / Menas / Mena | the Wonderworker |
+    | St. Cyril | Cyril I of Alexandria |
+    | St. Moses | the Black |
+    | St. Macarius / مقاريوس, مقار, أبو مقار, مكاريوس | the Great |
+    | St. Demiana | her entry |
+
+  - **St. Paul is flagged for the priest and not applied** (`"active": false`). Neither dictionary has an entry for the Apostle. The proposal, Paul the First Hermit, risks answering about the wrong Paul, so "St. Paul" keeps the menu.
+  - **Also for review:** "Kyrillos" and "البابا كيرلس" often mean Pope Kyrillos VI. The API reads "Kyrillos" as "Cyril", so they get Cyril I with the link to the others.
+  - **v1:** the rows name a v1 entry. v1 has none for Mark the Apostle, Cyril of Alexandria or Demiana, so there those names keep the menu.
+  - **Priority:**
+    1. An exact dictionary name beats a default: "مينا الشهيد" and "مينا القديس" are two other Minas' entries.
+    2. A default beats an entry called just the bare name (v1 "St. Mary").
+    3. Saints-list and calendar names use the defaults too, with the link.
+  - **No link** when there is no other saint of the name: English Anthony, Demiana.
+  - **Link storage:** the link is kept as `{label, namesakesOf}` in the existing `options` jsonb, so there's no migration. `/chat` takes `namesakes_of` and returns `namesakes: {label, name}` on the answer.
+- **2. Alias audit** (`eval/alias_audit.py`, read-only, report `eval/results/alias-audit.txt`, before: `alias-audit-before.txt`):
+  - **Scope:** every hand-written alias: `api.SAINT_ALIAS_RECORDS`, `arabic_saints_index.py`, the curation seeds, and the frontend display table in `lib/saint-display.ts`.
+  - **Method:** each alias is looked up the way the API looks it up, in the v1 English, v2 English and v2 Arabic indexes. Findings:
+    - WRONG: reaches another saint;
+    - SHARED: a multi-word name shared by several entries;
+    - STRAY: carried by another entry;
+    - OTHER: is another entry's own name;
+    - MISSING: does not reach its saint.
+  - **Results:**
+
+    | | issues |
+    |---|---|
+    | Previous commit | 27 (MISSING 16, SHARED 6, OTHER 3, WRONG 2) |
+    | Now | none (202 aliases) |
+
+  - **What changed:**
+    - **Mark and Cyril (MISSING 16).** "St. Mark the Evangelist/Apostle" and "St. Cyril of Alexandria" reached no entry in v2, whose entries are "St. Marcus, the Apostle" and "St. Cyril I, the 24th Pope". The table's names were attached only to an entry whose own name matched one of them. Now the owner of a hand-written group always receives the group's names.
+    - **v1 Theotokos (SHARED 6).** "St. Mary Theotokos", "Mother of God" and "Holy Virgin Mary" were carried by both v1 "St. Mary" and "St. Mary, the Virgin Theotokos": a menu. Group ownership now goes to the entry matching the group's most specific name. "St. Mary the Virgin" is also a prefix of "St. Mary, the Virgin Confessor".
+    - **Seed aliases naming other saints (OTHER 3).** `arabic_saints_index.py` gave the Nehissy entry "أبانوب المعترف" (the Confessor has his own entry) and the Wonderworker "مينا الشهيد" and "مينا القديس" (the own names of two other Minas). They are removed from the seed file.
+      - The committed v2 index (built from the seeds at ingest) still lists them.
+      - A new Arabic ownership pass drops any alias of two words or more that is the start of another entry's own name, so this takes effect now without a rebuild.
+    - **Arianus (WRONG 2, a RET-010 regression, never deployed).** "بولس الرسول" reached Arianus, governor of Ansena. RET-010's single-close-match rule found it inside a garbled index key ("…ارسطوبولس الرسول…"). Matches are now whole words; the Apostle has no entry, so no entry is reached.
+    - **Repeated dictionary entries** ("أبانوب المعترف القديس (ص 30، مدخل 2)") count as one saint, so "أبانوب المعترف" reaches the Confessor.
+    - **"Pope Cyril" removed** from the backend table and its frontend mirror. It sent a name six Popes share to Cyril I; it now falls back to the ordinary rules.
+- **Tests:** backend 183 (`tests/test_saint_defaults.py`, 31 tests):
+  - every active row in English and Arabic, with the link present exactly when there are others;
+  - link → menu → choice by ID;
+  - the epithet, the full link menu, St. Paul inactive;
+  - exact names over defaults, calendar names;
+  - the audit's v2 checks on the committed index, the fixed aliases, v1 Theotokos ownership.
+  - Four RET-010 tests now follow bare "St. Athanasius" and "أنطونيوس" through the default and its link.
+  - Frontend 127 (2 new: the link survives a saved conversation and sends `namesakes_of`).
+- **Retrieve-only on the local v2 store:** all 11 rows × 2 languages and 6 alias cases correct (the 22 row questions plus the 6 alias cases, all 28 correct).
+- **Smoke set (local v2):** 8/8. Case 3 ("search saint: St. George") now expects the Cappadocian with the link, and checks the link's menu (the other two Georges, with IDs).
+- **Not done:** no browser check of the new link's look. It uses the menu styles' accent colour, underlined, between the answer and its sources.
+- **Revisit if:**
+  - the priest decides St. Paul, or the Kyrillos question;
+  - a name's second saint is added to a dictionary;
+  - the index is rebuilt (the seed fixes then land in `saints_index.json` too, and the Arabic ownership pass becomes a no-op for them).
 
 ## Prompting & Generation
 

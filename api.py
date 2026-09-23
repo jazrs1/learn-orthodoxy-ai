@@ -422,7 +422,6 @@ SAINT_ALIAS_RECORDS: List[Dict[str, Any]] = [
             "St. Cyril of Alexandria",
             "Saint Cyril of Alexandria",
             "St. Cyril the Great",
-            "Pope Cyril",
         ],
         "arabic_aliases": [
             "كيرلس",
@@ -710,6 +709,7 @@ def _split_saint_matches(records: List[Dict[str, Any]]) -> Tuple[List[str], List
 # never matched against the index again.
 
 SAINT_MENU_MAX = 12
+NAMESAKE_MENU_MAX = 20
 
 
 def _saint_own_keys(record: Dict[str, Any]) -> Set[str]:
@@ -753,18 +753,27 @@ def _assign_alias_owners(records: List[Dict[str, Any]], reserved: Dict[str, str]
         ]
 
     for group in SAINT_ALIAS_RECORDS:
+        values = [str(v) for v in [group.get("canonical", ""), *group.get("english_aliases", [])] if v]
         group_keys: Set[str] = set()
-        for value in [group.get("canonical", ""), *group.get("english_aliases", [])]:
-            group_keys |= _saint_match_keys(str(value))
+        for value in values:
+            group_keys |= _saint_match_keys(value)
         owner = next((reserved[k] for k in sorted(group_keys) if reserved.get(k) in by_id), None)
         if owner is None:
+            # The entry named by the group's most specific name: "St. Mary, the Virgin Theotokos",
+            # not "St. Mary, the Virgin Confessor", which only shares "St. Mary the Virgin" (RET-011).
             descriptive = {k for k in group_keys if len(k.split()) >= 2}
-            candidates = [record_id for record_id in by_id if any(owns(record_id, k) for k in descriptive)]
-            owner = candidates[0] if len(candidates) == 1 else None
+            depth = {record_id: max((len(k.split()) for k in descriptive if owns(record_id, k)), default=0) for record_id in by_id}
+            deepest = max(depth.values(), default=0)
+            leaders = [record_id for record_id, d in depth.items() if d and d == deepest]
+            owner = leaders[0] if len(leaders) == 1 else None
         if owner is not None:
             for record_id in by_id:
                 if record_id != owner:
                     drop(record_id, group_keys)
+            # The table names this saint, so its names reach him even when his entry is called
+            # otherwise: "St. Mark the Evangelist" is "St. Marcus, the Apostle" (RET-011).
+            present = set(by_id[owner].get("aliases") or [])
+            by_id[owner]["aliases"] = [*(by_id[owner].get("aliases") or []), *[v for v in values if v not in present]]
 
     carriers: Dict[str, Set[str]] = {}
     for record_id, record in by_id.items():
@@ -798,12 +807,81 @@ def _bare_saint_namesakes(core: str) -> List[Dict[str, Any]]:
     return exact + starting
 
 
+SAINT_DEFAULTS_PATH = Path("data/saint_defaults.json")
+_saint_defaults_cache: List[Dict[str, Any]] | None = None
+
+
+def _saint_defaults() -> List[Dict[str, Any]]:
+    """The reviewed bare-name defaults (RET-011): "St. Mary" is the Theotokos for a Coptic
+    audience. Lines marked "active": false are proposals and are not applied."""
+    global _saint_defaults_cache
+    if _saint_defaults_cache is None:
+        try:
+            rows = json.loads(SAINT_DEFAULTS_PATH.read_text(encoding="utf-8"))["defaults"]
+        except Exception:
+            logger.warning("saint_defaults.json unreadable; bare names keep their menus", exc_info=True)
+            rows = []
+        _saint_defaults_cache = [row for row in rows if row.get("active", True)]
+    return _saint_defaults_cache
+
+
+def _arabic_bare_key(value: str) -> str:
+    return _normalize_arabic_alias_key(_strip_arabic_query_titles(value)) or _normalize_arabic_alias_key(value)
+
+
+def _saint_default_row(name: str, language: str) -> Dict[str, Any] | None:
+    """The defaults line for a bare name as asked ("St. Mary", "مارمرقس"), or None."""
+    if language == "ar":
+        key = _arabic_bare_key(name)
+        return next((row for row in _saint_defaults()
+                     if key and key in {_arabic_bare_key(v) for v in [*row.get("ar", []), *row.get("ar_titles", [])]}), None)
+    key = _normalize_saint_match_key(name)
+    return next((row for row in _saint_defaults() if key and key in {_normalize_saint_match_key(v) for v in row.get("en", [])}), None)
+
+
+def _saint_default_record(row: Dict[str, Any] | None) -> Dict[str, Any] | None:
+    """The English entry a defaults line names: its v2 ID, or its v1 name (None: no v1 entry)."""
+    if not row:
+        return None
+    if CORPUS_V2:
+        return _find_saint_record_by_id(str(row.get("target") or ""))
+    return _find_saint_record_exact(str(row["v1_name"])) if row.get("v1_name") else None
+
+
+def _default_namesakes(row: Dict[str, Any], target: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """The other saints of a default's name, for its "Looking for a different St. X?" menu."""
+    seen = {str(target.get("id"))}
+    others: List[Dict[str, Any]] = []
+    for value in row.get("en", []):
+        for record in _bare_saint_namesakes(_normalize_saint_match_key(value)):
+            if str(record.get("id")) not in seen:
+                seen.add(str(record.get("id")))
+                others.append(record)
+    return others
+
+
+def _namesake_link(row: Dict[str, Any] | None, language: str) -> Dict[str, str] | None:
+    """The link an answer about a default saint ends with; the frontend sends `name` back as
+    `namesakes_of` to open the menu of the other saints of that name."""
+    if not row:
+        return None
+    if language == "ar":
+        noun = "قديسة أخرى" if row.get("feminine") else "قديس آخر"
+        return {"label": f"هل تبحث عن {noun} باسم {row['name_ar']}؟", "name": row["name_ar"]}
+    return {"label": f"Looking for a different {row['name_en']}?", "name": row["name_en"]}
+
+
 def _english_saint_decision(query: str) -> Tuple[str, List[Dict[str, Any]]]:
-    """("entry", [record]) | ("menu", records) | ("none", []) for the name a question asks about."""
+    """("entry", [record]) | ("default", [record, *its namesakes]) | ("menu", records) | ("none", [])
+    for the name a question asks about."""
     key = _normalize_saint_match_key(query)
     if not key:
         return "none", []
     if len(key.split()) == 1:
+        row = _saint_default_row(query, "en")
+        target = _saint_default_record(row)
+        if target is not None:
+            return "default", [target, *_default_namesakes(row, target)]
         namesakes = _bare_saint_namesakes(key)
         if len(namesakes) >= 2:
             return "menu", namesakes
@@ -837,15 +915,21 @@ def _find_saint_record_exact(name: str) -> Dict[str, Any] | None:
 
 
 def _find_saint_record_for_name(name: str) -> Dict[str, Any] | None:
-    """A name from the saints list or a calendar link, which stand for one entry: the entry shown
-    under that name, else the curated owner of the name ("St. Athanasius" is the Apostolic), else
-    the only entry that carries it. None when the name is shared and nobody owns it."""
-    record = _find_saint_record_exact(name)
-    if record is not None:
-        return record
+    """A name from the saints list or a calendar link, which stand for one entry: a bare name's
+    default saint (data/saint_defaults.json), else the entry shown under that name, else the curated
+    owner of the name ("St. Athanasius" is the Apostolic), else the only entry that carries it. None
+    when the name is shared and nobody owns it."""
     key = _normalize_saint_match_key(name)
     if not key:
         return None
+    # A bare name on the defaults list is its major saint, even where v1 has an entry called just
+    # that ("St. Mary") (RET-011).
+    default = _saint_default_record(_saint_default_row(name, "en")) if len(key.split()) == 1 else None
+    if default is not None:
+        return default
+    record = _find_saint_record_exact(name)
+    if record is not None:
+        return record
     owner = _curated_saint_names().get(key) if CORPUS_V2 else None
     if owner and _find_saint_record_by_id(owner):
         return _find_saint_record_by_id(owner)
@@ -859,6 +943,46 @@ def _saint_menu_response(raw_query: str, records: List[Dict[str, Any]], mode: st
     payload = _saint_options_response(raw_query, [str(r.get("name", "")) for r in shown], mode, language=language)
     payload["option_ids"] = [str(r.get("saint_id") or r.get("id") or "") for r in shown]
     return payload
+
+
+def _namesake_menu(name: str, language: str) -> Dict[str, Any] | None:
+    """The menu behind "Looking for a different St. X?": every saint of the name except the default
+    one. None when there is no other (the question is then answered as usual)."""
+    row = _saint_default_row(name, language)
+    if language == "ar":
+        if not CORPUS_V2:
+            return None
+        target = _find_v2_arabic_record_by_id(str((row or {}).get("target") or ""))
+        words = [_arabic_bare_key(v) for v in (row or {}).get("ar", [])] or [_arabic_bare_key(name)]
+        seen = {target["saint_id"]} if target else set()
+        others = []
+        for word in words:
+            if len(word.split()) != 1:
+                continue
+            for record in _arabic_bare_namesakes(word):
+                if record["saint_id"] not in seen:
+                    seen.add(record["saint_id"])
+                    others.append(record)
+        answer = f"قديسون آخرون باسم {(row or {}).get('name_ar') or name}. اختر واحدًا من الخيارات أدناه."
+    else:
+        target = _saint_default_record(row)
+        if row and target is not None:
+            others = _default_namesakes(row, target)
+        else:
+            others = _bare_saint_namesakes(_normalize_saint_match_key(name))
+        answer = f"Other saints named {(row or {}).get('name_en') or name}. Choose one below."
+    if not others:
+        return None
+    # Asked for explicitly, so it lists every other saint of the name (Arabic مرقس has 16).
+    shown = others[:NAMESAKE_MENU_MAX]
+    return {
+        "answer": answer,
+        "sources": [],
+        "entities": [],
+        "options": [str(r.get("name", "")) for r in shown],
+        "option_ids": [str(r.get("saint_id") or r.get("id") or "") for r in shown],
+        "can_learn_more": False,
+    }
 
 
 def _find_saint_index_matches(query: str, limit: int = 12) -> List[str]:
@@ -1766,6 +1890,8 @@ class ChatRequest(BaseModel):
     # A name from the saints list or a calendar link, which stands for one entry: resolved by exact
     # name, then by its curated owner ("St. Athanasius" is the Apostolic), never to a menu.
     saint_name: str | None = None
+    # "Looking for a different St. X?": the menu of the other saints of that name (RET-011).
+    namesakes_of: str | None = None
 
 
 class Source(BaseModel):
@@ -1805,6 +1931,9 @@ class ChatResponse(BaseModel):
     options: List[str] = []
     # Saint menus only: the entry ID behind each option, in the same order (RET-010).
     option_ids: List[str] | None = None
+    # An answer about a bare name's default saint: {"label", "name"} for the link to the other
+    # saints of that name (RET-011).
+    namesakes: Dict[str, str] | None = None
     can_learn_more: bool = False
     debug: Dict[str, Any] | None = None
 
@@ -1812,8 +1941,9 @@ class ChatResponse(BaseModel):
     def _omit_absent_option_ids(self, handler):
         # Responses without a saint menu keep their previous shape.
         data = handler(self)
-        if data.get("option_ids") is None:
-            data.pop("option_ids", None)
+        for key in ("option_ids", "namesakes"):
+            if data.get(key) is None:
+                data.pop(key, None)
         return data
 
 
@@ -2981,14 +3111,17 @@ def _build_v2_arabic_saint_records() -> List[Dict[str, Any]]:
         if entry is None or corpus_runtime.first_chunk_id(entry) not in chunks:
             continue
         document, metadata = chunks[corpus_runtime.first_chunk_id(entry)]
-        names = [corpus_runtime.arabic_display_name(saint), saint.get("name_ar", ""), *saint.get("aliases_ar", [])]
+        own_names = [corpus_runtime.arabic_display_name(saint), saint.get("name_ar", "")]
+        names = [*own_names, *saint.get("aliases_ar", [])]
         records.append({
             "saint_id": saint["id"],
             "name": _normalize_arabic_display_text(corpus_runtime.arabic_display_name(saint)),
             "keys": {key for key in (_normalize_arabic_alias_key(n) for n in names if n) if key},
+            "own_keys": {key for key in (_normalize_arabic_alias_key(n) for n in own_names if n) if key},
             "metadata": metadata,
             "body": corpus_runtime.strip_header(document),
         })
+    _assign_arabic_alias_owners(records)
     by_name: Dict[str, List[Dict[str, Any]]] = {}
     for record in records:
         by_name.setdefault(record["name"], []).append(record)
@@ -3004,6 +3137,24 @@ def _build_v2_arabic_saint_records() -> List[Dict[str, Any]]:
             record["name"] = f"{record['name'][:-1]}، مدخل {seen[record['name']]})"
     arabic_v2_saint_records = sorted(records, key=lambda record: record["name"])
     return arabic_v2_saint_records
+
+
+def _assign_arabic_alias_owners(records: List[Dict[str, Any]]) -> None:
+    """An alias of two words or more that is (the start of) another entry's own name belongs to that
+    entry (RET-011). The hand-written seed list had given the Nehissy entry "أبانوب المعترف" (the
+    Confessor has his own entry) and the Wonderworker "مينا الشهيد" and "مينا القديس" (the own names
+    of two other Minas), so those questions reached the wrong saint."""
+    owners_of: Dict[str, Set[str]] = {}
+    for record in records:
+        for key in record["own_keys"]:
+            words = key.split()
+            for n in range(2, len(words) + 1):
+                owners_of.setdefault(" ".join(words[:n]), set()).add(record["saint_id"])
+    for record in records:
+        for key in list(record["keys"] - record["own_keys"]):
+            owners = owners_of.get(key)
+            if owners and record["saint_id"] not in owners and len(key.split()) >= 2:
+                record["keys"].discard(key)
 
 
 ARABIC_NAME_TITLES = {"القديس", "القديسه", "القديسة", "الانبا", "انبا", "البابا", "ابا", "الاب", "مار", "الشهيد", "الشهيده"}
@@ -3102,8 +3253,21 @@ def _arabic_bare_namesakes(target: str) -> List[Dict[str, Any]]:
 
 
 def _arabic_saint_decision(name_query: str) -> Tuple[str, List[Dict[str, Any]]]:
-    """("entry", [record]) | ("menu", records) | ("none", matches) for an Arabic saint name."""
+    """("entry", [record]) | ("default", [record, *its namesakes]) | ("menu", records) |
+    ("none", matches) for an Arabic saint name."""
     words = _normalize_arabic_alias_key(_strip_arabic_query_titles(name_query)).split()
+    # The dictionary's own name for an entry wins over a default: "مينا الشهيد" is that entry, not
+    # the Wonderworker, although "الشهيد" alone would leave the bare name "مينا" (RET-011).
+    full = _normalize_arabic_alias_key(name_query)
+    named = [r for r in _build_v2_arabic_saint_records() if full in r.get("own_keys", set())]
+    if len(full.split()) >= 2 and len(named) == 1:
+        return "entry", named
+    row = _saint_default_row(name_query, "ar") if 0 < len(words) <= 2 else None
+    target = _find_v2_arabic_record_by_id(str((row or {}).get("target") or "")) if row else None
+    if target is not None:
+        menu = _namesake_menu(name_query, "ar")
+        others = [_find_v2_arabic_record_by_id(i) for i in (menu or {}).get("option_ids", [])]
+        return "default", [target, *[r for r in others if r]]
     if len(words) == 1:
         namesakes = _arabic_bare_namesakes(words[0])
         if len(namesakes) >= 2:
@@ -3112,16 +3276,27 @@ def _arabic_saint_decision(name_query: str) -> Tuple[str, List[Dict[str, Any]]]:
             return "entry", namesakes
     matches = _find_v2_arabic_saint_matches(name_query, limit=SAINT_MENU_MAX)
     exact = [record for record in matches if record["match_score"] == 0]
-    if len(exact) == 1:
-        return "entry", exact
+    if len(exact) == 1 or _same_saint_repeated(exact):
+        return "entry", exact[:1]
     if len(exact) >= 2:
         return "menu", exact
     # One entry whose name starts with or contains the words asked about: "غريغوريوس النزينزي" is
-    # "إغريغوريوس ( غريغوريوس ) النزينزي القديس".
-    close = [record for record in matches if record["match_score"] <= 2]
-    if len(close) == 1:
-        return "entry", close
+    # "إغريغوريوس ( غريغوريوس ) النزينزي القديس". Whole words only: "بولس الرسول" is not inside
+    # "ارسطوبولس الرسول" (RET-011).
+    query_keys = _arabic_saint_query_keys(name_query)
+    close = [
+        record for record in matches
+        if record["match_score"] <= 2 and any(f" {q} " in f" {k} " for q in query_keys for k in record["keys"])
+    ]
+    if len(close) == 1 or _same_saint_repeated(close):
+        return "entry", close[:1]
     return "none", matches
+
+
+def _same_saint_repeated(records: List[Dict[str, Any]]) -> bool:
+    """The dictionary repeats some entries in its last pages ("أبانوب المعترف القديس (ص 30، مدخل 2)"):
+    several matches that are all one saint count as that saint (RET-011)."""
+    return len(records) > 1 and len({_arabic_lookup_name(record) for record in records}) == 1
 
 
 def _find_v2_arabic_record_by_id(saint_id: str) -> Dict[str, Any] | None:
@@ -3649,6 +3824,13 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             history_messages_used=len(history),
         )
 
+        # "Looking for a different St. X?" (RET-011): the other saints of that name, as a menu.
+        if req.namesakes_of:
+            menu = _namesake_menu(req.namesakes_of, "ar" if detected_language == "ar" else "en")
+            if menu is not None:
+                trace.set(outcome="options", refusal=False, options_count=len(menu["options"]), namesakes_of=req.namesakes_of[:120])
+                return menu
+
         # Separate WHAT to retrieve from HOW to present it (RET-006). Saint-tab lookups
         # ("search saint: X") are already a bare name and skip the call.
         analysis = _analyze_request(original_question, history)
@@ -3674,12 +3856,18 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             # "who is" question goes straight to the one entry it names, or shows a menu when the name
             # is genuinely shared (RET-010).
             arabic_selected_record = None
+            namesake_link = None
             if CORPUS_V2 and not arabic_list:
                 if req.saint_id:
                     arabic_selected_record = _find_v2_arabic_record_by_id(req.saint_id)
                     trace.set(saint_selection="id" if arabic_selected_record else "id_unknown", saint_selected_id=req.saint_id[:120])
                 elif req.saint_name:
                     arabic_selected_record = _find_v2_arabic_record_for_name(req.saint_name)
+                    row = _saint_default_row(req.saint_name, "ar")
+                    if arabic_selected_record is None and row:
+                        arabic_selected_record = _find_v2_arabic_record_by_id(str(row.get("target") or ""))
+                    if arabic_selected_record is not None and row and _namesake_menu(req.saint_name, "ar"):
+                        namesake_link = _namesake_link(row, "ar")
                     trace.set(saint_selection="name" if arabic_selected_record else "name_unresolved")
                 if arabic_selected_record is None and mode != "catechism" and not req.saint_name:
                     name_query = _arabic_saint_lookup_query(original_question, mode)
@@ -3689,8 +3877,10 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                         if decision == "menu":
                             trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(decided)))
                             return _saint_menu_response(name_query, decided, "lookup", language="ar")
-                        if decision == "entry":
+                        if decision in ("entry", "default"):
                             arabic_selected_record = decided[0]
+                        if decision == "default" and len(decided) > 1:
+                            namesake_link = _namesake_link(_saint_default_row(name_query, "ar"), "ar")
                 if arabic_selected_record is not None:
                     arabic_selected_saint = _arabic_lookup_name(arabic_selected_record)
                     arabic_saint_id = arabic_selected_record["saint_id"]
@@ -3839,6 +4029,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 "entities": [],
                 "options": followup_options,
                 "can_learn_more": _has_viable_saint_learn_more(answer, docs, metas, mode),
+                "namesakes": namesake_link if response_sources else None,
             }
 
         # A menu choice (by ID) or a saints-list / calendar name selects one entry outright (RET-010).
@@ -3849,6 +4040,11 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         elif req.saint_name:
             selected_record = _find_saint_record_for_name(req.saint_name)
             trace.set(saint_selection="name" if selected_record else "name_unresolved")
+        namesake_link = None
+        if req.saint_name and selected_record is not None and len(_normalize_saint_match_key(req.saint_name).split()) == 1:
+            row = _saint_default_row(req.saint_name, "en")
+            if row and selected_record is _saint_default_record(row) and _namesake_menu(req.saint_name, "en"):
+                namesake_link = _namesake_link(row, "en")
         entity_record = selected_record
         if selected_record is not None:
             entity = str(selected_record.get("name", ""))
@@ -3890,7 +4086,11 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(decided)))
                 return _saint_menu_response(raw_saint_query, decided, "lookup", language=detected_language)
 
-            if decision == "entry":
+            if decision == "default" and len(decided) > 1:
+                # A bare name that means one major saint (data/saint_defaults.json, RET-011); the
+                # answer ends with a link to the others.
+                namesake_link = _namesake_link(_saint_default_row(raw_saint_query, "en"), "en")
+            if decision in ("entry", "default"):
                 entity_record = decided[0]
                 entity = str(entity_record.get("name", ""))
                 if saint_intent.get("explicit"):
@@ -4120,6 +4320,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             "entities": clean_entities,
             "options": followup_options,
             "can_learn_more": _has_viable_saint_learn_more(answer, docs, metas, mode),
+            "namesakes": namesake_link if response_sources else None,
         }
 
     except HTTPException:

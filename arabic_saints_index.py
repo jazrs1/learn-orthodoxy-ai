@@ -72,7 +72,7 @@ ARABIC_SAINTS_INDEX = [
         "id": "st-mena-wonderworker",
         "name_ar": "القديس مينا العجائبي",
         "name_en": "St. Mena the Wonderworker",
-        "aliases_ar": ["مارمينا", "مينا العجائبي", "مينا الشهيد", "مينا القديس"],
+        "aliases_ar": ["مارمينا", "مينا العجائبي"],
         "source_title": "full saints arabic",
     },
     {
@@ -100,7 +100,7 @@ ARABIC_SAINTS_INDEX = [
         "id": "st-abanoub",
         "name_ar": "القديس أبانوب",
         "name_en": "St. Abanoub",
-        "aliases_ar": ["أبانوب", "أبانوب النهيسي", "أبانوب المعترف"],
+        "aliases_ar": ["أبانوب", "أبانوب النهيسي"],
         "source_title": "full saints arabic",
     },
     {

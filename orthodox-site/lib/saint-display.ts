@@ -64,7 +64,6 @@ const MANUAL_SAINT_ALIASES: SaintAliasRecord[] = [
       "St. Cyril of Alexandria",
       "Saint Cyril of Alexandria",
       "St. Cyril the Great",
-      "Pope Cyril",
     ],
     arabicAliases: ["كيرلس", "البابا كيرلس"],
   },

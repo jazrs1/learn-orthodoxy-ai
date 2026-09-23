@@ -158,7 +158,7 @@ async function insertMessage(
       message.role,
       message.content,
       JSON.stringify(message.entities || []),
-      JSON.stringify(encodeStoredOptions(message.options, message.optionIds)),
+      JSON.stringify(encodeStoredOptions(message.options, message.optionIds, message.namesakes)),
       JSON.stringify(message.sources || []),
       sortOrder,
     ]

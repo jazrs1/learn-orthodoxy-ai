@@ -7,6 +7,8 @@ import {
   backendSaintSelection,
   decodeStoredOptions,
   encodeStoredOptions,
+  namesakesFromBackend,
+  namesakesRequest,
   optionsFromBackend,
   saintSelectionRequest,
   visibleMessageOptions,
@@ -82,5 +84,33 @@ describe("namesake menus", () => {
   test("a reply without option_ids keeps its options and no IDs", () => {
     assert.deepEqual(optionsFromBackend({ options: ["A?", 7, "B?"] }), { options: ["A?", "B?"], optionIds: ["", ""] });
     assert.deepEqual(backendSaintSelection({}), {});
+  });
+
+  test("the namesakes link survives the saved conversation and asks for the other saints (RET-011)", () => {
+    const reply = {
+      answer: "St. Mary, the Theotokos … [1]",
+      options: [],
+      namesakes: { label: "Looking for a different St. Mary?", name: "St. Mary" },
+    };
+    const link = namesakesFromBackend(reply);
+    assert.deepEqual(link, { label: "Looking for a different St. Mary?", name: "St. Mary" });
+    const stored = JSON.parse(JSON.stringify(encodeStoredOptions([], [], link)));
+    const reloaded = decodeStoredOptions(stored);
+    assert.deepEqual(reloaded, { options: [], optionIds: [], namesakes: link });
+    // The link is not a chip.
+    assert.deepEqual(visibleMessageOptions(reloaded.options, reloaded.optionIds, () => true), []);
+    const request = namesakesRequest(reloaded.namesakes!);
+    assert.equal(request.question, "Looking for a different St. Mary?");
+    assert.deepEqual(backendSaintSelection(request), { namesakes_of: "St. Mary" });
+  });
+
+  test("an Arabic namesakes link, and replies without one", () => {
+    const link = namesakesFromBackend({ namesakes: { label: "هل تبحث عن قديس آخر باسم مرقس؟", name: "مرقس" } });
+    assert.deepEqual(backendSaintSelection(namesakesRequest(link!)), { namesakes_of: "مرقس" });
+    assert.equal(namesakesFromBackend({}), undefined);
+    assert.equal(namesakesFromBackend({ namesakes: null }), undefined);
+    assert.equal(namesakesFromBackend({ namesakes: { label: "", name: "x" } }), undefined);
+    // A menu choice's ID wins over everything else.
+    assert.deepEqual(backendSaintSelection({ saintId: "marcus-the-apostle", namesakesOf: "مرقس" }), { saint_id: "marcus-the-apostle" });
   });
 });

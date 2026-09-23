@@ -16,13 +16,14 @@ import {
   fetchConversationList,
   sendChatRequest,
 } from "../../lib/chat-client";
-import { ChatMessage, ConversationDetail, ConversationSummary, SourceRef } from "../../lib/chat-types";
+import { ChatMessage, ConversationDetail, ConversationSummary, NamesakeLink, SourceRef } from "../../lib/chat-types";
 import { chatErrorKey } from "../../lib/errors";
 import type { TranslationKey } from "../../lib/i18n";
 import { displaySaintName } from "../../lib/saint-display";
 import {
   type MessageOption,
   followUpToUserMessage,
+  namesakesRequest,
   normalizeOptionText,
   saintSelectionRequest,
   visibleMessageOptions,
@@ -38,6 +39,7 @@ type SaintDetailResponse = {
   entities?: string[];
   options?: string[];
   optionIds?: string[];
+  namesakes?: NamesakeLink | null;
   sources?: SourceRef[];
   canLearnMore?: boolean;
   error?: string;
@@ -55,6 +57,8 @@ type SendOptions = {
   saintId?: string;
   /** A saint named exactly (saints pane, or a menu saved before RET-010). */
   saintName?: string;
+  /** "Looking for a different St. X?": the menu of that name's other saints (RET-011). */
+  namesakesOf?: string;
 };
 
 // A failed send: shown once as an alert under the thread with a Retry button (UI-008).
@@ -630,6 +634,7 @@ function ChatPageContent() {
           hideUserMessage,
           saintId: options?.saintId,
           saintName: options?.saintName,
+          namesakesOf: options?.namesakesOf,
         });
         handledChatRef.current = result.conversation.id;
         setIsDraftChat(false);
@@ -795,7 +800,7 @@ function ChatPageContent() {
     };
   }, [mobileSidebarOpen]);
 
-  const loadSaintDetail = useCallback(async (name: string, saintId = "") => {
+  const loadSaintDetail = useCallback(async (name: string, saintId = "", namesakesOf = "") => {
     const trimmed = name.trim();
     if (!trimmed) return;
 
@@ -809,7 +814,12 @@ function ChatPageContent() {
       const response = await fetch("/api/saint-detail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmed, language, ...(saintId ? { saintId } : {}) }),
+        body: JSON.stringify({
+          name: trimmed,
+          language,
+          ...(saintId ? { saintId } : {}),
+          ...(namesakesOf ? { namesakesOf } : {}),
+        }),
       });
       const data = (await response.json().catch(() => ({}))) as SaintDetailResponse;
       if (!response.ok) throw new Error("saint detail failed");
@@ -831,6 +841,12 @@ function ChatPageContent() {
       ...selection,
     });
   }, [handleSendMessage, language]);
+
+  // "Looking for a different St. X?" asks for the menu of that name's other saints (RET-011).
+  const submitNamesakes = useCallback((link: NamesakeLink) => {
+    const { question, ...selection } = namesakesRequest(link);
+    void handleSendMessage(question, { displayMessage: link.label, ...selection });
+  }, [handleSendMessage]);
 
   const submitMessageOption = useCallback(
     (option: MessageOption) => {
@@ -945,6 +961,17 @@ function ChatPageContent() {
                                 sources={message.sources}
                                 entities={message.entities}
                                 saintLookup={saintLookup}
+                                afterAnswer={
+                                  message.namesakes ? (
+                                    <button
+                                      type="button"
+                                      className="namesake-link"
+                                      onClick={() => message.namesakes && submitNamesakes(message.namesakes)}
+                                    >
+                                      {message.namesakes.label}
+                                    </button>
+                                  ) : null
+                                }
                               />
                               {(() => {
                                 const options = visibleMessageOptions(message.options, message.optionIds, (label) =>
@@ -1094,6 +1121,20 @@ function ChatPageContent() {
                           sources={saintDetail.sources}
                           entities={saintDetail.entities}
                           saintLookup={saintLookup}
+                          afterAnswer={
+                            saintDetail.namesakes ? (
+                              <button
+                                type="button"
+                                className="namesake-link"
+                                onClick={() =>
+                                  saintDetail.namesakes &&
+                                  void loadSaintDetail(saintDetail.namesakes.name, "", saintDetail.namesakes.name)
+                                }
+                              >
+                                {saintDetail.namesakes.label}
+                              </button>
+                            ) : null
+                          }
                         />
                       </div>
                       {(() => {

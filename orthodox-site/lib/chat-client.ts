@@ -73,6 +73,8 @@ export async function sendChatRequest(payload: {
   saintId?: string;
   /** A saint named exactly (a menu choice saved without an ID). */
   saintName?: string;
+  /** "Looking for a different St. X?": the menu of that name's other saints (RET-011). */
+  namesakesOf?: string;
 }) {
   const response = await fetch("/api/chat", {
     method: "POST",

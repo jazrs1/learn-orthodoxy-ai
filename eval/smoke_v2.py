@@ -9,7 +9,9 @@ Checks, in order, and stops at the first failure:
      (answered / refused / menu), and, when answered, v2-shaped sources (chunk_id, entry, pages) and
      labels that name the question or saint. A namesake menu must carry an entry ID per option; the
      script then chooses one by ID, as the site does, and needs an answer led by that entry (RET-010;
-     the menu itself costs nothing). `--no-chat` skips this step.
+     the menu itself costs nothing). A bare name on data/saint_defaults.json must be answered about its
+     major saint and carry the "Looking for a different St. X?" link, whose menu (free) must list the
+     other saints with their IDs and not the major one (RET-011). `--no-chat` skips this step.
 Nothing is written anywhere; the backend's own request log records the calls.
 """
 
@@ -24,10 +26,11 @@ import requests
 
 CHAT = [
     # (question, mode, language, expected outcome, a word the answer or a source entry must contain)
-    # A "menu" case names the option to choose after the colon: "menu:<label contains>".
+    # A "menu" case names the option to choose after the colon: "menu:<label contains>"; a "default"
+    # case names the saint the first source must be: "default:<entry contains>".
     ("What is prayer?", "chat", "en", "answered", "prayer"),
     ("Who was St. Athanasius the Apostolic?", "chat", "en", "answered", "Athanasius"),
-    ("search saint: St. George", "saints", "en", "menu:Capaducian", "George"),
+    ("search saint: St. George", "saints", "en", "default:Capaducian", "George"),
     ("List the saints named Gregory", "chat", "en", "answered", "Gregory"),
     ("Who won the 2018 FIFA World Cup?", "chat", "en", "refused", ""),
     ("ما هي الصلاة؟", "catechism", "ar", "answered", "الصلاة"),
@@ -89,6 +92,8 @@ def main() -> int:
             chip = f"من هو {label}؟" if language == "ar" else f"search saint: {label}"
             data = post({"question": chip, "mode": "saints", "language": language, "saint_id": ids[options.index(label)]})
             expected = "answered"
+        default = expected[8:] if expected.startswith("default:") else ""
+        expected = "answered" if default else expected
         elapsed = time.monotonic() - started
         answer, sources, options = data.get("answer") or "", data.get("sources") or [], data.get("options") or []
         refused = answer.strip().lower().startswith(REFUSALS) or answer.strip().startswith(REFUSALS)
@@ -103,6 +108,16 @@ def main() -> int:
             haystack = answer + " " + " ".join(str(s.get("entry") or s.get("label") or "") for s in sources)
             if must and must.lower() not in haystack.lower():
                 fail(f"{question!r}: neither the answer nor a source mentions {must!r}")
+        if default:
+            first_entry = str(sources[0].get("entry") or "") if sources else ""
+            link = data.get("namesakes") or {}
+            if default not in first_entry or not link.get("label") or not link.get("name"):
+                fail(f"{question!r}: expected an answer led by {default!r} with a namesakes link, got {first_entry!r}, {link}")
+            menu = post({"question": link["label"], "mode": "saints", "language": language, "namesakes_of": link["name"]})
+            names, ids = menu.get("options") or [], menu.get("option_ids") or []
+            if not names or len(ids) != len(names) or not all(ids) or menu.get("sources") or any(default in n for n in names):
+                fail(f"{question!r}: the link's menu should list the other saints with IDs, without {default!r}: {menu}")
+            print(f"   default: {first_entry!r}; link {link['label']!r} -> {len(names)} others: {' | '.join(names)}")
         print(f"ok {elapsed:4.1f}s {outcome:9} {question[:50]:50} sources={len(sources)} "
               f"{(sources[0].get('label') or '')[:70] if sources else ''}")
     print("OK: smoke set passed")

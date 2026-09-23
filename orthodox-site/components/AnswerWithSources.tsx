@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { SourceRef } from "../lib/chat-types";
 import { sourceDetails, sourceDomId, sourceSummary, toDisplaySources } from "../lib/sources";
 import InteractiveAnswer, { type CitationTarget } from "./InteractiveAnswer";
@@ -14,6 +14,8 @@ type AnswerWithSourcesProps = {
   saintLookup?: Set<string>;
   /** Level of the "Sources" heading, so it fits the page outline. */
   headingLevel?: 2 | 3;
+  /** Shown right after the answer text, before its sources (the namesakes link, RET-011). */
+  afterAnswer?: ReactNode;
 };
 
 const COLLAPSED_COUNT = 5;
@@ -26,6 +28,7 @@ export default function AnswerWithSources({
   entities,
   saintLookup,
   headingLevel = 2,
+  afterAnswer,
 }: AnswerWithSourcesProps) {
   const { language, t } = useLanguage();
   const items = useMemo(() => toDisplaySources(sources), [sources]);
@@ -84,6 +87,7 @@ export default function AnswerWithSources({
         citationSeparator={language === "ar" ? "،" : ","}
         plain={items.length === 0}
       />
+      {afterAnswer}
       {items.length > 0 ? (
         <section className="answer-sources" aria-labelledby={`${sourceDomId(answerId, 0)}-heading`}>
           <Heading className="answer-sources-heading" id={`${sourceDomId(answerId, 0)}-heading`}>

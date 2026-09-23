@@ -6,33 +6,47 @@
  * bringing the same menu back).
  */
 
+import type { NamesakeLink } from "./chat-types";
 import type { Language } from "./i18n";
 
 export type MessageOption = { label: string; saintId?: string };
 
 /** The `options` jsonb column: plain strings (follow-up questions, and menus saved before
- * RET-010) or `{ label, saintId }` for a saint choice. */
-export type StoredOption = string | { label: string; saintId?: string };
+ * RET-010), `{ label, saintId }` for a saint choice, and at most one `{ label, namesakesOf }` for
+ * the "Looking for a different St. X?" link (RET-011). */
+export type StoredOption = string | { label: string; saintId?: string } | { label: string; namesakesOf: string };
 
-export function encodeStoredOptions(options: string[] = [], optionIds: string[] = []): StoredOption[] {
-  return options.map((label, index) => (optionIds[index] ? { label, saintId: optionIds[index] } : label));
+export function encodeStoredOptions(
+  options: string[] = [],
+  optionIds: string[] = [],
+  namesakes?: NamesakeLink
+): StoredOption[] {
+  const stored: StoredOption[] = options.map((label, index) =>
+    optionIds[index] ? { label, saintId: optionIds[index] } : label
+  );
+  return namesakes ? [...stored, { label: namesakes.label, namesakesOf: namesakes.name }] : stored;
 }
 
-export function decodeStoredOptions(raw: unknown): { options: string[]; optionIds: string[] } {
+export function decodeStoredOptions(raw: unknown): { options: string[]; optionIds: string[]; namesakes?: NamesakeLink } {
   const options: string[] = [];
   const optionIds: string[] = [];
+  let namesakes: NamesakeLink | undefined;
   if (!Array.isArray(raw)) return { options, optionIds };
   for (const item of raw) {
     if (typeof item === "string") {
       options.push(item);
       optionIds.push("");
     } else if (item && typeof item === "object" && typeof (item as { label?: unknown }).label === "string") {
-      const { label, saintId } = item as { label: string; saintId?: unknown };
+      const { label, saintId, namesakesOf } = item as { label: string; saintId?: unknown; namesakesOf?: unknown };
+      if (typeof namesakesOf === "string") {
+        namesakes = { label, name: namesakesOf };
+        continue;
+      }
       options.push(label);
       optionIds.push(typeof saintId === "string" ? saintId : "");
     }
   }
-  return { options, optionIds };
+  return namesakes ? { options, optionIds, namesakes } : { options, optionIds };
 }
 
 export function normalizeOptionText(option: string) {
@@ -126,6 +140,14 @@ export function saintSelectionRequest(option: MessageOption, language: Language)
   };
 }
 
+/** The "Looking for a different St. X?" link of a backend reply, when it has one. */
+export function namesakesFromBackend(data: { namesakes?: unknown }): NamesakeLink | undefined {
+  const link = data.namesakes as { label?: unknown; name?: unknown } | null | undefined;
+  return link && typeof link.label === "string" && typeof link.name === "string" && link.label && link.name
+    ? { label: link.label, name: link.name }
+    : undefined;
+}
+
 /** A backend reply's options and their entry IDs, kept aligned by position (`option_ids` is
  * sent only with saint menus). */
 export function optionsFromBackend(data: { options?: unknown; option_ids?: unknown }): {
@@ -144,13 +166,22 @@ export function optionsFromBackend(data: { options?: unknown; option_ids?: unkno
   return { options, optionIds };
 }
 
-/** The backend fields for a saint choice: the entry ID when there is one, else the exact name. */
-export function backendSaintSelection(body: { saintId?: unknown; saintName?: unknown }): {
+/** The chat request behind "Looking for a different St. X?": the menu of that name's other saints. */
+export function namesakesRequest(link: NamesakeLink) {
+  return { question: link.label, mode: "saints" as const, namesakesOf: link.name };
+}
+
+/** The backend fields for a saint choice: the entry ID when there is one, else the menu of a
+ * name's other saints (the namesakes link), else the exact name. */
+export function backendSaintSelection(body: { saintId?: unknown; saintName?: unknown; namesakesOf?: unknown }): {
   saint_id?: string;
   saint_name?: string;
+  namesakes_of?: string;
 } {
   const saintId = typeof body.saintId === "string" ? body.saintId.trim().slice(0, 200) : "";
   if (saintId) return { saint_id: saintId };
+  const namesakesOf = typeof body.namesakesOf === "string" ? body.namesakesOf.trim().slice(0, 200) : "";
+  if (namesakesOf) return { namesakes_of: namesakesOf };
   const saintName = typeof body.saintName === "string" ? body.saintName.trim().slice(0, 300) : "";
   return saintName ? { saint_name: saintName } : {};
 }

@@ -1,0 +1,320 @@
+207 hand-written aliases; issues: MISSING 16, OTHER 3, SHARED 6, WRONG 2
+MISSING        v2 en api.SAINT_ALIAS_RECORDS  'Mark the Evangelist' -> no entry; intended marcus-the-apostle
+MISSING        v2 en api.SAINT_ALIAS_RECORDS  'Pope Cyril' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+MISSING        v2 en api.SAINT_ALIAS_RECORDS  'Saint Cyril of Alexandria' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+MISSING        v2 en api.SAINT_ALIAS_RECORDS  'Saint Mark the Apostle' -> no entry; intended marcus-the-apostle
+MISSING        v2 en api.SAINT_ALIAS_RECORDS  'Saint Mark the Evangelist' -> no entry; intended marcus-the-apostle
+MISSING        v2 en api.SAINT_ALIAS_RECORDS  'St. Cyril of Alexandria' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+MISSING        v2 en api.SAINT_ALIAS_RECORDS  'St. Mark the Apostle' -> no entry; intended marcus-the-apostle
+MISSING        v2 en api.SAINT_ALIAS_RECORDS  'St. Mark the Evangelist' -> no entry; intended marcus-the-apostle
+MISSING        v2 en saint-display.ts         'Mark the Evangelist' -> no entry; intended marcus-the-apostle
+MISSING        v2 en saint-display.ts         'Pope Cyril' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+MISSING        v2 en saint-display.ts         'Saint Cyril of Alexandria' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+MISSING        v2 en saint-display.ts         'Saint Mark the Apostle' -> no entry; intended marcus-the-apostle
+MISSING        v2 en saint-display.ts         'Saint Mark the Evangelist' -> no entry; intended marcus-the-apostle
+MISSING        v2 en saint-display.ts         'St. Cyril of Alexandria' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+MISSING        v2 en saint-display.ts         'St. Mark the Apostle' -> no entry; intended marcus-the-apostle
+MISSING        v2 en saint-display.ts         'St. Mark the Evangelist' -> no entry; intended marcus-the-apostle
+OTHER          v2 ar arabic_saints_index.py   'أبانوب المعترف' -> أبانوب النهيسي الشهيد (ص 31) [abanoub-el-nehissy]; intended abanoub-el-nehissy; also carried by / named for أبانوب المعترف القديس (ص 30) [abanoub-the-confessor], أبانوب المعترف القديس (ص 30، مدخل 2) [ar-e2072]
+OTHER          v2 ar arabic_saints_index.py   'مينا الشهيد' -> menu of 8; intended mina-the-wonder-maker; also carried by / named for مينا الشهيد [mina]
+OTHER          v2 ar arabic_saints_index.py   'مينا القديس' -> menu of 8; intended mina-the-wonder-maker; also carried by / named for مينا القديس [mina-the-release-deacon]
+SHARED         v1 en api.SAINT_ALIAS_RECORDS  'Holy Virgin Mary' -> menu of 2; intended mary-the-virgin-theotokos
+SHARED         v1 en api.SAINT_ALIAS_RECORDS  'Mother of God' -> menu of 2; intended mary-the-virgin-theotokos
+SHARED         v1 en api.SAINT_ALIAS_RECORDS  'St. Mary Theotokos' -> menu of 2; intended mary-the-virgin-theotokos
+SHARED         v1 en saint-display.ts         'Holy Virgin Mary' -> menu of 2; intended mary-the-virgin-theotokos
+SHARED         v1 en saint-display.ts         'Mother of God' -> menu of 2; intended mary-the-virgin-theotokos
+SHARED         v1 en saint-display.ts         'St. Mary Theotokos' -> menu of 2; intended mary-the-virgin-theotokos
+WRONG          v2 ar arabic_saints_index.py   'القديس بولس الرسول' -> أريانا والي أنصنا [arianus-governor-of-ansenah]; intended (no entry)
+WRONG          v2 ar arabic_saints_index.py   'بولس الرسول' -> أريانا والي أنصنا [arianus-governor-of-ansenah]; intended (no entry)
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Abba Anthony' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Athanasius the Apostolic' -> St. Athanasius the Apostolic, [athanasius apostolic]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'George the Great Martyr' -> St. George, the Capaducian [george capaducian]; intended george-the-capaducian
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Mark the Evangelist' -> no entry; intended marcus-the-apostle
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Pope Cyril' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Anthony, Father of the Monks' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Athanasius the Apostolic' -> St. Athanasius the Apostolic, [athanasius apostolic]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Athanasius' -> menu of 4; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Cyril of Alexandria' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Cyril' -> menu of 4; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint George the Great Martyr' -> St. George, the Capaducian [george capaducian]; intended george-the-capaducian
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Mark the Apostle' -> no entry; intended marcus-the-apostle
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Mark the Evangelist' -> no entry; intended marcus-the-apostle
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Mark' -> menu of 2; intended marcus-the-apostle
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Saint Mary' -> menu of 9; intended mary-the-virgin-theotokos
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Abba Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Abba Anthony' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Anthony, Father of the Monks' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Athanasius of Alexandria' -> St. Athanasius the Apostolic, [athanasius apostolic]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Athanasius the Apostolic' -> St. Athanasius the Apostolic, [athanasius apostolic]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Athanasius' -> menu of 4; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Cyril of Alexandria' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Cyril the Great' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Cyril' -> menu of 4; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. George of Cappadocia' -> St. George, the Capaducian [george capaducian]; intended george-the-capaducian
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. George the Cappadocian' -> St. George, the Capaducian [george capaducian]; intended george-the-capaducian
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. George the Great Martyr' -> St. George, the Capaducian [george capaducian]; intended george-the-capaducian
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. George, the Capaducian' -> St. George, the Capaducian [george capaducian]; intended george-the-capaducian
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Mark the Apostle' -> no entry; intended marcus-the-apostle
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Mark the Evangelist' -> no entry; intended marcus-the-apostle
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Mark' -> menu of 2; intended marcus-the-apostle
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Mary the Virgin' -> St. Mary, the Virgin Theotokos [mary virgin theotokos]; intended mary-the-virgin-theotokos
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Mary' -> menu of 9; intended mary-the-virgin-theotokos
+ok             v1 en api.SAINT_ALIAS_RECORDS  'St. Mary, the Virgin Theotokos' -> St. Mary, the Virgin Theotokos [mary virgin theotokos]; intended mary-the-virgin-theotokos
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Theotokos' -> menu of 2; intended mary-the-virgin-theotokos
+ok             v1 en api.SAINT_ALIAS_RECORDS  'Virgin Mary' -> St. Mary, the Virgin Theotokos [mary virgin theotokos]; intended mary-the-virgin-theotokos
+ok             v1 en arabic_saints_index.py   'St. Abanoub' -> menu of 2; intended abanoub-el-nehissy
+ok             v1 en arabic_saints_index.py   'St. Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en arabic_saints_index.py   'St. Athanasius' -> menu of 4; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en arabic_saints_index.py   'St. Barbara' -> St. Barbara [barbara]; intended barbara
+ok             v1 en arabic_saints_index.py   'St. Cyril the Great' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en arabic_saints_index.py   'St. Demiana' -> no entry; intended demiana-and-the-fourty-virgins
+ok             v1 en arabic_saints_index.py   'St. George' -> menu of 3; intended george-the-capaducian
+ok             v1 en arabic_saints_index.py   'St. Mark' -> menu of 2; intended marcus-the-apostle
+ok             v1 en arabic_saints_index.py   'St. Mary' -> menu of 9; intended mary-the-virgin-theotokos
+ok             v1 en arabic_saints_index.py   'St. Mena the Wonderworker' -> no entry; intended mina-the-wonder-maker
+ok             v1 en arabic_saints_index.py   'St. Moses the Black' -> St. Moses, the Black [moses black]; intended moses-the-black
+ok             v1 en arabic_saints_index.py   'St. Paul the Apostle' -> no entry; intended (no entry)
+ok             v1 en arabic_saints_index.py   'St. Paul the First Hermit' -> St. Paul, the First Hermit, Abba [paul first hermit]; intended abba-paul-the-first-hermit
+ok             v1 en arabic_saints_index.py   'St. Peter the Apostle' -> no entry; intended (no entry)
+ok             v1 en arabic_saints_index.py   'St. Pishoy' -> no entry; intended abba-bishoy-st
+ok             v1 en arabic_saints_index.py   'St. Shenoute the Archimandrite' -> no entry; intended abba-shenouda-the-archmandrite
+ok             v1 en arabic_saints_index.py   'St. Thomas the Apostle' -> no entry; intended ar-e1187
+ok             v1 en saint-display.ts         'Abba Anthony' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saint-display.ts         'Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saint-display.ts         'Athanasius the Apostolic' -> St. Athanasius the Apostolic, [athanasius apostolic]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en saint-display.ts         'Mark the Evangelist' -> no entry; intended marcus-the-apostle
+ok             v1 en saint-display.ts         'Pope Cyril' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en saint-display.ts         'Saint Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saint-display.ts         'Saint Anthony, Father of the Monks' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saint-display.ts         'Saint Athanasius the Apostolic' -> St. Athanasius the Apostolic, [athanasius apostolic]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en saint-display.ts         'Saint Athanasius' -> menu of 4; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en saint-display.ts         'Saint Cyril of Alexandria' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en saint-display.ts         'Saint Cyril' -> menu of 4; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en saint-display.ts         'Saint Mark the Apostle' -> no entry; intended marcus-the-apostle
+ok             v1 en saint-display.ts         'Saint Mark the Evangelist' -> no entry; intended marcus-the-apostle
+ok             v1 en saint-display.ts         'Saint Mark' -> menu of 2; intended marcus-the-apostle
+ok             v1 en saint-display.ts         'Saint Mary' -> menu of 9; intended mary-the-virgin-theotokos
+ok             v1 en saint-display.ts         'St. Abba Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saint-display.ts         'St. Abba Anthony' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saint-display.ts         'St. Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saint-display.ts         'St. Anthony, Father of the Monks' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saint-display.ts         'St. Athanasius of Alexandria' -> St. Athanasius the Apostolic, [athanasius apostolic]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en saint-display.ts         'St. Athanasius the Apostolic' -> St. Athanasius the Apostolic, [athanasius apostolic]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en saint-display.ts         'St. Athanasius' -> menu of 4; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en saint-display.ts         'St. Cyril of Alexandria' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en saint-display.ts         'St. Cyril the Great' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en saint-display.ts         'St. Cyril' -> menu of 4; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en saint-display.ts         'St. Mark the Apostle' -> no entry; intended marcus-the-apostle
+ok             v1 en saint-display.ts         'St. Mark the Evangelist' -> no entry; intended marcus-the-apostle
+ok             v1 en saint-display.ts         'St. Mark' -> menu of 2; intended marcus-the-apostle
+ok             v1 en saint-display.ts         'St. Mary the Virgin' -> St. Mary, the Virgin Theotokos [mary virgin theotokos]; intended mary-the-virgin-theotokos
+ok             v1 en saint-display.ts         'St. Mary' -> menu of 9; intended mary-the-virgin-theotokos
+ok             v1 en saint-display.ts         'St. Mary, the Virgin Theotokos' -> St. Mary, the Virgin Theotokos [mary virgin theotokos]; intended mary-the-virgin-theotokos
+ok             v1 en saint-display.ts         'Theotokos' -> menu of 2; intended mary-the-virgin-theotokos
+ok             v1 en saint-display.ts         'Virgin Mary' -> St. Mary, the Virgin Theotokos [mary virgin theotokos]; intended mary-the-virgin-theotokos
+ok             v1 en saints_curation.json     'St. Abanoub' -> menu of 2; intended abanoub-el-nehissy
+ok             v1 en saints_curation.json     'St. Anthony the Great' -> St. Anthony, Father of the Monks [anthony father of monks]; intended anthony-father-of-the-monks
+ok             v1 en saints_curation.json     'St. Athanasius' -> menu of 4; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v1 en saints_curation.json     'St. Barbara' -> St. Barbara [barbara]; intended barbara
+ok             v1 en saints_curation.json     'St. Cyril the Great' -> no entry; intended cyril-i-the-24th-pope-of-alexandria
+ok             v1 en saints_curation.json     'St. Demiana' -> no entry; intended demiana-and-the-fourty-virgins
+ok             v1 en saints_curation.json     'St. George' -> menu of 3; intended george-the-capaducian
+ok             v1 en saints_curation.json     'St. Mark' -> menu of 2; intended marcus-the-apostle
+ok             v1 en saints_curation.json     'St. Mary' -> menu of 9; intended mary-the-virgin-theotokos
+ok             v1 en saints_curation.json     'St. Mena the Wonderworker' -> no entry; intended mina-the-wonder-maker
+ok             v1 en saints_curation.json     'St. Moses the Black' -> St. Moses, the Black [moses black]; intended moses-the-black
+ok             v1 en saints_curation.json     'St. Paul the Apostle' -> no entry; intended (no entry)
+ok             v1 en saints_curation.json     'St. Paul the First Hermit' -> St. Paul, the First Hermit, Abba [paul first hermit]; intended abba-paul-the-first-hermit
+ok             v1 en saints_curation.json     'St. Peter the Apostle' -> no entry; intended (no entry)
+ok             v1 en saints_curation.json     'St. Pishoy' -> no entry; intended abba-bishoy-st
+ok             v1 en saints_curation.json     'St. Shenoute the Archimandrite' -> no entry; intended abba-shenouda-the-archmandrite
+ok             v1 en saints_curation.json     'St. Thomas the Apostle' -> no entry; intended ar-e1187
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'أثناسيوس الرسولي' -> أثناسيوس الرسولي البابا العشرون [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'الأنبا أنطونيوس الكبير' -> أنطونيوس القديس أب الرهبان [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'الأنبا أنطونيوس' -> menu of 2; intended anthony-father-of-the-monks
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'البابا أثناسيوس' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'البابا كيرلس' -> menu of 13; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'السيدة العذراء مريم' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'العذراء مريم' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'القديس مارمرقس الرسول' -> مرقس الرسول [marcus-the-apostle]; intended marcus-the-apostle
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'كيرلس' -> menu of 13; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 ar api.SAINT_ALIAS_RECORDS  'مارمرقس' -> menu of 17; intended marcus-the-apostle
+ok             v2 ar arabic_saints_index.py   'أب الرهبان' -> أنطونيوس القديس أب الرهبان [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 ar arabic_saints_index.py   'أبانوب النهيسي' -> أبانوب النهيسي الشهيد (ص 31) [abanoub-el-nehissy]; intended abanoub-el-nehissy
+ok             v2 ar arabic_saints_index.py   'أبانوب' -> menu of 4; intended abanoub-el-nehissy
+ok             v2 ar arabic_saints_index.py   'أثناسيوس الرسولي' -> أثناسيوس الرسولي البابا العشرون [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 ar arabic_saints_index.py   'أثناسيوس' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 ar arabic_saints_index.py   'أنطونيوس القديس' -> menu of 2; intended anthony-father-of-the-monks
+ok             v2 ar arabic_saints_index.py   'أنطونيوس الكبير' -> أنطونيوس القديس أب الرهبان [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 ar arabic_saints_index.py   'الأنبا أثناسيوس الرسولي' -> أثناسيوس الرسولي البابا العشرون [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 ar arabic_saints_index.py   'الأنبا أنطونيوس الكبير' -> أنطونيوس القديس أب الرهبان [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 ar arabic_saints_index.py   'الأنبا أنطونيوس' -> menu of 2; intended anthony-father-of-the-monks
+ok             v2 ar arabic_saints_index.py   'الأنبا بولا أول السواح' -> بولا القديس رئيس السواح [abba-paul-the-first-hermit]; intended abba-paul-the-first-hermit
+ok             v2 ar arabic_saints_index.py   'الأنبا بولا' -> menu of 2; intended abba-paul-the-first-hermit
+ok             v2 ar arabic_saints_index.py   'الأنبا بيشوي الكامل' -> بيشوي الأب القديس [abba-bishoy-st]; intended abba-bishoy-st
+ok             v2 ar arabic_saints_index.py   'الأنبا بيشوي' -> بيشوي الأب القديس [abba-bishoy-st]; intended abba-bishoy-st
+ok             v2 ar arabic_saints_index.py   'الأنبا شنودة رئيس المتوحدين' -> شنودة رئيس المتوحدين القديس [abba-shenouda-the-archmandrite]; intended abba-shenouda-the-archmandrite
+ok             v2 ar arabic_saints_index.py   'الأنبا شنودة' -> menu of 6; intended abba-shenouda-the-archmandrite
+ok             v2 ar arabic_saints_index.py   'الأنبا موسى الأسود' -> موسى الأسود الشهيد [moses-the-black]; intended moses-the-black
+ok             v2 ar arabic_saints_index.py   'البابا أثناسيوس' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 ar arabic_saints_index.py   'البابا كيرلس الكبير' -> كيرلس الأول [cyril-i-the-24th-pope-of-alexandria]; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 ar arabic_saints_index.py   'البابا كيرلس' -> menu of 13; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 ar arabic_saints_index.py   'الثيؤتوكوس' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar arabic_saints_index.py   'الرسول بطرس' -> no entry; intended (no entry)
+ok             v2 ar arabic_saints_index.py   'الرسول بولس' -> no entry; intended (no entry)
+ok             v2 ar arabic_saints_index.py   'السيدة العذراء مريم' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar arabic_saints_index.py   'الشهيد جرجس' -> menu of 6; intended george-the-capaducian
+ok             v2 ar arabic_saints_index.py   'الشهيدة بربارة' -> بربارة الشهيدة [barbara]; intended barbara
+ok             v2 ar arabic_saints_index.py   'الشهيدة دميانة' -> دميانة الشهيدة [demiana-and-the-fourty-virgins]; intended demiana-and-the-fourty-virgins
+ok             v2 ar arabic_saints_index.py   'العذراء مريم' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar arabic_saints_index.py   'القديس أبانوب' -> menu of 4; intended abanoub-el-nehissy
+ok             v2 ar arabic_saints_index.py   'القديس بطرس الرسول' -> no entry; intended (no entry)
+ok             v2 ar arabic_saints_index.py   'القديس توماس الرسول' -> توما الرسول [ar-e1187]; intended ar-e1187
+ok             v2 ar arabic_saints_index.py   'القديس جرجس' -> menu of 6; intended george-the-capaducian
+ok             v2 ar arabic_saints_index.py   'القديس مارمرقس الرسول' -> مرقس الرسول [marcus-the-apostle]; intended marcus-the-apostle
+ok             v2 ar arabic_saints_index.py   'القديس مينا العجائبي' -> مينا العجائبي الشهيد [mina-the-wonder-maker]; intended mina-the-wonder-maker
+ok             v2 ar arabic_saints_index.py   'القديسة بربارة' -> بربارة الشهيدة [barbara]; intended barbara
+ok             v2 ar arabic_saints_index.py   'القديسة دميانة' -> دميانة الشهيدة [demiana-and-the-fourty-virgins]; intended demiana-and-the-fourty-virgins
+ok             v2 ar arabic_saints_index.py   'بربارة الشهيدة' -> بربارة الشهيدة [barbara]; intended barbara
+ok             v2 ar arabic_saints_index.py   'بربارة' -> بربارة الشهيدة [barbara]; intended barbara
+ok             v2 ar arabic_saints_index.py   'بطرس الرسول' -> no entry; intended (no entry)
+ok             v2 ar arabic_saints_index.py   'بطرس' -> menu of 21; intended (no entry)
+ok             v2 ar arabic_saints_index.py   'بولا أول السواح' -> بولا القديس رئيس السواح [abba-paul-the-first-hermit]; intended abba-paul-the-first-hermit
+ok             v2 ar arabic_saints_index.py   'بولا السائح' -> بولا القديس رئيس السواح [abba-paul-the-first-hermit]; intended abba-paul-the-first-hermit
+ok             v2 ar arabic_saints_index.py   'بولا القديس' -> menu of 2; intended abba-paul-the-first-hermit
+ok             v2 ar arabic_saints_index.py   'بولس' -> menu of 12; intended (no entry)
+ok             v2 ar arabic_saints_index.py   'بيشوي الأب' -> بيشوي الأب القديس [abba-bishoy-st]; intended abba-bishoy-st
+ok             v2 ar arabic_saints_index.py   'بيشوي' -> بيشوي الأب القديس [abba-bishoy-st]; intended abba-bishoy-st
+ok             v2 ar arabic_saints_index.py   'توما الرسول' -> توما الرسول [ar-e1187]; intended ar-e1187
+ok             v2 ar arabic_saints_index.py   'توما' -> menu of 3; intended ar-e1187
+ok             v2 ar arabic_saints_index.py   'توماس الرسول' -> توما الرسول [ar-e1187]; intended ar-e1187
+ok             v2 ar arabic_saints_index.py   'توماس' -> menu of 3; intended ar-e1187
+ok             v2 ar arabic_saints_index.py   'جرجس الشهيد' -> menu of 6; intended george-the-capaducian
+ok             v2 ar arabic_saints_index.py   'جرجس' -> menu of 6; intended george-the-capaducian
+ok             v2 ar arabic_saints_index.py   'دميانة الشهيدة' -> دميانة الشهيدة [demiana-and-the-fourty-virgins]; intended demiana-and-the-fourty-virgins
+ok             v2 ar arabic_saints_index.py   'دميانة' -> دميانة الشهيدة [demiana-and-the-fourty-virgins]; intended demiana-and-the-fourty-virgins
+ok             v2 ar arabic_saints_index.py   'شنودة رئيس المتوحدين' -> شنودة رئيس المتوحدين القديس [abba-shenouda-the-archmandrite]; intended abba-shenouda-the-archmandrite
+ok             v2 ar arabic_saints_index.py   'شنودة' -> menu of 6; intended abba-shenouda-the-archmandrite
+ok             v2 ar arabic_saints_index.py   'كيرلس الكبير' -> كيرلس الأول [cyril-i-the-24th-pope-of-alexandria]; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 ar arabic_saints_index.py   'كيرلس' -> menu of 13; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 ar arabic_saints_index.py   'مار مرقس' -> menu of 17; intended marcus-the-apostle
+ok             v2 ar arabic_saints_index.py   'مارجرجس' -> menu of 6; intended george-the-capaducian
+ok             v2 ar arabic_saints_index.py   'مارمرقس الرسول' -> مرقس الرسول [marcus-the-apostle]; intended marcus-the-apostle
+ok             v2 ar arabic_saints_index.py   'مارمينا' -> menu of 8; intended mina-the-wonder-maker
+ok             v2 ar arabic_saints_index.py   'مرقس الرسول' -> مرقس الرسول [marcus-the-apostle]; intended marcus-the-apostle
+ok             v2 ar arabic_saints_index.py   'مرقس' -> menu of 17; intended marcus-the-apostle
+ok             v2 ar arabic_saints_index.py   'مريم العذراء' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar arabic_saints_index.py   'موسى الأسود' -> موسى الأسود الشهيد [moses-the-black]; intended moses-the-black
+ok             v2 ar arabic_saints_index.py   'موسى الشهيد' -> menu of 7; intended moses-the-black
+ok             v2 ar arabic_saints_index.py   'موسى القوي' -> موسى الأسود الشهيد [moses-the-black]; intended moses-the-black
+ok             v2 ar arabic_saints_index.py   'مينا العجائبي' -> مينا العجائبي الشهيد [mina-the-wonder-maker]; intended mina-the-wonder-maker
+ok             v2 ar arabic_saints_index.py   'والدة الإله' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar saint-display.ts         'أثناسيوس الرسولي' -> أثناسيوس الرسولي البابا العشرون [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 ar saint-display.ts         'الأنبا أنطونيوس الكبير' -> أنطونيوس القديس أب الرهبان [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 ar saint-display.ts         'الأنبا أنطونيوس' -> menu of 2; intended anthony-father-of-the-monks
+ok             v2 ar saint-display.ts         'البابا أثناسيوس' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 ar saint-display.ts         'البابا كيرلس' -> menu of 13; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 ar saint-display.ts         'السيدة العذراء مريم' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar saint-display.ts         'العذراء مريم' -> مريم العذراء [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 ar saint-display.ts         'القديس مارمرقس الرسول' -> مرقس الرسول [marcus-the-apostle]; intended marcus-the-apostle
+ok             v2 ar saint-display.ts         'كيرلس' -> menu of 13; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 ar saint-display.ts         'مارمرقس' -> menu of 17; intended marcus-the-apostle
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Abba Anthony' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Athanasius the Apostolic' -> St. Athanasius the Apostolic, the 20th Pope of Alexandria [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'George the Great Martyr' -> St. George, the Capaducian [george-the-capaducian]; intended george-the-capaducian
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Holy Virgin Mary' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Mother of God' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Saint Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Saint Anthony, Father of the Monks' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Saint Athanasius the Apostolic' -> St. Athanasius the Apostolic, the 20th Pope of Alexandria [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Saint Athanasius' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Saint Cyril' -> menu of 12; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Saint George the Great Martyr' -> St. George, the Capaducian [george-the-capaducian]; intended george-the-capaducian
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Saint Mark' -> menu of 4; intended marcus-the-apostle
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Saint Mary' -> menu of 10; intended mary-the-virgin-theotokos
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Abba Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Abba Anthony' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Anthony, Father of the Monks' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Athanasius of Alexandria' -> St. Athanasius the Apostolic, the 20th Pope of Alexandria [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Athanasius the Apostolic' -> St. Athanasius the Apostolic, the 20th Pope of Alexandria [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Athanasius' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Cyril the Great' -> St. Cyril I, the 24th Pope of Alexandria [cyril-i-the-24th-pope-of-alexandria]; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Cyril' -> menu of 12; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. George of Cappadocia' -> St. George, the Capaducian [george-the-capaducian]; intended george-the-capaducian
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. George the Cappadocian' -> St. George, the Capaducian [george-the-capaducian]; intended george-the-capaducian
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. George the Great Martyr' -> St. George, the Capaducian [george-the-capaducian]; intended george-the-capaducian
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. George, the Capaducian' -> St. George, the Capaducian [george-the-capaducian]; intended george-the-capaducian
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Mark' -> menu of 4; intended marcus-the-apostle
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Mary Theotokos' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Mary the Virgin' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Mary' -> menu of 10; intended mary-the-virgin-theotokos
+ok             v2 en api.SAINT_ALIAS_RECORDS  'St. Mary, the Virgin Theotokos' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Theotokos' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en api.SAINT_ALIAS_RECORDS  'Virgin Mary' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en arabic_saints_index.py   'St. Abanoub' -> menu of 2; intended abanoub-el-nehissy
+ok             v2 en arabic_saints_index.py   'St. Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en arabic_saints_index.py   'St. Athanasius' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en arabic_saints_index.py   'St. Barbara' -> St. Barbara [barbara]; intended barbara
+ok             v2 en arabic_saints_index.py   'St. Cyril the Great' -> St. Cyril I, the 24th Pope of Alexandria [cyril-i-the-24th-pope-of-alexandria]; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 en arabic_saints_index.py   'St. Demiana' -> Sts. Demiana and the Fourty Virgins [demiana-and-the-fourty-virgins]; intended demiana-and-the-fourty-virgins
+ok             v2 en arabic_saints_index.py   'St. George' -> menu of 3; intended george-the-capaducian
+ok             v2 en arabic_saints_index.py   'St. Mark' -> menu of 4; intended marcus-the-apostle
+ok             v2 en arabic_saints_index.py   'St. Mary' -> menu of 10; intended mary-the-virgin-theotokos
+ok             v2 en arabic_saints_index.py   'St. Mena the Wonderworker' -> St. Mina, the Wonder-Maker [mina-the-wonder-maker]; intended mina-the-wonder-maker
+ok             v2 en arabic_saints_index.py   'St. Moses the Black' -> St. Moses, the Black [moses-the-black]; intended moses-the-black
+ok             v2 en arabic_saints_index.py   'St. Paul the Apostle' -> no entry; intended (no entry)
+ok             v2 en arabic_saints_index.py   'St. Paul the First Hermit' -> Abba Paul, the First Hermit [abba-paul-the-first-hermit]; intended abba-paul-the-first-hermit
+ok             v2 en arabic_saints_index.py   'St. Peter the Apostle' -> no entry; intended (no entry)
+ok             v2 en arabic_saints_index.py   'St. Pishoy' -> Abba Bishoy [abba-bishoy-st]; intended abba-bishoy-st
+ok             v2 en arabic_saints_index.py   'St. Shenoute the Archimandrite' -> Abba Shenouda, the Archmandrite [abba-shenouda-the-archmandrite]; intended abba-shenouda-the-archmandrite
+ok             v2 en arabic_saints_index.py   'St. Thomas the Apostle' -> only-arabic-entry; intended ar-e1187
+ok             v2 en saint-display.ts         'Abba Anthony' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saint-display.ts         'Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saint-display.ts         'Athanasius the Apostolic' -> St. Athanasius the Apostolic, the 20th Pope of Alexandria [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en saint-display.ts         'Holy Virgin Mary' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en saint-display.ts         'Mother of God' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en saint-display.ts         'Saint Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saint-display.ts         'Saint Anthony, Father of the Monks' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saint-display.ts         'Saint Athanasius the Apostolic' -> St. Athanasius the Apostolic, the 20th Pope of Alexandria [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en saint-display.ts         'Saint Athanasius' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en saint-display.ts         'Saint Cyril' -> menu of 12; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 en saint-display.ts         'Saint Mark' -> menu of 4; intended marcus-the-apostle
+ok             v2 en saint-display.ts         'Saint Mary' -> menu of 10; intended mary-the-virgin-theotokos
+ok             v2 en saint-display.ts         'St. Abba Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saint-display.ts         'St. Abba Anthony' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saint-display.ts         'St. Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saint-display.ts         'St. Anthony, Father of the Monks' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saint-display.ts         'St. Athanasius of Alexandria' -> St. Athanasius the Apostolic, the 20th Pope of Alexandria [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en saint-display.ts         'St. Athanasius the Apostolic' -> St. Athanasius the Apostolic, the 20th Pope of Alexandria [athanasius-the-apostolic-the-20th-pope-of-alexandria]; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en saint-display.ts         'St. Athanasius' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en saint-display.ts         'St. Cyril the Great' -> St. Cyril I, the 24th Pope of Alexandria [cyril-i-the-24th-pope-of-alexandria]; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 en saint-display.ts         'St. Cyril' -> menu of 12; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 en saint-display.ts         'St. Mark' -> menu of 4; intended marcus-the-apostle
+ok             v2 en saint-display.ts         'St. Mary Theotokos' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en saint-display.ts         'St. Mary the Virgin' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en saint-display.ts         'St. Mary' -> menu of 10; intended mary-the-virgin-theotokos
+ok             v2 en saint-display.ts         'St. Mary, the Virgin Theotokos' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en saint-display.ts         'Theotokos' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en saint-display.ts         'Virgin Mary' -> St. Mary, the Virgin Theotokos. [mary-the-virgin-theotokos]; intended mary-the-virgin-theotokos
+ok             v2 en saints_curation.json     'St. Abanoub' -> menu of 2; intended abanoub-el-nehissy
+ok             v2 en saints_curation.json     'St. Anthony the Great' -> St. Anthony, Father of the Monks [anthony-father-of-the-monks]; intended anthony-father-of-the-monks
+ok             v2 en saints_curation.json     'St. Athanasius' -> menu of 7; intended athanasius-the-apostolic-the-20th-pope-of-alexandria
+ok             v2 en saints_curation.json     'St. Barbara' -> St. Barbara [barbara]; intended barbara
+ok             v2 en saints_curation.json     'St. Cyril the Great' -> St. Cyril I, the 24th Pope of Alexandria [cyril-i-the-24th-pope-of-alexandria]; intended cyril-i-the-24th-pope-of-alexandria
+ok             v2 en saints_curation.json     'St. Demiana' -> Sts. Demiana and the Fourty Virgins [demiana-and-the-fourty-virgins]; intended demiana-and-the-fourty-virgins
+ok             v2 en saints_curation.json     'St. George' -> menu of 3; intended george-the-capaducian
+ok             v2 en saints_curation.json     'St. Mark' -> menu of 4; intended marcus-the-apostle
+ok             v2 en saints_curation.json     'St. Mary' -> menu of 10; intended mary-the-virgin-theotokos
+ok             v2 en saints_curation.json     'St. Mena the Wonderworker' -> St. Mina, the Wonder-Maker [mina-the-wonder-maker]; intended mina-the-wonder-maker
+ok             v2 en saints_curation.json     'St. Moses the Black' -> St. Moses, the Black [moses-the-black]; intended moses-the-black
+ok             v2 en saints_curation.json     'St. Paul the Apostle' -> no entry; intended (no entry)
+ok             v2 en saints_curation.json     'St. Paul the First Hermit' -> Abba Paul, the First Hermit [abba-paul-the-first-hermit]; intended abba-paul-the-first-hermit
+ok             v2 en saints_curation.json     'St. Peter the Apostle' -> no entry; intended (no entry)
+ok             v2 en saints_curation.json     'St. Pishoy' -> Abba Bishoy [abba-bishoy-st]; intended abba-bishoy-st
+ok             v2 en saints_curation.json     'St. Shenoute the Archimandrite' -> Abba Shenouda, the Archmandrite [abba-shenouda-the-archmandrite]; intended abba-shenouda-the-archmandrite
+ok             v2 en saints_curation.json     'St. Thomas the Apostle' -> only-arabic-entry; intended ar-e1187
