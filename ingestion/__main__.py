@@ -148,9 +148,19 @@ def _cmd_build(args: argparse.Namespace) -> int:
 
         from .corpus import embed_build
 
+        from .embed import FatalOpenAIError
+
         chroma_dir = Path(args.chroma_dir or get_chroma_path_v2())
         print(f"v2 build into {chroma_dir}", flush=True)
-        result = embed_build(chroma_dir, resume=args.resume)
+        try:
+            result = embed_build(chroma_dir, resume=args.resume)
+        except FatalOpenAIError as error:
+            # Quota or auth: the key is shared with production. Leave a marker so a background
+            # build (BUILD_CORPUS_V2) is not relaunched on every restart (ING-008).
+            chroma_dir.mkdir(parents=True, exist_ok=True)
+            (chroma_dir / "BUILD_FAILED").write_text(f"{type(error).__name__}: {error}\n", encoding="utf-8")
+            print(f"v2 build stopped: {error}", file=sys.stderr, flush=True)
+            return 3
         print(f"written: {result['written']}")
         if result["problems"]:
             print("v2 store does not match the manifest: " + "; ".join(result["problems"]), file=sys.stderr)

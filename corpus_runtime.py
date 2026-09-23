@@ -72,14 +72,23 @@ def v2_directory_problems(v2_dir: str, volume_mount: str | None) -> List[str]:
     path = Path(v2_dir)
     if not path.is_dir() or not any(path.iterdir()):
         return [f"CHROMA_DIR_V2 {path} does not exist or is empty"]
-    if volume_mount:
-        mount = Path(volume_mount).resolve()
-        resolved = path.resolve()
-        if resolved != mount and mount not in resolved.parents:
-            return [f"CHROMA_DIR_V2 {resolved} is not inside the volume mount {mount}"]
-        if os.stat(resolved).st_dev != os.stat(mount).st_dev:
-            return [f"CHROMA_DIR_V2 {resolved} is not on the volume's filesystem ({mount})"]
-    return []
+    problem = outside_volume(str(path), volume_mount)
+    return [problem] if problem else []
+
+
+def outside_volume(v2_dir: str, volume_mount: str | None) -> Optional[str]:
+    """Why `v2_dir` would not survive a redeploy (it is not inside the Railway volume), or None.
+    Works before the directory exists, so a build can check its target first (ING-008)."""
+    if not volume_mount:
+        return None
+    mount = Path(volume_mount).resolve()
+    resolved = Path(v2_dir).resolve()
+    if resolved != mount and mount not in resolved.parents:
+        return f"CHROMA_DIR_V2 {resolved} is not inside the volume mount {mount}"
+    existing = next((p for p in [resolved, *resolved.parents] if p.exists()), None)
+    if existing is not None and os.stat(existing).st_dev != os.stat(mount).st_dev:
+        return f"CHROMA_DIR_V2 {resolved} is not on the volume's filesystem ({mount})"
+    return None
 
 
 # ---------------------------------------------------------------- citation labels (D5: printed pages)

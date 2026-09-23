@@ -77,7 +77,7 @@ function kindOf(month: number, day: number, title: string): CommemorationKind {
 
 // ---------- Links to our saints index ----------
 
-type IndexSnapshot = { taken: string; en: Array<{ name: string; aliases: string[] }>; ar: string[] };
+type IndexSnapshot = { taken: string; en: Array<{ name: string; aliases: string[] }>; ar: string[]; ar_aliases?: Record<string, string[]> };
 const snapshot = JSON.parse(readFileSync(join(here, "saints-index.snapshot.json"), "utf8")) as IndexSnapshot;
 const overrides = JSON.parse(readFileSync(join(here, "saint-link-overrides.json"), "utf8")) as {
   links: Record<string, { en?: string | null; ar?: string | null; why: string }>;
@@ -135,7 +135,11 @@ type Candidate = { name: string; tokens: string[] };
 const enCandidates: Candidate[] = snapshot.en.flatMap((record) =>
   [record.name, ...record.aliases].map((alias) => ({ name: record.name, tokens: enTokens(alias) }))
 );
-const arCandidates: Candidate[] = snapshot.ar.map((name) => ({ name, tokens: arTokens(name) }));
+// A v2 snapshot also carries Arabic aliases (the index's full names, e.g. "مرقس الخامس البابا الثامن
+// والتسعون" for the dictionary heading "مرقس الخامس"); a match on an alias links to the heading (ING-008).
+const arCandidates: Candidate[] = snapshot.ar.flatMap((name) =>
+  [name, ...(snapshot.ar_aliases?.[name] ?? [])].map((alias) => ({ name, tokens: arTokens(alias) }))
+);
 
 const EN_NUMERAL = /^(i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx|[0-9]+(st|nd|rd|th)?)$/;
 const AR_NUMERAL = /^(ال|و)?(اول|ثاني|ثالث|رابع|خامس|سادس|سابع|ثامن|تاسع|عاشر|حادي|عشر|عشرين|ثلاثين|اربعين|خمسين|ستين|سبعين|ثمانين|تسعين|مايه|المايه|[0-9]+)$/;

@@ -12,6 +12,7 @@ writes, with no OpenAI calls:
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import platform
@@ -200,6 +201,7 @@ def build(*, with_web: bool = True, doc_ids: Optional[Iterable[str]] = None, log
     stats = corpus_stats(chunks, units, unit_stats, web_stats, index_stats, skipped)
     _write_json(DATA_DIR / "stats.json", stats)
     _write_json(DATA_DIR / "manifest.json", manifest(chunks, web_stats))
+    write_reviewed_chunks(chunks)
     (DATA_DIR / "SAMPLES.md").write_text(samples_markdown(chunks), encoding="utf-8")
     return stats
 
@@ -316,7 +318,7 @@ def embed_build(chroma_dir: Path, *, resume: bool = False, log=print) -> Dict[st
     expected = json.loads(MANIFEST.read_text(encoding="utf-8"))
     chunks = load_chunks()
     if ids_sha1(c.id for c in chunks) != expected["chunk_ids_sha1"] or len(chunks) != expected["chunks"]:
-        raise RuntimeError("build/corpus/v2/chunks.jsonl does not match data/corpus/v2/manifest.json; "
+        raise RuntimeError("the v2 chunks do not match data/corpus/v2/manifest.json; "
                            "re-run `python -m ingestion build --corpus v2 --dry-run` and review the diff first")
     chroma_dir.mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=str(chroma_dir), settings=Settings(anonymized_telemetry=False))
@@ -363,6 +365,20 @@ def samples_markdown(chunks: List[Chunk], per_type: int = 10, seed: int = 2026) 
     return "\n".join(lines)
 
 
-def load_chunks(path: Path = BUILD_DIR / "chunks.jsonl") -> List[Chunk]:
-    with path.open(encoding="utf-8") as handle:
+REVIEWED_CHUNKS = DATA_DIR / "chunks.jsonl.gz"  # committed: what Railway embeds, byte for byte (ING-008)
+
+
+def load_chunks(path: Optional[Path] = None) -> List[Chunk]:
+    """The dry run's chunks: the local build output when present, else the committed reviewed copy."""
+    path = path or (BUILD_DIR / "chunks.jsonl" if (BUILD_DIR / "chunks.jsonl").exists() else REVIEWED_CHUNKS)
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt", encoding="utf-8") as handle:
         return [Chunk(**{k: v for k, v in json.loads(line).items()}) for line in handle if line.strip()]
+
+
+def write_reviewed_chunks(chunks: List[Chunk]) -> None:
+    """A compressed, reproducible copy (mtime 0) of the chunks the manifest describes."""
+    with open(REVIEWED_CHUNKS, "wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0, filename="") as handle:
+        for chunk in chunks:
+            line = json.dumps({"id": chunk.id, "document": chunk.document, "metadata": chunk.metadata}, ensure_ascii=False)
+            handle.write(line.encode("utf-8") + b"\n")

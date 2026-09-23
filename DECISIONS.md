@@ -102,6 +102,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [ING-005: Retrieval on v2 behind CORPUS_VERSION; one source per cited passage; ingest-time saints index; v1 output proven identical](#ing-005-retrieval-on-v2-behind-corpus_version-one-source-per-cited-passage-ingest-time-saints-index-v1-output-proven-identical)
   - [ING-006: v1 vs v2 evaluation — v2 raises Arabic coverage by 13 points, English is unchanged; v2 top-k 16, threshold stays 1.25](#ing-006-v1-vs-v2-evaluation--v2-raises-arabic-coverage-by-13-points-english-is-unchanged-v2-top-k-16-threshold-stays-125)
   - [ING-007: "Saints named X" lists by name, Arabic saint lists on v2, top-k 16 kept, Arabic page ranges read in order](#ing-007-saints-named-x-lists-by-name-arabic-saint-lists-on-v2-top-k-16-kept-arabic-page-ranges-read-in-order)
+  - [ING-008: Deployment runbook for v2 — background build (option B) recommended over railway ssh](#ing-008-deployment-runbook-for-v2--background-build-option-b-recommended-over-railway-ssh)
 - [Open questions](#open-questions)
 
 ---
@@ -1917,6 +1918,57 @@ In summary:
   - The "scrambled" label in the terminal was only the terminal's bidi handling. The stored text is in logical order.
 - **Tests:** backend 129 (13 new filter tests); frontend 119 (the RTL isolate and Arabic comma asserted).
 - **Files:** `task_analysis.py`, `api.py`, `orthodox-site/lib/sources.ts`, `lib/sources.test.ts`, `tests/test_task_analysis_filters.py`, `ui-audit/tools/rtl-sources.mjs` (+ fixture, README).
+
+### ING-008: Deployment runbook for v2 — background build (option B) recommended over railway ssh
+- **Date / Part:** 2026-09-23, Phase 5 Step 6. **OpenAI: none** (the smoke set's chat part, ~$0.04, and the Railway build, ~$0.13, run only at deploy time with the owner's approval). Nothing was pushed or deployed.
+- **Runbook:** `DEPLOY_V2.md`. It covers:
+  - pre-flight;
+  - deploying the code on v1;
+  - the build;
+  - the switch;
+  - the smoke set;
+  - browser checks;
+  - rollback;
+  - the calendar regeneration;
+  - v1 retirement;
+  - the env var table.
+- **D7 decision: option B, `BUILD_CORPUS_V2=1`.**
+  - **How it works:**
+    - `start_backend.maybe_start_v2_build` launches `python -m ingestion build --corpus v2 --resume --chroma-dir <CHROMA_DIR_V2>` as a separate child process: own session, `nice 10`, output to the service log.
+    - Then uvicorn starts as usual on v1.
+  - **Why B over A (`railway ssh` + `setsid nohup`):**
+    - no interactive session to keep open;
+    - a redeploy or crash resumes instead of losing the build;
+    - progress shows in the service logs;
+    - a crash or quota stop in the build cannot take the API down (separate process, as with A).
+  - **Guards:**
+    - it does nothing unless the flag is set, or while `CORPUS_VERSION=v2`;
+    - it refuses a target outside the volume (`corpus_runtime.outside_volume`, which works before the directory exists);
+    - it logs "v2 complete" and does nothing once the store matches the manifest;
+    - after a quota or auth error the build writes `<v2>/BUILD_FAILED` and exits 3. Later boots do not relaunch it until someone deletes the marker, so a shared key is never retried into an empty budget.
+  - **A remains the fallback** if memory is too tight to build next to the API.
+- **The reviewed chunks ship with the code:** `data/corpus/v2/chunks.jsonl.gz` (7.4 MB, gzip mtime 0, so reruns are byte-identical).
+  - Railway embeds exactly the chunks reviewed in Step 2 and evaluated in Step 5. It does not re-extract the PDFs on Linux, where library differences could change the text.
+  - `load_chunks` prefers a local `build/corpus/v2/chunks.jsonl`, else reads the gz. The build still refuses chunks whose IDs or counts differ from the manifest.
+  - The dry run rewrites the gz.
+  - **Checked locally without OpenAI:** with `build/` moved aside, `build --corpus v2 --resume` read the gz, found all 6,079 + 4,484 IDs stored (0 to embed), and verified the store against the manifest. `maybe_start_v2_build()` returned "complete".
+- **Timing:** the local build (Step 3) took about 5 minutes for 6.64 M tokens, including 47 rate-limit retries. The earlier ~25 min estimate was wrong.
+- **Smoke set:** `eval/smoke_v2.py --backend … [--expect v1|v2] [--no-chat]`.
+  - `/health` (corpus version, both collections), then `/saints` and `/saint-suggestions` in English and Arabic.
+  - Then 8 chat requests (~$0.04): 5 English (2 answered, a saints-mode lookup, "saints named Gregory", an out-of-corpus refusal) and 3 Arabic (a catechism answer, a saints answer, a refusal). Each answered request must return v2-shaped sources.
+  - Checked locally: `--no-chat` passes against a v2 backend, and `--expect v1` correctly fails on it.
+- **Calendar saint links:**
+  - `snapshot-saints-index.py` is corpus-aware: with `CORPUS_VERSION=v2` it snapshots the v2 index with `corpus_version` and `ar_aliases`. v1 output is unchanged apart from the header lines.
+  - `migrate-overrides-v2.py` maps the 19 override names to v2 display names; none are unmapped.
+  - `extract-katameros-saints.ts` also matches the Arabic aliases. Its v1 output is unchanged: 87 English and 165 Arabic links.
+  - **Preview on v2 (not committed):** 149 English links (67 new, 5 lost) and 184 Arabic (31 new, 12 lost). The losses need overrides in the post-switch frontend commit.
+  - The generated calendar files stay on v1 until the switch.
+- **Tests:** backend 135 (6 new in `tests/test_v2_background_build.py`); frontend 119; `tsc` clean.
+- **Files:**
+  - `DEPLOY_V2.md`, `start_backend.py`, `corpus_runtime.py`, `ingestion/corpus.py`, `ingestion/__main__.py`;
+  - `data/corpus/v2/chunks.jsonl.gz`, `eval/smoke_v2.py`, `tests/test_v2_background_build.py`;
+  - `orthodox-site/scripts/calendar/{snapshot-saints-index.py, migrate-overrides-v2.py, extract-katameros-saints.ts}`.
+- **Revisit if:** Railway's memory graph shows pressure during the build (use A at a quiet hour), or the build is ever needed again with different chunks. In that case, re-review, regenerate the manifest and the gz together, and rebuild into a fresh directory.
 
 ---
 

@@ -168,6 +168,46 @@ def verify_v2_or_exit() -> None:
     print(f"[start_backend] v2 store matches the manifest ({manifest['chunks_by_language']})")
 
 
+def maybe_start_v2_build(popen=None) -> str:
+    """BUILD_CORPUS_V2=1 while v1 serves (ING-008, D7 option B): build v2 in the background into
+    CHROMA_DIR_V2, in a separate low-priority process whose output goes to the service log, so a crash
+    or a quota stop in the build never touches the API. Every restart resumes it (`--resume` skips
+    stored ids) until the store matches the manifest; after that it only logs "v2 complete".
+    Returns what it did, for the log and the tests."""
+    if os.getenv("BUILD_CORPUS_V2", "0").strip().lower() not in TRUTHY:
+        return "off"
+    import subprocess
+
+    import chromadb
+    from chromadb.config import Settings
+
+    import corpus_runtime
+    from chroma_store import get_chroma_path_v2
+
+    v2_dir = Path(get_chroma_path_v2())
+    problem = corpus_runtime.outside_volume(str(v2_dir), os.getenv("RAILWAY_VOLUME_MOUNT_PATH"))
+    if problem:
+        print(f"[start_backend] v2 build not started: {problem}")
+        return "outside-volume"
+    failed = v2_dir / "BUILD_FAILED"
+    if failed.exists():
+        print(f"[start_backend] v2 build not started: the last run stopped ({failed.read_text(encoding='utf-8').strip()}). "
+              "Check the OpenAI key and budget, delete that file, and redeploy.")
+        return "failed-before"
+    if v2_dir.is_dir() and any(p.name != "BUILD_FAILED" for p in v2_dir.iterdir()):
+        client = chromadb.PersistentClient(path=str(v2_dir), settings=Settings(anonymized_telemetry=False))
+        if not corpus_runtime.verify_store(client):
+            print("[start_backend] v2 complete: the store matches the manifest. Remove BUILD_CORPUS_V2 and switch with CORPUS_VERSION=v2.")
+            return "complete"
+    v2_dir.mkdir(parents=True, exist_ok=True)
+    command = [sys.executable, "-m", "ingestion", "build", "--corpus", "v2", "--resume", "--chroma-dir", str(v2_dir)]
+    lower_priority = (lambda: os.nice(10)) if hasattr(os, "nice") else None
+    process = (popen or subprocess.Popen)(command, env={**os.environ, "PYTHONUNBUFFERED": "1"}, start_new_session=True,
+                                          preexec_fn=lower_priority)
+    print(f"[start_backend] v2 build started in the background (pid {process.pid}): {' '.join(command)}")
+    return "started"
+
+
 def start_server() -> None:
     port = os.getenv("PORT", "8001")
     args = [
@@ -192,6 +232,7 @@ def main() -> None:
         verify_v2_or_exit()
     else:
         ensure_chroma_populated()
+        maybe_start_v2_build()  # BUILD_CORPUS_V2=1 only; never while v2 is being served
     start_server()
 
 

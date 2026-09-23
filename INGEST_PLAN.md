@@ -20,7 +20,7 @@ Each has a recommendation; the reasons are in the sections referenced.
 | D4 | Footnotes | Pull them out of the body and attach them to their question as a "Notes" block | 3 |
 | D5 | Page numbers in citation labels | Show the **printed** page (catechism printed = PDF index − 10); keep the PDF index in metadata and in the eval | 6, 11 |
 | D6 | Where v2 lives | Separate Chroma directory **and** versioned collection names, chosen by one variable `CORPUS_VERSION` | 9 |
-| D7 | How v2 reaches Railway | A one-off build over `railway ssh` into a separate directory on the volume, verified against a committed manifest | 9.3 |
+| D7 | How v2 reaches Railway | A one-off build over `railway ssh` into a separate directory on the volume, verified against a committed manifest. **Decided in ING-008: a background build in a child process (`BUILD_CORPUS_V2=1`), with `railway ssh` as the fallback; see `DEPLOY_V2.md`** | 9.3 |
 | D8 | Old ingestion scripts | Delete them in Step 1, after the new module can also rebuild v1 exactly (a `v1-legacy` profile), so rollback never depends on them | 8 |
 | D9 | Eval size | Optionally add ~10 Arabic and ~5 saints questions to **tune** before Step 5; there are only 10 answerable Arabic questions today | 10.4 |
 

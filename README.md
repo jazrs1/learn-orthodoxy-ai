@@ -77,6 +77,7 @@ Notes:
   - With v2, startup never ingests. It exits non-zero unless the v2 directory exists, sits on the volume, and matches `data/corpus/v2/manifest.json`, so a bad switch never replaces the running deployment.
   - v2 sources name the question or saint and the printed pages. Each cited passage is its own source.
   - Rollback: set `CORPUS_VERSION=v1`. v1's files are never written by v2.
+  - `BUILD_CORPUS_V2=1` builds v2 on Railway in the background while v1 serves. It embeds the reviewed chunks in `data/corpus/v2/chunks.jsonl.gz` (~$0.13), resumes after restarts, and stops for good on a quota or auth error. The steps are in `DEPLOY_V2.md`.
 
 ## Local Development
 
