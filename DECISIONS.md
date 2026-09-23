@@ -90,6 +90,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-019: Navigation cut to Chat, Catechism, Saints and Calendar; Credits and Contact in a footer; one language toggle](#ui-019-navigation-cut-to-chat-catechism-saints-and-calendar-credits-and-contact-in-a-footer-one-language-toggle)
   - [UI-020: Past chats open as a drawer on the home page; repeated titles listed once; phone header padding](#ui-020-past-chats-open-as-a-drawer-on-the-home-page-repeated-titles-listed-once-phone-header-padding)
   - [UI-021: A two-line hero description; "sources shown" said once](#ui-021-a-two-line-hero-description-sources-shown-said-once)
+  - [UI-022: Four example questions, without dotted leaders](#ui-022-four-example-questions-without-dotted-leaders)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1422,6 +1423,16 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - **Size:** the reading size instead of the large one (1.0625 rem, Arabic 1.25 rem), with slightly tighter margins. It is two lines on desktop, and the phone size is unchanged.
   - **AI note:** "Answers are prepared by AI from these books." / "يُعِدّ الذكاء الاصطناعي الإجابات من هذه الكتب." The sources are mentioned once, in the description.
 - **Files changed:** `lib/home-content.ts`, `app/globals.css`.
+
+### UI-022: Four example questions, without dotted leaders
+- **Date / Part:** 2026-09-23, home page declutter, item 6.
+- **Context:** The home page listed six example questions on desktop (four on phones), each with a dotted leader running to its arrow, like a table of contents.
+- **Decision:**
+  - **Four questions at every width:** the first four of the list, three teaching questions and one saint in English, two of each in Arabic. The phone-only rule that hid the rest is gone.
+  - **Rows:** the hairline rules between rows stay; the dotted leaders go. The question now takes the row, and the arrow sits at its end.
+  - The chat page's empty state already showed four and loses its leaders the same way.
+  - "Begin with a question" is centred on desktop, as when it was part of the hero, and left-aligned on phones as before.
+- **Files changed:** `components/ExampleQuestions.tsx`, `app/home-page.tsx`, `app/globals.css`.
 
 ## Code Cleanup
 

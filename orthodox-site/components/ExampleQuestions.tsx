@@ -12,8 +12,8 @@ type ExampleQuestionsProps = {
   limit?: number;
 };
 
-// Example questions set like a table of contents: one clickable row per question, with a
-// dotted leader and hairline separators (UI-014).
+// Example questions set like a table of contents: one clickable row per question between
+// hairline rules (UI-014); no dotted leaders (UI-022).
 export default function ExampleQuestions({ onPick, disabled = false, label, limit }: ExampleQuestionsProps) {
   const { language } = useLanguage();
   const content = HOME_CONTENT[language];
@@ -30,7 +30,6 @@ export default function ExampleQuestions({ onPick, disabled = false, label, limi
           <li key={question}>
             <button type="button" className="toc-row" onClick={() => onPick(question)} disabled={disabled}>
               <span className="toc-text">{question}</span>
-              <span className="toc-leader" aria-hidden="true" />
               <IconArrowForward size={16} className="toc-arrow" />
             </button>
           </li>

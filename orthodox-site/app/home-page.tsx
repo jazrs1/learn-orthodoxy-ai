@@ -151,7 +151,7 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
               </div>
             </section>
 
-            <ExampleQuestions onPick={startChatFromHome} />
+            <ExampleQuestions onPick={startChatFromHome} limit={4} />
 
             {banner}
 

@@ -622,8 +622,10 @@ textarea:focus-visible {
   margin-top: 0;
 }
 
-.home-content > .example-questions .section-label {
-  text-align: center;
+@media (min-width: 821px) {
+  .home-content > .example-questions .section-label {
+    text-align: center;
+  }
 }
 
 .toc-list {
@@ -655,16 +657,11 @@ textarea:focus-visible {
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
+/* The question takes the row; the arrow sits at its end. Hairlines between rows, no dotted
+   leaders (UI-022). */
 .toc-text {
+  flex: 1 1 auto;
   min-width: 0;
-}
-
-/* Dotted leader, as between an entry and its page number. */
-.toc-leader {
-  flex: 1 1 1.5rem;
-  min-width: 1.5rem;
-  border-bottom: 1px dotted var(--color-rule);
-  transform: translateY(-0.25em);
 }
 
 .toc-arrow {
@@ -2882,14 +2879,6 @@ a.calendar-month-link:hover {
     margin-top: var(--space-6);
   }
 
-  /* Four examples are enough on a phone; the rest push "Explore" too far down. */
-  .toc-list li:nth-child(n + 5) {
-    display: none;
-  }
-
-  .toc-leader {
-    display: none;
-  }
 
   .toc-row {
     justify-content: space-between;
