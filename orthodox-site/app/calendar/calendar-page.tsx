@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { calendarHref, commemorationTitle, saintHref } from "../../components/calendar/labels";
+import SiteFooter from "../../components/SiteFooter";
 import { useLocalToday } from "../../components/calendar/useLocalToday";
 import { IconArrowForward } from "../../components/Icons";
 import { useLanguage } from "../../components/LanguageProvider";
@@ -241,6 +242,7 @@ export default function CalendarPage({ month, months, initialDate, dateFromUrl, 
           </p>
         </footer>
       </main>
+      <SiteFooter />
       <PageDrawer />
     </>
   );

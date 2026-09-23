@@ -87,6 +87,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-016: Italic reserved for quoted matter inside answers; the italic font file is dropped](#ui-016-italic-reserved-for-quoted-matter-inside-answers-the-italic-font-file-is-dropped)
   - [UI-017: Home page order: the hero first, the Today line below the example questions](#ui-017-home-page-order-the-hero-first-the-today-line-below-the-example-questions)
   - [UI-018: The Today banner becomes one quiet line](#ui-018-the-today-banner-becomes-one-quiet-line)
+  - [UI-019: Navigation cut to Chat, Catechism, Saints and Calendar; Credits and Contact in a footer; one language toggle](#ui-019-navigation-cut-to-chat-catechism-saints-and-calendar-credits-and-contact-in-a-footer-one-language-toggle)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1383,6 +1384,16 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - The links keep a 32 px touch height.
 - **Tests:** `lib/calendar/brief.test.ts`, 4 tests, including today's date, 13 Thout 1743.
 - **Files changed:** `components/calendar/TodayBannerStrip.tsx`, `lib/calendar/brief.ts`, `lib/calendar/brief.test.ts`, `app/globals.css`.
+
+### UI-019: Navigation cut to Chat, Catechism, Saints and Calendar; Credits and Contact in a footer; one language toggle
+- **Date / Part:** 2026-09-23, home page declutter, item 3.
+- **Context:** The header carried seven links and both language names ("English | العربية", the current one underlined), so it competed with the hero for attention.
+- **Decision:**
+  - **Header navigation:** Chat, Catechism, Saints and Calendar. "Saints Search" becomes "Saints" / "القديسون"; the chat page's own tabs keep "Saints Search".
+  - **Page footer:** Credits and Contact move to a new footer (`components/SiteFooter.tsx`, a `nav` labelled "About this site"). It sits after `main` on the home, calendar, credits and contact pages.
+  - **Chat page:** no footer, because it is a full-height app. Its sidebar still lists Credits and Contact, on desktop and in the phone drawer. The drawer keeps them because on a phone it is the navigation. Its "Saints" label matches the header.
+  - **Language toggle:** a single button named in the other language, "العربية" on English pages and "English" on Arabic pages. It keeps `lang` for screen readers, and on English pages the system face, so Arabic fonts aren't downloaded (UI-011). The styles for the active state and the second button are removed.
+- **Files changed:** `components/Navbar.tsx`, `components/SiteFooter.tsx` (new), `components/ChatSidebar.tsx`, `lib/i18n.ts`, `app/home-page.tsx`, `app/calendar/calendar-page.tsx`, `app/credits/credits-page.tsx`, `app/contact/contact-page.tsx`, `app/globals.css`.
 
 ## Code Cleanup
 

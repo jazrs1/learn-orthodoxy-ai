@@ -48,7 +48,7 @@ export default function ChatSidebar({
   const modes: Array<{ id: ChatMode; label: string }> = [
     { id: "chat", label: t("chat") },
     { id: "catechism", label: t("catechism") },
-    { id: "saints", label: t("saintsSearch") },
+    { id: "saints", label: t("saints") },
   ];
 
   function selectMode(mode: ChatMode, event: MouseEvent<HTMLAnchorElement>) {

@@ -14,6 +14,7 @@ type ChatMode = "chat" | "catechism" | "saints";
 export default function Navbar() {
   const pathname = usePathname();
   const { language, setLanguage, t } = useLanguage();
+  const otherLanguage = language === "ar" ? "en" : "ar";
   const [hash, setHash] = useState("");
 
   const showsMobileSidebarToggle =
@@ -55,7 +56,7 @@ export default function Navbar() {
   const modes: Array<{ id: ChatMode; label: string }> = [
     { id: "chat", label: t("chat") },
     { id: "catechism", label: t("catechism") },
-    { id: "saints", label: t("saintsSearch") },
+    { id: "saints", label: t("saints") },
   ];
 
   return (
@@ -108,42 +109,18 @@ export default function Navbar() {
           >
             {t("calendar")}
           </Link>
-          <Link
-            href="/credits"
-            className={`nav-link ${pathname === "/credits" ? "nav-link-active" : ""}`}
-            aria-current={pathname === "/credits" ? "page" : undefined}
-          >
-            {t("credits")}
-          </Link>
-          <Link
-            href="/contact"
-            className={`nav-link ${pathname === "/contact" ? "nav-link-active" : ""}`}
-            aria-current={pathname === "/contact" ? "page" : undefined}
-          >
-            {t("contact")}
-          </Link>
+          {/* Credits and Contact are in the page footer and the sidebar (UI-019). */}
         </div>
 
-        <div className="language-toggle" role="group" aria-label={t("language")}>
-          <button
-            type="button"
-            lang="en"
-            className={`language-toggle-btn ${language === "en" ? "language-toggle-btn-active" : ""}`}
-            aria-pressed={language === "en"}
-            onClick={() => setLanguage("en")}
-          >
-            English
-          </button>
-          <button
-            type="button"
-            lang="ar"
-            className={`language-toggle-btn ${language === "ar" ? "language-toggle-btn-active" : ""}`}
-            aria-pressed={language === "ar"}
-            onClick={() => setLanguage("ar")}
-          >
-            العربية
-          </button>
-        </div>
+        {/* One toggle, named in the other language: "العربية" on English pages, "English" on Arabic. */}
+        <button
+          type="button"
+          lang={otherLanguage}
+          className="language-toggle-btn"
+          onClick={() => setLanguage(otherLanguage)}
+        >
+          {otherLanguage === "ar" ? "العربية" : "English"}
+        </button>
       </nav>
     </header>
   );

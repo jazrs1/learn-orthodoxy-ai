@@ -419,11 +419,6 @@ textarea:focus-visible {
 }
 
 /* Language switch: two words divided by a hairline; the current one is underlined in red. */
-.language-toggle {
-  display: inline-flex;
-  align-items: center;
-}
-
 .language-toggle-btn {
   position: relative;
   min-height: var(--tap-target);
@@ -437,10 +432,6 @@ textarea:focus-visible {
   letter-spacing: var(--tracking-label);
   line-height: 1;
   white-space: nowrap;
-}
-
-.language-toggle-btn + .language-toggle-btn {
-  border-inline-start: 1px solid var(--color-line);
 }
 
 /* On English pages this label is the only Arabic text; a system face avoids downloading
@@ -459,19 +450,34 @@ textarea:focus-visible {
   color: var(--color-primary);
 }
 
-.language-toggle-btn-active,
-.language-toggle-btn-active:hover {
-  color: var(--color-primary);
-  font-weight: 600;
+/* ---------- Page footer (UI-019): Credits and Contact, moved out of the header ---------- */
+
+.site-footer {
+  border-top: 1px solid var(--color-line);
+  padding: var(--space-5) var(--space-5) var(--space-6);
 }
 
-.language-toggle-btn-active::after {
-  content: "";
-  position: absolute;
-  inset-inline: var(--space-3);
-  bottom: 8px;
-  height: 1px;
-  background: var(--color-accent);
+.site-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-5);
+}
+
+.site-footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  color: var(--color-ink-soft);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.site-footer-link:hover,
+.site-footer-link[aria-current="page"] {
+  color: var(--color-primary);
 }
 
 .mobile-sidebar-toggle {
@@ -2762,9 +2768,6 @@ a.calendar-month-link:hover {
     font-size: var(--text-base);
   }
 
-  .language-toggle-btn-active::after {
-    inset-inline: var(--space-2);
-  }
 
   .home-layout {
     padding: var(--space-5) var(--space-4) var(--space-7);

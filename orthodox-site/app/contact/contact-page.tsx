@@ -4,6 +4,7 @@ import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import ChatSidebar from "../../components/ChatSidebar";
+import SiteFooter from "../../components/SiteFooter";
 import { useLanguage } from "../../components/LanguageProvider";
 import { deleteConversationRequest, fetchConversationList } from "../../lib/chat-client";
 import type { ConversationSummary } from "../../lib/chat-types";
@@ -255,6 +256,7 @@ export default function ContactPage() {
           </div>
         </form>
       </main>
+      <SiteFooter />
 
       <div className="credits-mobile-sidebar">
         <button

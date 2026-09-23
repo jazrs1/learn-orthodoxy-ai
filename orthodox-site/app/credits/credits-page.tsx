@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ChatSidebar from "../../components/ChatSidebar";
+import SiteFooter from "../../components/SiteFooter";
 import { useLanguage } from "../../components/LanguageProvider";
 import frTadrosImage from "../../images/frtadros.webp";
 import { deleteConversationRequest, fetchConversationList } from "../../lib/chat-client";
@@ -285,6 +286,7 @@ export default function CreditsPage() {
           </article>
         )}
       </main>
+      <SiteFooter />
 
       <div className="credits-mobile-sidebar">
         <button
