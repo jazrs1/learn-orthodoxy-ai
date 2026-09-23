@@ -8,6 +8,7 @@ import { getDatabaseConfigError } from "./db";
 import type { ChatMessage, SourceRef } from "./chat-types";
 import { Language, normalizeLanguage } from "./i18n";
 import { backendSaintSelection, namesakesFromBackend, optionsFromBackend } from "./message-options";
+import type { RouteTiming } from "./route-timing";
 
 // Shared by /api/chat and /api/chat/stream (GEN-007): the same checks, history, backend request,
 // saving and error text, so the two routes differ only in how the answer travels.
@@ -77,7 +78,11 @@ export async function jsonWithSession(body: unknown, sessionId: string, status =
 }
 
 /** Validates the browser's request and builds the backend's, or returns the error reply. */
-export async function prepareChat(request: Request, sessionId: string): Promise<PreparedChat | NextResponse> {
+export async function prepareChat(
+  request: Request,
+  sessionId: string,
+  timing?: RouteTiming
+): Promise<PreparedChat | NextResponse> {
   const body = (await request.json().catch(() => ({}))) as ChatRequestBody;
   const question = body.question?.trim() || "";
   const displayQuestion = body.displayQuestion?.trim() || question;
@@ -98,9 +103,11 @@ export async function prepareChat(request: Request, sessionId: string): Promise<
     );
   }
 
-  const history = body.conversationId
-    ? await getRecentHistory(sessionId, body.conversationId, 6)
-    : [];
+  // The conversation so far, read from Postgres (Neon in production).
+  const readHistory = () =>
+    body.conversationId ? getRecentHistory(sessionId, body.conversationId, 6) : Promise.resolve([]);
+  const history = timing ? await timing.time("history", readHistory) : await readHistory();
+  timing?.set({ history_messages: history.length });
 
   const configError = backendConfigError();
   if (configError) {

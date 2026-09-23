@@ -9,18 +9,22 @@ import {
   saveAnswer,
   thrownErrorReply,
 } from "../../../lib/chat-proxy";
+import { RouteTiming } from "../../../lib/route-timing";
+import { timingHeaders } from "../../../lib/stream-proxy";
 
 export const runtime = "nodejs";
 
 // The whole answer in one reply. The chat page streams through /api/chat/stream and falls back
 // to this route when the stream can't start (GEN-007).
 export async function POST(request: Request) {
+  const timing = new RouteTiming("chat");
   const sessionId = await getOrCreateAnonymousSessionId();
   try {
-    const chat = await prepareChat(request, sessionId);
+    const chat = await prepareChat(request, sessionId, timing);
     if (chat instanceof NextResponse) return chat;
 
-    const backendResponse = await backendFetch("/chat", {
+    timing.mark("backend_request");
+    const backendResponse = await timing.time("backend", () => backendFetch("/chat", {
       request,
       method: "POST",
       headers: {
@@ -28,11 +32,16 @@ export async function POST(request: Request) {
       },
       body: chat.backendBody,
       timeoutMs: 20000,
-    });
+    }));
+    timing.set({ request_id: backendResponse.headers.get("x-request-id") });
 
     if (!backendResponse.ok) return backendErrorReply(backendResponse, sessionId);
     const assistantPayload = (await backendResponse.json()) as BackendChatResponse;
-    return jsonWithSession(await saveAnswer(chat, assistantPayload), sessionId);
+    const saved = await timing.time("save", () => saveAnswer(chat, assistantPayload));
+    timing.log();
+    const response = await jsonWithSession(saved, sessionId);
+    for (const [name, value] of Object.entries(timingHeaders(timing, backendResponse))) response.headers.set(name, value);
+    return response;
   } catch (error) {
     return thrownErrorReply(error, sessionId);
   }

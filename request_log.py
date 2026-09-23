@@ -77,6 +77,8 @@ class RequestTrace:
         self.endpoint = endpoint
         self.request_id = request_id or uuid.uuid4().hex
         self.started = time.monotonic()
+        # Wall clock, to line the backend's stages up with the site's timing lines (RET-018).
+        self.start_epoch_ms = int(time.time() * 1000)
         self.fields: Dict[str, Any] = {}
         self.stages_ms: Dict[str, float] = {}
         self.retrieval: List[Dict[str, Any]] = []
@@ -228,6 +230,7 @@ class RequestTrace:
             "request_id": self.request_id,
             "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "total_ms": round((time.monotonic() - self.started) * 1000.0, 1),
+            "start_epoch_ms": self.start_epoch_ms,
         }
         record.update(self.fields)
         record.setdefault("http_status", 200)

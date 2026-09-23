@@ -4640,6 +4640,7 @@ async def chat_stream(req: ChatRequest, request: Request):
         _enforce_chat_rate_limit(request)
         cached = _cached_answer(req, trace)
         if cached is not None:
+            trace.set(headers_ms=trace.elapsed_ms())
             trace.hand_off()
             return StreamingResponse(
                 _replay_answer(cached, trace),
@@ -4651,6 +4652,8 @@ async def chat_stream(req: ChatRequest, request: Request):
             if req.debug:
                 prepared = {**prepared, "debug": trace.debug_payload()}
             return JSONResponse(_chat_payload(prepared), headers={"X-Request-ID": trace.request_id})
+        # Until the stream's headers go out; the site's route times the same step from its side (RET-018).
+        trace.set(headers_ms=trace.elapsed_ms())
         trace.hand_off()
     return StreamingResponse(
         _stream_answer(prepared, trace, lambda payload: _store_answer(req, payload, trace)),

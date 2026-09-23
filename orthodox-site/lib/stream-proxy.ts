@@ -52,7 +52,8 @@ export function isEventStream(response: Response): response is Response & { body
 export function relayStream<T>(
   body: ReadableStream<Uint8Array>,
   upstream: AbortController,
-  finish: (payload: T) => Promise<unknown>
+  finish: (payload: T) => Promise<unknown>,
+  hooks: { onFirstDelta?: () => void; onEnd?: (outcome: "done" | "error" | "gone") => void } = {}
 ) {
   const encoder = new TextEncoder();
   let idle: ReturnType<typeof setTimeout> | undefined;
@@ -77,6 +78,8 @@ export function relayStream<T>(
         }
       };
       let finished = false;
+      let outcome: "done" | "error" | "gone" = "gone";
+      let sentDelta = false;
 
       try {
         waitForNextEvent();
@@ -89,26 +92,34 @@ export function relayStream<T>(
           }
           for (const event of events.splice(0)) {
             if (event.event === "delta") {
+              if (!sentDelta) {
+                sentDelta = true;
+                hooks.onFirstDelta?.();
+              }
               send(`event: delta\ndata: ${event.data}\n\n`);
             } else if (event.event === "done") {
               send(formatSseEvent("done", await finish(JSON.parse(event.data) as T)));
               finished = true;
+              outcome = "done";
               break;
             } else if (event.event === "error") {
               send(`event: error\ndata: ${event.data}\n\n`);
               finished = true;
+              outcome = "error";
               break;
             }
           }
           if (done && !finished) {
             send(formatSseEvent("error", { message: STREAM_FAILED, retryable: true }));
             finished = true;
+            outcome = "error";
           }
         }
       } catch (error) {
         if (!upstream.signal.aborted || upstream.signal.reason?.name === "TimeoutError") {
           console.error("answer stream relay failed", error);
           send(formatSseEvent("error", { message: STREAM_FAILED, retryable: true }));
+          outcome = "error";
         }
       } finally {
         clearTimeout(idle);
@@ -119,6 +130,7 @@ export function relayStream<T>(
         } catch {
           // Already closed by a cancel.
         }
+        hooks.onEnd?.(outcome);
       }
     },
     cancel() {
@@ -130,12 +142,21 @@ export function relayStream<T>(
 }
 
 /** The relayed stream as a response nothing between here and the browser buffers or compresses. */
-export function eventStreamResponse(stream: ReadableStream<Uint8Array>) {
+export function eventStreamResponse(stream: ReadableStream<Uint8Array>, headers: Record<string, string> = {}) {
   return new NextResponse(stream, {
     headers: {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
       "X-Accel-Buffering": "no",
+      ...headers,
     },
   });
+}
+
+/** Server-Timing and the backend's request ID, for the browser and the timing line (RET-018). */
+export function timingHeaders(timing: { serverTiming(): string }, backendResponse?: Response): Record<string, string> {
+  const headers: Record<string, string> = { "Server-Timing": timing.serverTiming() };
+  const requestId = backendResponse?.headers.get("x-request-id");
+  if (requestId) headers["X-Request-ID"] = requestId;
+  return headers;
 }

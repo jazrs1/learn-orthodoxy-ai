@@ -64,6 +64,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-015: The question is embedded while the analysis call runs, and reused when the analysis leaves it unchanged](#ret-015-the-question-is-embedded-while-the-analysis-call-runs-and-reused-when-the-analysis-leaves-it-unchanged)
   - [RET-016: A first-turn question asked before reuses its analysis](#ret-016-a-first-turn-question-asked-before-reuses-its-analysis)
   - [RET-017: The home page's example questions keep their answer, replayed as a stream](#ret-017-the-home-pages-example-questions-keep-their-answer-replayed-as-a-stream)
+  - [RET-018: Each hop of a question is timed: the site's routes and the backend write lines that join up](#ret-018-each-hop-of-a-question-is-timed-the-sites-routes-and-the-backend-write-lines-that-join-up)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -1036,6 +1037,21 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - The backend list equals the page's.
   - Backend 217, frontend 169 passed.
 - **Files changed:** `answer_cache.py`, `data/cached_answer_questions.json`, `orthodox-site/lib/cached-questions.test.ts` (new); `api.py`, `tests/test_speed.py`.
+
+### RET-018: Each hop of a question is timed: the site's routes and the backend write lines that join up
+- **Date / Part:** 2026-09-23, speed branch Part B3 (owner's request: time every hop, browser to backend and back, before deciding on RET-012's change 6)
+- **Context:** the backend already logs its stages and `ttft_ms`, but nothing recorded the site's side: the conversation-creation request, the Neon reads and writes, the Vercel → Railway hop, or the relay back to the browser.
+- **Decision:**
+  - **Site routes** (`lib/route-timing.ts`) write one JSON line per request to stdout (`event: "route_timing"`, in the Vercel logs), with the route's wall-clock start, the backend's request ID and these durations in ms:
+    - `/api/chat/stream` and `/api/chat`: `history` (Postgres read), `backend_request` (when the backend fetch started), `backend_headers` or `backend` (until the backend replied), `first_delta` and `done` (since the route started), `save` (Postgres write), and `history_messages` (0 on a chat's first question).
+    - `/api/conversations` POST: `db` (the insert).
+    - `/api/saint-detail/stream`: the backend and relay steps.
+  - The steps done before a response starts also go to the browser in a `Server-Timing` header, and the backend's `X-Request-ID` is passed on, so a browser trace can find both log lines.
+  - It writes with `process.stdout` rather than `console.log`: a structured line, not the debug logging UI-010 removed.
+  - **Backend:** the request line gains `start_epoch_ms` (wall clock) and, for streams, `headers_ms` (when the stream's headers went out).
+  - **`ui-audit/tools/hops.mjs`** wraps the page's `fetch` to record when each request starts, when its headers arrive and when the first streamed chunk arrives, and records when the first word is painted. It joins that with both log lines to print every hop, for a new chat and a follow-up. Across machines (production) only the durations are comparable, because the clocks differ.
+- **Checks:** against the scripted backend, the hops add up to the measured click-to-first-word time (723 ms). Hops between different clocks can read a few ms negative from rounding. Backend 217 and frontend 169 tests passed; typecheck and lint clean.
+- **Files changed:** `orthodox-site/lib/route-timing.ts` (new), `orthodox-site/lib/stream-proxy.ts`, `orthodox-site/lib/chat-proxy.ts`, `orthodox-site/app/api/chat/route.ts`, `orthodox-site/app/api/chat/stream/route.ts`, `orthodox-site/app/api/saint-detail/stream/route.ts`, `orthodox-site/app/api/conversations/route.ts`, `request_log.py`, `api.py`, `ui-audit/tools/hops.mjs` (new).
 
 ## Prompting & Generation
 
