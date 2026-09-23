@@ -2151,10 +2151,9 @@ textarea:focus-visible {
 /* ---------- Today banner (CAL-005) ---------- */
 
 /* A running line between two hairlines, like the date line of a church bulletin. */
+/* The home page's Today line (UI-018): one quiet line below the example questions, no rules. */
 .today-banner {
   width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border-block: 1px solid var(--color-line);
   text-align: center;
 }
 
@@ -2177,7 +2176,6 @@ textarea:focus-visible {
 }
 
 .today-banner-label {
-  color: var(--color-accent);
   font-weight: 600;
   font-variant-caps: var(--caps-label);
   letter-spacing: var(--tracking-label);
@@ -2185,26 +2183,20 @@ textarea:focus-visible {
 
 .today-banner-date,
 .today-banner-saint-link,
-.today-banner-more,
-.today-banner-ask {
+.today-banner-more {
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  color: var(--color-primary);
+  color: var(--color-ink-soft);
   text-decoration: underline;
   text-decoration-color: var(--color-rule);
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
 }
 
-.today-banner-date {
-  font-weight: 600;
-}
-
 .today-banner-date:hover,
 .today-banner-saint-link:hover,
-.today-banner-more:hover,
-.today-banner-ask:hover {
+.today-banner-more:hover {
   color: var(--color-accent);
   text-decoration-color: currentColor;
 }
@@ -2213,38 +2205,8 @@ textarea:focus-visible {
   color: var(--color-gold-antique);
 }
 
-.today-banner-saint {
-  font-family: var(--font-reading);
-  font-size: var(--text-base);
-  color: var(--color-ink);
-}
-
-.today-banner-more {
-  color: var(--color-ink-soft);
-}
-
-.today-banner-ask {
-  padding: 0;
-  border: none;
-  background: none;
-  font-family: var(--font-ui);
-  font-size: var(--text-label);
-  font-weight: 600;
-  font-variant-caps: var(--caps-label);
-  letter-spacing: var(--tracking-label);
-  cursor: pointer;
-}
-
 @media (max-width: 820px) {
-  .today-banner {
-    padding-inline: 0;
-  }
-
   .today-banner-line {
-    font-size: var(--text-base);
-  }
-
-  .today-banner-saint {
     font-size: var(--text-sm);
   }
 }

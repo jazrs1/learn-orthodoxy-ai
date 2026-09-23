@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { calendarStrings, fill, moreCommemorations } from "../../lib/calendar/strings";
+import { briefName } from "../../lib/calendar/brief";
+import { calendarStrings, moreCommemorations } from "../../lib/calendar/strings";
 import { localCalendarDateScript } from "../../lib/calendar/today";
 import type { DayView } from "../../lib/calendar/view";
 import type { Language } from "../../lib/i18n";
-import { queueChatMessage } from "../../lib/pending-chat";
 import { useLanguage } from "../LanguageProvider";
 import { calendarHref, commemorationTitle, dayHeadline, saintHref } from "./labels";
 import { useLocalToday } from "./useLocalToday";
@@ -41,58 +40,65 @@ export default function TodayBannerStrip({ days, serverToday }: { days: DayView[
   );
 }
 
+/**
+ * One quiet line (UI-018): "Today · 13 Thout 1743 · Wednesday fast · Pope Mettaos II and 1 more".
+ * The date opens the day in the calendar, the saint opens their entry when the index has one, and
+ * "and 1 more" opens the day.
+ */
 function BannerDay({ day, language }: { day: DayView; language: Language }) {
-  const router = useRouter();
   const strings = calendarStrings(language);
   const headline = dayHeadline(day, language);
   const [first, ...rest] = day.commemorations;
   const indexName = first?.index?.[language];
-
-  function askAboutSaint() {
-    if (!indexName) return;
-    queueChatMessage(fill(strings.saintQuestion, { name: indexName }));
-    router.push("/chat");
-  }
+  const saint = first ? commemorationTitle(first, language, "short") : null;
+  const saintProps = saint ? { ...saint, children: briefName(String(saint.children), saint.lang === "en" ? "en" : language) } : null;
+  const fullName = first ? String(commemorationTitle(first, language).children) : "";
 
   return (
-    <>
-      <p className="today-banner-line">
-        <span className="today-banner-label">{strings.today}</span>
-        <Link
-          href={calendarHref(day.date)}
-          className="today-banner-date"
-          aria-label={`${day.label[language]}, ${day.coptic.label[language]}. ${strings.openDay}`}
-        >
-          {day.coptic.label[language]}
-        </Link>
-        {headline ? (
-          <>
-            <span className="today-banner-sep" aria-hidden="true">
-              ·
-            </span>
-            <span className="today-banner-observance">{headline}</span>
-          </>
-        ) : null}
-      </p>
-      {first ? (
-        <p className="today-banner-line today-banner-saint">
-          {indexName ? (
-            <Link href={saintHref(indexName)} className="today-banner-saint-link" {...commemorationTitle(first, language)} />
-          ) : (
-            <span {...commemorationTitle(first, language)} />
-          )}
-          {rest.length ? (
-            <Link href={calendarHref(day.date)} className="today-banner-more">
-              {moreCommemorations(rest.length, language)}
-            </Link>
-          ) : null}
-          {indexName ? (
-            <button type="button" className="today-banner-ask" onClick={askAboutSaint}>
-              {strings.askAboutSaint}
-            </button>
-          ) : null}
-        </p>
+    <p className="today-banner-line">
+      <span className="today-banner-label">{strings.today}</span>
+      <Separator />
+      <Link
+        href={calendarHref(day.date)}
+        className="today-banner-date"
+        aria-label={`${day.label[language]}, ${day.coptic.label[language]}. ${strings.openDay}`}
+      >
+        {day.coptic.label[language]}
+      </Link>
+      {headline ? (
+        <>
+          <Separator />
+          <span className="today-banner-observance">{headline}</span>
+        </>
       ) : null}
-    </>
+      {saintProps ? (
+        <>
+          <Separator />
+          <span className="today-banner-saint">
+            {indexName ? (
+              <Link href={saintHref(indexName)} className="today-banner-saint-link" title={fullName} {...saintProps} />
+            ) : (
+              <span title={fullName} {...saintProps} />
+            )}
+            {rest.length ? (
+              <>
+                {" "}
+                <Link href={calendarHref(day.date)} className="today-banner-more">
+                  {moreCommemorations(rest.length, language)}
+                </Link>
+              </>
+            ) : null}
+          </span>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+function Separator() {
+  return (
+    <span className="today-banner-sep" aria-hidden="true">
+      ·
+    </span>
   );
 }

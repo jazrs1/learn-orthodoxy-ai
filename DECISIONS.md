@@ -86,6 +86,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-015: Verification of the traditional design; the italic font is preloaded only where it is used](#ui-015-verification-of-the-traditional-design-the-italic-font-is-preloaded-only-where-it-is-used)
   - [UI-016: Italic reserved for quoted matter inside answers; the italic font file is dropped](#ui-016-italic-reserved-for-quoted-matter-inside-answers-the-italic-font-file-is-dropped)
   - [UI-017: Home page order: the hero first, the Today line below the example questions](#ui-017-home-page-order-the-hero-first-the-today-line-below-the-example-questions)
+  - [UI-018: The Today banner becomes one quiet line](#ui-018-the-today-banner-becomes-one-quiet-line)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1370,6 +1371,18 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - **Example questions** move out of the hero into their own section, at the same distance from the question box as before.
 - **Kept, for review:** the "How it works" and "Before you start" sections stay after Explore; the brief's order didn't mention them. So does the tagline under the wordmark (UI-022 lists it).
 - **Files changed:** `app/home-page.tsx`, `app/globals.css`.
+
+### UI-018: The Today banner becomes one quiet line
+- **Date / Part:** 2026-09-23, home page declutter, item 2.
+- **Context:** The banner was two or three lines between two rules: a red "TODAY" label, the date and the fast, then the full Synaxarium title ("The Departure of Pope Mettaos II (Matthew II), 90th Patriarch of the See of St. Mark"), "and 1 more", and an "Ask about this saint" button.
+- **Decision:**
+  - **One line** below the example questions: "Today · 13 Thout 1743 · Wednesday fast · Pope Mettaos II and 1 more". It is set in the small display size in soft ink, with no rules and no red label.
+  - **Links, as before:** the date opens the day in the calendar; the saint opens their entry when the saints index has one; "and 1 more" opens the day. The full title is the saint's tooltip.
+  - **Short names:** `lib/calendar/brief.ts` shortens the title to the name. It drops parentheses and everything after the first comma, and in Arabic the patriarchal numbering after "البطريرك" ("البابا متاؤس الثانى").
+  - **Removed:** the "Ask about this saint" button. The saint's name already opens the entry, which has its own "Learn more".
+  - The links keep a 32 px touch height.
+- **Tests:** `lib/calendar/brief.test.ts`, 4 tests, including today's date, 13 Thout 1743.
+- **Files changed:** `components/calendar/TodayBannerStrip.tsx`, `lib/calendar/brief.ts`, `lib/calendar/brief.test.ts`, `app/globals.css`.
 
 ## Code Cleanup
 
