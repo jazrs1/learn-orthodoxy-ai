@@ -92,10 +92,33 @@ def _pages(metadata: Dict[str, Any]) -> str:
     return start if not end or end == start else f"{start}–{end}"
 
 
+_TRAILING_TITLE = re.compile(r",\s*(St|Sts|Fr|Abba|Anba)\.?\s*$", re.IGNORECASE)
+_TITLE_PREFIX = {"st": "St.", "sts": "Sts.", "fr": "Fr.", "abba": "Abba", "anba": "Anba"}
+
+
+_ROMAN = re.compile(r"(?<![\w'’])(?=[ivxl]{2,5}(?![\w'’]))(?i:x{0,3}(?:ix|iv|v?i{1,3}|v)|l)(?![\w'’])", re.IGNORECASE)
+
+
+def tidy_saint_name(name: str) -> str:
+    """"Abba Bishoy, St" -> "Abba Bishoy"; "St. Abercius, Fr." -> "Fr. Abercius"; "Cyril Iii" ->
+    "Cyril III". Ten headings end in two titles ("BISHOY, ST. ABBA") and the ingest-time rule strips
+    only one, and title-casing lowers regnal numbers. Fixed here rather than at ingest, where the
+    names also make the chunk IDs."""
+    name = _ROMAN.sub(lambda m: m.group(0).upper(), name or "")
+    match = _TRAILING_TITLE.search(name)
+    if not match:
+        return name
+    base = name[: match.start()].strip()
+    title = _TITLE_PREFIX[match.group(1).lower()]
+    if base.startswith(("St. ", "Abba ", "Fr. ", "Anba ", "Sts. ")):
+        return base if title == "St." else f"{title} {base.split(' ', 1)[1]}"
+    return f"{title} {base}"
+
+
 def entry_title(metadata: Dict[str, Any]) -> str:
     """What the passage is: "896. What is prayer?", "St. Abanoub El-Nehissy", a web section."""
     if metadata.get("content_type") == "saints":
-        return str(metadata.get("saint_name") or metadata.get("unit_title") or "")
+        return tidy_saint_name(str(metadata.get("saint_name") or metadata.get("unit_title") or ""))
     return str(metadata.get("unit_title") or "")
 
 

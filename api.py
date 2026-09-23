@@ -11,11 +11,13 @@ from pathlib import Path
 from typing import List, Dict, Any, Deque, Set, Tuple
 
 from dotenv import load_dotenv
+import chromadb
+from chromadb.config import Settings as ChromaSettings
 from chromadb.utils import embedding_functions
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, model_serializer
 from openai import OpenAI, APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
 from request_log import RequestTrace, chunk_id_from_metadata, configure_request_logging, current_trace
 from chroma_store import (
@@ -34,8 +36,18 @@ from saint_index_overrides import (
 from arabic_saints_index import ARABIC_SAINTS_INDEX
 from task_analysis import TaskAnalysis, analyze_request
 from entity_check import check_subjects
+import corpus_runtime
+from chroma_store import get_chroma_path_v2
 
 load_dotenv()
+
+# CORPUS_VERSION selects the corpus (INGEST_PLAN.md §9.1): v1, as before, or v2 in its own
+# directory (CHROMA_DIR_V2, default <CHROMA_DIR>/v2) with its own collection names.
+CORPUS_VERSION = corpus_runtime.corpus_version()
+CORPUS_V2 = CORPUS_VERSION == "v2"
+if CORPUS_V2:
+    _v2_names = corpus_runtime.v2_collection_names()
+    COLLECTION_NAME, ARABIC_COLLECTION_NAME = _v2_names["en"], _v2_names["ar"]
 
 logger = logging.getLogger("orthodox.api")
 if not logging.getLogger().handlers:
@@ -736,6 +748,14 @@ def _saint_query_variants(saint_name: str) -> List[str]:
     return variants
 
 
+def _hit_pages(meta: Dict[str, Any] | None) -> Dict[str, Any]:
+    """v2 ids carry no page, so debug hits say where the chunk is (INGEST_PLAN.md §10.1); v1 hits
+    stay as they were (their pages are in the id)."""
+    if not corpus_runtime.is_v2_metadata(meta):
+        return {}
+    return {"pdf": meta.get("pdf") or meta.get("url"), "page_start": meta.get("page_start"), "page_end": meta.get("page_end")}
+
+
 def _retrieve_documents(
     queries: List[str],
     top_k: int,
@@ -801,7 +821,7 @@ def _retrieve_documents(
             trace.add_retrieval(
                 "vector",
                 query,
-                [{"id": chunk_id, "distance": dist} for chunk_id, dist in zip(ids, distances)],
+                [{"id": chunk_id, "distance": dist, **_hit_pages(meta)} for chunk_id, dist, meta in zip(ids, distances, metas)],
                 collection=collection_label,
                 where=metadata_filter,
                 where_document=where_document,
@@ -813,7 +833,7 @@ def _retrieve_documents(
             if not doc or not meta:
                 continue
             distance = float(distances[position]) if position < len(distances) and distances[position] is not None else float("inf")
-            key = (
+            key = ("id", meta["chunk_id"]) if meta.get("chunk_id") else (
                 meta.get("source_type", "pdf"),
                 meta.get("pdf"),
                 meta.get("page"),
@@ -1089,7 +1109,7 @@ def _retrieve_arabic_lexical_documents(
     hit_scores: List[int] = []
     seen: Set[Tuple[Any, ...]] = set()
     for score, _, doc, meta in scored:
-        key = (
+        key = ("id", meta["chunk_id"]) if meta.get("chunk_id") else (
             meta.get("title"),
             meta.get("pdf"),
             meta.get("page"),
@@ -1110,7 +1130,7 @@ def _retrieve_arabic_lexical_documents(
         trace.add_retrieval(
             "lexical",
             question,
-            [{"id": chunk_id_from_metadata(meta), "score": score} for meta, score in zip(metas, hit_scores)],
+            [{"id": chunk_id_from_metadata(meta), "score": score, **_hit_pages(meta)} for meta, score in zip(metas, hit_scores)],
             collection=ARABIC_COLLECTION_NAME,
             where=metadata_filter,
             terms=terms[:12],
@@ -1133,7 +1153,7 @@ def _merge_document_batches(
 
     for doc, meta in [*zip(primary_docs, primary_metas), *zip(secondary_docs, secondary_metas)]:
         metadata = meta or {}
-        key = (
+        key = ("id", metadata["chunk_id"]) if metadata.get("chunk_id") else (
             metadata.get("source_type"),
             metadata.get("title"),
             metadata.get("pdf"),
@@ -1223,6 +1243,10 @@ def _prepend_saint_record_context(
         return docs, metas
 
     record = _find_saint_record_by_name(entity)
+    if CORPUS_V2:
+        # The saint's own entry leads the context: its first chunks, found by `saint_id`.
+        entry_docs, entry_metas = _saint_entry_chunks(collection, str((record or {}).get("saint_id", "")))
+        return _prepend_entry_chunks(docs, metas, entry_docs, entry_metas)
     body = str((record or {}).get("body", "") or "").strip()
     metadata = (record or {}).get("metadata") or {}
     if not body or not metadata:
@@ -1301,6 +1325,8 @@ def _collection_count_safe(target_collection: Any | None) -> int:
 
 
 def _arabic_metadata_filter_for_mode(mode: str) -> Dict[str, Any] | None:
+    if CORPUS_V2:
+        return {"content_type": mode} if mode in {"catechism", "saints"} else None
     if mode == "catechism":
         return {"title": "full arabic catechism"}
     if mode == "saints":
@@ -1540,6 +1566,10 @@ class ChatRequest(BaseModel):
     # When true, the response carries a `debug` object with retrieval ids/distances
     # (used by eval/run_eval.py). Only reachable by callers holding the internal key.
     debug: bool = False
+    # Stop after retrieval: no answer is generated, and every retrieved passage comes back as a
+    # source with its label (INGEST_PLAN.md §10.3). For top-k and distance sweeps; costs only the
+    # analysis call and the query embeddings.
+    retrieve_only: bool = False
 
 
 class Source(BaseModel):
@@ -1551,6 +1581,25 @@ class Source(BaseModel):
     # Citation number used in the answer text ([n]) and a human-readable label.
     n: int | None = None
     label: str | None = None
+    # v2 only (INGEST_PLAN.md §11); v1 responses are unchanged. `page` stays the PDF page;
+    # `pages` is the printed range ("11–12"); `entry` the question or saint.
+    chunk_id: str | None = None
+    entry: str | None = None
+    work: str | None = None
+    page_end: int | None = None
+    pages: str | None = None
+
+    @model_serializer(mode="wrap")
+    def _omit_empty_v2_fields(self, handler):
+        # Keeps v1 responses byte-for-byte as before: the v2 keys appear only when set.
+        data = handler(self)
+        for key in V2_SOURCE_FIELDS:
+            if data.get(key) is None:
+                data.pop(key, None)
+        return data
+
+
+V2_SOURCE_FIELDS = ("chunk_id", "entry", "work", "page_end", "pages")
 
 
 class ChatResponse(BaseModel):
@@ -1600,6 +1649,8 @@ def _normalize_entity_label(value: str) -> str:
 
 
 def _source_from_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    if corpus_runtime.is_v2_metadata(metadata):
+        return corpus_runtime.source_fields(metadata)
     source_type = str((metadata or {}).get("source_type", "pdf"))
     if source_type == "website":
         return {
@@ -1618,6 +1669,10 @@ def _source_from_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _source_key(source: Dict[str, Any]) -> tuple[Any, ...]:
+    # v2: one source per cited passage. v1 keyed by page, so two saints cited from the same
+    # page collapsed into one entry and the second [n] rendered unlinked (UI-006 limit 1).
+    if source.get("chunk_id"):
+        return ("chunk", source["chunk_id"])
     if source.get("source_type") == "website":
         return ("website", source.get("url"), source.get("title"))
     return ("pdf", source.get("pdf"), source.get("page"))
@@ -1639,7 +1694,10 @@ def _source_context_label(metadata: Dict[str, Any]) -> str:
 
 def _friendly_source_label(metadata: Dict[str, Any]) -> str:
     """Citation label shown to the model and returned to the client, e.g.
-    'Catechism of the Coptic Orthodox Church, Volume 2, p. 31'."""
+    'Catechism of the Coptic Orthodox Church, Volume 2, p. 31'; for v2, with the question or
+    saint and printed pages: 'Catechism …, Vol. 2 — Q896 “What is prayer?”, pp. 11–12'."""
+    if corpus_runtime.is_v2_metadata(metadata):
+        return corpus_runtime.source_label(metadata)
     source_type = str((metadata or {}).get("source_type", "pdf"))
     if source_type == "website":
         return _source_context_label(metadata)
@@ -1673,6 +1731,14 @@ def _build_numbered_context(
         # the eval harness can check each claim against the passage it cites (EVAL-011).
         trace.debug_passages = passages
     return "\n\n".join(blocks), numbered
+
+
+def _retrieve_only_payload(docs: List[str], metas: List[Dict[str, Any]], normalize=None) -> Dict[str, Any]:
+    _, numbered = _build_numbered_context(docs, metas, normalize=normalize)
+    trace = current_trace()
+    if trace is not None:
+        trace.set(outcome="retrieve_only", refusal=False, sources_returned=len(numbered))
+    return {"answer": "", "sources": numbered, "entities": [], "options": [], "can_learn_more": False}
 
 
 def _parse_citations(answer: str) -> List[int]:
@@ -1970,6 +2036,9 @@ def _normalize_saint_search_query(query: str) -> str:
 
 
 def _filter_sourced_saint_options(options: List[str]) -> List[str]:
+    if CORPUS_V2:  # v2 names differ from these hand-written ones; resolve each through the aliases
+        resolved = [str((_find_saint_record_by_name(name) or {}).get("name", "")) for name in options]
+        return list(dict.fromkeys(name for name in resolved if name))
     saint_index = _build_saint_name_index()
     sourced_keys = {name.lower() for name in saint_index}
     return [name for name in options if name.lower() in sourced_keys]
@@ -2146,11 +2215,12 @@ def _arabic_source_files_found() -> List[str]:
 
 
 def _collect_chroma_debug_info() -> Dict[str, Any]:
-    resolved_dir = get_resolved_chroma_dir()
+    resolved_dir = Path(get_chroma_path_v2()) if CORPUS_V2 else get_resolved_chroma_dir()
     resolved_path = str(resolved_dir)
     path_exists = resolved_dir.exists()
 
     return {
+        "corpus_version": CORPUS_VERSION,
         "chroma_dir_env": get_chroma_dir_env(),
         "resolved_chroma_dir": resolved_path,
         "directory_exists": path_exists,
@@ -2172,29 +2242,37 @@ def startup():
         return
 
     logger.info("Starting up API...")
-    log_chroma_configuration("api.startup")
+    if not CORPUS_V2:  # it prints the v1 names; the v2 line below says what is served
+        log_chroma_configuration("api.startup")
 
     embed_fn = embedding_functions.OpenAIEmbeddingFunction(
         api_key=api_key,
         model_name="text-embedding-3-small",
     )
 
-    chroma_client = get_chroma_client()
-    collection = get_chroma_collection(
-        client=chroma_client,
-        embedding_function=embed_fn,
-        metadata={"source": COLLECTION_NAME},
-    )
-    arabic_collection = get_chroma_collection(
-        client=chroma_client,
-        embedding_function=embed_fn,
-        collection_name=ARABIC_COLLECTION_NAME,
-        metadata={"source": ARABIC_COLLECTION_NAME, "language": "ar"},
-    )
+    if CORPUS_V2:
+        # Opened, never created: start_backend verified the v2 store against its manifest.
+        chroma_client = chromadb.PersistentClient(path=get_chroma_path_v2(), settings=ChromaSettings(anonymized_telemetry=False))
+        collection = chroma_client.get_collection(COLLECTION_NAME, embedding_function=embed_fn)
+        arabic_collection = chroma_client.get_collection(ARABIC_COLLECTION_NAME, embedding_function=embed_fn)
+    else:
+        chroma_client = get_chroma_client()
+        collection = get_chroma_collection(
+            client=chroma_client,
+            embedding_function=embed_fn,
+            metadata={"source": COLLECTION_NAME},
+        )
+        arabic_collection = get_chroma_collection(
+            client=chroma_client,
+            embedding_function=embed_fn,
+            collection_name=ARABIC_COLLECTION_NAME,
+            metadata={"source": ARABIC_COLLECTION_NAME, "language": "ar"},
+        )
     logger.info(
-        "chroma_dir=%s resolved=%s english_collection=%s (%d docs) arabic_collection=%s (%d docs)",
+        "corpus=%s chroma_dir=%s resolved=%s english_collection=%s (%d docs) arabic_collection=%s (%d docs)",
+        CORPUS_VERSION,
         get_chroma_dir_env(),
-        get_resolved_chroma_dir(),
+        get_chroma_path_v2() if CORPUS_V2 else get_resolved_chroma_dir(),
         COLLECTION_NAME,
         int(collection.count()),
         ARABIC_COLLECTION_NAME,
@@ -2219,6 +2297,7 @@ def startup():
 def health():
     return {
         "status": "ok",
+        "corpus_version": CORPUS_VERSION,
         "collection_ready": collection is not None,
         "arabic_collection_ready": arabic_collection is not None,
         "openai_ready": oai_client is not None,
@@ -2359,6 +2438,116 @@ def _extract_record_body(lines: List[str], start_index: int) -> str:
     return re.sub(r"\s+", " ", " ".join(body_lines)).strip()
 
 
+SAINT_ENTRY_MAX_CHUNKS = _env_int("SAINT_ENTRY_MAX_CHUNKS", 3, minimum=1)
+
+
+def _first_chunks(target_collection: Any, chunk_ids: List[str]) -> Dict[str, Tuple[str, Dict[str, Any]]]:
+    """{chunk id: (document, metadata)} fetched by id, in pages (no embedding call)."""
+    found: Dict[str, Tuple[str, Dict[str, Any]]] = {}
+    for start in range(0, len(chunk_ids), 500):
+        batch = target_collection.get(ids=chunk_ids[start:start + 500], include=["documents", "metadatas"])
+        for chunk_id, doc, meta in zip(batch.get("ids") or [], batch.get("documents") or [], batch.get("metadatas") or []):
+            found[chunk_id] = (doc or "", meta or {})
+    return found
+
+
+def _disambiguate_names(records: List[Dict[str, Any]], reserved: Dict[str, str]) -> None:
+    """Namesakes ("St. Agathon" x5) get the entry's descriptor and page, so a menu choice names
+    exactly one entry: "St. Agathon (The Martyr, vol. 1, p. 105)". Names are compared the way the
+    lookup compares them ("St. Athanasius, the Saint" is "athanasius"), and a name reserved by the
+    curation file ("St. Athanasius" is the Apostolic) is left to the saint it names."""
+    by_key: Dict[str, List[Dict[str, Any]]] = {}
+    for record in records:
+        by_key.setdefault(_normalize_saint_match_key(str(record["name"])), []).append(record)
+    for key, group in by_key.items():
+        owner = reserved.get(key)
+        clashing = [r for r in group if r["id"] != owner] if owner else (group if len(group) > 1 else [])
+        for record in clashing:
+            meta = record.get("metadata") or {}
+            where = [part for part in (
+                str(record.get("descriptor") or ""),
+                f"vol. {meta['volume']}" if meta.get("volume") else "",
+                f"p. {meta.get('printed_page_start') or meta.get('page_start')}" if meta.get("page_start") else "",
+            ) if part]
+            record["name"] = f"{record['name']} ({', '.join(where)})" if where else record["name"]
+    seen: Dict[str, int] = {}
+    for record in records:  # two entries with the same heading on the same page
+        seen[record["name"]] = seen.get(record["name"], 0) + 1
+        if seen[record["name"]] > 1:
+            record["name"] = f"{record['name'][:-1]}, entry {seen[record['name']]})" if record["name"].endswith(")")                 else f"{record['name']} (entry {seen[record['name']]})"
+
+
+def _curated_saint_names() -> Dict[str, str]:
+    """{lookup key of a curated name: the record it names}, from data/corpus/saints_curation.json."""
+    try:
+        seeds = json.loads(Path("data/corpus/saints_curation.json").read_text(encoding="utf-8"))["seeds"]
+    except Exception:
+        logger.warning("saints_curation.json unreadable; curated names are not reserved", exc_info=True)
+        return {}
+    return {_normalize_saint_match_key(seed["name_en"]): seed["target"] for seed in seeds
+            if seed.get("target") and not str(seed["target"]).startswith("ar:")}
+
+
+def _build_v2_saint_records() -> List[Dict[str, Any]]:
+    """English records from the ingest-time index (INGEST_PLAN.md §7), in the shape the lookup,
+    menu and list code already uses. The body is the entry's first chunk, not a heading guess."""
+    saints = [s for s in corpus_runtime.load_saints_index() if s.get("name_en") and not s.get("see")]
+    entries = {s["id"]: next((e for e in s.get("entries", []) if e["lang"] == "en"), None) for s in saints}
+    chunks = _first_chunks(collection, [corpus_runtime.first_chunk_id(e) for e in entries.values() if e])
+    reserved = _curated_saint_names()
+    records = []
+    for saint in saints:
+        entry = entries[saint["id"]]
+        if entry is None or corpus_runtime.first_chunk_id(entry) not in chunks:
+            continue
+        document, metadata = chunks[corpus_runtime.first_chunk_id(entry)]
+        body = corpus_runtime.strip_header(document)
+        names = [saint["name_en"], *saint.get("aliases_en", [])]
+        # The hand-written alias table (SAINT_ALIAS_RECORDS) and a curated name ("St. Athanasius")
+        # belong to the curated saint only, not to every namesake that normalises the same way.
+        names = [n for n in names if reserved.get(_normalize_saint_match_key(n), saint["id"]) == saint["id"]]
+        if reserved.get(_normalize_saint_match_key(saint["name_en"]), saint["id"]) == saint["id"]:
+            names += _saint_aliases_for_name(saint["name_en"])
+        aliases = list(dict.fromkeys(names))
+        records.append({
+            "id": saint["id"],
+            "saint_id": saint["id"],
+            "name": corpus_runtime.tidy_saint_name(saint["name_en"]),
+            "aliases": aliases,
+            "raw_heading": saint.get("heading_en", ""),
+            "descriptor": saint.get("descriptor", ""),
+            "is_real_record": True,
+            "body": body,
+            "body_preview": body[:300],
+            "metadata": metadata,
+            "source": _source_from_metadata(metadata),
+        })
+    _disambiguate_names(records, reserved)
+    for record in records:
+        if record["name"] not in record["aliases"]:
+            record["aliases"].insert(0, record["name"])
+    return sorted(records, key=lambda record: str(record["name"]).lower())
+
+
+def _saint_entry_chunks(target_collection: Any, saint_id: str) -> Tuple[List[str], List[Dict[str, Any]]]:
+    """The first chunks of a saint's own entry, in order (v2: every chunk carries `saint_id`)."""
+    if target_collection is None or not saint_id:
+        return [], []
+    batch = target_collection.get(where={"saint_id": saint_id}, include=["documents", "metadatas"])
+    rows = sorted(zip(batch.get("documents") or [], batch.get("metadatas") or []),
+                  key=lambda row: (str(row[1].get("doc_id")), int(row[1].get("chunk_index") or 0)))
+    rows = rows[:SAINT_ENTRY_MAX_CHUNKS]
+    return [doc for doc, _ in rows], [meta for _, meta in rows]
+
+
+def _prepend_entry_chunks(
+    docs: List[str], metas: List[Dict[str, Any]], entry_docs: List[str], entry_metas: List[Dict[str, Any]]
+) -> Tuple[List[str], List[Dict[str, Any]]]:
+    ids = {m.get("chunk_id") for m in entry_metas}
+    rest = [(d, m) for d, m in zip(docs, metas) if (m or {}).get("chunk_id") not in ids]
+    return [*entry_docs, *[d for d, _ in rest]], [*entry_metas, *[m for _, m in rest]]
+
+
 def _build_saint_record_index() -> List[Dict[str, Any]]:
     global saint_record_index, saint_name_index, collection
 
@@ -2366,6 +2555,10 @@ def _build_saint_record_index() -> List[Dict[str, Any]]:
         return saint_record_index
     if collection is None:
         return []
+    if CORPUS_V2:
+        saint_record_index = _build_v2_saint_records()
+        saint_name_index = [str(record["name"]) for record in saint_record_index]
+        return saint_record_index
 
     records_by_id: Dict[str, Dict[str, Any]] = {}
     offset = 0
@@ -2552,10 +2745,82 @@ def _generated_arabic_saint_names() -> List[str]:
     return names
 
 
+arabic_v2_saint_records: List[Dict[str, Any]] = []
+
+
+def _build_v2_arabic_saint_records() -> List[Dict[str, Any]]:
+    """Arabic records from the ingest-time index: one per dictionary entry, named by the
+    dictionary's heading, matched on that heading, the index's Arabic name and every alias
+    (the v1 seed and generated names included)."""
+    global arabic_v2_saint_records
+    if arabic_v2_saint_records or arabic_collection is None:
+        return arabic_v2_saint_records
+    saints = [s for s in corpus_runtime.load_saints_index() if not s.get("see")]
+    entries = {s["id"]: next((e for e in s.get("entries", []) if e["lang"] == "ar"), None) for s in saints}
+    chunks = _first_chunks(arabic_collection, [corpus_runtime.first_chunk_id(e) for e in entries.values() if e])
+    records = []
+    for saint in saints:
+        entry = entries[saint["id"]]
+        if entry is None or corpus_runtime.first_chunk_id(entry) not in chunks:
+            continue
+        _, metadata = chunks[corpus_runtime.first_chunk_id(entry)]
+        names = [corpus_runtime.arabic_display_name(saint), saint.get("name_ar", ""), *saint.get("aliases_ar", [])]
+        records.append({
+            "saint_id": saint["id"],
+            "name": _normalize_arabic_display_text(corpus_runtime.arabic_display_name(saint)),
+            "keys": {key for key in (_normalize_arabic_alias_key(n) for n in names if n) if key},
+            "metadata": metadata,
+        })
+    by_name: Dict[str, List[Dict[str, Any]]] = {}
+    for record in records:
+        by_name.setdefault(record["name"], []).append(record)
+    for group in by_name.values():  # namesakes: the dictionary page tells them apart
+        if len(group) > 1:
+            for record in group:
+                meta = record["metadata"]
+                record["name"] = f"{record['name']} (ص {meta.get('printed_page_start') or meta.get('page_start')})"
+    seen: Dict[str, int] = {}
+    for record in records:  # the dictionary repeats some entries in its last pages, with the same page number
+        seen[record["name"]] = seen.get(record["name"], 0) + 1
+        if seen[record["name"]] > 1:
+            record["name"] = f"{record['name'][:-1]}، مدخل {seen[record['name']]})"
+    arabic_v2_saint_records = sorted(records, key=lambda record: record["name"])
+    return arabic_v2_saint_records
+
+
+def _find_v2_arabic_saint_matches(query: str, limit: int = 12) -> List[Dict[str, Any]]:
+    query_keys = _arabic_saint_query_keys(query)
+    scored: List[Tuple[int, int, int, str, Dict[str, Any]]] = []
+    for record in _build_v2_arabic_saint_records():
+        best: Tuple[int, int] | None = None
+        for query_key in query_keys:
+            query_tokens = set(query_key.split())
+            for name_key in record["keys"]:
+                if query_key == name_key:
+                    score = 0
+                elif name_key.startswith(query_key):
+                    score = 1
+                elif query_key in name_key:
+                    score = 2
+                elif query_tokens and query_tokens.issubset(set(name_key.split())):
+                    score = 3
+                else:
+                    continue
+                candidate = (score, _arabic_saint_descriptor_rank(query_key, name_key))
+                best = candidate if best is None else min(best, candidate)
+        if best is not None:
+            scored.append((best[0], best[1], len(record["name"]), record["name"], record))
+    scored.sort(key=lambda item: item[:4])
+    return [record for *_, record in scored][: max(1, min(limit, 400))]
+
+
 def _build_arabic_saint_name_index() -> List[str]:
     global arabic_saint_name_index, arabic_collection
 
     if arabic_saint_name_index:
+        return arabic_saint_name_index
+    if CORPUS_V2:
+        arabic_saint_name_index = [record["name"] for record in _build_v2_arabic_saint_records()]
         return arabic_saint_name_index
 
     names: List[str] = _seed_arabic_saint_names()
@@ -2673,6 +2938,8 @@ def _find_arabic_saint_index_matches(query: str, limit: int = 12) -> List[str]:
     query_keys = _arabic_saint_query_keys(query)
     if not query_keys:
         return []
+    if CORPUS_V2:
+        return [record["name"] for record in _find_v2_arabic_saint_matches(query, limit=limit)]
 
     manual_matches = _manual_arabic_saint_index_matches(query)
     matches: List[Tuple[int, int, int, str]] = []
@@ -2830,7 +3097,7 @@ def _arabic_saints_chroma_chunk_count() -> int:
     while True:
         batch = arabic_collection.get(
             include=["metadatas"],
-            where={"title": "full saints arabic"},
+            where={"content_type": "saints"} if CORPUS_V2 else {"title": "full saints arabic"},
             limit=page_size,
             offset=offset,
         )
@@ -3056,10 +3323,16 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             top_k = requested_top_k
             retrieval_top_k = min(16, max(top_k, 10))
             arabic_selected_saint = ""
+            arabic_saint_id = ""
             if mode == "saints":
                 try:
-                    saint_matches = _find_arabic_saint_index_matches(original_question, limit=1)
-                    arabic_selected_saint = saint_matches[0] if saint_matches else ""
+                    if CORPUS_V2:
+                        v2_matches = _find_v2_arabic_saint_matches(original_question, limit=1)
+                        arabic_selected_saint = v2_matches[0]["name"] if v2_matches else ""
+                        arabic_saint_id = v2_matches[0]["saint_id"] if v2_matches else ""
+                    else:
+                        saint_matches = _find_arabic_saint_index_matches(original_question, limit=1)
+                        arabic_selected_saint = saint_matches[0] if saint_matches else ""
                 except Exception:
                     logger.warning("Arabic saint index match failed", exc_info=True)
                 if arabic_selected_saint:
@@ -3094,6 +3367,9 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                     metas,
                     retrieval_top_k,
                 )
+            if arabic_saint_id:  # v2: the selected saint's own dictionary entry leads the context
+                entry_docs, entry_metas = _saint_entry_chunks(arabic_collection, arabic_saint_id)
+                docs, metas = _prepend_entry_chunks(docs, metas, entry_docs, entry_metas)
             trace.lap("retrieval")
             trace.set(
                 retrieved_count=len(docs),
@@ -3103,6 +3379,8 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 lexical_hits=len(lexical_docs),
             )
             trace.set_kept(metas, 0)
+            if req.retrieve_only:
+                return _retrieve_only_payload(docs, metas, normalize=_normalize_arabic_context_text)
 
             # No keyword filter any more (RET-002). Refuse only when nothing came back, or
             # when the lexical search found nothing and the vector distance check is on and fails.
@@ -3347,7 +3625,8 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                         metas.append(meta)
                         distances.append(dist)
                 trace.set(tradition_terms=tradition_terms)
-        if mode == "saints":
+        # v2 puts a confidently identified saint's own entry first in every mode; v1 only in saints mode.
+        if mode == "saints" or (CORPUS_V2 and entity):
             docs, metas = _prepend_saint_record_context(docs, metas, entity)
         trace.lap("retrieval")
         trace.set(
@@ -3360,6 +3639,8 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         # model is trusted to cite only what it uses. "No relevant source" is decided by the
         # best vector distance across all queries (RET-003).
         trace.set_kept(metas, 0)
+        if req.retrieve_only:
+            return _retrieve_only_payload(docs, metas)
 
         # A saint list is selected by exact name match, not by similarity, so the distance
         # check does not apply to it.

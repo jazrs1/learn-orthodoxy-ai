@@ -8,8 +8,12 @@ export type SourceRef = {
   n?: number;
   /** Backend label, e.g. "Catechism of the Coptic Orthodox Church, Volume 2, p. 31". */
   label?: string;
-  /** Saint entry name; not sent by the backend yet (see DECISIONS.md UI-006). */
+  /** The question or saint the passage belongs to (v2 corpus, ING-005). */
   entry?: string;
+  /** Printed page or range as a reader finds it in the book, e.g. "33–35" (v2 corpus). */
+  pages?: string;
+  /** v2 passage id: one source per cited passage. */
+  chunk_id?: string;
 };
 
 export type ChatMessage = {

@@ -72,6 +72,11 @@ Notes:
 - `CHROMA_DIR` defaults to `chroma_db` locally. On Railway, prefer a persistent volume and set `CHROMA_DIR` to the volume-backed path.
 - `AUTO_INGEST_ON_START=1` lets the backend populate an empty Chroma collection from the included PDFs and configured websites before starting the API.
 - `MIN_CHROMA_DOCUMENTS=1000` makes startup treat tiny or partial Chroma collections as underpopulated and re-run ingestion.
+- `CORPUS_VERSION` (`v1` default, or `v2`) selects the corpus (Phase 5, `INGEST_PLAN.md` §9).
+  - v2 is read from `CHROMA_DIR_V2`, which defaults to `<CHROMA_DIR>/v2` (`/app/chroma_db/v2`, inside the volume). Its collections are `orthodox_pdfs_v2` and `orthodox_arabic_pdfs_v2`.
+  - With v2, startup never ingests. It exits non-zero unless the v2 directory exists, sits on the volume, and matches `data/corpus/v2/manifest.json`, so a bad switch never replaces the running deployment.
+  - v2 sources name the question or saint and the printed pages. Each cited passage is its own source.
+  - Rollback: set `CORPUS_VERSION=v1`. v1's files are never written by v2.
 
 ## Local Development
 

@@ -49,6 +49,8 @@ def chunk_id_from_metadata(metadata: Dict[str, Any] | None) -> str:
     retrieval functions' return values.
     """
     meta = metadata or {}
+    if meta.get("chunk_id"):  # v2 stores its id in the metadata (INGEST_PLAN.md §6)
+        return str(meta["chunk_id"])
     source_type = str(meta.get("source_type", "pdf") or "pdf")
     chunk_index = meta.get("chunk_index", 0)
     if source_type == "website":

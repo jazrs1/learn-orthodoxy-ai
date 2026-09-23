@@ -99,6 +99,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [ING-002: One ingestion package; extraction and cleaning verified corpus-wide; v1 rebuild proven identical; old scripts deleted](#ing-002-one-ingestion-package-extraction-and-cleaning-verified-corpus-wide-v1-rebuild-proven-identical-old-scripts-deleted)
   - [ING-003: Per-source segmenters, chunker, ingest-time saints index and the v2 dry run](#ing-003-per-source-segmenters-chunker-ingest-time-saints-index-and-the-v2-dry-run)
   - [ING-004: v2 embedded locally into chroma_db/v2; v1 byte-identical before and after](#ing-004-v2-embedded-locally-into-chroma_dbv2-v1-byte-identical-before-and-after)
+  - [ING-005: Retrieval on v2 behind CORPUS_VERSION; one source per cited passage; ingest-time saints index; v1 output proven identical](#ing-005-retrieval-on-v2-behind-corpus_version-one-source-per-cited-passage-ingest-time-saints-index-v1-output-proven-identical)
 - [Open questions](#open-questions)
 
 ---
@@ -1755,6 +1756,57 @@ In summary:
 - **Manifest:** `collections` now records the name, chunk count and ID hash per language. That is what the startup check compares (§9.1). The verification lives in `corpus_runtime.py`, which the API can import without PyMuPDF.
 - **Tests:** 107 (store verification: matching, missing collection, differing IDs; v2 directory missing or empty, outside the volume mount).
 - **Revisit if:** the corpus is rebuilt (re-run the dry run, review, then `build --corpus v2 --resume`), or Chroma is upgraded (the pin keeps local and Railway formats equal).
+
+
+### ING-005: Retrieval on v2 behind CORPUS_VERSION; one source per cited passage; ingest-time saints index; v1 output proven identical
+- **Date / Part:** 2026-09-22, Phase 5 Step 4. **OpenAI: pre-approved retrieve-only checks.** 25 analysis calls with gpt-4o-mini ($0.0045) plus query embeddings (well under $0.01). No answer was generated.
+- **Selection (§9.1):**
+  - `CORPUS_VERSION=v1|v2`, default v1, read by `corpus_runtime.py`, which never loads PyMuPDF.
+  - v2 opens `CHROMA_DIR_V2` (default `<CHROMA_DIR>/v2`) and the collections named in the manifest, with `get_collection`, never create.
+  - `/health` and `/debug/chroma` report `corpus_version`.
+- **Startup (`start_backend.py`):** with v2 it never ingests. It exits non-zero, which keeps the previous Railway deployment serving, when:
+  - the v2 directory is missing or empty;
+  - on Railway, the directory is outside `RAILWAY_VOLUME_MOUNT_PATH` or on another filesystem (`st_dev`);
+  - either collection's count or chunk-ID hash differs from the manifest.
+
+  Tried locally: it passes on the real store and refuses a missing directory.
+- **Citations (§11):**
+  - **Labels** name the question or saint with printed pages (D5): `Catechism of the Coptic Orthodox Church, Vol. 2 — Q896 “What is prayer?”, p. 21`, `Encyclopedia of the Saints…, Vol. 1 — St. Abanoub El-Nehissy, pp. 33–35`, `كاتيكيزم الكنيسة القبطية الأرثوذكسية — س 896 «ما هي الصلاة؟»، ص 19`.
+  - **One source per cited passage:** the source key is the chunk ID, so two saints cited from the same page are two linked sources. This resolves UI-006 limit 1 and open question 22.
+  - `Source` gains `chunk_id`, `entry`, `work`, `page_end` and `pages`. `page` stays the PDF page, for the eval and old clients.
+  - A serializer omits the new keys when they are empty, so **v1 responses are byte-for-byte unchanged**.
+  - `request_log.chunk_id_from_metadata` reads the stored `chunk_id`.
+  - Retrieval dedupe keys use the chunk ID for v2.
+  - Debug hits carry `pdf`, `page_start` and `page_end` for v2 (§10.1).
+- **Frontend:** `lib/sources.ts` shows `entry` (question or saint) and the printed `pages` ("pp. 33–35", "ص 33–35") when present, and falls back to `page` for v1 and saved messages. Website sources name their section. 4 new tests; 119 pass; tsc and eslint are clean.
+- **Saints index at runtime** (`data/corpus/v2/saints_index.json`; the v1 heading parser is not used under v2):
+  - English records keep the v1 record shape, so lookup, menus, lists, suggestions and `/saints` work unchanged. They carry the index's aliases, and each body is the entry's first chunk.
+  - Arabic records are the dictionary's headings, matched on the heading, the index's Arabic name and every alias (the v1 seed and generated names).
+  - A confidently identified saint's **own entry leads the context**: up to `SAINT_ENTRY_MAX_CHUNKS=3` chunks fetched by `saint_id`. In v2 this applies in every mode (v1: saints mode only), and in Arabic saints mode.
+  - Mode filters use `content_type` in v2.
+  - **Namesakes:** a menu option must name one entry, so names that normalise alike get their descriptor and page ("St. Agathon (The Martyr, vol. 1, p. 105)", with ", entry 2" when heading and page are also equal).
+    - A curated name belongs to its saint only: "St. Athanasius" resolves straight to the Apostolic; it used to be a three-way menu.
+    - The Arabic dictionary repeats some entries on its last pages, where printed page numbers restart, so those get "، مدخل 2".
+  - Curated Arabic seed names are now exclusive as well: "جرجس" and "مارجرجس" lead to George the Cappadocian, not Gohary. The rule is in `saints_index.py` for the next build and was applied to the committed JSON (3 aliases removed).
+  - Display names are tidied at runtime ("Abba Bishoy, St" → "Abba Bishoy", "Cyril Iii" → "Cyril III"). Doing it at ingest would change chunk IDs and need a re-embed; fold it in with the next corpus build.
+- **Retrieve-only mode:** `ChatRequest.retrieve_only` returns right after retrieval with every passage as a labelled source, for the top-k and threshold sweeps of §10.2.
+- **v1 unchanged, proven:**
+  - The `/chat` flow ran for 9 questions (EN/AR; catechism, saints, chat; a menu and a saint lookup) under the pre-Step-4 `api.py` from git and under the new code, both on v1.
+  - Task analysis was off and a stub replaced the chat model, so only query embeddings were called.
+  - **Identical** prompts sent to the model, response payloads, saint name indexes (1,363 EN, 1,937 AR) and suggestions.
+- **v2 check (retrieve-only, 25 tune questions, same analyses reused for v1):**
+  - Expected-page recall is **0.85 on v2 vs 0.64 on v1** across the 23 answerable questions. It is range-aware for v2, which favours multi-page chunks; §10.2's budget-matched recall is Step 5's job.
+  - Arabic is 7/7 fully or half covered on v2 vs 4/7 on v1, with best distances ~1.0–1.2 vs ~1.4–1.7.
+  - English context is ~30 % smaller.
+  - The two out-of-corpus questions stay far above the answerable ones (1.43–1.73 vs ≤ 0.92).
+  - These are small-sample sanity checks, not the Step 5 comparison.
+- **Known limits carried to Step 5:**
+  - The Arabic lexical scan ranks tied single-term matches by collection order (v1 by page). Kept unchanged so Step 5 compares corpora, not code.
+  - The eval harness still parses v1 IDs (`CHUNK_ID_RE`); it must read the new debug page ranges.
+  - The distance threshold (1.25) and top-k are v1's until the Step 5 sweeps.
+- **Tests:** backend **112 passed** (5 new API tests: labels, v1 sources and serialization unchanged, v2 fields, two saints on one page stay two sources, names tidied and namesakes told apart); frontend 119.
+- **Files:** `corpus_runtime.py`, `api.py`, `start_backend.py`, `request_log.py`, `chroma_store.py` (earlier), `ingestion/saints_index.py`, `data/corpus/v2/saints_index.json`, `orthodox-site/lib/sources.ts`, `lib/chat-types.ts`, `lib/sources.test.ts`, `tests/test_corpus_v2_api.py`, `README.md`, `.env.example`.
+- **Revisit if:** Step 5 shows saint lookups sending the wrong entry first, or v2 needs a different top-k or threshold.
 
 ---
 

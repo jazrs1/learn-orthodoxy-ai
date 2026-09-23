@@ -455,9 +455,12 @@ def _add_v1_aliases(records: List[SaintRecord]) -> Dict[str, object]:
             for alias in [item["name"], *item.get("aliases", [])]:
                 record.add_alias(alias, "ar")
             record.add_alias(item["name_en"], "en")
-            for other in records:  # a reviewed name means one saint ("St. George" is the Great Martyr)
-                if other is not record and item["name_en"] in other.aliases_en:
-                    other.aliases_en.remove(item["name_en"])
+            exclusive_ar = {item["name"], *item.get("aliases", [])}
+            for other in records:  # a reviewed name means one saint ("St. George", "جرجس": the Great Martyr)
+                if other is not record:
+                    if item["name_en"] in other.aliases_en:
+                        other.aliases_en.remove(item["name_en"])
+                    other.aliases_ar = [alias for alias in other.aliases_ar if alias not in exclusive_ar]
             mapped_ar += 1
             continue
         candidates = _covering(records, "ar", "full saints arabic.pdf", item["page_start"]) if item.get("page_start") else []

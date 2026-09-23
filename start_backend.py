@@ -143,6 +143,31 @@ def ensure_chroma_populated() -> None:
             )
 
 
+def verify_v2_or_exit() -> None:
+    """CORPUS_VERSION=v2 (INGEST_PLAN.md §9.1, §9.3): never ingest at boot; refuse to start unless
+    the v2 store exists, lives on the Railway volume, and is exactly the reviewed corpus. Exiting
+    non-zero keeps the previous deployment serving."""
+    import chromadb
+    from chromadb.config import Settings
+
+    import corpus_runtime
+    from chroma_store import get_chroma_path_v2
+
+    v2_dir = get_chroma_path_v2()
+    print(f"[start_backend] corpus_version: v2 chroma_dir_v2: {v2_dir}")
+    problems = corpus_runtime.v2_directory_problems(v2_dir, os.getenv("RAILWAY_VOLUME_MOUNT_PATH"))
+    if not problems:
+        client = chromadb.PersistentClient(path=v2_dir, settings=Settings(anonymized_telemetry=False))
+        problems = corpus_runtime.verify_store(client)
+    if problems:
+        for problem in problems:
+            print(f"[start_backend] v2 check failed: {problem}")
+        print("[start_backend] refusing to start with CORPUS_VERSION=v2; set CORPUS_VERSION=v1 to roll back.")
+        raise SystemExit(1)
+    manifest = corpus_runtime.load_manifest()
+    print(f"[start_backend] v2 store matches the manifest ({manifest['chunks_by_language']})")
+
+
 def start_server() -> None:
     port = os.getenv("PORT", "8001")
     args = [
@@ -161,7 +186,12 @@ def start_server() -> None:
 
 def main() -> None:
     load_dotenv()
-    ensure_chroma_populated()
+    import corpus_runtime
+
+    if corpus_runtime.is_v2():
+        verify_v2_or_exit()
+    else:
+        ensure_chroma_populated()
     start_server()
 
 

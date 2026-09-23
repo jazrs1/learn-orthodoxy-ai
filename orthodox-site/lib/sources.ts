@@ -22,6 +22,8 @@ export type DisplaySource = {
   title: string;
   volume?: number;
   page?: number;
+  /** Printed page or range ("33–35"); shown instead of `page`, the PDF page, when present. */
+  pages?: string;
   /** Saint entry or article name, when the backend provides one. */
   entry?: string;
   url?: string;
@@ -58,6 +60,7 @@ export function toDisplaySources(sources: SourceRef[] | undefined): DisplaySourc
         kind: "website",
         title: source.title?.trim() || hostOf(url) || "Website",
         url: /^https?:\/\//i.test(url) ? url : undefined,
+        entry: source.entry?.trim() || undefined,
       });
       return;
     }
@@ -70,6 +73,7 @@ export function toDisplaySources(sources: SourceRef[] | undefined): DisplaySourc
       title: book?.title || titleFromLabel(source.label) || file.replace(/\.pdf$/i, ""),
       volume: book?.volume,
       page: typeof source.page === "number" && source.page > 0 ? source.page : undefined,
+      pages: source.pages?.trim() || undefined,
       entry: source.entry?.trim() || source.title?.trim() || undefined,
     });
   });
@@ -80,7 +84,12 @@ export function toDisplaySources(sources: SourceRef[] | undefined): DisplaySourc
 export function sourceDetails(source: DisplaySource, language: Language) {
   const parts: string[] = [];
   if (source.volume) parts.push(language === "ar" ? `المجلد ${source.volume}` : `Vol. ${source.volume}`);
-  if (source.page) parts.push(language === "ar" ? `ص ${source.page}` : `p. ${source.page}`);
+  if (source.pages) {
+    const marker = /[–-]/.test(source.pages) ? "pp." : "p.";
+    parts.push(language === "ar" ? `ص ${source.pages}` : `${marker} ${source.pages}`);
+  } else if (source.page) {
+    parts.push(language === "ar" ? `ص ${source.page}` : `p. ${source.page}`);
+  }
   if (source.kind === "website" && source.url) parts.push(hostOf(source.url));
   return parts.join(" · ");
 }
