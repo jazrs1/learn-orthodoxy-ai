@@ -66,6 +66,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-017: The home page's example questions keep their answer, replayed as a stream](#ret-017-the-home-pages-example-questions-keep-their-answer-replayed-as-a-stream)
   - [RET-018: Each hop of a question is timed: the site's routes and the backend write lines that join up](#ret-018-each-hop-of-a-question-is-timed-the-sites-routes-and-the-backend-write-lines-that-join-up)
   - [RET-019: Verification of the speed changes: quality holds; Arabic answers start ~0.7 s sooner, English ~0.1 s, repeated example questions at once](#ret-019-verification-of-the-speed-changes-quality-holds-arabic-answers-start-07-s-sooner-english-01-s-repeated-example-questions-at-once)
+  - [RET-020: The path from click to first word, hop by hop, and what creating the conversation in the stream route would save (report)](#ret-020-the-path-from-click-to-first-word-hop-by-hop-and-what-creating-the-conversation-in-the-stream-route-would-save-report)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -1092,6 +1093,50 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - **Keep-alive** (checked because the first request after startup spent 1.1 s on one embedding): with the default 5 s idle timeout and with 120 s, embeddings took 231 vs 214 ms after 12 s idle and 240 vs 199 ms after 1 s, within noise. Reconnecting is cheap; the 1.1 s was a first-request cost after startup. **Not changed.**
 - **OpenAI spend:** eval runs $0.6023 and $0.5971, retrieve-only check $0.0006 (ledger `eval/results/spend-speed.json`: $1.2000), browser timing runs $0.0634, smoke set $0.0252, keep-alive check under $0.0001. **Total $1.29** against the ~$1.25 approved; the $0.04 over is the hop timing the owner asked for in the same message. No quota or key errors.
 - **Files changed:** `eval/speed_compare.py` (new); `eval/results/20260923-181810.json`, `-182812.json`, `-182920.json`, `spend-speed.json`; `.gitignore` (`ui-audit/hops/`).
+
+### RET-020: The path from click to first word, hop by hop, and what creating the conversation in the stream route would save (report)
+- **Date / Part:** 2026-09-23, speed branch, before RET-012's change 6. Nothing changed; the owner decides.
+- **The question:** Step 4 of the streaming work (UI-027) measured ~4.9 s to the first text in the browser, while RET-012 estimated ~2.2 s to the backend's first token. Is ~2.5 s spent outside the backend?
+- **No.** In that same Step 4 request, the backend's own first token came at 4.36 s: its analysis call took 2.7 s (usually 1.0 s), retrieval 0.8 s and the model's first token 0.9 s. About 0.5 s was outside the backend. The ~2.2 s was a median over many eval questions; that request was a slow one.
+- **Every hop, measured locally** (`ui-audit/tools/hops.mjs`, RET-018; site, backend and a local PGlite database on one machine, so the clocks agree; 6 questions with the speed changes off and 8 on, ms):
+
+| hop | new chat | follow-up |
+|---|---|---|
+| page: click → first request | 25–38 | 28–40 |
+| conversation create (browser round trip) | 13–15 | — |
+| … of which the database insert | 2–4 | — |
+| page: conversation created → stream request | 0–1 | — |
+| browser → site route starts | 1–2 | 1–2 |
+| history read (database) | 2–3 | 2–3 |
+| site → backend request arrives | 0–2 | 0–1 |
+| **backend: analysis + retrieval (until headers)** | 828–3,063 | 875–1,953 |
+| **backend: headers → model's first token** | 390–1,359 | 407–718 |
+| backend headers → site receives them | −7–13 (clock rounding) | |
+| backend first token → site relays it | 0–9 | |
+| site relays → browser receives first chunk | 0–5 | |
+| first chunk → first word painted | 2–9 | |
+| save (database, after the answer) | 5–11 | |
+
+  - Everything outside the backend adds **about 50–60 ms** locally. The rest is the analysis call, retrieval and the model's first token: OpenAI latency and our own stages.
+- **Production** (the Railway CLI's login has expired, so there are no backend or Vercel logs yet). These probes cost nothing and write nothing, run from the owner's machine, each opening a new TLS connection (70–290 ms of each figure, which a browser reuses):
+  - **Vercel function + one Neon read** (`GET /api/conversations`, a fresh visitor): 0.16–0.36 s warm. **2.06 s after 7 minutes idle** and 0.78 s after 5.5 minutes: Neon's compute suspends after about 5 minutes without queries and takes up to ~2 s to wake. The site's Neon database is in AWS us-east-1.
+  - **Vercel function + Railway backend lookup, no database or OpenAI** (`GET /api/saints?limit=1`): 0.22–0.60 s, with or without idle time (one 0.89 s). No Vercel cold start showed in these samples.
+  - The home page and the chat page both fetch the past-chats list on load, which wakes Neon then. A reader who takes a couple of seconds before asking never waits for it; one who clicks an example question the moment the page opens after a quiet spell can.
+- **What change 6 would save** (the stream route creates the conversation when it saves the answer, instead of the page creating it first):
+  - It removes, before a new chat's first question reaches the backend, the page's `POST /api/conversations` (a Vercel function run and a Neon insert) and the empty history read. Warm: about 0.1–0.2 s in production (a function round trip; locally 15 ms). With Neon asleep: up to ~2 s, because the database would first be touched after the answer is on screen.
+  - Follow-ups are unaffected; they read their history, usually from a warm database.
+  - Design points if approved:
+    - The saved conversation reaches the page in the final event, as it already does for a stream.
+    - The page must not wait for a conversation ID before asking, and it takes the URL and sidebar entry from the final event.
+    - The final event currently waits for the save. So that the sources don't wait for a waking database, the answer and sources should go out first and the saved IDs just after.
+    - Stop and failures behave as today: nothing is saved, and now no empty conversation is left behind either.
+  - **Recommendation: do it.** Small on a warm path, large on a cold one, and it removes a second request from every new chat. Risk low–medium: the page's send flow changes, and the browser checks would cover it.
+- **Anything else in the path:**
+  - **Neon's 5-minute suspend** is the largest cost outside the backend on a quiet site, partly hidden by the page-load fetch. A longer suspend timeout or none (paid Neon plans) would remove it. A keep-warm ping every few minutes would keep the compute running around the clock and use up the free plan's compute hours. Change 6 takes it off the question's path either way. *Owner's call on the Neon plan.*
+  - **Railway's region** isn't in the repo (it's set in the dashboard). If it isn't US East, every Vercel → Railway request crosses the continent: ~60–70 ms, paid once per question (the stream then flows). Worth checking in the Railway dashboard.
+  - **OpenAI keep-alive:** checked (RET-019); no gain.
+  - **Nothing else outside the backend costs more than a few tens of ms locally.** The remaining time to first text is the analysis call (~1.0 s) and the model's first token (~0.4–1.0 s).
+- **To finish the production picture** (after `railway login`): run `hops.mjs` against the production site (3 new chats and 3 follow-ups, about $0.03, writing 3 conversations to the production database under a fresh anonymous visitor), then join it with `railway logs` by request ID. The per-hop split inside Vercel (history, save, relay) needs RET-018's route timing deployed; until then, the browser's timings and the backend's log give the Vercel → Railway and database hops by difference.
 
 ## Prompting & Generation
 
