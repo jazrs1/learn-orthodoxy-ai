@@ -497,11 +497,29 @@ textarea:focus-visible {
   padding: var(--space-7) var(--space-5) var(--space-8);
 }
 
-/* Only narrower desktops need room for the history column; wide screens have it already. */
-@media (min-width: 821px) and (max-width: 1320px) {
-  .home-layout-with-sidebar {
-    padding-inline-start: calc(var(--sidebar-width) + var(--space-5));
-  }
+/* "Past chats" under the question box opens the history drawer (UI-020). */
+.past-chats-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  margin-top: var(--space-1);
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  color: var(--color-ink-soft);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.past-chats-button:hover {
+  color: var(--color-primary);
+  text-decoration-color: currentColor;
 }
 
 .home-content {
@@ -601,6 +619,10 @@ textarea:focus-visible {
 /* On the home page they follow the hero as their own section (UI-017); the page gap spaces them. */
 .home-content > .example-questions {
   margin-top: 0;
+}
+
+.home-content > .example-questions .section-label {
+  text-align: center;
 }
 
 .toc-list {
@@ -1092,6 +1114,66 @@ textarea:focus-visible {
 
 .chat-sidebar-overlay {
   display: none;
+}
+
+/* The home page's past chats: a drawer at every width (UI-020). After the base sidebar and
+   overlay rules, which it overrides on desktop. */
+@media (min-width: 821px) {
+  .chat-sidebar.chat-sidebar-drawer {
+    top: 0;
+    width: 320px;
+    z-index: 140;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+    visibility: hidden;
+  }
+
+  [dir="rtl"] .chat-sidebar.chat-sidebar-drawer {
+    transform: translateX(100%);
+  }
+
+  .chat-sidebar.chat-sidebar-drawer.chat-sidebar-mobile-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .chat-sidebar.chat-sidebar-drawer .chat-sidebar-details {
+    box-shadow: var(--shadow-drawer);
+  }
+
+  .chat-sidebar.chat-sidebar-drawer .chat-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--header-height);
+    padding-block: 0;
+    padding-inline: var(--space-4) var(--space-2);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .chat-sidebar.chat-sidebar-drawer .chat-sidebar-close-btn {
+    display: inline-flex;
+    width: var(--tap-target);
+    height: var(--tap-target);
+  }
+
+  .chat-sidebar-overlay.chat-sidebar-overlay-drawer {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 130;
+    padding: 0;
+    border: none;
+    background: transparent;
+    pointer-events: none;
+    transition: background-color 0.25s ease;
+  }
+
+  .chat-sidebar-overlay.chat-sidebar-overlay-drawer.chat-sidebar-overlay-visible {
+    background: var(--color-overlay);
+    pointer-events: auto;
+  }
 }
 
 /* ---------- Chat: messages ---------- */
@@ -2736,7 +2818,8 @@ a.calendar-month-link:hover {
   }
 
   .navbar {
-    padding: 0 var(--space-1);
+    /* 12 px from the window edge: the menu button sat at 4 px (UI-020). */
+    padding: 0 var(--space-3);
     gap: var(--space-1);
   }
 

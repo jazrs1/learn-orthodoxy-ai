@@ -88,6 +88,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-017: Home page order: the hero first, the Today line below the example questions](#ui-017-home-page-order-the-hero-first-the-today-line-below-the-example-questions)
   - [UI-018: The Today banner becomes one quiet line](#ui-018-the-today-banner-becomes-one-quiet-line)
   - [UI-019: Navigation cut to Chat, Catechism, Saints and Calendar; Credits and Contact in a footer; one language toggle](#ui-019-navigation-cut-to-chat-catechism-saints-and-calendar-credits-and-contact-in-a-footer-one-language-toggle)
+  - [UI-020: Past chats open as a drawer on the home page; repeated titles listed once; phone header padding](#ui-020-past-chats-open-as-a-drawer-on-the-home-page-repeated-titles-listed-once-phone-header-padding)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1394,6 +1395,22 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - **Chat page:** no footer, because it is a full-height app. Its sidebar still lists Credits and Contact, on desktop and in the phone drawer. The drawer keeps them because on a phone it is the navigation. Its "Saints" label matches the header.
   - **Language toggle:** a single button named in the other language, "العربية" on English pages and "English" on Arabic pages. It keeps `lang` for screen readers, and on English pages the system face, so Arabic fonts aren't downloaded (UI-011). The styles for the active state and the second button are removed.
 - **Files changed:** `components/Navbar.tsx`, `components/SiteFooter.tsx` (new), `components/ChatSidebar.tsx`, `lib/i18n.ts`, `app/home-page.tsx`, `app/calendar/calendar-page.tsx`, `app/credits/credits-page.tsx`, `app/contact/contact-page.tsx`, `app/globals.css`.
+
+### UI-020: Past chats open as a drawer on the home page; repeated titles listed once; phone header padding
+- **Date / Part:** 2026-09-23, home page declutter, item 4.
+- **Context:**
+  - On desktop, once there was history, the home page showed a full-height past-chats column beside the hero. It was a second column of text on a page meant to lead to one question box.
+  - Asking the same question twice made the list repeat itself: "What is prayer?" three times.
+  - On phones the menu button sat 4 px from the window edge.
+- **Decision:**
+  - **Home page: no history column.** A small "Past chats" button under the AI note opens the history as a drawer. It only appears once there is history. The phone menu button opens the same drawer.
+  - **The drawer at every width.** `ChatSidebar drawer` gives it a title, a close button and a dimmed backdrop on desktop. The section links stay phone-only, since the desktop header has them.
+  - **Drawer focus.** Focus moves to the close button when the drawer opens, and Escape closes it. This applies only to this drawer, and only on opening, so a later update (a deleted chat) doesn't pull focus back.
+  - **The chat page keeps its sidebar.**
+  - **Repeated titles, everywhere the list appears** (`lib/chat-sessions.ts`): one line per title, compared without case, extra spaces or a final "?"/"؟". The newest chat of each title is kept, and the open chat is always shown, in its title's place. Older chats of the same title are only hidden from the list; nothing is deleted. Untitled chats are not merged.
+  - **Phone header:** the navbar's side padding goes from 4 px to 12 px. On desktop the logo is 24 px from the edge and the sidebar's content 16 px; the chat sidebar column itself meets the edge by design.
+- **Tests:** `lib/chat-sessions.test.ts`, 4 tests. The declutter check found axe 0 in the drawer states, and the drawer lists 3 chats for 6 with repeated titles.
+- **Files changed:** `app/home-page.tsx`, `components/ChatSidebar.tsx`, `lib/chat-sessions.ts`, `lib/chat-sessions.test.ts`, `app/globals.css`.
 
 ## Code Cleanup
 

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import type { MouseEvent } from "react";
+import { useEffect, useRef, type MouseEvent } from "react";
 import { BRAND } from "../lib/brand";
+import { uniqueByTitle } from "../lib/chat-sessions";
 import { ConversationSummary } from "../lib/chat-types";
 import { IconClose, IconPlus, IconTrash } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
@@ -26,6 +27,8 @@ type ChatSidebarProps = {
   onClose?: () => void;
   /** Hide the column on desktop (landing page with no history); the mobile drawer still works. */
   desktopHidden?: boolean;
+  /** A drawer at every width, never a column (the home page's past chats, UI-020). */
+  drawer?: boolean;
 };
 
 export default function ChatSidebar({
@@ -42,9 +45,27 @@ export default function ChatSidebar({
   isMobileOpen = false,
   onClose,
   desktopHidden = false,
+  drawer = false,
 }: ChatSidebarProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // The home page's drawer (UI-020): focus moves into it when it opens, and Escape closes it.
+  // Only on opening, so a later update (a deleted chat) doesn't pull focus back.
+  useEffect(() => {
+    if (!drawer || !isMobileOpen) return;
+    closeButton.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCloseRef.current?.();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [drawer, isMobileOpen]);
   const modes: Array<{ id: ChatMode; label: string }> = [
     { id: "chat", label: t("chat") },
     { id: "catechism", label: t("catechism") },
@@ -65,7 +86,7 @@ export default function ChatSidebar({
     <aside
       className={`chat-sidebar ${isMobileOpen ? "chat-sidebar-mobile-open" : ""} ${
         desktopHidden ? "chat-sidebar-desktop-hidden" : ""
-      }`}
+      } ${drawer ? "chat-sidebar-drawer" : ""}`}
       aria-label={t("chats")}
     >
       <div className="chat-sidebar-details">
@@ -82,6 +103,7 @@ export default function ChatSidebar({
           <div className="chat-sidebar-title">{t("chats")}</div>
           {onClose ? (
             <button
+              ref={closeButton}
               type="button"
               className="icon-button chat-sidebar-close-btn"
               onClick={onClose}
@@ -167,7 +189,7 @@ export default function ChatSidebar({
               <div className="chat-sidebar-empty">{error}</div>
             ) : sessions.length ? (
               <ul className="chat-sidebar-items">
-                {sessions.map((session) => {
+                {uniqueByTitle(sessions, activeSessionId).map((session) => {
                   const title = session.title || t("newChat");
                   const active = session.id === activeSessionId;
                   // Open and delete are sibling buttons: a button inside a button is invalid

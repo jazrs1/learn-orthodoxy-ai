@@ -33,8 +33,8 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
   const router = useRouter();
   const { language, t } = useLanguage();
   const content = HOME_CONTENT[language];
-  // First-time visitors get the full-width landing page; the chat history column only
-  // appears on desktop once there is history to show (UI-009).
+  // Past chats open as a drawer from the "Past chats" button (and the phone menu); the home page
+  // has no history column (UI-020). The button only appears once there is history.
   const hasHistory = !loading && conversations.length > 0;
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
   return (
     <>
       <main className="home-page">
-        <div className={`home-layout ${hasHistory ? "home-layout-with-sidebar" : ""}`}>
+        <div className="home-layout">
           <div className="home-content">
             <section className="hero" aria-labelledby="home-title">
               {/* The wordmark is the page title. Arabic pages add the Arabic name as text; the
@@ -138,6 +138,16 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
               <div className="hero-chat-wrap">
                 <ChatShell onSubmit={startChatFromHome} />
                 <p className="hero-note">{content.aiNote}</p>
+                {hasHistory ? (
+                  <button
+                    type="button"
+                    className="past-chats-button"
+                    aria-expanded={mobileSidebarOpen}
+                    onClick={() => setMobileSidebarOpen(true)}
+                  >
+                    {t("pastChats")}
+                  </button>
+                ) : null}
               </div>
             </section>
 
@@ -208,7 +218,7 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
 
         <button
           type="button"
-          className={`chat-sidebar-overlay ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
+          className={`chat-sidebar-overlay chat-sidebar-overlay-drawer ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
           aria-hidden="true"
           tabIndex={-1}
@@ -223,7 +233,7 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
           error={error}
           isMobileOpen={mobileSidebarOpen}
           onClose={() => setMobileSidebarOpen(false)}
-          desktopHidden={!hasHistory}
+          drawer
         />
       </main>
       <SiteFooter />
