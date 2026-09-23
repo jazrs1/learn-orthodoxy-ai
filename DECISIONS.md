@@ -58,6 +58,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-009: Distance threshold 1.25, as an off-topic guard only](#ret-009-distance-threshold-125-as-an-off-topic-guard-only)
   - [RET-010: Namesake menus select by saint ID; a menu only for genuinely shared names](#ret-010-namesake-menus-select-by-saint-id-a-menu-only-for-genuinely-shared-names)
   - [RET-011: Default saints for bare names; hand-written alias audit](#ret-011-default-saints-for-bare-names-hand-written-alias-audit)
+  - [RET-012: Where a request's time goes, and what could make it faster (report, not changed)](#ret-012-where-a-requests-time-goes-and-what-could-make-it-faster-report-not-changed)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -879,6 +880,65 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - the priest decides St. Paul, or the Kyrillos question;
   - a name's second saint is added to a dictionary;
   - the index is rebuilt (the seed fixes then land in `saints_index.json` too, and the Arabic ownership pass becomes a no-op for them).
+
+### RET-012: Where a request's time goes, and what could make it faster (report, not changed)
+- **Date / Part:** 2026-09-23, speed branch Part B1–B2. Nothing is changed until the owner approves.
+- **Data** (`eval/latency_baseline.py`, no OpenAI calls):
+  - **Recorded:** `stages_ms` from the two v2 coverage runs of 22–23 September (`20260923-000307`, `-002553`: v2, gpt-4.1-mini, top-k 16, threshold 1.25, prompt v3, entity check on, the local machine). Also today's local request logs with `ttft_ms` (streamed answers, which record their first token).
+  - **Measured locally on the v2 store:** vector search (queried with stored chunk vectors, so no embedding call), the Arabic lexical scan, context assembly and the named-subject check. The embedding function raises if called.
+  - **Production logs are not in this report.** The Railway CLI's login has expired and needs the owner's browser. Railway also runs on a different CPU, so the local stages (the lexical scan above all) may be slower there.
+- **B1: time per stage** (median / p90, ms; "retrieval" is the query embedding call, the vector search and, for Arabic, the lexical scan):
+
+| | English, answered (n=153) | English, refused (n=67) | Arabic, answered (n=40) | Arabic, refused (n=6) |
+|---|---|---|---|---|
+| analysis (gpt-4o-mini call) | 1,031 / 1,297 | 1,031 / 1,277 | 1,016 / 1,286 | 984 / 1,188 |
+| retrieval | 250 / 344 | 188 / 256 | 790 / 1,081 | 852 / 891 |
+| generation (whole answer) | 3,438 / 5,547 | 1,203 / 1,635 (model refusals) | 3,000 / 4,044 | 1,265 / 1,501 |
+| total | 4,780 / 7,088 | 2,300 / 2,938 | 4,805 / 6,016 | 2,970 / 3,190 |
+
+  - **Inside retrieval** (local, v2):
+    - Vector search: 3.3 ms (English, k 16), 3.0 ms (Arabic), 5–6 ms for three queries at once; k 12 is 2.4 ms.
+    - The query embedding is therefore almost all of the English retrieval stage (about 0.25 s).
+    - **Arabic lexical scan: 739 ms median, 798 p90** over the 23 Arabic questions. 302 ms is fetching all 4,484 Arabic chunks from Chroma in pages of 500; the rest is normalising and scoring every chunk in Python (AUDIT C13).
+  - **Context assembly:** under 0.1 ms. **Named-subject check:** 1.7 ms. **Post-processing:** under 1 ms.
+  - **Time to first token** (today's streamed answers, local):
+    - English median 2.9 s (n=4), Arabic 4.0 s (n=2).
+    - The model's own first token, after analysis and retrieval, took 0.9–1.0 s.
+    - Implied first token for the eval runs (analysis + retrieval + about 0.95 s): about 2.2 s for English and 2.8 s for Arabic.
+  - **The site** (`/api/chat/stream` and the page, scripted backend): about 0.25 s from the backend's first token to the first word on screen. Creating a new chat's conversation first took 8 ms against the local database; against Neon in production it is unmeasured.
+- **What depends on the analysis call** (`TaskAnalysis`), and whether rules could stand in:
+  - **`retrieval_query`** (follow-ups, format words removed): rules can keep this for first turns without format words. In tune, 68 of the 80 "simple" questions came back unchanged.
+  - **`output_format`** (format note, `max_tokens`): a keyword rule decides "simple" only when no format word appears.
+  - **`broad` and `sub_queries`:** list and table words exclude a question from "simple". None of the 80 was broad.
+  - **`saint_name_filter`:** already rule-based (`name_filter_from_question`).
+  - **`named_subjects`**, the GEN-006 entity check: **no rule stands in.** It was filled for 52 of the 80 simple tune questions, and it is how 16 of the 23 simple out-of-corpus questions get declined ("What is papal infallibility?").
+  - **`in_scope`**, the Arabic scope gate: **no rule stands in either.** It was false for 6 of the simple questions.
+- **B2: proposals, ranked by expected saving against risk:**
+
+| # | Change | Saves (median, per request) | Applies to | Risk | Recommend |
+|---|---|---|---|---|---|
+| 1 | **Arabic lexical index kept in memory** (C13): the Arabic chunks normalised once (at startup or on the first Arabic request) and scanned in memory, with the same terms, scoring and order | ~0.5–0.7 s on first token and total | every Arabic question and Arabic saint lookup | low: results identical, which can be checked for every Arabic question without OpenAI; ~10–20 MB memory; ~1 s once at build | **yes** |
+| 2 | **Speculative retrieval:** embed and search the user's own question while the analysis call runs; keep the result when the rewritten query is the same after normalising case and punctuation, otherwise search again as today | ~0.25 s (the embedding) | ~70% of requests (68 of 96 on tune; 68 of 80 simple ones) | low: reused only on an exact match, so results are identical; one extra embedding otherwise (~$0.000002) | **yes** |
+| 3 | **Analysis cache** for identical first-turn questions (no history), keyed by question, language, mode and the analysis model and prompt; temperature 0 already | ~1.0 s | repeats: the home page's example questions, the 36 catechism prompt cards, common questions | very low | **yes** |
+| 4 | **Comparison questions:** one embedding for the main search and the per-tradition searches (today each tradition re-embeds the same query) | 0.25–0.5 s | comparison questions (~5%) | low: identical results | **yes** |
+| 5 | **Answer cache for the four home-page example questions:** first-turn only, replayed as a quick stream; invalidated when the corpus, prompt, model, top-k or threshold changes | the whole wait (3–5 s → ~0.1 s) | those four questions in each language | low for correctness; everyone gets the same answer | owner's call |
+| 6 | **Create the conversation in the stream route**, not by a separate request before it | one round trip on a chat's first question (8 ms locally; production unmeasured, likely 0.1–0.3 s) | first question of each chat | low–medium: the page's flow changes | after production numbers |
+| 7 | **top-k 12 instead of 16** (ING-007's logged option) | est. under 0.1 s of model first token; ~20% cheaper generation | all answers | medium: tune recall was the same (0.91) but answer coverage wasn't measured | only with the B3 eval, as its own change |
+| 8 | **A faster analysis model** (e.g. gpt-4.1-nano) | est. ~0.3 s | all | medium–high: `named_subjects` and `in_scope` quality feed the entity check | not now |
+| 9 | **Speculative generation:** start the answer while analysis runs, hold its text until analysis confirms the prompt was right, otherwise cancel and restart | ~0.9 s on first token | ~60–70% | medium, and complex; ~+30% generation input cost from cancelled starts | not now |
+| 10 | **Skip analysis for simple first-turn questions** | ~1.0 s | 80 of 96 tune questions | **high:** the entity check and the Arabic scope gate lose their inputs (above); near-miss refusals would fall back toward GEN-006's "before" (77% of out-of-corpus refused instead of 96%) | **no** |
+| 11 | **English and Arabic retrieval, and sub-queries, in parallel** | ~0 | — | — | nothing to gain: a request searches one collection, and sub-queries already share one embedding call and one 5 ms Chroma query |
+
+  - **Expected with 1–4:**
+    - English first token about 2.2 → 1.95 s (−0.25 s when the rewrite is unchanged); repeated first-turn questions a further −1.0 s.
+    - Arabic about 2.8 → 2.0 s (−0.8 s).
+    - Totals fall by the same amounts, since generation is unchanged.
+  - **What remains:** the analysis call (~1.0 s) and the model's first token (~1.0 s) are both OpenAI latency. Only 8–10 go after them, at a quality or cost risk.
+- **B3 plan and cost** (after approval):
+  - Coverage and refusal on tune, English and Arabic reported separately, with the approved changes. Compare against the two existing tune baselines of the same production config (22–23 September), plus the smoke set.
+  - Estimate: one tune run is about $0.59 (from the recorded runs: $0.82 for 134 questions, $0.29 of it the gpt-4.1 judge). Two "after" runs, to judge noise the same way the baselines were judged, come to about $1.20. The smoke set is about $0.04. First token before/after on five streamed questions costs about $0.02. **Total about $1.25.**
+  - If the owner prefers fresh baselines on the same day as the "after" runs, add about $1.20.
+- **Files changed:** `eval/latency_baseline.py` (new).
 
 ## Prompting & Generation
 
