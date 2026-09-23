@@ -65,6 +65,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-016: A first-turn question asked before reuses its analysis](#ret-016-a-first-turn-question-asked-before-reuses-its-analysis)
   - [RET-017: The home page's example questions keep their answer, replayed as a stream](#ret-017-the-home-pages-example-questions-keep-their-answer-replayed-as-a-stream)
   - [RET-018: Each hop of a question is timed: the site's routes and the backend write lines that join up](#ret-018-each-hop-of-a-question-is-timed-the-sites-routes-and-the-backend-write-lines-that-join-up)
+  - [RET-019: Verification of the speed changes: quality holds; Arabic answers start ~0.7 s sooner, English ~0.1 s, repeated example questions at once](#ret-019-verification-of-the-speed-changes-quality-holds-arabic-answers-start-07-s-sooner-english-01-s-repeated-example-questions-at-once)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -1052,6 +1053,45 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - **`ui-audit/tools/hops.mjs`** wraps the page's `fetch` to record when each request starts, when its headers arrive and when the first streamed chunk arrives, and records when the first word is painted. It joins that with both log lines to print every hop, for a new chat and a follow-up. Across machines (production) only the durations are comparable, because the clocks differ.
 - **Checks:** against the scripted backend, the hops add up to the measured click-to-first-word time (723 ms). Hops between different clocks can read a few ms negative from rounding. Backend 217 and frontend 169 tests passed; typecheck and lint clean.
 - **Files changed:** `orthodox-site/lib/route-timing.ts` (new), `orthodox-site/lib/stream-proxy.ts`, `orthodox-site/lib/chat-proxy.ts`, `orthodox-site/app/api/chat/route.ts`, `orthodox-site/app/api/chat/stream/route.ts`, `orthodox-site/app/api/saint-detail/stream/route.ts`, `orthodox-site/app/api/conversations/route.ts`, `request_log.py`, `api.py`, `ui-audit/tools/hops.mjs` (new).
+
+### RET-019: Verification of the speed changes: quality holds; Arabic answers start ~0.7 s sooner, English ~0.1 s, repeated example questions at once
+- **Date / Part:** 2026-09-23, speed branch Part B3 (checks RET-013 to RET-017)
+- **Setup:**
+  - The local backend in the production configuration: v2, gpt-4.1-mini, top-k 16, threshold 1.25, prompt v3, entity check on, with all five changes on.
+  - Coverage and refusal on tune, twice (`20260923-181810`, `-182812`), restarting the backend before each so neither run starts with the other's cached analyses. Compared with the two existing tune baselines (`20260923-000307`, `-002553`) as the owner asked, using `eval/speed_compare.py` (new).
+  - The smoke set. Time to first text before/after measured in the browser (`ui-audit/tools/hops.mjs`, RET-018) with the five changes switched off and then on.
+- **Quality (tune; mean of two runs, per-run values in brackets):**
+
+| | English before | English after | Arabic before | Arabic after |
+|---|---|---|---|---|
+| coverage (all answerable) | 0.745 (0.744, 0.746) | 0.757 (0.750, 0.763) | 0.734 (0.735, 0.733) | 0.713 (0.745, 0.682) |
+| answerable refused | 0% | 0% | 0% | 0% |
+| out-of-corpus refused | 93.8% (95.8, 91.7) | 95.8% (95.8, 95.8) | 100% | 100% |
+| near misses refused | 90.0% (93.3, 86.7) | 93.3% (93.3, 93.3) | 100% | 100% |
+| off-target answers | 7.7% | 4.8% | 0% | 0% |
+
+  - **Entity check:** in both runs it declined 12 questions and noted a missing subject for 3.
+  - **Refusal changes:** the only question whose refusal changed is OOC-31. It was refused in one baseline and answered in the other; now it was refused in both runs.
+  - **Arabic coverage** dipped in run 2. Of the 17 answerable Arabic tune questions, 14 retrieved identical passages in all four runs. On those, coverage was 0.733 and 0.715 before and 0.737 and 0.694 after: the same range, from generation and the judge (AR-16 scored 0.7, 0.3, 0.4 and 0.4 on identical passages).
+  - **The other 3 (AR-02, AR-03, AR-13) retrieve differently, but not because of these changes.** With all five switched off (`ARABIC_LEXICAL_CACHE=0 EMBEDDING_PREFETCH=0 ANALYSIS_CACHE=0 ANSWER_CACHE=0`, retrieve-only, `20260923-182920`), today's code retrieves exactly what the "after" runs did. The baselines predate RET-010, RET-011 and ING-007, which put an Arabic saint's own entry first in the context.
+  - **Found along the way:** AR-03 scored 0.94 and 1.0 in the baselines and 0.81 and 0.56 since those commits. Worth a look under RET-010/011, separately from this branch.
+  - **Smoke set:** 8/8 passed with the five changes on.
+- **Speed** (answered tune questions; median / p90 ms):
+  - **Time before generation starts** (analysis + retrieval; the model's first token follows about 0.4–1.0 s later):
+    - English: 1,297 / 1,625 → **1,211 / 1,469**.
+    - Arabic: 1,890 / 2,140 → **1,211 / 1,477**.
+  - **Retrieval stage:**
+    - English 235 → 203 ms overall. It was 16 ms for the 58% of questions whose rewrite matched and the prefetch was reused; the other 42% were rewritten, as the tune set has many format requests and follow-ups.
+    - Arabic 899 → 78 ms.
+  - **Analysis:** unchanged (1,031 → 1,016 ms). No tune question repeated, so the analysis cache never hit.
+  - **Generation and total** can't be compared across these days: OpenAI took 10.3–12.2 ms per output token today, against 7.8–8.7 ms on 22 September, with similar answer lengths. The total rose for that reason alone; none of the changes touch generation.
+  - **Browser, first word after click** (6 questions each: 2 English and 1 Arabic new chats with a follow-up each; same session, changes off then on):
+    - Median 2.68 s → 1.43 s. But the model's own first token also fell (~720 → ~420 ms) and the analysis varied, both OpenAI latency.
+    - The part the changes explain is retrieval: 170–1,140 ms (English) and 940 ms (Arabic) → 0–140 ms and 80–250 ms.
+  - **A home-page example question asked a second time** (RET-017): first word at **49 ms** instead of 1.9 s, faded in as usual, with the whole answer by 3.5 s.
+  - **Keep-alive** (checked because the first request after startup spent 1.1 s on one embedding): with the default 5 s idle timeout and with 120 s, embeddings took 231 vs 214 ms after 12 s idle and 240 vs 199 ms after 1 s, within noise. Reconnecting is cheap; the 1.1 s was a first-request cost after startup. **Not changed.**
+- **OpenAI spend:** eval runs $0.6023 and $0.5971, retrieve-only check $0.0006 (ledger `eval/results/spend-speed.json`: $1.2000), browser timing runs $0.0634, smoke set $0.0252, keep-alive check under $0.0001. **Total $1.29** against the ~$1.25 approved; the $0.04 over is the hop timing the owner asked for in the same message. No quota or key errors.
+- **Files changed:** `eval/speed_compare.py` (new); `eval/results/20260923-181810.json`, `-182812.json`, `-182920.json`, `spend-speed.json`; `.gitignore` (`ui-audit/hops/`).
 
 ## Prompting & Generation
 
