@@ -31,6 +31,14 @@ def get_chroma_path() -> str:
     return str(path)
 
 
+def get_chroma_path_v2() -> str:
+    """The v2 corpus lives inside the v1 directory, i.e. inside the Railway volume mount
+    (/app/chroma_db/v2), so it survives redeploys (INGEST_PLAN.md §9.1). Not created here: a
+    missing v2 directory must stay visible to the startup check."""
+    raw = os.getenv("CHROMA_DIR_V2") or str(Path(get_chroma_dir_env()) / "v2")
+    return str(Path(raw).resolve())
+
+
 def get_resolved_chroma_dir() -> Path:
     return Path(get_chroma_path())
 

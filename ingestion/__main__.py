@@ -143,9 +143,20 @@ def _cmd_build(args: argparse.Namespace) -> int:
         build_v1_legacy(args.lang, resume=args.resume, dry_run=args.dry_run)
         return 0
     if not args.dry_run:
-        # Embedding v2 is Step 3: it runs only after the cost estimate is approved (INGEST_PLAN.md §12, §14).
-        print("Only `build --corpus v2 --dry-run` is available: embedding v2 waits for the Step 3 cost approval.", file=sys.stderr)
-        return 2
+        # Embeds the reviewed dry-run output (~6.6 M tokens, ~$0.13 with text-embedding-3-small).
+        from chroma_store import get_chroma_path_v2
+
+        from .corpus import embed_build
+
+        chroma_dir = Path(args.chroma_dir or get_chroma_path_v2())
+        print(f"v2 build into {chroma_dir}", flush=True)
+        result = embed_build(chroma_dir, resume=args.resume)
+        print(f"written: {result['written']}")
+        if result["problems"]:
+            print("v2 store does not match the manifest: " + "; ".join(result["problems"]), file=sys.stderr)
+            return 1
+        print("v2 store matches data/corpus/v2/manifest.json")
+        return 0
     from .corpus import build as build_v2
 
     stats = build_v2(with_web="web" in args.lang)
@@ -180,6 +191,7 @@ def main(argv: List[str] | None = None) -> int:
     p.add_argument("--lang", nargs="+", default=["en", "web", "ar"], choices=["en", "ar", "web"])
     p.add_argument("--resume", action="store_true")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--chroma-dir", default="", help="v2 only; default CHROMA_DIR_V2 or <CHROMA_DIR>/v2")
     p.set_defaults(func=_cmd_build)
 
     args = parser.parse_args(argv)

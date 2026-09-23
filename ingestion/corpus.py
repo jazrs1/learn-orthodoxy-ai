@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from corpus_runtime import ids_sha1, verify_store
+
 from . import extract_ar, extract_en, saints_index
 from .chunk import LIMITS, chunk_text, chunk_unit
 from .embed import count_tokens
@@ -36,6 +38,8 @@ WEB_WORK = "Mind of Christ Light"
 NORMALIZER = {"en": "nfc-whitespace-v1", "ar": "nfkc+fold-v1"}
 WEB_EXTRACTOR = "requests+bs4"
 SAMPLE_TYPES = ("catechism-en", "catechism-ar", "saints-en", "saints-ar", "web")
+COLLECTIONS = {"en": "orthodox_pdfs_v2", "ar": "orthodox_arabic_pdfs_v2"}  # INGEST_PLAN.md §9.1
+MANIFEST = DATA_DIR / "manifest.json"
 
 
 @dataclass
@@ -284,7 +288,9 @@ def manifest(chunks: List[Chunk], web_stats: Dict[str, Dict[str, object]]) -> Di
         "corpus_version": CORPUS_VERSION,
         "chunks": len(chunks),
         "chunks_by_language": {lang: sum(1 for c in chunks if c.metadata["language"] == lang) for lang in ("en", "ar")},
-        "collections": {"en": "orthodox_texts_v2", "ar": "orthodox_texts_ar_v2"},
+        "collections": {lang: {"name": name, "chunks": sum(1 for c in chunks if c.metadata["language"] == lang),
+                               "chunk_ids_sha1": ids_sha1(c.id for c in chunks if c.metadata["language"] == lang)}
+                        for lang, name in COLLECTIONS.items()},
         "documents": {doc_id: {"chunks": counts[doc_id], "text_sha1": per_doc[doc_id].hexdigest()} for doc_id in sorted(counts)},
         "chunk_ids_sha1": hashlib.sha1("\n".join(ids).encode()).hexdigest(),
         "web_content_sha1": {doc_id: info["content_sha1"] for doc_id, info in sorted(web_stats.items())},
@@ -293,6 +299,39 @@ def manifest(chunks: List[Chunk], web_stats: Dict[str, Dict[str, object]]) -> Di
         "versions": {"python": platform.python_version(), "pymupdf": pymupdf.VersionBind, "pypdf": pypdf.__version__,
                      "chromadb": chromadb.__version__, "tiktoken": tiktoken.__version__},
     }
+
+
+# ---------------------------------------------------------------- embedding (Step 3) and verification
+
+def embed_build(chroma_dir: Path, *, resume: bool = False, log=print) -> Dict[str, object]:
+    """Embed build/corpus/v2/chunks.jsonl into `chroma_dir` (v2's own directory, never v1's).
+
+    Refuses when the chunks on disk are not the ones the committed manifest describes, so what is
+    embedded is exactly what was reviewed. Stops on the first quota or auth error (embed.py)."""
+    import chromadb
+    from chromadb.config import Settings
+
+    from .embed import upsert_chunks
+
+    expected = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    chunks = load_chunks()
+    if ids_sha1(c.id for c in chunks) != expected["chunk_ids_sha1"] or len(chunks) != expected["chunks"]:
+        raise RuntimeError("build/corpus/v2/chunks.jsonl does not match data/corpus/v2/manifest.json; "
+                           "re-run `python -m ingestion build --corpus v2 --dry-run` and review the diff first")
+    chroma_dir.mkdir(parents=True, exist_ok=True)
+    client = chromadb.PersistentClient(path=str(chroma_dir), settings=Settings(anonymized_telemetry=False))
+    written = {}
+    for language, name in COLLECTIONS.items():
+        collection = client.get_or_create_collection(name, metadata={"source": name, "language": language,
+                                                                     "corpus_version": CORPUS_VERSION})
+        subset = [{"id": c.id, "text": c.document, "metadata": c.metadata} for c in chunks if c.metadata["language"] == language]
+        stale = set(collection.get(include=[])["ids"]) - {c["id"] for c in subset}
+        if stale:  # ids from an older build of v2 that the reviewed corpus no longer has
+            collection.delete(ids=sorted(stale))
+            log(f"{name}: removed {len(stale)} stale ids")
+        written[name] = upsert_chunks(collection, subset, label=f"v2 {language}", resume=resume)
+    problems = verify_store(client, expected)
+    return {"written": written, "problems": problems}
 
 
 def samples_markdown(chunks: List[Chunk], per_type: int = 10, seed: int = 2026) -> str:

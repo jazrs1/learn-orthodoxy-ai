@@ -98,6 +98,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [ING-001: Re-ingestion design (Phase 5 Step 0) — PyMuPDF for English, pypdf + NFKC for Arabic, structure-aware units, v2 alongside v1](#ing-001-re-ingestion-design-phase-5-step-0--pymupdf-for-english-pypdf--nfkc-for-arabic-structure-aware-units-v2-alongside-v1)
   - [ING-002: One ingestion package; extraction and cleaning verified corpus-wide; v1 rebuild proven identical; old scripts deleted](#ing-002-one-ingestion-package-extraction-and-cleaning-verified-corpus-wide-v1-rebuild-proven-identical-old-scripts-deleted)
   - [ING-003: Per-source segmenters, chunker, ingest-time saints index and the v2 dry run](#ing-003-per-source-segmenters-chunker-ingest-time-saints-index-and-the-v2-dry-run)
+  - [ING-004: v2 embedded locally into chroma_db/v2; v1 byte-identical before and after](#ing-004-v2-embedded-locally-into-chroma_dbv2-v1-byte-identical-before-and-after)
 - [Open questions](#open-questions)
 
 ---
@@ -1735,6 +1736,25 @@ In summary:
   - tests and goldens; `README.md`, `.gitignore` (`build/`).
 - **Concept to learn:** *Record linkage* (entity resolution). Blocking (only compare names that share a first name), a similarity score, one-to-one assignment best-first, hard constraints that veto (regnal numbers), and a small hand-reviewed list for the residue. Search: "record linkage blocking", "entity resolution one-to-one matching".
 - **Revisit if:** Step 5 shows questions or saints that retrieval misses because of segmentation, or the namesake count causes wrong saint answers in Step 4.
+
+### ING-004: v2 embedded locally into chroma_db/v2; v1 byte-identical before and after
+- **Date / Part:** 2026-09-22, Phase 5 Step 3. **OpenAI: embeddings only, approved at ~$0.13.** The owner confirmed the Railway volume (5 GB, ~0.3 GB used) and that a budget limit is set.
+- **What ran:** `python -m ingestion build --corpus v2`.
+  - It embeds `build/corpus/v2/chunks.jsonl`, and refuses unless those chunks hash to the committed `manifest.json`, so what is embedded is exactly what was reviewed in Step 2.
+  - The target is `CHROMA_DIR_V2`, defaulting to `<CHROMA_DIR>/v2`, i.e. `chroma_db/v2/` locally and `/app/chroma_db/v2` on Railway (`chroma_store.get_chroma_path_v2`).
+  - Collections are `orthodox_pdfs_v2` (6,079 chunks) and `orthodox_arabic_pdfs_v2` (4,484), in Chroma's default L2 space like v1, so distances stay comparable.
+  - IDs from an older v2 build that are no longer in the corpus are deleted before the upsert.
+- **Cost and run:** 6.64 M tokens, about $0.13.
+  - 47 transient per-minute rate-limit retries were handled by the embedder.
+  - There was no quota, 401 or 403 error.
+- **Checks:**
+  1. SHA-256 of all 11 v1 files under `chroma_db/` (excluding `v2/`) are **identical** before the build, after it, and after opening v1 again.
+  2. v1 still opens with **3,774 / 3,807** chunks. A query with a stored vector returns that chunk first. `list_collections()` on v1 shows only v1's two collections: the nested `v2/` is invisible to it.
+  3. `verify_store` finds **no difference** between the v2 collections and the manifest (count and chunk-ID hash per collection). A self-query on `v2:cat2:q896:c1` returns it first.
+  4. `chroma_db/v2` is 240 MB, a little under the 250–350 MB estimate and far inside the 5 GB volume.
+- **Manifest:** `collections` now records the name, chunk count and ID hash per language. That is what the startup check compares (§9.1). The verification lives in `corpus_runtime.py`, which the API can import without PyMuPDF.
+- **Tests:** 107 (store verification: matching, missing collection, differing IDs; v2 directory missing or empty, outside the volume mount).
+- **Revisit if:** the corpus is rebuilt (re-run the dry run, review, then `build --corpus v2 --resume`), or Chroma is upgraded (the pin keeps local and Railway formats equal).
 
 ---
 

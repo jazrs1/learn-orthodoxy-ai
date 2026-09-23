@@ -6,8 +6,16 @@
   "ar": 4484
  },
  "collections": {
-  "en": "orthodox_texts_v2",
-  "ar": "orthodox_texts_ar_v2"
+  "en": {
+   "name": "orthodox_pdfs_v2",
+   "chunks": 6079,
+   "chunk_ids_sha1": "41b7a3001e71f1fcbf0653e6b0288c6c73e57c58"
+  },
+  "ar": {
+   "name": "orthodox_arabic_pdfs_v2",
+   "chunks": 4484,
+   "chunk_ids_sha1": "84dc32de2a1cbe30c3e2eeab5671e13aba27689b"
+  }
  },
  "documents": {
   "ar-cat": {
