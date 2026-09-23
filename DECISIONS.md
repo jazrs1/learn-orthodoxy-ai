@@ -96,6 +96,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [CAL-007: Verification of the calendar feature](#cal-007-verification-of-the-calendar-feature)
 - [Ingestion](#ingestion)
   - [ING-001: Re-ingestion design (Phase 5 Step 0) — PyMuPDF for English, pypdf + NFKC for Arabic, structure-aware units, v2 alongside v1](#ing-001-re-ingestion-design-phase-5-step-0--pymupdf-for-english-pypdf--nfkc-for-arabic-structure-aware-units-v2-alongside-v1)
+  - [ING-002: One ingestion package; extraction and cleaning verified corpus-wide; v1 rebuild proven identical; old scripts deleted](#ing-002-one-ingestion-package-extraction-and-cleaning-verified-corpus-wide-v1-rebuild-proven-identical-old-scripts-deleted)
 - [Open questions](#open-questions)
 
 ---
@@ -1545,7 +1546,14 @@ In summary:
 ## Ingestion
 
 ### ING-001: Re-ingestion design (Phase 5 Step 0) — PyMuPDF for English, pypdf + NFKC for Arabic, structure-aware units, v2 alongside v1
-- **Date / Part:** 2026-09-22, Phase 5 Step 0 (branch `phase-5-ingest`). **Proposal, awaiting approval.** The full design is `INGEST_PLAN.md`.
+- **Date / Part:** 2026-09-22, Phase 5 Step 0 (branch `phase-5-ingest`). The full design is `INGEST_PLAN.md`.
+- **Approval (2026-09-22):**
+  - D1 PyMuPDF; D2–D6, D8 and D9 as recommended.
+  - **Changes from the owner:**
+    1. On Railway the volume is mounted at `/app/chroma_db`, so the proposed `<chroma root>/../chroma_v2` would have resolved to `/app/chroma_v2`, **outside the volume**, and v2 would have been lost on the next redeploy. v2 now lives at `/app/chroma_db/v2` (`CHROMA_DIR_V2`, default `<CHROMA_DIR>/v2`). The v1 checksum check excludes that subdirectory. Startup refuses `CORPUS_VERSION=v2` when the v2 path is not on the volume's filesystem.
+    2. D7 must also evaluate a background build inside the API process, triggered by a one-time `BUILD_CORPUS_V2=1`, with resume and log progress. It will be compared with `railway ssh` in the Step 6 runbook, which recommends one of them.
+    3. Before any OpenAI step, the owner confirms the Railway volume size and the OpenAI budget limit.
+  - *Lesson:* a path that is correct on one machine can be wrong on another, and I derived the v2 location from a local layout without checking the volume mount. The same-filesystem startup check makes that mistake fail loudly instead of silently losing data.
 - **Audit ref:** A1, C1–C8, C33, S9; RET-001/RET-007/RET-009 revisits; UI-006 limit 1; open questions 9 and 22.
 - **Context:** v1 stores one pypdf page per chunk: intra-word splits, running headers and footnotes in the text, Arabic stored as presentation forms, and no section, question or saint metadata. Retrieval, citations, the runtime saint index, the eval and the calendar's saint links all depend on that shape.
 - **Evidence gathered** (local only, 0 OpenAI calls; three extractors on 20 sample pages, Arabic repeated on 79 random pages):
@@ -1573,6 +1581,72 @@ In summary:
 - **Files changed:** `INGEST_PLAN.md` (new), `DECISIONS.md`.
 - **Concept to learn:** *Structure-aware chunking.* Retrieval quality is bounded by the unit you index: a chunk should be one coherent answer (a Q&A, a saint's entry section), carry enough context to stand alone (a header naming the question or saint), and keep its provenance (page range, section) so it can be cited precisely. Search: "semantic chunking RAG", "contextual chunk headers", "parent-child chunking".
 - **Revisit if:** you choose differently on D1–D9, or Step 2's counts (questions or entries found vs expected) show the structure rules miss more than a few percent.
+
+### ING-002: One ingestion package; extraction and cleaning verified corpus-wide; v1 rebuild proven identical; old scripts deleted
+- **Date / Part:** 2026-09-22, Phase 5 Step 1. **No OpenAI calls.**
+- **Audit ref:** C1–C4, C33, §3 "three identical chunk_text functions"; ING-001 D1, D2, D4, D8.
+- **What was built:** the `ingestion/` package.
+  - `sources.py`: a registry keyed by `doc_id`.
+  - `extract_en.py`: PyMuPDF lines with size, bold and position, and the cleaning rules.
+  - `extract_ar.py`: pypdf text, with PyMuPDF used only to locate zones.
+  - `textnorm.py`: Arabic and whitespace normalisation.
+  - `web.py`: sections split at h2/h3.
+  - `legacy.py`: the exact v1 rebuild.
+  - `embed.py`: the quota-safe embedder.
+  - `samples.py` and the CLI (`python -m ingestion extract | samples | verify-legacy | build`).
+
+  `ingest.py`, `ingest_arabic_sources.py`, `ingest_web.py`, `ingest_all_sources.py`, `ingest_embeddings.py` and `website_sources.py` are deleted. `start_backend.py`'s v1 auto-ingest now calls `ingestion` (`build_v1_legacy`).
+- **Cleaning rules, as finally implemented (English):**
+  - A **running header** is a line in the top 7.5 % of the page whose text, with digits folded, repeats on ≥ 3 pages.
+    - A first version also treated any *small* top line as a header. The corpus run showed that it removed bibliographic references from 10–18 pages per saints volume ("[The Synaxarion: 4 Paona]", "[Butler: March 3]"): they carry commemoration dates. Repetition alone is now required.
+    - Result: the catechism loses its "Book N: …" / "Catechism … Volume N" headers on 668 of 737 and 564 of 624 pages; the saints volumes lose none.
+  - **Page number:** a digits-only or roman-numeral line that is the page's first or last line. It is kept as `printed_page`; the printed page was found on 729/737, 623/624 and every saints page.
+  - **Footnotes:**
+    - the footnote block is the run of lines below body size at the page bottom whose first line starts with a number;
+    - a new note must follow the previous number by +1 to +3, otherwise the line is a continuation ("30 on Jesus' promise," is a wrapped line);
+    - markers are the body's raised digit spans (the PyMuPDF superscript flag, 8 pt); superscript words such as "4th" are kept.
+    - Totals: 1,839 + 1,389 notes and 1,801 + 1,350 markers in the catechism; ~100 real notes per saints volume.
+  - **Letter dividers** (a single capital ≥ body + 6 pt) are removed. Paragraphs break on a new PyMuPDF block or a style change; a line-end hyphen joins a lower-case continuation.
+- **Arabic:** pypdf + NFKC + folding (ی→ي, ھ→ه, ک→ك, tatweel and invisible marks removed, diacritics kept). The corpus run found three more pypdf behaviours, all now handled and tested:
+  1. **Multi-digit Arabic-Indic numbers are reversed**, in PyMuPDF too: "مت ٨٢: ٠٢" is Matthew 28:20 and "أف ٤ : ١١ - ٢١" is Ephesians 4:11–12. Every run of 2+ Arabic-Indic digits is reversed back; ASCII digits ("1215.", "1 تي 2 : 1 - 3") are correct and untouched.
+  2. **Brackets come out mirrored, inconsistently** (")نظام الدولة(", "(كاثوليكية(؟"). A balancing pass fixes them: in logical order, a closer with nothing open is an opener, and a second opener of the same kind is a closer.
+  3. **Footnote markers** remain as bare numbers ("إليك 175 [", "أغسطينوس 176 وجود", "شيءٍ 593 ]"). A marker is one of the page's footnote numbers directly after Arabic text (vowel marks included), never a number with "." attached (question numbers, "944.").
+
+  **Latin footnotes** are located with PyMuPDF and removed from the pypdf text by a whitespace-insensitive match. A fallback strips a trailing non-Arabic run containing Latin words, because pypdf emits footnotes after the body. Corpus result:
+  - **0 of 2,867 pages** still contain presentation forms (v1: 74 % of letters);
+  - page numbers were removed on 805 of 807 (catechism) and 1,994 of 1,995 (saints) pages;
+  - 1,734 markers removed;
+  - residue: 47 footnote-shaped fragments on 41 of 818 catechism pages (**0.08 % of its text**), which pypdf placed mid-page.
+- **v1 rebuild (D8), proven with `python -m ingestion verify-legacy`,** read-only against the local store, no API calls:
+  - **all 7,581 v1 chunks are reproduced with identical IDs and identical text:** English 3,567, Arabic 3,807, web 207 (the five pages are unchanged since v1 was built);
+  - Arabic metadata is identical;
+  - the live English PDF chunks carry only `pdf/page/chunk_index` because they predate the current scripts, which (like the rebuild) also write `source_type/title/language/source_group`. That is a compatible superset: the API already defaults those fields.
+
+  So deleting the old scripts loses nothing, and a lost Railway volume can still be rebuilt as v1.
+- **Embedder:**
+  - `insufficient_quota`, 401 and 403 raise `FatalOpenAIError` on the first occurrence (the old code retried any "429" ten times, and `insufficient_quota` is a 429);
+  - only transient 429, 5xx, timeouts and connection errors are retried;
+  - the OpenAI SDK's own retries are off, so they can't retry a quota error behind our back;
+  - batches are sized with cl100k (chars/4 underestimated Arabic by ~3×);
+  - any input over 8,191 tokens is refused;
+  - `--resume` skips IDs already stored.
+- **Pins:**
+  - `chromadb==0.6.3`, so local and Railway write the same on-disk format;
+  - `pypdf==5.9.0`, because v1-legacy exactness and the Arabic text depend on its output; the Step 0 experiments used 6.19, and the Arabic behaviour was re-verified on 5.9;
+  - `pymupdf==1.28.2`, ingestion only (the API process was checked not to load it);
+  - `tiktoken` added; `pytest` in `requirements-dev.txt`.
+- **Tests:** `pytest tests/ingestion`, **66 passed**, ~12 s.
+  - Golden before/after files for the 20 sample pages, with `tests/ingestion/SAMPLES.md` as the readable report.
+  - Explicit checks: every pypdf split in the samples is fixed; headers, page numbers and footnotes are separated; saint headings survive; Arabic invariants (no presentation forms, no reversed lam-alef, ligatures and logical order, verse numbers, brackets, markers, the page PyMuPDF mangles is complete).
+  - Normalisation unit tests; embedder error handling with a fake client (quota, 401, 403 fatal after one call; transient retried; resume); web section splitting from offline HTML; three pages of the v1 rebuild against the live store.
+- **Performance:** English ≈ 1.2–1.9 s per volume, Arabic ≈ 55 s (catechism) and 133 s (saints) because pypdf is slower. That is fine offline, and it bounds the Railway build time (§9.3).
+- **Known limits, handled in Step 2:**
+  - a footnote marker whose note is printed on the next page (cat2 p.16 marker 11): notes are attached per question, so this resolves there;
+  - saint headings split across a heading line and "(The martyr)": merged by the saints segmenter;
+  - the alphabetical index and TOC pages are still extracted: excluded from chunks there.
+- **Files:** `ingestion/*` (new), `tests/ingestion/*` (new), `requirements.txt`, `requirements-dev.txt` (new), `start_backend.py`, `request_log.py` (comment), `README.md`, `.gitignore`, `INGEST_PLAN.md` (approval changes, §9), and the six deleted scripts.
+- **Concept to learn:** *Golden-file (snapshot) testing* for data pipelines. Keep the exact expected output for a small, deliberately chosen sample next to the test, so any change to the pipeline shows up as a diff a human reviews, alongside targeted assertions for the properties that must never regress. Search: "golden file testing", "snapshot testing data pipelines".
+- **Revisit if:** pypdf or PyMuPDF is upgraded (re-run `samples --write` and `verify-legacy`, and review the diff), or Step 2 finds cleaning errors inside questions or entries.
 
 ---
 

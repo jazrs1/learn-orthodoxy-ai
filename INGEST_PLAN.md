@@ -1,6 +1,6 @@
 # Phase 5 — Re-ingestion plan (AUDIT A1, C1–C8)
 
-**Status:** proposal, awaiting approval. Nothing is built yet.
+**Status:** approved 2026-09-22 with changes (recorded in ING-001): D1 PyMuPDF; D2–D6, D8, D9 as recommended; **v2 lives inside the volume** at `/app/chroma_db/v2` (`CHROMA_DIR_V2`), with a same-filesystem startup check (§9); D7 must also evaluate a background build inside the API process (§9.3). Before any OpenAI step, the owner confirms the Railway volume size and the OpenAI budget limit.
 **Branch:** `phase-5-ingest` (off `main` at `bfb17d9`).
 **Author/date:** 2026-09-22.
 
@@ -266,17 +266,22 @@ tests/ingestion/  sample-page fixtures + before/after text
 ### 9.1 Selection
 
 - One variable, **`CORPUS_VERSION`** (`v1` default | `v2`), selects:
-  - the persist directory: `<chroma root>/` for v1, as now, and `<chroma root>/../chroma_v2/` (or `CHROMA_DIR_V2`) for v2;
+  - the persist directory: `CHROMA_DIR` for v1, as now (`/app/chroma_db` on Railway, the volume mount), and **`CHROMA_DIR_V2`** for v2, defaulting to `<CHROMA_DIR>/v2`, i.e. **`/app/chroma_db/v2` inside the volume**. A sibling such as `/app/chroma_v2` would sit outside the mount and be lost on the next redeploy;
   - the collection names: `orthodox_pdfs` / `orthodox_arabic_pdfs` vs **`orthodox_pdfs_v2` / `orthodox_arabic_pdfs_v2`**;
   - the saints index source: runtime heading parsing vs `saints_index.json`;
   - the metadata-dependent code paths (§11).
 - The existing `CHROMA_COLLECTION`, `CHROMA_ARABIC_COLLECTION` and `CHROMA_DIR` still override for experiments.
-- **Why a separate directory as well as new names (D6):** v1's files are never opened for writing by a v2 build, so "v1 untouched" is checkable byte for byte (checksums before and after Step 3). Rollback cannot be affected by anything v2 did, and retiring v1 later is deleting one directory. The version suffix on the names protects against a mis-set directory.
+- **Why a separate directory as well as new names (D6):** v1's files are never opened for writing by a v2 build, so "v1 untouched" is checkable byte for byte (checksums before and after Step 3, excluding the `v2/` subdirectory). Rollback cannot be affected by anything v2 did. Retiring v1 later means deleting v1's `chroma.sqlite3` and segment directories, not the whole mount. The version suffix on the names protects against a mis-set directory.
+- **Nesting:** v1's Chroma client ignores directories it didn't create (its segments are UUID-named folders listed in its own sqlite), so a `v2/` folder inside it is invisible to v1. Step 3 verifies this by opening v1 after the build and checking counts and a query.
+- **Startup checks for `CORPUS_VERSION=v2`** (Step 4), in `start_backend.py`, before uvicorn starts. It exits non-zero with a clear message (Railway keeps the old deployment serving) when:
+  1. `CHROMA_DIR_V2` does not exist or is empty;
+  2. on Railway (`RAILWAY_VOLUME_MOUNT_PATH` set), `CHROMA_DIR_V2` is not on the same filesystem as the volume mount (`os.stat(path).st_dev != os.stat(mount).st_dev`) or does not resolve inside the mount path;
+  3. the v2 collections' counts or ID hash differ from `data/corpus/v2/manifest.json`.
 
 ### 9.2 Local (Step 3)
 
-- Build into `chroma_db_v2/` (gitignored), next to `chroma_db/`.
-- Record SHA-256 of `chroma_db/chroma.sqlite3` and the v1 segment directories before and after; they must match.
+- Build into `chroma_db/v2/` (the same layout as Railway; `chroma_db/` is already gitignored).
+- Record SHA-256 of every file under `chroma_db/` **except `chroma_db/v2/`** before and after; they must match.
 
 ### 9.3 Railway (Step 6, executed only when you say so)
 
@@ -285,12 +290,24 @@ tests/ingestion/  sample-page fixtures + before/after text
   - with `CORPUS_VERSION=v2`, exit immediately with a clear message if the v2 collections are missing, or if their counts or ID hash differ from `manifest.json`.
 
   Railway keeps the old deployment serving until a new one passes its health check, so a bad switch fails fast instead of waiting the 30 minutes (`healthcheckTimeout: 1800`).
-- **Build (D7):** while v1 keeps serving:
+- **Build (D7), option A — `railway ssh`:** while v1 keeps serving:
   1. `railway ssh` into the backend service.
-  2. Run `setsid nohup python -m ingestion build --corpus v2 --chroma-dir $V2_DIR > $V2_DIR.build.log 2>&1 &`.
+  2. Run `setsid nohup python -m ingestion build --corpus v2 --chroma-dir /app/chroma_db/v2 > /app/chroma_db/v2-build.log 2>&1 &`.
 
   It writes a directory the running API never opens, costs ≈ $0.17 in embeddings, and takes about 25–35 minutes (pypdf on 2,867 Arabic pages ≈ 17 min, plus embeddings). `--resume` recovers from a dropped session or a restart. **Do not deploy during the build** (a redeploy replaces the container). I could not confirm that a detached process survives the ssh session ending; Step 6 includes a check.
-- **Alternative:** build locally and copy the directory up. It avoids a second embedding bill ($0.17), but copying Chroma's HNSW binaries across machines and piping a ~300 MB tarball through `railway ssh` are both unverified. The re-embedded build is compared against the local manifest instead: same chunk IDs and text hashes means the same corpus.
+- **Build (D7), option B — background build inside the API process** (evaluated at the owner's request):
+  - A one-time env flag, `BUILD_CORPUS_V2=1`, makes `start_backend.py` start the API as usual (v1 serving, health check passes) and launch the build in a background thread or child process writing to `CHROMA_DIR_V2`.
+  - Progress goes to the service logs every batch; `--resume` semantics apply on every restart until the manifest check passes, after which the build is a no-op and logs "v2 complete". The flag is then removed.
+  - The Step 6 runbook compares A and B on these points:
+    - survival of disconnects: B needs no session;
+    - restarts: both resume;
+    - CPU and memory contention with live traffic: both share the container; B shares the process too, so a crash in the build could take the API down unless it runs in a child process;
+    - visibility: B logs to Railway;
+    - accidental re-runs: B keeps building on every deploy while the flag is set;
+    - how it is stopped.
+
+    One of them is recommended there.
+- **Alternative C (not preferred):** build locally and copy the directory up. It avoids a second embedding bill ($0.17), but copying Chroma's HNSW binaries across machines and piping a ~300 MB tarball through `railway ssh` are both unverified. The re-embedded build is compared against the local manifest instead: same chunk IDs and text hashes means the same corpus.
 - **Switch:** set `CORPUS_VERSION=v2` and `AUTO_INGEST_ON_START=0`, which redeploys. `start_backend` verifies, `/health` reports `corpus_version` and counts, and a smoke set runs through the proxy.
 - **Rollback:** set `CORPUS_VERSION=v1` and redeploy. v1's directory was never touched.
 - **Volume:**
@@ -402,7 +419,7 @@ Token counts come from `20260916-220035` (mean prompt 7,685, completion 335, ana
 |---|---|---|
 | 1 | `ingestion/` extraction + cleaning + Arabic normalisation; `--corpus v1-legacy`; tests on the 20 sample pages with before/after text; old scripts removed; quota-safe embedder | none |
 | 2 | chunkers, metadata, `saints_index.json`, `--dry-run` stats (chunk counts, token histogram, questions/entries found vs expected, chunks without section/saint), 10 sample chunks per type | none |
-| 3 | v2 built into `chroma_db_v2/`; v1 checksums unchanged; manifest | **embedding, ≈ $0.17, after your approval** |
+| 3 | v2 built into `chroma_db/v2/`; v1 checksums unchanged; manifest | **embedding, ≈ $0.17, after your approval** |
 | 4 | `CORPUS_VERSION`; labels/citations/one source per passage; ingest-time saints index; v1 unchanged when set to v1 (an identical-output check on a few questions with retrieve-only) | none (retrieve-only checks use analysis + embedding, ≈ $0.01; I'll ask first) |
 | 5 | retrieval-only top-k/threshold sweep on tune; coverage v1 vs v2 ×2 on tune+holdout (EN/AR separately); faithfulness on 15; regressions flagged | **≈ $5, after your approval** |
 | 6 | the deployment runbook (build, switch, verify, rollback, calendar regeneration, env vars); nothing pushed | none |

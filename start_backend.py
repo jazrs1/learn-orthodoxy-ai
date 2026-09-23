@@ -67,14 +67,13 @@ def _collection_count(collection_name: str = COLLECTION_NAME) -> int:
 
 
 def _ingest_sources() -> None:
-    from ingest import ingest_pdf_sources
-    from ingest_web import ingest_website_sources
-    from website_sources import WEBSITE_SOURCE_URLS
+    # v1 rebuild through the ingestion package (ING-002); same chunks and ids as the old scripts.
+    from ingestion.__main__ import build_v1_legacy
 
-    ingest_pdf_sources()
+    build_v1_legacy(["en"])
 
     try:
-        ingest_website_sources(WEBSITE_SOURCE_URLS)
+        build_v1_legacy(["web"])
     except Exception as exc:
         if _require_website_ingest():
             raise
@@ -82,9 +81,9 @@ def _ingest_sources() -> None:
 
 
 def _ingest_arabic_sources() -> None:
-    from ingest_arabic_sources import ingest_arabic_sources
+    from ingestion.__main__ import build_v1_legacy
 
-    ingest_arabic_sources()
+    build_v1_legacy(["ar"])
 
 
 def ensure_chroma_populated() -> None:

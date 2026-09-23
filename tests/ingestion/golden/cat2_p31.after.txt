@@ -1,0 +1,49 @@
+# cat2 p31 (printed page 21) - pymupdf-1.28.2
+
+## body
+
+2 The Life of Prayer
+
+896. What is prayer?
+
+St. Clement of Alexandria says, “Prayer is, then, to speak more boldly, converse with God.”
+
+St. John Climacus says, “Prayer by reason of its nature is the converse and union of man with God, and by reason of its action upholds the world and brings about reconciliation with God … it is … a work of angels, the food of all the bodiless spirits, future gladness, unending activity, a source of virtues, a means of obtaining graces, invisible progress, food of the soul, the enlightenment of the mind, an axe against despair, a demonstration of hope, a cure for sorrow.”
+
+“Let your prayer be completely simple. For both the publican and the prodigal son were reconciled to God by a single phrase.”
+
+“The benefit of prayer can be inferred from the assaults of the demons during the divine service; and its fruit from the defeat of the foe.”
+
+St. Basil the Great says, “Thus will you pray without ceasing, if you not only pray in words, but unite yourself to God through all the course of life so that your life be made one ceaseless and uninterrupted prayer.”
+
+The Letter to Diognetus says of Christians that “their days are passed on the earth, but their citizenship is above in the heavens.”
+
+897. How can we converse freely with God?
+
+St. Isaac the Syrian says, “Sit in the presence of the Lord every moment of your life, as you think of him and remember him in your heart. Otherwise, when you only see him
+
+## footnotes
+
+[37] St. Clement of Alexandria, The Stromata, or Miscellanies 7.7 (ANF 2:534).
+[38] St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press, 1982) 28.1: p. 212.
+[39] St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press, 1982) 28.5: p. 213.
+[40] St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press, 1982) 28.61: p. 220.
+[41] St. Basil of Caesarea, Homily on the Martyr Julitta quoted in NPNF II/8: p. lxix, amended.
+[42] “Epistle to Diognetus,” in Staniforth, Maxwell, and Andrew Louth, eds. Early Christian Writings, (Penguin Classics, 2000) 5: p. 145.
+
+## footnote markers removed from the body: [37, 38, 39, 40, 41, 42]
+
+## removed
+
+header: Book 4: Church Worship as a Journey to Heaven
+page_number: 21
+footnote: 37 St. Clement of Alexandria, The Stromata, or Miscellanies 7.7 (ANF 2:534).
+footnote: 38 St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press,
+footnote: 1982) 28.1: p. 212.
+footnote: 39 St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press,
+footnote: 1982) 28.5: p. 213.
+footnote: 40 St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press,
+footnote: 1982) 28.61: p. 220.
+footnote: 41 St. Basil of Caesarea, Homily on the Martyr Julitta quoted in NPNF II/8: p. lxix, amended.
+footnote: 42 “Epistle to Diognetus,” in Staniforth, Maxwell, and Andrew Louth, eds. Early Christian Writings, (Penguin
+footnote: Classics, 2000) 5: p. 145.

@@ -1,0 +1,34 @@
+# cat2 p16 (printed page 6) - pymupdf-1.28.2
+
+## body
+
+deems that he sees the Lord, directing his eyes towards things invisible … So is he always pure for prayer. He also prays in the society of angels, as being already of angelic rank, and he is never out of their holy keeping; and though he prays alone, he has the choir of the saints standing with him … And the form of his prayer is thanksgiving for the past, for the present, and for the future as already through faith present … He is ever giving thanks to God, like the living creatures figuratively spoken of by Isaiah.”
+
+St. Basil the Great says, “‘Adore the Lord in his holy court’ (Ps. 28:2 LXX) … Many assume an attitude of prayer, but they are not in the court because of the wandering of their mind and the distraction of their thoughts coming from vain solicitude. It is possible to consider the court in a still loftier sense as the heavenly way of life. Therefore, ‘They that are planted’ here ‘in the house of the Lord’ which is the Church of the living God [cf. 1 Tim. 3:15], there ‘shall flourish in the courts of our God’ (Ps. 91:14 LXX).”
+
+“‘The voice of the Lord is in power’ (Ps. 28:4 LXX) … ‘The voice of the Lord in magnificence’ (Ps. 28:4 LXX). Magnificence is virtue extraordinarily great. He who performs great actions becomingly, such a one hears himself called magnificent. When the soul is not enslaved by the pride of the flesh, but assumes a greatness and dignity proper to it because of its awareness of its attributes received from God, in this soul is the voice of the Lord. Therefore, they who entertain noble thoughts of God, contemplating sublimely the reasons for creation, and being able to comprehend to a certain extent at least the goodness of God’s providence, and who besides are unsparing in their expenditures and are munificent in supplying the needs of their brothers, these are the magnificent men in whom the voice of the Lord dwells. In truth the magnificent man despises all bodily things, judging them deserving of no account in comparison with the unseen world. No difficult conditions will grieve the magnificent man; nor, in short, will any suffering greatly trouble him, nor will the sins of paltry and contemptible little men move him, nor the impurity of the flesh humble him. He is difficult of access to the humiliating passions, which cannot even look upon him because of the loftiness of his mind.”
+
+Second: The believer knows himself. He knows that he has become a child of God through baptism and that he is a member of the body of the only begotten Son. He is a temple of God, in which the Holy Spirit dwells; so, he converses with the Holy Trinity and practices his worship appropriately, confident in his communion with God.
+
+St. Anthony says, “He who knows himself knows God, he who knows God must worship him as is proper.”
+
+Lactantius says, “piety is nothing else than the recognition of God as a parent.”
+
+## footnotes
+
+[7] St. Clement of Alexandria, The Stromata, or Miscellanies 7.12 (ANF 2:545) amended.
+[8] St. Basil of Caesarea, Homilies on the Psalms 13 (FOTC 46:198).
+[9] St. Basil of Caesarea, Homilies on the Psalms 13 (FOTC 46:202–203).
+[10] St. Anthony the Great, The Letters of St. Antony: Monasticism and the Making of a Saint, trans., Samuel Rubenson (Minneapolis: Fortress Press, 1995) 4.15: p. 211.
+
+## footnote markers removed from the body: [7, 8, 9, 10, 11]
+
+## removed
+
+header: Catechism of the Coptic Orthodox Church – Volume 2
+page_number: 6
+footnote: 7 St. Clement of Alexandria, The Stromata, or Miscellanies 7.12 (ANF 2:545) amended.
+footnote: 8 St. Basil of Caesarea, Homilies on the Psalms 13 (FOTC 46:198).
+footnote: 9 St. Basil of Caesarea, Homilies on the Psalms 13 (FOTC 46:202–203).
+footnote: 10 St. Anthony the Great, The Letters of St. Antony: Monasticism and the Making of a Saint, trans., Samuel
+footnote: Rubenson (Minneapolis: Fortress Press, 1995) 4.15: p. 211.

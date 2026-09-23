@@ -44,7 +44,7 @@ def current_trace() -> Optional["RequestTrace"]:
 def chunk_id_from_metadata(metadata: Dict[str, Any] | None) -> str:
     """Reconstruct the deterministic Chroma id that ingestion assigned to a chunk.
 
-    Mirrors the id formats in ingest.py, ingest_arabic_sources.py and ingest_web.py
+    Mirrors the v1 id formats (ingestion/legacy.py)
     so that log lines and eval tooling can reference chunks without changing the
     retrieval functions' return values.
     """

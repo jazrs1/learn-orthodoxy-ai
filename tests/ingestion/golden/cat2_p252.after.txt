@@ -1,0 +1,32 @@
+# cat2 p252 (printed page 242) - pymupdf-1.28.2
+
+## body
+
+The Protestants broke away from the Roman Church in the sixteenth century. This was the same century in which the Roman Pope Gregory XIII requested that the Jewish Passover not be taken into account in the computation of the Christian Pascha, but that it is sufficient only to take into account the time of the spring equinox. Protestants continued to use the Alexandrian computus until 1775 A. D., that is for about two centuries.
+
+1091. What connection is there between the Coptic calendar and the ancient Egyptian calendar?
+
+The Copts inherited the ancient Egyptian calendar from their ancestors, and with some slight modifications, used it to order their liturgical Church life and their daily affairs, especially agriculture. The Coptic liturgical day begins at sunset, like that of the Jews and the Greeks; and each week consists of seven days, the first of which is the Lord’s Day (Sunday).
+
+In the fourth century, many Copts were martyred, and they therefore considered the reign of Diocletian as a golden age. They set the year in which Diocletian became emperor (November, 284 A. D.) as the first year of their calendar. They introduced the term, “The Year of the Martyrs” (Anno Martyrum), abbreviated as A. M. The scholar Tertullian said, “If the martyrs throughout the world were to be put in one side of the scales and the Coptic martyrs alone were to be put in the other, the latter would outweigh the former.”
+
+1092. What are the names of the Coptic months?
+
+Certain papyri dating from the fifth century B. C. discovered on the island of Elephantine indicate that the Egyptians of the time celebrated great feasts in honor of the gods whose names were given to the months of the ancient Egyptian calendar. The Copts preserved the names of the ancient Egyptian months, despite the fact that they are the names of pagan gods or their feasts. The names of the months are:
+
+1. Thout (begins 11th September / 12th September in a leap year): God of wisdom and knowledge, inventor of writing, protector of scribes, and designer of seasons and months. Thout presides over the “House of Life” and is the source of all the texts necessary to preserve and renew life.
+
+2. Paopi (10th/11th October): The Feast of Opet. Amun-Ra was accustomed to travelling from the Temple of Karnak to the Temple of Luxor to celebrate this famous festival.
+
+## footnotes
+
+[637] Iris Habib El-Masry, The Story of the Copts: Book 1, (Southern California, U.S.A: St. Anthony Coptic Orthodox Monastery, undated) 1.9.99: p. 100.
+
+## footnote markers removed from the body: [637]
+
+## removed
+
+header: Catechism of the Coptic Orthodox Church – Volume 2
+page_number: 242
+footnote: 637 Iris Habib El-Masry, The Story of the Copts: Book 1, (Southern California, U.S.A: St. Anthony Coptic
+footnote: Orthodox Monastery, undated) 1.9.99: p. 100.

@@ -304,19 +304,17 @@ PDF files included in the repo:
 
 Arabic mode uses a separate Arabic Chroma collection, `orthodox_arabic_pdfs`, for Arabic answers. It also uses a generated Arabic saints list derived from `data/pdfs/full saints arabic.pdf`, with `arabic_saints_index.py` as a small reviewed fallback only.
 
-Run these commands locally or on Railway when rebuilding source data:
+Ingestion lives in one package, `ingestion/` (Phase 5, `INGEST_PLAN.md`). To rebuild the v1 collections
+(the same chunks and ids as before; `verify-legacy` checks this against an existing store without any API call):
 
 ```bash
-python ingest_arabic_sources.py
-python ingest_all_sources.py
-python build_arabic_saints_index.py
+python -m ingestion verify-legacy --lang en ar web      # read-only comparison with chroma_db/
+python -m ingestion build --corpus v1-legacy --lang ar  # embeds with OPENAI_API_KEY; add --resume to finish an interrupted run
+python build_arabic_saints_index.py                     # v1 Arabic saints list (replaced by the ingest-time index in v2)
 ```
 
-For the current Railway production volume, run the Arabic ingestion command once from a Railway shell or temporary pre-deploy command:
-
-```bash
-CHROMA_DIR=/app/chroma_db python ingest_arabic_sources.py
-```
+On Railway, run the build from a Railway shell with `CHROMA_DIR=/app/chroma_db` (the volume mount). The embedder
+stops immediately on `insufficient_quota`, 401 or 403 and never retries them.
 
 Expected Arabic ingestion logs include:
 

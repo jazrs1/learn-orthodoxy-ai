@@ -1,0 +1,15 @@
+# cat1 p10 (printed page x) - pymupdf-1.28.2
+
+## body
+
+(empty)
+
+## footnotes
+
+(none)
+
+## footnote markers removed from the body: []
+
+## removed
+
+page_number: x
