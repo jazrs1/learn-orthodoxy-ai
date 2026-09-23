@@ -129,7 +129,7 @@ function stopIfFailed(label, result) {
 }
 
 // CASES=table,menu … runs only those (real mode).
-const CASES = (process.env.CASES || "english,arabic,table,refusal,menu,nostream").split(",");
+const CASES = (process.env.CASES || "english,arabic,table,saints,refusal,menu,nostream").split(",");
 
 if (MODE === "real") {
   if (CASES.includes("english")) {
@@ -143,6 +143,34 @@ if (MODE === "real") {
   if (CASES.includes("table")) {
     report.table = await streamedAnswer("table", "Make a table of the fasts of the Coptic Orthodox Church and how long each one lasts.", 1440, "en");
     stopIfFailed("table", report.table);
+  }
+
+  // The saints pane, opened the way a calendar link opens it (UI-029).
+  if (CASES.includes("saints")) {
+    for (const [width, language, name] of [[1440, "en", "St. Athanasius the Apostolic"], [390, "ar", "الأنبا بولا أول السواح"]]) {
+      const tag = `saint-${language}-${width}`;
+      const page = await open(width, language, { path: `/chat?saint=${encodeURIComponent(name)}#saints` });
+      const started = Date.now();
+      const firstShown = await page
+        .waitForSelector(".saint-detail-panel .stream-word", { timeout: 30000 })
+        .then(() => Date.now() - started, () => null);
+      const stopShown = await page.locator(".saint-detail-stop").isVisible();
+      await page.screenshot({ path: `${OUT}/${tag}-streaming.png` });
+      await axe(page, `${tag}-streaming`);
+      await page.waitForSelector(".saint-detail-panel .answer-sources, .saint-detail-panel .message-option-chip, .saint-detail-panel .chat-empty-state:not(:has(.typing-indicator))", { timeout: 60000 });
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `${OUT}/${tag}-done.png` });
+      await axe(page, `${tag}-done`);
+      report[tag] = {
+        name,
+        firstWordMsFromLoad: firstShown,
+        stopShownWhileStreaming: stopShown,
+        sources: await page.locator(".saint-detail-panel .answer-source").count(),
+        error: await page.locator(".saint-detail-panel .chat-empty-state").count(),
+      };
+      await page.context().close();
+      stopIfFailed(tag, { error: report[tag].error || (report[tag].sources ? null : "no sources") });
+    }
   }
 
   const page = await open(1440, "en");

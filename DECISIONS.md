@@ -1712,6 +1712,12 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
     - English at 1440 and Arabic at 390: words streamed, Stop showed while streaming and was gone after, with 4 and 3 sources, announced once.
     - Stop kept 140 characters and announced "Stopped.".
     - With the saints stream route answering 404, `/api/saint-detail` answered.
+  - Real v2 backend (`streaming.mjs MODE=real CASES=saints`, gpt-4.1-mini):
+    - "St. Athanasius the Apostolic" at 1440: first words 2.9 s after the page loaded, Stop shown while streaming, 5 sources.
+    - "الأنبا بولا أول السواح" at 390: first words 4.4 s, 3 sources.
+    - The English lookup skips the analysis call ("search saint:" is already a bare name); the Arabic one ran it (1.6 s).
+    - axe: 0 violations in the 4 states.
+    - OpenAI spend: $0.0109, of the $0.02 allowed for Part A.
   - axe: 0 violations in 13 states, across the chat scroll states (UI-028) and the saints pane streaming, finished and stopped. The first run found `scrollable-region-focusable` on the saints list. The scripted backend has no saints index, so the list held only an error message with nothing focusable; the check now serves three saint names to the browser, as the other audit tools do with fixtures.
 - **Files changed:** `app/api/saint-detail/stream/route.ts`, `lib/stream-proxy.ts`, `lib/saint-detail.ts` (new); `app/api/saint-detail/route.ts`, `app/api/chat/stream/route.ts`, `lib/chat-client.ts` (+ test), `lib/chat-types.ts`, `lib/stream-markdown.ts` (+ test), `app/chat/chat-page.tsx`, `app/globals.css`; `ui-audit/tools/streaming.mjs` (saints scenarios, the saints-list fixture, and `load` rather than `networkidle` for a page that starts an answer on load: an open stream keeps the network busy until it ends).
 
