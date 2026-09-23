@@ -10,7 +10,9 @@ import chromadb
 import pytest
 
 import api
+import task_analysis
 from request_log import RequestTrace
+from task_analysis import AnalysisCache, TaskAnalysis
 
 
 class FakeArabicCollection:
@@ -207,8 +209,6 @@ def test_no_prefetch_where_no_analysis_runs(prefetching):
 
 
 def test_chat_starts_the_prefetch_before_the_analysis_and_retrieval_reuses_it(prefetching, monkeypatch):
-    from task_analysis import TaskAnalysis
-
     seen_at_analysis = {}
 
     def analyze(question, history):
@@ -227,3 +227,66 @@ def test_chat_starts_the_prefetch_before_the_analysis_and_retrieval_reuses_it(pr
     assert prefetching.calls[0] == ["What is prayer?"]
     assert all(call != ["What is prayer?"] for call in prefetching.calls[1:])
     assert trace.fields["embedding_prefetch"] == "reused"
+
+
+# ---------------------------------------------------------------- RET-016: analysis cache
+
+
+
+def analysed(question, **fields):
+    return TaskAnalysis(retrieval_query=question, ok=True, prompt_tokens=900, completion_tokens=60, **fields)
+
+
+@pytest.fixture
+def analysis_calls(monkeypatch):
+    calls = []
+
+    def analyze(client, question, history, model, timeout_seconds):
+        calls.append((question, bool(history)))
+        return analysed(question, named_subjects=["papal infallibility"], used_history=bool(history))
+
+    monkeypatch.setattr(api, "analyze_request", analyze)
+    monkeypatch.setattr(api, "analysis_cache", AnalysisCache())
+    monkeypatch.setattr(api, "ANALYSIS_CACHE", True)
+    monkeypatch.setattr(api, "TASK_ANALYSIS_ENABLED", True)
+    return calls
+
+
+def test_a_repeated_first_turn_question_reuses_its_analysis(analysis_calls):
+    first = api._analyze_request("What is papal infallibility?", [])
+    with RequestTrace("test") as trace:
+        second = api._analyze_request("What is papal infallibility?", [])
+    assert analysis_calls == [("What is papal infallibility?", False)]
+    assert second.named_subjects == first.named_subjects == ["papal infallibility"]
+    assert second.prompt_tokens is None and trace.fields["analysis_cached"] is True
+    # A copy: changing it doesn't change the cache.
+    second.named_subjects.append("x")
+    assert api._analyze_request("What is papal infallibility?", []).named_subjects == ["papal infallibility"]
+
+
+def test_follow_ups_and_failures_are_always_analysed(analysis_calls, monkeypatch):
+    history = [{"role": "user", "content": "Who was St. Mark?"}, {"role": "assistant", "content": "…"}]
+    api._analyze_request("When is his feast?", history)
+    api._analyze_request("When is his feast?", history)
+    assert analysis_calls == [("When is his feast?", True)] * 2
+    monkeypatch.setattr(api, "analyze_request", lambda *a, **k: TaskAnalysis(retrieval_query="q", error="Timeout"))
+    api._analyze_request("Why fast?", [])
+    assert api.analysis_cache.get("Why fast?", api.TASK_ANALYSIS_MODEL) is None
+
+
+def test_a_changed_prompt_or_model_misses_the_cache(monkeypatch):
+    cache = AnalysisCache()
+    cache.put("Why fast?", "gpt-4o-mini", analysed("Why fast?"))
+    assert cache.get("Why fast?", "gpt-4o-mini") is not None
+    assert cache.get("Why fast?", "gpt-4.1-nano") is None
+    monkeypatch.setattr(task_analysis, "ANALYSIS_SYSTEM_PROMPT", task_analysis.ANALYSIS_SYSTEM_PROMPT + " Also…")
+    assert AnalysisCache()._key("Why fast?", "gpt-4o-mini") != cache._key("Why fast?", "gpt-4o-mini")
+
+
+def test_the_oldest_analyses_are_dropped_first():
+    cache = AnalysisCache(max_entries=2)
+    for q in ("a", "b"):
+        cache.put(q, "m", analysed(q))
+    cache.get("a", "m")  # used recently
+    cache.put("c", "m", analysed("c"))
+    assert cache.get("b", "m") is None and cache.get("a", "m") and cache.get("c", "m")

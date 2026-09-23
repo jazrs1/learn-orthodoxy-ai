@@ -62,6 +62,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-013: The Arabic lexical scan runs over an in-memory copy of the normalised chunks](#ret-013-the-arabic-lexical-scan-runs-over-an-in-memory-copy-of-the-normalised-chunks)
   - [RET-014: Each query text is embedded once per request, and the search is given the vectors](#ret-014-each-query-text-is-embedded-once-per-request-and-the-search-is-given-the-vectors)
   - [RET-015: The question is embedded while the analysis call runs, and reused when the analysis leaves it unchanged](#ret-015-the-question-is-embedded-while-the-analysis-call-runs-and-reused-when-the-analysis-leaves-it-unchanged)
+  - [RET-016: A first-turn question asked before reuses its analysis](#ret-016-a-first-turn-question-asked-before-reuses-its-analysis)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -992,6 +993,25 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - Through `_prepare_or_http_error` with a stub analysis, the prefetch is already under way when the analysis starts, and retrieval doesn't embed the question again.
   - Backend suite: 207 passed, three times over.
 - **Files changed:** `api.py`, `tests/test_speed.py`.
+
+### RET-016: A first-turn question asked before reuses its analysis
+- **Date / Part:** 2026-09-23, speed branch Part B3, change 3 of RET-012 (approved)
+- **Context:** the analysis call (~1.0 s median) is the largest stage before the answer starts. A first message is analysed on its own, without history, at temperature 0, so the same question gets the same analysis every time. Many questions arrive as exactly the same text: the home page's example questions, the 36 catechism prompt cards, and the questions everyone asks.
+- **Decision:**
+  - `AnalysisCache` (`task_analysis.py`) keeps successful first-turn analyses in the process's memory, keyed by the analysis model, a hash of the analysis prompt, and the exact question. Changing the model or the prompt misses the cache.
+  - Up to 2,000 entries, least recently used dropped first. Each is a few hundred bytes.
+  - Not cached: follow-ups (their analysis depends on the conversation), failed or timed-out analyses, and "search saint:" lookups (which make no call anyway).
+  - A hit returns a copy with no token counts, so spend accounting stays right, and the trace records `analysis_cached: true`.
+  - A redeploy or restart starts empty.
+  - `ANALYSIS_CACHE=0` switches it off.
+- **Why quality can't drop:** everything downstream (the entity check's `named_subjects`, the Arabic scope flag, format, broad lists) receives exactly what the first call returned, which is what a second call returns at temperature 0.
+- **Checks** (`tests/test_speed.py`):
+  - A repeated question makes one call, the copy has no tokens and can't alter the cache.
+  - Follow-ups call every time, and a failure isn't cached.
+  - Another model or prompt misses.
+  - The least recently used entry is dropped first.
+  - Backend suite: 211 passed.
+- **Files changed:** `task_analysis.py`, `api.py`, `tests/test_speed.py`.
 
 ## Prompting & Generation
 

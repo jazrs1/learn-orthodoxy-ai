@@ -19,9 +19,13 @@ format "prose", and the error is recorded so it shows up in the request log.
 
 from __future__ import annotations
 
+import copy
+import hashlib
 import json
 import os
 import re
+import threading
+from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -186,3 +190,42 @@ def analyze_request(
 
 def default_model() -> str:
     return os.getenv("TASK_ANALYSIS_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
+
+
+class AnalysisCache:
+    """First-turn analyses by question (RET-016).
+
+    A first message is analysed on its own (no history) at temperature 0, so the same question gets
+    the same analysis. The key includes the model and a hash of ANALYSIS_SYSTEM_PROMPT, so changing
+    either misses the cache. Only successful analyses are kept; the process's memory only, oldest
+    dropped first. A cached copy carries no token counts: it cost nothing.
+    """
+
+    def __init__(self, max_entries: int = 2000):
+        self.max_entries = max_entries
+        self._entries: "OrderedDict[tuple, TaskAnalysis]" = OrderedDict()
+        self._lock = threading.Lock()
+        self._prompt_sha = hashlib.sha1(ANALYSIS_SYSTEM_PROMPT.encode("utf-8")).hexdigest()[:12]
+
+    def _key(self, question: str, model: str) -> tuple:
+        return (model, self._prompt_sha, question)
+
+    def get(self, question: str, model: str) -> Optional[TaskAnalysis]:
+        with self._lock:
+            found = self._entries.get(self._key(question, model))
+            if found is None:
+                return None
+            self._entries.move_to_end(self._key(question, model))
+        cached = copy.deepcopy(found)
+        cached.prompt_tokens = None
+        cached.completion_tokens = None
+        return cached
+
+    def put(self, question: str, model: str, analysis: TaskAnalysis) -> None:
+        if not analysis.ok or analysis.error or analysis.used_history:
+            return
+        with self._lock:
+            self._entries[self._key(question, model)] = copy.deepcopy(analysis)
+            self._entries.move_to_end(self._key(question, model))
+            while len(self._entries) > self.max_entries:
+                self._entries.popitem(last=False)

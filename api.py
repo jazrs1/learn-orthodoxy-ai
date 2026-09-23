@@ -41,7 +41,7 @@ from saint_index_overrides import (
     MANUAL_SAINT_NAME_REPLACEMENTS,
 )
 from arabic_saints_index import ARABIC_SAINTS_INDEX
-from task_analysis import TaskAnalysis, analyze_request
+from task_analysis import AnalysisCache, TaskAnalysis, analyze_request
 from entity_check import check_subjects
 import corpus_runtime
 from chroma_store import get_chroma_path_v2
@@ -138,6 +138,8 @@ ENTITY_CHECK_ENABLED = _env_flag("ENTITY_CHECK_ENABLED", "1")
 ARABIC_LEXICAL_CACHE = _env_flag("ARABIC_LEXICAL_CACHE", "1")
 # The question is embedded while the analysis call runs, for retrieval to reuse (RET-015).
 EMBEDDING_PREFETCH = _env_flag("EMBEDDING_PREFETCH", "1")
+# A first-turn question asked before reuses its analysis (RET-016).
+ANALYSIS_CACHE = _env_flag("ANALYSIS_CACHE", "1")
 
 # --- Broad and list requests (DECISIONS.md RET-007) ---
 # Broad requests retrieve more chunks, from the main query plus the analysis sub-queries.
@@ -2263,17 +2265,28 @@ def _cited_sources(answer: str, numbered: List[Dict[str, Any]], fallback_limit: 
     return chosen, cited_count
 
 
+analysis_cache = AnalysisCache()
+
+
 def _analyze_request(question: str, history: List[Dict[str, str]]) -> TaskAnalysis:
     """Standalone retrieval query + requested format for this turn (RET-006), logged in the trace."""
     trace = current_trace()
+    cacheable = ANALYSIS_CACHE and not history
+    cached = analysis_cache.get(question, TASK_ANALYSIS_MODEL) if cacheable and _analysis_will_run(question) else None
     if not _analysis_will_run(question):
         analysis = TaskAnalysis(retrieval_query=question, error="skipped")
+    elif cached is not None:
+        analysis = cached
+        if trace is not None:
+            trace.set(analysis_cached=True)
     else:
         analysis = analyze_request(
             oai_client, question, history, model=TASK_ANALYSIS_MODEL, timeout_seconds=TASK_ANALYSIS_TIMEOUT_SECONDS
         )
         if analysis.error:
             logger.warning("task analysis failed, using the raw question: %s", analysis.error)
+        elif cacheable:
+            analysis_cache.put(question, TASK_ANALYSIS_MODEL, analysis)
     if trace is not None:
         trace.set(task_analysis=analysis.log_dict(), analysis_tokens=analysis.prompt_tokens and (analysis.prompt_tokens + (analysis.completion_tokens or 0)))
     return analysis
