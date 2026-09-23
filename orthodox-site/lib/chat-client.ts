@@ -1,5 +1,5 @@
 // Type-only imports and a .ts path, so `node --test` can load this file (chat-client.test.ts).
-import type { ChatMessage, ConversationDetail, ConversationSummary } from "./chat-types";
+import type { ChatMessage, ConversationDetail, ConversationSummary, SaintDetail } from "./chat-types";
 import type { Language } from "./i18n";
 import { SseParser } from "./sse.ts";
 
@@ -83,16 +83,6 @@ export type ChatRequestPayload = {
   namesakesOf?: string;
 };
 
-export async function sendChatRequest(payload: ChatRequestPayload, signal?: AbortSignal) {
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    signal,
-  });
-  return readJson<ChatResponse>(response);
-}
-
 /** The backend reported a failure after the answer had started (an `error` event). */
 export class StreamError extends Error {
   constructor(message: string) {
@@ -107,45 +97,68 @@ export class StreamError extends Error {
 // against the rate limit.
 const FALLBACK_STATUSES = new Set([404, 405, 502, 504]);
 
+export type StreamOptions = { signal?: AbortSignal; onDelta: (text: string) => void };
+
 /**
- * Asks for an answer through /api/chat/stream: `onDelta` receives the text as it is written and
- * the promise resolves with the saved turn, as `sendChatRequest` does. A refusal or a saint menu
- * comes back whole. Aborting `signal` (Stop) rejects with an AbortError.
+ * Asks for an answer through `streamPath`: `onDelta` receives the text as it is written and the
+ * promise resolves with the final `done` payload. A refusal or a saint menu comes back whole as
+ * JSON. When the stream can't start, the same request goes to `wholePath`. Aborting `signal`
+ * (Stop) rejects with an AbortError.
  */
-export async function streamChatRequest(
-  payload: ChatRequestPayload,
-  { signal, onDelta }: { signal?: AbortSignal; onDelta: (text: string) => void }
-): Promise<ChatResponse> {
-  let response: Response;
-  try {
-    response = await fetch("/api/chat/stream", {
+async function streamRequest<T>(
+  streamPath: string,
+  wholePath: string,
+  payload: unknown,
+  { signal, onDelta }: StreamOptions
+): Promise<T> {
+  const post = (path: string) =>
+    fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       signal,
     });
+  let response: Response;
+  try {
+    response = await post(streamPath);
   } catch (error) {
     if (signal?.aborted) throw error;
-    return sendChatRequest(payload, signal);
+    return readJson<T>(await post(wholePath));
   }
-  if (FALLBACK_STATUSES.has(response.status)) return sendChatRequest(payload, signal);
+  if (FALLBACK_STATUSES.has(response.status)) return readJson<T>(await post(wholePath));
   const contentType = response.headers.get("content-type") || "";
   if (!response.ok || !response.body || !contentType.includes("text/event-stream")) {
-    return readJson<ChatResponse>(response);
+    return readJson<T>(response);
   }
-  return readChatStream(response.body, onDelta);
+  return readStream<T>(response.body, onDelta);
 }
 
-export async function readChatStream(
-  body: ReadableStream<Uint8Array>,
-  onDelta: (text: string) => void
-): Promise<ChatResponse> {
+/** A chat answer through /api/chat/stream (fallback /api/chat); resolves with the saved turn. */
+export function streamChatRequest(payload: ChatRequestPayload, options: StreamOptions) {
+  return streamRequest<ChatResponse>("/api/chat/stream", "/api/chat", payload, options);
+}
+
+export type SaintDetailRequestPayload = {
+  name: string;
+  language: Language;
+  /** A menu choice: the entry's ID (RET-010). */
+  saintId?: string;
+  /** "Looking for a different St. X?" in the saints pane (RET-011). */
+  namesakesOf?: string;
+};
+
+/** The saints pane's answer through /api/saint-detail/stream (UI-029); nothing is saved. */
+export function streamSaintDetail(payload: SaintDetailRequestPayload, options: StreamOptions) {
+  return streamRequest<SaintDetail>("/api/saint-detail/stream", "/api/saint-detail", payload, options);
+}
+
+export async function readStream<T>(body: ReadableStream<Uint8Array>, onDelta: (text: string) => void): Promise<T> {
   const reader = body.getReader();
-  const result: { turn: ChatResponse | null; failure: StreamError | null } = { turn: null, failure: null };
+  const result: { turn: T | null; failure: StreamError | null } = { turn: null, failure: null };
   const parser = new SseParser(({ event, data }) => {
     if (result.turn || result.failure) return;
     if (event === "delta") onDelta(String(JSON.parse(data).t ?? ""));
-    else if (event === "done") result.turn = JSON.parse(data) as ChatResponse;
+    else if (event === "done") result.turn = JSON.parse(data) as T;
     else if (event === "error") result.failure = new StreamError(String(JSON.parse(data).message || "Stream failed."));
   });
   let ended = false;

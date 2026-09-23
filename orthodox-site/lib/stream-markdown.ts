@@ -28,11 +28,13 @@ function holdOpenTable(text: string): { text: string; held: boolean } {
 
 // "[", "[1", "[1," or "[1, 2" at the very end: a citation marker still being written.
 const PARTIAL_CITATION = /\[(?:\d{1,3}(?:\s*[,;،]\s*\d{0,3})*)?$/;
+// A list item or heading whose text hasn't arrived yet ("2.", "-", "##"): it would show as an empty bullet.
+const EMPTY_LAST_LINE_MARKER = /\n[ \t]*(?:\d{1,3}[.)]|[-*+]|#{1,6})[ \t]*$/;
 
 export function streamView(raw: string, complete = false): StreamView {
   if (complete) return { text: raw, tableHeld: false };
   const table = holdOpenTable(raw);
-  let text = table.text.replace(PARTIAL_CITATION, "").replace(/[ \t]+$/, "");
+  let text = table.text.replace(PARTIAL_CITATION, "").replace(EMPTY_LAST_LINE_MARKER, "").replace(/\s+$/, "");
   // Close bold that is still open, so "**St. Anth" shows as bold rather than asterisks.
   if ((text.match(/\*\*/g) || []).length % 2 === 1) {
     text = text.endsWith("**") ? text.slice(0, -2).replace(/[ \t]+$/, "") : `${text}**`;

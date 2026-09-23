@@ -3,7 +3,8 @@
 
 import assert from "node:assert/strict";
 import { afterEach, describe, test } from "node:test";
-import { ApiError, StreamError, streamChatRequest, type ChatResponse } from "./chat-client.ts";
+import { ApiError, StreamError, streamChatRequest, streamSaintDetail, type ChatResponse } from "./chat-client.ts";
+import type { SaintDetail } from "./chat-types.ts";
 import { formatSseEvent } from "./sse.ts";
 
 const TURN: ChatResponse = {
@@ -19,13 +20,17 @@ afterEach(() => {
 
 type Call = { url: string; signal?: AbortSignal | null };
 
-/** Replies to /api/chat/stream with `stream` and to /api/chat with `fallback`. */
-function fakeFetch(stream: (init: RequestInit) => Response | Promise<Response>, fallback?: () => Response) {
+/** Replies to the stream route with `stream` and to the whole-reply route with `fallback`. */
+function fakeFetch(
+  stream: (init: RequestInit) => Response | Promise<Response>,
+  fallback?: () => Response,
+  paths = { stream: "/api/chat/stream", whole: "/api/chat" }
+) {
   const calls: Call[] = [];
   globalThis.fetch = (async (url: string, init: RequestInit = {}) => {
     calls.push({ url, signal: init.signal });
-    if (url === "/api/chat/stream") return stream(init);
-    if (url === "/api/chat" && fallback) return fallback();
+    if (url === paths.stream) return stream(init);
+    if (url === paths.whole && fallback) return fallback();
     throw new Error(`unexpected ${url}`);
   }) as typeof fetch;
   return calls;
@@ -148,5 +153,57 @@ describe("streamChatRequest", () => {
       });
       assert.deepEqual(calls.map((c) => c.url), ["/api/chat/stream"]);
     }
+  });
+});
+
+describe("streamSaintDetail (the saints pane, UI-029)", () => {
+  const SAINT_PATHS = { stream: "/api/saint-detail/stream", whole: "/api/saint-detail" };
+  const DETAIL: SaintDetail = {
+    answer: "St. Anthony was the father of monks [1].",
+    sources: [{ pdf: "saints1.pdf", page: 12, n: 1 }],
+    entities: [],
+    options: [],
+    namesakes: null,
+    canLearnMore: true,
+  };
+
+  test("streams the saint's answer, then resolves with the saint detail", async () => {
+    const calls = fakeFetch(
+      (init) =>
+        eventStream(init, [
+          formatSseEvent("delta", { t: "St. Anthony was " }),
+          formatSseEvent("delta", { t: "the father of monks [1]." }),
+          formatSseEvent("done", DETAIL),
+        ]),
+      undefined,
+      SAINT_PATHS
+    );
+    const pieces: string[] = [];
+    const detail = await streamSaintDetail({ name: "St. Anthony", language: "en" }, { onDelta: (t) => pieces.push(t) });
+    assert.deepEqual(pieces, ["St. Anthony was ", "the father of monks [1]."]);
+    assert.deepEqual(detail, DETAIL);
+    assert.deepEqual(calls.map((c) => c.url), ["/api/saint-detail/stream"]);
+  });
+
+  test("a saint menu comes back whole", async () => {
+    const menu: SaintDetail = { answer: "Which one?", options: ["St. Gregory of Nyssa"], optionIds: ["gregory-of-nyssa"], sources: [] };
+    fakeFetch(() => json(menu), undefined, SAINT_PATHS);
+    assert.deepEqual(await streamSaintDetail({ name: "St. Gregory", language: "en" }, { onDelta: () => undefined }), menu);
+  });
+
+  test("falls back to /api/saint-detail when the stream route is missing", async () => {
+    const calls = fakeFetch(() => json({}, 404), () => json(DETAIL), SAINT_PATHS);
+    assert.deepEqual(await streamSaintDetail({ name: "St. Anthony", language: "en" }, { onDelta: () => undefined }), DETAIL);
+    assert.deepEqual(calls.map((c) => c.url), ["/api/saint-detail/stream", "/api/saint-detail"]);
+  });
+
+  test("Stop rejects with an AbortError", async () => {
+    const controller = new AbortController();
+    fakeFetch((init) => eventStream(init, [formatSseEvent("delta", { t: "St. Anthony" })]), undefined, SAINT_PATHS);
+    const pending = streamSaintDetail(
+      { name: "St. Anthony", language: "en" },
+      { signal: controller.signal, onDelta: () => controller.abort() }
+    );
+    await assert.rejects(pending, { name: "AbortError" });
   });
 });

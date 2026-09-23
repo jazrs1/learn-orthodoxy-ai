@@ -1,37 +1,19 @@
 import { NextResponse } from "next/server";
 import { backendConfigError, backendFetch } from "../../../lib/backend";
-import type { SourceRef } from "../../../lib/chat-types";
-import { Language, normalizeLanguage } from "../../../lib/i18n";
-import { backendSaintSelection, namesakesFromBackend, optionsFromBackend } from "../../../lib/message-options";
+import {
+  BackendSaintResponse,
+  saintDetailBackendBody,
+  saintDetailFromBackend,
+  saintErrorReply,
+} from "../../../lib/saint-detail";
 
 export const runtime = "nodejs";
 
-type SaintDetailRequest = {
-  name?: string;
-  language?: Language;
-  saintId?: string;
-  namesakesOf?: string;
-};
-
-type BackendChatResponse = {
-  answer?: string;
-  entities?: string[];
-  options?: string[];
-  option_ids?: string[];
-  namesakes?: { label?: string; name?: string } | null;
-  sources?: SourceRef[];
-  can_learn_more?: boolean;
-};
-
+// The saints pane's answer in one reply. The pane streams through /api/saint-detail/stream and
+// falls back to this route when the stream can't start (UI-029).
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => ({}))) as SaintDetailRequest;
-  const name = body.name?.trim() || "";
-  // A menu choice carries the entry's ID; a name from the saints list or a calendar link is
-  // resolved by its exact name, never shown a menu for (RET-010).
-  const saintSelection = backendSaintSelection({ saintId: body.saintId, namesakesOf: body.namesakesOf, saintName: name });
-  const language = normalizeLanguage(body.language);
-
-  if (!name) {
+  const backendBody = await saintDetailBackendBody(request);
+  if (!backendBody) {
     return NextResponse.json({ error: "Saint name is required." }, { status: 400 });
   }
 
@@ -41,24 +23,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const backendQuestion = language === "ar" ? `من هو ${name}؟` : `search saint: ${name}`;
-
     const backendResponse = await backendFetch("/chat", {
       request,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        question: backendQuestion,
-        history: [],
-        top_k: 8,
-        mode: "saints",
-        language,
-        ...saintSelection,
-      }),
+      body: backendBody,
       timeoutMs: 20000,
     });
 
-    const data = (await backendResponse.json().catch(() => ({}))) as BackendChatResponse & { detail?: string };
+    const data = (await backendResponse.json().catch(() => ({}))) as BackendSaintResponse & { detail?: string };
     if (!backendResponse.ok) {
       return NextResponse.json(
         { error: data.detail || "Unable to load saint details right now." },
@@ -66,23 +39,8 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({
-      answer: data.answer || "",
-      entities: Array.isArray(data.entities) ? data.entities : [],
-      ...optionsFromBackend(data),
-      namesakes: namesakesFromBackend(data) ?? null,
-      sources: Array.isArray(data.sources) ? data.sources : [],
-      canLearnMore: data.can_learn_more === true,
-    });
+    return NextResponse.json(saintDetailFromBackend(data));
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error && error.name !== "TimeoutError"
-            ? error.message
-            : "Unable to reach the Orthodox AI backend right now.",
-      },
-      { status: 500 }
-    );
+    return saintErrorReply(error);
   }
 }

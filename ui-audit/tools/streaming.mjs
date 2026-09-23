@@ -2,8 +2,10 @@
 // Writes screenshots, videos (.webm), axe results and report.json to the output folder.
 //
 //   MODE=fake  (free) against fake_stream_backend.py: a table never shown half-built, Stop (kept on
-//              screen, not saved), Jump to latest, an error mid-stream with Retry, the fallback to
-//              /api/chat, reduced motion; axe on each state.
+//              screen, not saved), the question scrolled near the top and left there with "↓" to
+//              the latest text (UI-028), the saints pane streaming with Stop and its fallback
+//              (UI-029), an error mid-stream with Retry, the fallback to /api/chat, reduced
+//              motion; axe on each state.
 //   MODE=real  (about $0.02 with gpt-4.1-mini) against the real backend on v2: an English answer at
 //              1440, an Arabic one at 390, a table, a refusal and a saint menu. Time to first token and
 //              total time as the reader sees them, the same for /api/chat, and axe. Stops at the first
@@ -25,7 +27,7 @@ const browser = await chromium.launch(process.env.CHROME_BIN ? { executablePath:
 const report = { mode: MODE, base: BASE, at: new Date().toISOString(), axe: {} };
 const VIEWPORTS = { 1440: { width: 1440, height: 900 }, 390: { width: 390, height: 844 } };
 
-async function open(width = 1440, language = "en", { video = false, reducedMotion = "no-preference" } = {}) {
+async function open(width = 1440, language = "en", { video = false, reducedMotion = "no-preference", path = "/chat" } = {}) {
   const ctx = await browser.newContext({
     viewport: VIEWPORTS[width],
     locale: language === "ar" ? "ar-EG" : "en-US",
@@ -34,7 +36,15 @@ async function open(width = 1440, language = "en", { video = false, reducedMotio
   });
   await ctx.addCookies([{ name: "lo_lang", value: language, url: BASE }]);
   const page = await ctx.newPage();
-  await page.goto(BASE + "/chat", { waitUntil: "networkidle" });
+  if (MODE === "fake") {
+    // The scripted backend has no saints index; the saints list gets a few names, as a real one would.
+    const saints = language === "ar" ? ["الأنبا أنطونيوس", "الأنبا بولا", "القديس مرقس"] : ["St. Anthony", "St. Paul the Hermit", "St. Mark"];
+    await page.route("**/api/saints?**", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ saints, total: saints.length }) })
+    );
+  }
+  // A page that starts an answer on load (a saint link) keeps the network busy until it ends.
+  await page.goto(BASE + path, { waitUntil: path === "/chat" ? "networkidle" : "load" });
   return page;
 }
 
@@ -271,6 +281,54 @@ if (MODE === "real") {
       notFollowedAfterJump: afterJump ? afterJump.scrollTop === jumped.scrollTop && afterJump.streaming : null,
     };
     await page.waitForSelector(".answer-sources >> nth=1", { timeout: 60000 });
+    await page.context().close();
+  }
+
+  // 3b. The saints pane streams too (UI-029), opened the way a calendar link opens it.
+  for (const [width, language, name] of [[1440, "en", "St. Anthony"], [390, "ar", "الأنبا أنطونيوس"]]) {
+    const tag = `${language}-${width}`;
+    const page = await open(width, language, { path: `/chat?saint=${encodeURIComponent(name)}#saints` });
+    await page.waitForSelector(".saint-detail-panel .stream-word", { timeout: 30000 });
+    await page.waitForTimeout(1200);
+    const stopShown = await page.locator(".saint-detail-stop").isVisible();
+    await page.screenshot({ path: `${OUT}/saint-${tag}-streaming.png` });
+    await axe(page, `saint-${tag}-streaming`);
+    await page.waitForSelector(".saint-detail-panel .answer-sources", { timeout: 60000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${OUT}/saint-${tag}-done.png` });
+    await axe(page, `saint-${tag}-done`);
+    report[`saint-${tag}`] = {
+      stopShownWhileStreaming: stopShown,
+      stopGoneAfter: (await page.locator(".saint-detail-stop").count()) === 0,
+      sources: await page.locator(".saint-detail-panel .answer-source").count(),
+      announced: (await page.locator("[role=status]").first().innerText()).slice(0, 80),
+    };
+    await page.context().close();
+  }
+  {
+    // Stop in the saints pane keeps what arrived.
+    const page = await open(1440, "en", { path: `/chat?saint=${encodeURIComponent("St. Anthony")}#saints` });
+    await page.waitForSelector(".saint-detail-panel .stream-word", { timeout: 30000 });
+    await page.waitForTimeout(800);
+    await page.locator(".saint-detail-stop").click();
+    await page.waitForSelector(".saint-detail-panel .answer-stopped-note");
+    await page.screenshot({ path: `${OUT}/saint-en-1440-stopped.png` });
+    await axe(page, "saint-en-1440-stopped");
+    report["saint-stop"] = {
+      shownChars: (await page.locator(".saint-detail-answer").innerText()).length,
+      announced: await page.locator("[role=status]").first().innerText(),
+    };
+    await page.context().close();
+  }
+  {
+    // The saints stream route missing: /api/saint-detail answers.
+    const page = await open(1440, "en", { path: "/chat" });
+    const calls = [];
+    page.on("request", (r) => r.url().includes("/api/saint-detail") && calls.push(new URL(r.url()).pathname));
+    await page.route("**/api/saint-detail/stream", (route) => route.fulfill({ status: 404, body: "not found" }));
+    await page.goto(`${BASE}/chat?saint=${encodeURIComponent("St. Anthony")}#saints`, { waitUntil: "load" });
+    await page.waitForSelector(".saint-detail-panel .answer-sources", { timeout: 30000 });
+    report["saint-fallback"] = { calls, sources: await page.locator(".saint-detail-panel .answer-source").count() };
     await page.context().close();
   }
 

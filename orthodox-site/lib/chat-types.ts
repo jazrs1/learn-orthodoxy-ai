@@ -18,6 +18,18 @@ export type SourceRef = {
 
 export type NamesakeLink = { label: string; name: string };
 
+/** The saints pane's answer (/api/saint-detail and its stream); not part of a conversation. */
+export type SaintDetail = {
+  answer?: string;
+  entities?: string[];
+  options?: string[];
+  optionIds?: string[];
+  namesakes?: NamesakeLink | null;
+  sources?: SourceRef[];
+  canLearnMore?: boolean;
+  error?: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";

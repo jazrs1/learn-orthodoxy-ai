@@ -99,6 +99,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-026: Streamed answers in the chat page: words fade in, tables wait for their last row, Stop, Jump to latest, one announcement](#ui-026-streamed-answers-in-the-chat-page-words-fade-in-tables-wait-for-their-last-row-stop-jump-to-latest-one-announcement)
   - [UI-027: Verification of streaming: time to first text against v2, a colour fade instead of an opacity one, axe at 0](#ui-027-verification-of-streaming-time-to-first-text-against-v2-a-colour-fade-instead-of-an-opacity-one-axe-at-0)
   - [UI-028: The question is scrolled near the top once; the view stays put while the answer streams; a small "↓" jumps to the latest text](#ui-028-the-question-is-scrolled-near-the-top-once-the-view-stays-put-while-the-answer-streams-a-small--jumps-to-the-latest-text)
+  - [UI-029: The saints pane streams its answer like the chat; every place that asks for an answer checked](#ui-029-the-saints-pane-streams-its-answer-like-the-chat-every-place-that-asks-for-an-answer-checked)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1673,6 +1674,46 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - axe: 0 violations in the four streaming states.
 - **Files changed:** `lib/answer-scroll.ts` (+ test), `components/useAnswerScroll.ts` (new), `app/chat/chat-page.tsx`, `app/globals.css`; removed `components/useFollowBottom.ts` and `lib/follow-scroll.ts` (+ test); `ui-audit/tools/streaming.mjs` (scroll scenario), `ui-audit/tools/fake_stream_backend.py` (a longer English answer, so it runs past the view at 1440).
 - **Concept to learn:** *Reading position vs "stick to bottom".* Chat interfaces that follow new text suit short, glanceable replies; for long answers read from the top, anchoring the question and reserving space below it keeps the reader's place stable. Search: "chat UI scroll anchoring question at top", "CSS overflow-anchor".
+
+### UI-029: The saints pane streams its answer like the chat; every place that asks for an answer checked
+- **Date / Part:** 2026-09-23, speed branch Part A.2
+- **Owner's report:** clicking a saint on the Saints page shows its answer without the streaming animation.
+- **Cause:** the saints pane (`loadSaintDetail` in `app/chat/chat-page.tsx`) asked `/api/saint-detail`, which called the backend's non-streaming `/chat` and returned the whole answer at once. UI-026 had only moved the chat's own send path to streaming.
+- **Every place that produces an answer, and what it uses now:**
+
+| Where | Path | Streams |
+|---|---|---|
+| Chat composer, the home page's example questions and composer (handed over through `sessionStorage`), Retry | `handleSendMessage` → `/api/chat/stream` | yes (UI-026) |
+| Follow-up suggestions under an answer | `submitMessageOption` → `handleSendMessage` | yes |
+| Saint names in an answer (bold, clickable) | `chat:insertAndSubmitText` → the composer → `handleSendMessage` | yes (a menu comes back whole) |
+| Saint menu chips in the chat, and "Looking for a different St. X?" in the chat | `submitSaintLookup` / `submitNamesakes` → `handleSendMessage` | yes (menus come back whole) |
+| Catechism prompts | `handleSendMessage` with mode `catechism` | yes |
+| "Ask more about this saint" (saints pane) | `handleSendMessage` with mode `saints` | yes |
+| **A saint in the Saints list** | `loadSaintDetail` → `/api/saint-detail` | **no → yes (this entry)** |
+| **Calendar saint links** (`/chat?saint=…#saints`, CAL-005) | the same `loadSaintDetail` | **no → yes** |
+| **Menu chips and "Looking for a different St. X?" inside the saints pane** | the same `loadSaintDetail` | **no → yes** |
+
+  Nothing else asks the backend for an answer. The saint search suggestions and the saints list are lookups, not answers.
+- **Decision:**
+  - **`POST /api/saint-detail/stream`:** the same backend `/chat/stream` and the same relay as the chat. The relay now lives in `lib/stream-proxy.ts`, shared by both stream routes: the first-byte and silence timeouts, an abort when the browser leaves, and the no-buffering headers.
+    - Its `done` event carries the saint detail `/api/saint-detail` returns (`lib/saint-detail.ts`, shared by both saint routes). Nothing is saved, as before.
+    - A saint menu comes back whole as JSON.
+  - **Client:** `streamChatRequest` and the new `streamSaintDetail` share one `streamRequest` (`lib/chat-client.ts`), with the same fallback rule: the whole-reply route on a network error or a 404, 405, 502 or 504. The unused `sendChatRequest` is gone; the fallback posts directly.
+  - **Saints pane:** the same `StreamingAnswer` as the chat, so words fade in (not with reduced motion), tables wait for their last row, and citations and sources come with the final event.
+    - A "Stop answering" button sits beside Close while the answer arrives. Stop keeps what arrived, marked "Stopped.".
+    - Opening another saint, closing the pane, a new saints search or leaving the page stops the answer on its way.
+    - The finished answer is announced once to screen readers ("Answer ready." and the text), as in the chat. The pane announced nothing before.
+  - **Also:** while streaming, a list item or heading whose text hasn't arrived yet ("2.", "-", "##" alone on the last line) is held back, instead of flashing an empty bullet (`streamView`). The saints pane's first captures showed a bare "2.".
+- **Checks:**
+  - Unit tests: frontend 162 → 167.
+    - `streamSaintDetail`: text in order, then the detail; a menu as JSON; the fallback to `/api/saint-detail`; Stop.
+    - `streamView`: empty list and heading markers.
+  - Browser (`streaming.mjs MODE=fake`, opened the way a calendar link opens the pane):
+    - English at 1440 and Arabic at 390: words streamed, Stop showed while streaming and was gone after, with 4 and 3 sources, announced once.
+    - Stop kept 140 characters and announced "Stopped.".
+    - With the saints stream route answering 404, `/api/saint-detail` answered.
+  - axe: 0 violations in 13 states, across the chat scroll states (UI-028) and the saints pane streaming, finished and stopped. The first run found `scrollable-region-focusable` on the saints list. The scripted backend has no saints index, so the list held only an error message with nothing focusable; the check now serves three saint names to the browser, as the other audit tools do with fixtures.
+- **Files changed:** `app/api/saint-detail/stream/route.ts`, `lib/stream-proxy.ts`, `lib/saint-detail.ts` (new); `app/api/saint-detail/route.ts`, `app/api/chat/stream/route.ts`, `lib/chat-client.ts` (+ test), `lib/chat-types.ts`, `lib/stream-markdown.ts` (+ test), `app/chat/chat-page.tsx`, `app/globals.css`; `ui-audit/tools/streaming.mjs` (saints scenarios, the saints-list fixture, and `load` rather than `networkidle` for a page that starts an answer on load: an open stream keeps the network busy until it ends).
 
 ## Code Cleanup
 

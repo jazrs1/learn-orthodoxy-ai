@@ -4,7 +4,16 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useRouter, useSearchParams } from "next/navigation";
 import ChatShell from "../../components/ChatShell";
 import ExampleQuestions from "../../components/ExampleQuestions";
-import { IconAlert, IconArrowDown, IconChevronDown, IconCopy, IconCheck, IconRetry, IconSearch } from "../../components/Icons";
+import {
+  IconAlert,
+  IconArrowDown,
+  IconChevronDown,
+  IconCopy,
+  IconCheck,
+  IconRetry,
+  IconSearch,
+  IconStop,
+} from "../../components/Icons";
 import ChatSidebar from "../../components/ChatSidebar";
 import AnswerWithSources from "../../components/AnswerWithSources";
 import StreamingAnswer from "../../components/StreamingAnswer";
@@ -18,8 +27,9 @@ import {
   fetchConversation,
   fetchConversationList,
   streamChatRequest,
+  streamSaintDetail,
 } from "../../lib/chat-client";
-import { ChatMessage, ConversationDetail, ConversationSummary, NamesakeLink, SourceRef } from "../../lib/chat-types";
+import { ChatMessage, ConversationDetail, ConversationSummary, NamesakeLink, SaintDetail } from "../../lib/chat-types";
 import { chatErrorKey } from "../../lib/errors";
 import type { TranslationKey } from "../../lib/i18n";
 import { displaySaintName } from "../../lib/saint-display";
@@ -36,17 +46,6 @@ import {
 type SaintsListResponse = {
   saints?: string[];
   total?: number;
-};
-
-type SaintDetailResponse = {
-  answer?: string;
-  entities?: string[];
-  options?: string[];
-  optionIds?: string[];
-  namesakes?: NamesakeLink | null;
-  sources?: SourceRef[];
-  canLearnMore?: boolean;
-  error?: string;
 };
 
 type ChatMode = "chat" | "saints" | "catechism";
@@ -237,7 +236,7 @@ function mergeUniqueSaints(current: string[], next: string[]) {
   return merged;
 }
 
-function hasSourceBackedSaintDetail(detail: SaintDetailResponse | null) {
+function hasSourceBackedSaintDetail(detail: SaintDetail | null) {
   const answer = detail?.answer?.trim() || "";
   if (!answer) return false;
   if (detail?.canLearnMore !== true) return false;
@@ -256,7 +255,7 @@ function hasSourceBackedSaintDetail(detail: SaintDetailResponse | null) {
   );
 }
 
-function saintDetailOptions(detail: SaintDetailResponse | null): MessageOption[] {
+function saintDetailOptions(detail: SaintDetail | null): MessageOption[] {
   const seen = new Set<string>();
   const options: MessageOption[] = [];
 
@@ -307,9 +306,13 @@ function ChatPageContent() {
   const [selectedSaint, setSelectedSaint] = useState("");
   // The entry behind the saints pane when it was opened from a menu choice (RET-010).
   const [selectedSaintId, setSelectedSaintId] = useState("");
-  const [saintDetail, setSaintDetail] = useState<SaintDetailResponse | null>(null);
+  const [saintDetail, setSaintDetail] = useState<SaintDetail | null>(null);
   const [saintDetailLoading, setSaintDetailLoading] = useState(false);
   const [saintDetailError, setSaintDetailError] = useState("");
+  // The saint's answer while it arrives, and whether the reader stopped it (UI-029).
+  const [saintStreamText, setSaintStreamText] = useState("");
+  const [saintStopped, setSaintStopped] = useState(false);
+  const saintAbortRef = useRef<AbortController | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
   const saintsListRef = useRef<HTMLDivElement>(null);
@@ -447,6 +450,12 @@ function ChatPageContent() {
   useEffect(() => {
     setSaints([]);
     setSaintsTotal(0);
+    // A new search closes the open saint, stopping its answer if it is still arriving.
+    saintAbortRef.current?.abort();
+    saintAbortRef.current = null;
+    setSaintDetailLoading(false);
+    setSaintStreamText("");
+    setSaintStopped(false);
     setSelectedSaint("");
     setSaintDetail(null);
     setSaintDetailError("");
@@ -732,7 +741,13 @@ function ChatPageContent() {
   }, []);
 
   // Leaving the page stops an answer still on its way.
-  useEffect(() => () => answerAbortRef.current?.abort(), []);
+  useEffect(
+    () => () => {
+      answerAbortRef.current?.abort();
+      saintAbortRef.current?.abort();
+    },
+    []
+  );
 
   useEffect(() => {
     const chatId = searchParams.get("chat") || "";
@@ -828,36 +843,85 @@ function ChatPageContent() {
     };
   }, []);
 
+  // The saints pane streams its answer like the chat (UI-029): the text is drawn in batches as it
+  // arrives, Stop keeps what has arrived, and opening another saint or closing the pane stops it.
   const loadSaintDetail = useCallback(async (name: string, saintId = "", namesakesOf = "") => {
     const trimmed = name.trim();
     if (!trimmed) return;
 
+    saintAbortRef.current?.abort();
+    const abort = new AbortController();
+    saintAbortRef.current = abort;
     setSelectedSaint(trimmed);
     setSelectedSaintId(saintId);
     setSaintDetail(null);
     setSaintDetailError("");
+    setSaintStreamText("");
+    setSaintStopped(false);
     setSaintDetailLoading(true);
 
+    let text = "";
+    let drawTimer: number | undefined;
+    const draw = () => {
+      drawTimer = undefined;
+      setSaintStreamText(text);
+    };
     try {
-      const response = await fetch("/api/saint-detail", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await streamSaintDetail(
+        {
           name: trimmed,
           language,
           ...(saintId ? { saintId } : {}),
           ...(namesakesOf ? { namesakesOf } : {}),
-        }),
-      });
-      const data = (await response.json().catch(() => ({}))) as SaintDetailResponse;
-      if (!response.ok) throw new Error("saint detail failed");
+        },
+        {
+          signal: abort.signal,
+          onDelta: (piece) => {
+            const first = !text;
+            text += piece;
+            if (drawTimer === undefined) drawTimer = window.setTimeout(draw, first ? 0 : STREAM_DRAW_MS);
+          },
+        }
+      );
+      window.clearTimeout(drawTimer);
       setSaintDetail(data);
+      setSaintStreamText("");
+      setLiveMessage(`${t("answerReady")} ${plainAnswerText(data.answer || "")}`);
     } catch {
-      setSaintDetailError(t("unableToLoadSaint"));
+      window.clearTimeout(drawTimer);
+      // Superseded by another saint, or the pane closed: that one owns the pane now.
+      if (saintAbortRef.current !== abort) return;
+      if (abort.signal.aborted) {
+        setSaintStreamText(text);
+        setSaintStopped(true);
+        setLiveMessage(t("answerStopped"));
+      } else {
+        setSaintStreamText("");
+        setSaintDetailError(t("unableToLoadSaint"));
+      }
     } finally {
-      setSaintDetailLoading(false);
+      if (saintAbortRef.current === abort) {
+        saintAbortRef.current = null;
+        setSaintDetailLoading(false);
+      }
     }
   }, [language, t]);
+
+  const stopSaintDetail = useCallback(() => {
+    saintAbortRef.current?.abort();
+  }, []);
+
+  const closeSaintDetail = useCallback(() => {
+    const abort = saintAbortRef.current;
+    saintAbortRef.current = null;
+    abort?.abort();
+    setSaintDetailLoading(false);
+    setSaintStreamText("");
+    setSaintStopped(false);
+    setSelectedSaint("");
+    setSaintDetail(null);
+    setSaintDetailError("");
+  }, []);
 
   // A saint choice is sent with its entry ID, so the backend selects exactly that entry and
   // never matches the chip text against the saints index again (RET-010).
@@ -1119,19 +1183,23 @@ function ChatPageContent() {
                 <div className="saint-detail-panel">
                   <div className="saint-detail-header">
                     <h2 className="saint-detail-title">{displaySaintName(selectedSaint, language)}</h2>
-                    <button
-                      type="button"
-                      className="button button-secondary saint-detail-close"
-                      onClick={() => {
-                        setSelectedSaint("");
-                        setSaintDetail(null);
-                        setSaintDetailError("");
-                      }}
-                    >
-                      {t("close")}
-                    </button>
+                    <div className="saint-detail-header-actions">
+                      {saintDetailLoading ? (
+                        <button type="button" className="button button-secondary saint-detail-stop" onClick={stopSaintDetail}>
+                          <IconStop size={14} />
+                          <span>{t("stopAnswer")}</span>
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="button button-secondary saint-detail-close"
+                        onClick={closeSaintDetail}
+                      >
+                        {t("close")}
+                      </button>
+                    </div>
                   </div>
-                  {saintDetailLoading ? (
+                  {saintDetailLoading && !saintStreamText ? (
                     <div className="chat-empty-state">
                       <div className="typing-indicator" role="status">
                         <span className="typing-dots" aria-hidden="true">
@@ -1144,6 +1212,13 @@ function ChatPageContent() {
                     </div>
                   ) : null}
                   {saintDetailError ? <div className="chat-empty-state">{saintDetailError}</div> : null}
+                  {saintStreamText || saintStopped ? (
+                    // The answer while it arrives, or what arrived before Stop (UI-029).
+                    <div className="saint-detail-answer" dir="auto" aria-busy={saintDetailLoading ? "true" : undefined}>
+                      {saintStreamText ? <StreamingAnswer text={saintStreamText} stopped={saintStopped} /> : null}
+                      {saintStopped ? <p className="answer-stopped-note">{t("answerStopped")}</p> : null}
+                    </div>
+                  ) : null}
                   {!saintDetailLoading && !saintDetailError && saintDetail?.answer ? (
                     <>
                       <div className="saint-detail-answer" dir="auto">

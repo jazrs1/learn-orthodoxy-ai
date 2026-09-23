@@ -57,6 +57,15 @@ describe("stream view: citations and bold", () => {
     assert.equal(streamView("Prayer is talking with God [1].").text, "Prayer is talking with God [1].");
   });
 
+  test("a list item or heading whose text hasn't arrived isn't shown as an empty marker", () => {
+    assert.equal(streamView("Kinds of prayer:\n\n1. Praise [1].\n2.").text, "Kinds of prayer:\n\n1. Praise [1].");
+    assert.equal(streamView("Kinds of prayer:\n\n- ").text, "Kinds of prayer:");
+    assert.equal(streamView("Intro.\n\n##").text, "Intro.");
+    assert.equal(streamView("Kinds of prayer:\n\n2. Thanks").text, "Kinds of prayer:\n\n2. Thanks");
+    // A number ending a sentence is not a list marker.
+    assert.equal(streamView("Great Lent lasts 55").text, "Great Lent lasts 55");
+  });
+
   test("open bold is closed so it doesn't flash as asterisks", () => {
     assert.equal(streamView("**St. Anth").text, "**St. Anth**");
     assert.equal(streamView("**St. Anthony**").text, "**St. Anthony**");
