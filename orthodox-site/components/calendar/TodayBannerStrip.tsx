@@ -41,7 +41,7 @@ export default function TodayBannerStrip({ days, serverToday }: { days: DayView[
 }
 
 /**
- * One quiet line (UI-018): "Today · 13 Thout 1743 · Wednesday fast · Pope Mettaos II and 1 more".
+ * One line (UI-018), shown as a band under the header (UI-024): "Today · 13 Thout 1743 · Wednesday fast · Pope Mettaos II and 1 more".
  * The date opens the day in the calendar, the saint opens their entry when the index has one, and
  * "and 1 more" opens the day.
  */

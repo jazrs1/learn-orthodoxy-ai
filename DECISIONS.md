@@ -92,6 +92,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-021: A two-line hero description; "sources shown" said once](#ui-021-a-two-line-hero-description-sources-shown-said-once)
   - [UI-022: Four example questions, without dotted leaders](#ui-022-four-example-questions-without-dotted-leaders)
   - [UI-023: Home page declutter: what still competes on the first screen (report, not changed)](#ui-023-home-page-declutter-what-still-competes-on-the-first-screen-report-not-changed)
+  - [UI-024: The Today banner goes back to the top, as a full-width band](#ui-024-the-today-banner-goes-back-to-the-top-as-a-full-width-band)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1453,6 +1454,21 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   6. **On phones the Today line** wraps to two lines in Arabic and is below the first screen in both languages; that seems right for a quiet line.
   7. **"How it works" and "Before you start"** stay between Explore and the footer. The brief's order ended "Explore → footer"; removing them is a content decision.
   8. **"Past chats"** is a second underlined control under the question box. It only appears for returning visitors.
+
+### UI-024: The Today banner goes back to the top, as a full-width band
+- **Date / Part:** 2026-09-23, owner's review of the declutter.
+- **Owner's request:** "keep the banner toward the top and make it more banner style." This replaces UI-017's placement below the example questions and UI-018's unruled quiet style. UI-018's one-line content stays.
+- **Decision:**
+  - **Placement:** a full-width band right under the header, above the hero, outside the content column.
+  - **Content:** one line, "Today · 13 Thout 1743 · Wednesday fast · Pope Mettaos II and 1 more". It wraps to two lines on narrow phones in Arabic.
+  - **Style:** a tinted ground (`--color-surface-muted`) with a hairline below, the "Today" label in rubric red, the date in semi-bold, and the links in umber. Text contrast is about 7:1 on the band.
+  - **Links, as before:** the date and "and 1 more" open the day in the calendar; the saint opens their entry when the index has one.
+  - **Unchanged:** the header, then the hero with the wordmark as the only brand mark in the page body; examples, Explore and the footer follow.
+- **Checks:**
+  - axe finds 0 violations in every declutter state.
+  - Lighthouse mobile, six runs each on the same build setup: Today line at the bottom 94–96 (median 96, LCP median 2.84 s); banner at the top 94–98 (median 95, LCP median 2.92 s). The difference is inside the run-to-run spread; the LCP element is the hero description in both, and the font requests are the same.
+  - Desktop: 100, LCP ≈ 0.49–0.58 s.
+- **Files changed:** `app/home-page.tsx`, `app/globals.css`, `components/calendar/TodayBannerStrip.tsx` (comment).
 
 ## Code Cleanup
 

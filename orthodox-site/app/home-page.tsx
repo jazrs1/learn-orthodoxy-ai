@@ -21,9 +21,9 @@ const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
 const ROMAN = ["I", "II", "III", "IV", "V"];
 
 /**
- * `banner` is the server-rendered Today line (CAL-005). The page reads top to bottom as
- * hero (wordmark, description, question box, AI note) → example questions → Today → Explore
- * (UI-017): the brand appears once, in the hero, and nothing sits above it.
+ * `banner` is the server-rendered Today banner (CAL-005): a full-width band right under the header
+ * (UI-024). Then hero (wordmark, description, question box, AI note) → example questions → Explore
+ * (UI-017).
  */
 export default function HomePage({ banner }: { banner?: ReactNode }) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -115,6 +115,7 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
   return (
     <>
       <main className="home-page">
+        {banner}
         <div className="home-layout">
           <div className="home-content">
             <section className="hero" aria-labelledby="home-title">
@@ -152,8 +153,6 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
             </section>
 
             <ExampleQuestions onPick={startChatFromHome} limit={4} />
-
-            {banner}
 
             <Ornament />
 
