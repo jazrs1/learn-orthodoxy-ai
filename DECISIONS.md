@@ -97,6 +97,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-024: The Today banner goes back to the top, as a full-width band](#ui-024-the-today-banner-goes-back-to-the-top-as-a-full-width-band)
   - [UI-025: A collapsible past-chats sidebar shared by the home and chat pages; a four-link header without divider; the language toggle set like the links](#ui-025-a-collapsible-past-chats-sidebar-shared-by-the-home-and-chat-pages-a-four-link-header-without-divider-the-language-toggle-set-like-the-links)
   - [UI-026: Streamed answers in the chat page: words fade in, tables wait for their last row, Stop, Jump to latest, one announcement](#ui-026-streamed-answers-in-the-chat-page-words-fade-in-tables-wait-for-their-last-row-stop-jump-to-latest-one-announcement)
+  - [UI-027: Verification of streaming: time to first text against v2, a colour fade instead of an opacity one, axe at 0](#ui-027-verification-of-streaming-time-to-first-text-against-v2-a-colour-fade-instead-of-an-opacity-one-axe-at-0)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1564,7 +1565,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
     - It doesn't fall back on 400, 429, 500 or 503, which are the backend's real answers.
   - **Drawing:** text is collected in a ref and drawn at most every 50 ms; the first piece is drawn at once. `InteractiveAnswer` is memoised, so earlier answers aren't parsed again on every draw.
   - **Word fade-in** (`lib/rehype-stream-words.ts`, `StreamingAnswer`):
-    - Every word gets its own span, at a stable position. A word keeps the `stream-word` class for its first 450 ms, a 0.4 s opacity fade. After that only the class changes, so later renders never replay the fade.
+    - Every word gets its own span, at a stable position. A word keeps the `stream-word` class for its first 450 ms, a 0.4 s fade. After that only the class changes, so later renders never replay the fade. (First an opacity fade; since UI-027 a colour fade, which never fails contrast.)
     - With `prefers-reduced-motion`, the animation is off and text simply appears.
     - The drop cap is kept while streaming, since most answers end with sources.
   - **What is shown mid-stream** (`lib/stream-markdown.ts`):
@@ -1598,6 +1599,56 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - `components/StreamingAnswer.tsx`, `components/useFollowBottom.ts` (new), `components/InteractiveAnswer.tsx`, `components/ChatShell.tsx`, `components/Icons.tsx`
   - `app/chat/chat-page.tsx`, `app/globals.css`
 - **Concept to learn:** *Rendering a stream without jank.* Batch updates to the frame rate, keep DOM positions stable so animations don't restart, hold back structures that are wrong until they are complete, and treat user input, not scroll position, as the sign of what the user wants. Search: "streaming markdown rendering LLM", "scroll anchoring chat auto scroll", "aria-busy live region".
+
+### UI-027: Verification of streaming: time to first text against v2, a colour fade instead of an opacity one, axe at 0
+- **Date / Part:** 2026-09-23, streaming branch Step 4 (verify)
+- **Audit ref:** A6; checks GEN-007, GEN-008 and UI-026
+- **Setup:**
+  - A production build of the site on port 3217, with its database on a local PGlite (`ui-audit/tools/pg-server.mjs`). `.env.local` points at a hosted Neon database, so no conversation was written there.
+  - The real backend ran locally: `CORPUS_VERSION=v2`, `OPENAI_CHAT_MODEL=gpt-4.1-mini` (the production model, GEN-005), the same internal key as the site.
+  - The browser was Chromium via Playwright, driven by `ui-audit/tools/streaming.mjs` (new). `MODE=fake` runs the behaviour checks for free against `ui-audit/tools/fake_stream_backend.py` (new: the real `api.py` with a scripted model). `MODE=real` runs the five check questions.
+  - Output goes to `ui-audit/streaming/`, which is git-ignored: screenshots, `.webm` recordings and `report.json`.
+- **Time to first text vs the whole answer** (real v2 backend, one run each). "Backend" is the request log (`ttft_ms`, `total_ms`); "browser" is click to first text shown and to the finished answer. That includes the Next.js route, and for a new chat, creating the conversation first.
+
+| request | first text, browser | first token, backend | whole answer, backend (≈ what `/chat` makes a reader wait) | whole answer, browser |
+|---|---|---|---|---|
+| English "What is prayer?" (1440) | 4.9 s | 4.4 s | 7.5 s | 7.8 s |
+| Arabic "ما هي الصلاة؟" (390) | 4.4 s | 3.9 s | 5.8 s | 6.2 s |
+| Table of the fasts (1440) | 3.9 s ("Preparing the table…") | 3.4 s | 6.2 s | 6.7 s |
+| Refusal "Who won the 2018 FIFA World Cup?" | — (JSON, not streamed) | — | stream route 2.8 s; `/api/chat` 1.2 s | — |
+| Saint menu "search saint: St. Gregory" | — (JSON, not streamed) | — | stream route 66 ms; `/api/chat` 62 ms | — |
+
+  - **Streaming shows text 1.8–3.1 s before the whole answer is ready.** Before, nothing showed until then.
+  - The time to first text is almost all spent before generation: the analysis call (1.5–2.7 s in these runs), retrieval (0.3–1.4 s) and the model's own first token (0.8–1.5 s).
+  - `/chat` without streaming, same English question: 4.4 s for a shorter answer (1,111 characters vs 1,215), with a 1.0 s faster analysis call. OpenAI's latency varies that much between identical requests. So the table compares the first token and the whole answer *of the same request*.
+  - The refusal's 2.8 s vs 1.2 s is the same variance: the analysis stage took 2.5 s vs 1.0 s. Refusals and menus take the same path either way and are not streamed.
+  - **Tables:** this answer opened with its table. The reader saw "Preparing the table…" from 3.9 s, then the whole table at once.
+  - The first run of the table case measured only `.stream-word`, so it timed out at 30 s (`firstWordMs: null`). The check now also counts the table note, and only the table case was rerun. The backend's own first run was fine: first token at 2.4 s, whole answer at 5.6 s.
+- **Behaviour** (`MODE=fake`, run twice, both passing):
+  - **Table:** "Preparing the table…" showed in 55–56 of 92–93 samples, and a partial table showed in 0. The finished table appears (5 rows) once the text after it begins.
+  - **Stop:** 217 and 226 characters stayed on screen marked "Stopped." (announced). Send came back, and 0 messages were saved.
+  - **Jump to latest** (390 px, English and Arabic): after scrolling up mid-answer the view held still, and the button appeared. Pressing it returned to the bottom (0 px away) and hid the button.
+  - **Error mid-answer:** the partial text went, and the alert appeared with one Retry button.
+  - **Fallback:** with the stream route answering 404, the page called `/api/chat` and showed the answer with its 4 sources.
+  - **Reduced motion:** `animation-name: none`.
+- **Found and fixed during verification:**
+  - **The opacity fade failed axe `color-contrast`** on the 1–4 words caught mid-fade (5 nodes over 2 states). Words now fade in colour, from `--color-ink-faint` (at least 5.2:1 on every surface, UI-013) to their own colour. A word is readable from its first frame, and the fade stays gentle.
+  - **A wheel over an answer that still fitted the view stopped following** and showed "Jump to latest" with nowhere to jump to. Once the answer grew, the view stayed at the top. Upward input now counts only when the list can scroll up (`scrollTop > 0`). The check also waits until the answer overflows before scrolling; before, it passed or failed depending on how long the answer was when it scrolled.
+- **axe:** 0 violations in 13 states:
+  - real: English streaming and done at 1440, Arabic at 390 (twice; the short answer had finished before the "streaming" scan), the table held and done;
+  - fake: the table held, streaming with Stop, stopped, Jump to latest mid-answer in English and Arabic at 390, error with Retry.
+- **Screenshots and recordings** (`ui-audit/streaming/`):
+  - `real/english-1440-streaming.png`, `real/english-1440-done.png`, `real/english-1440.webm`;
+  - `real/arabic-390-streaming.png` (a frame from the recording; this short answer had finished by the time the automatic capture ran), `real/arabic-390-done.png`, `real/arabic-390.webm`;
+  - `real-table/table-1440-streaming.png` (the table note), `real-table/table-1440-done.png`, `real-table/table-1440.webm`;
+  - `fake/*.png`.
+- **Tests:** backend 194 (184 before the branch), frontend 161 (135). Typecheck and lint clean.
+- **OpenAI spend (list prices, `eval/spend.py`):**
+  - $0.0192 for this check: 4 streamed answers, 1 answer through `/chat`, and 2 analysis calls each for the refusal. The menu makes no model call.
+  - About $0.0001 for one accidental call in Step 2: the app's startup replaced a test fake with the real client, and the prompt "q" got a two-word reply.
+  - Total about $0.0193, under the $0.03 allowed. No quota or key errors.
+- **Not checked here:** Railway's and Vercel's proxies (local only). After deploying, `curl -N` on `/api/chat/stream` should show events arriving one by one, and the backend log should show `endpoint="chat_stream"` with `ttft_ms`.
+- **Files changed:** `ui-audit/tools/streaming.mjs`, `ui-audit/tools/fake_stream_backend.py`, `ui-audit/tools/pg-server.mjs` (new), `ui-audit/tools/README.md`, `.gitignore`, `orthodox-site/app/globals.css` (colour fade), `orthodox-site/components/useFollowBottom.ts` (upward input only when the list can scroll up).
 
 ## Code Cleanup
 

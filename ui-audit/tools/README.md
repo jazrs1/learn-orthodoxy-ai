@@ -102,3 +102,26 @@ CHROME_BIN=/path/to/chrome node declutter.mjs ../ui-audit/declutter/after
 PAGES=home CHROME_BIN=/path/to/chrome node lighthouse.mjs ../ui-audit/declutter/after 3
 ```
 
+## Streamed answers (UI-026, UI-027)
+
+`streaming.mjs` drives the chat page while answers stream, with axe on each state, and writes screenshots,
+`.webm` recordings and `report.json`. It needs `playwright` and `@axe-core/playwright`, plus
+`@electric-sql/pglite` and `@electric-sql/pglite-socket` for `pg-server.mjs`, a local Postgres, so no
+hosted database is written to.
+
+```sh
+# 1. A local database and a backend on port 8001 (INTERNAL_API_KEY=localkey for the real one).
+node pg-server.mjs ../../orthodox-site/migrations/001_create_chat_tables.sql
+python fake_stream_backend.py                        # free: the real api.py with a scripted model
+# or the real one (about $0.02 per MODE=real run with gpt-4.1-mini):
+# CORPUS_VERSION=v2 OPENAI_CHAT_MODEL=gpt-4.1-mini INTERNAL_API_KEY=localkey uvicorn api:app --port 8001
+
+# 2. The site against them.
+cd orthodox-site && npm run build
+POSTGRES_URL=postgres://postgres:postgres@localhost:5433/postgres ORTHODOX_API_URL=http://127.0.0.1:8001 \
+  ORTHODOX_API_KEY=localkey npx next start -p 3217
+
+# 3. Behaviours (fake backend) or the five check questions (real backend; CASES=english,table… for some).
+MODE=fake CHROME_BIN=/path/to/chrome node streaming.mjs ../streaming/fake
+MODE=real CHROME_BIN=/path/to/chrome node streaming.mjs ../streaming/real
+```

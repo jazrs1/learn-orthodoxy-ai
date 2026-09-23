@@ -38,18 +38,22 @@ export function useFollowBottom(container: RefObject<HTMLElement | null>, active
       setFollowing(nextFollowing(followingRef.current, lastScrollTop.current, element));
       lastScrollTop.current = element.scrollTop;
     };
-    // The reader moving up stops following before the scroll itself begins.
+    // The reader moving up stops following before the scroll itself begins; only when there is
+    // somewhere to go (an answer that still fits the view can't be scrolled up).
+    const leave = () => {
+      if (element.scrollTop > 0) setFollowing(false);
+    };
     const onWheel = (event: WheelEvent) => {
-      if (event.deltaY < 0) setFollowing(false);
+      if (event.deltaY < 0) leave();
     };
     const onTouchStart = (event: TouchEvent) => {
       touchY = event.touches[0]?.clientY ?? 0;
     };
     const onTouchMove = (event: TouchEvent) => {
-      if ((event.touches[0]?.clientY ?? 0) > touchY) setFollowing(false);
+      if ((event.touches[0]?.clientY ?? 0) > touchY) leave();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (SCROLL_UP_KEYS.has(event.key)) setFollowing(false);
+      if (SCROLL_UP_KEYS.has(event.key)) leave();
     };
     element.addEventListener("scroll", onScroll, { passive: true });
     element.addEventListener("wheel", onWheel, { passive: true });

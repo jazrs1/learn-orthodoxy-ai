@@ -1739,17 +1739,16 @@ textarea:focus-visible {
 
 /* ---------- Chat: an answer arriving (UI-026) ---------- */
 
-/* Each new word fades in once; with reduced motion it simply appears. */
+/* Each new word fades in once, from the faint ink to its own colour; with reduced motion it simply
+   appears. A colour fade rather than an opacity one: the faint ink is at least 5.2:1 on every
+   surface, so a word is readable from the moment it appears (an opacity fade failed contrast). */
 .stream-word {
-  animation: stream-word-in 0.4s ease-out both;
+  animation: stream-word-in 0.4s ease-out;
 }
 
 @keyframes stream-word-in {
   from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+    color: var(--color-ink-faint);
   }
 }
 
