@@ -2,13 +2,15 @@
 
 import { KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { IconSend } from "./Icons";
+import { IconSend, IconStop } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
 
 type ChatShellProps = {
   initialValue?: string;
   onSubmit?: (message: string, options?: { displayMessage?: string }) => void | Promise<void>;
   isSubmitting?: boolean;
+  /** While an answer is on its way, the send button becomes Stop and calls this (UI-026). */
+  onStop?: () => void;
 };
 
 type ChatSubmitDetail = string | {
@@ -30,7 +32,7 @@ function normalizeSubmitDetail(detail: ChatSubmitDetail) {
   };
 }
 
-export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = false }: ChatShellProps) {
+export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = false, onStop }: ChatShellProps) {
   const [message, setMessage] = useState(initialValue);
   const pathname = usePathname();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -122,16 +124,29 @@ export default function ChatShell({ initialValue = "", onSubmit, isSubmitting = 
           // typed text picks its own direction.
           dir={message ? "auto" : dir}
         />
-        <button
-          type="button"
-          className="chat-submit"
-          onClick={submitMessage}
-          disabled={isSubmitting || !message.trim()}
-          aria-label={t("sendMessage")}
-          title={t("sendMessage")}
-        >
-          <IconSend size={20} />
-        </button>
+        {/* One button, so focus stays on it when Send turns into Stop and back. */}
+        {isSubmitting && onStop ? (
+          <button
+            type="button"
+            className="chat-submit chat-stop"
+            onClick={onStop}
+            aria-label={t("stopAnswer")}
+            title={t("stopAnswer")}
+          >
+            <IconStop size={20} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="chat-submit"
+            onClick={submitMessage}
+            disabled={isSubmitting || !message.trim()}
+            aria-label={t("sendMessage")}
+            title={t("sendMessage")}
+          >
+            <IconSend size={20} />
+          </button>
+        )}
       </div>
     </div>
   );

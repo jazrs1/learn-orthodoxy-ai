@@ -60,6 +60,23 @@ export function IconCopy(props: IconProps) {
   );
 }
 
+export function IconStop(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor" />
+    </Svg>
+  );
+}
+
+export function IconArrowDown(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 5v14" />
+      <path d="m18.5 12.5-6.5 6.5-6.5-6.5" />
+    </Svg>
+  );
+}
+
 export function IconCheck(props: IconProps) {
   return (
     <Svg {...props}>

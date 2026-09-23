@@ -871,6 +871,11 @@ textarea:focus-visible {
   background: var(--color-primary-hover);
 }
 
+/* Stop keeps the send button's place and colour while an answer arrives (UI-026). */
+.chat-stop:hover {
+  background: var(--color-primary-hover);
+}
+
 .chat-submit:disabled {
   background: var(--color-surface-muted);
   color: var(--color-ink-faint);
@@ -1726,9 +1731,82 @@ textarea:focus-visible {
 }
 
 .chat-bottom-bar {
+  position: relative;
   flex: 0 0 auto;
   padding: var(--space-3) max(var(--space-5), calc((100% - var(--reading-width)) / 2)) var(--space-4);
   background: linear-gradient(to bottom, rgba(248, 243, 234, 0), var(--color-paper) 30%);
+}
+
+/* ---------- Chat: an answer arriving (UI-026) ---------- */
+
+/* Each new word fades in once; with reduced motion it simply appears. */
+.stream-word {
+  animation: stream-word-in 0.4s ease-out both;
+}
+
+@keyframes stream-word-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stream-word {
+    animation: none;
+  }
+}
+
+/* Below the drop cap, never beside it. */
+.stream-table-note,
+.answer-stopped-note {
+  clear: both;
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+.answer-stopped-note {
+  margin-top: var(--space-2);
+}
+
+/* Shown above the composer when the reader has scrolled up while an answer arrives; centred in
+   both directions, so left/transform rather than logical insets. */
+.jump-to-latest {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: 600;
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(43, 32, 20, 0.12);
+  cursor: pointer;
+}
+
+.jump-to-latest:hover {
+  background: var(--color-surface-hover);
+}
+
+.jump-to-latest:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 /* ---------- Saints ---------- */

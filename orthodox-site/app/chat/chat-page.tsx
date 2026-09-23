@@ -4,23 +4,26 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useRouter, useSearchParams } from "next/navigation";
 import ChatShell from "../../components/ChatShell";
 import ExampleQuestions from "../../components/ExampleQuestions";
-import { IconAlert, IconChevronDown, IconCopy, IconCheck, IconRetry, IconSearch } from "../../components/Icons";
+import { IconAlert, IconArrowDown, IconChevronDown, IconCopy, IconCheck, IconRetry, IconSearch } from "../../components/Icons";
 import ChatSidebar from "../../components/ChatSidebar";
 import AnswerWithSources from "../../components/AnswerWithSources";
+import StreamingAnswer from "../../components/StreamingAnswer";
 import { useLanguage } from "../../components/LanguageProvider";
 import { buildSaintLookup, isValidSaintName } from "../../components/saintNameUtils";
 import { useChatSidebar } from "../../components/useChatSidebar";
+import { useFollowBottom } from "../../components/useFollowBottom";
 import {
   createConversationRequest,
   deleteConversationRequest,
   fetchConversation,
   fetchConversationList,
-  sendChatRequest,
+  streamChatRequest,
 } from "../../lib/chat-client";
 import { ChatMessage, ConversationDetail, ConversationSummary, NamesakeLink, SourceRef } from "../../lib/chat-types";
 import { chatErrorKey } from "../../lib/errors";
 import type { TranslationKey } from "../../lib/i18n";
 import { displaySaintName } from "../../lib/saint-display";
+import { plainAnswerText } from "../../lib/stream-markdown";
 import {
   type MessageOption,
   followUpToUserMessage,
@@ -82,6 +85,8 @@ type CatechismTopic = {
 };
 
 const SAINTS_PAGE_SIZE = 200;
+// Streamed text is drawn at most this often (UI-026); the first piece is drawn at once.
+const STREAM_DRAW_MS = 50;
 const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
 const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
 const CATECHISM_TOPICS: CatechismTopic[] = [
@@ -320,6 +325,10 @@ function ChatPageContent() {
   const handledChatRef = useRef("");
   // Opening the most recent chat is attempted once; a failed load must not retry in a loop.
   const autoOpenAttemptedRef = useRef(false);
+  // The answer on its way (UI-026): Stop aborts it; its text so far, drawn in batches.
+  const answerAbortRef = useRef<AbortController | null>(null);
+  const streamTextRef = useRef("");
+  const streamDrawTimerRef = useRef<number | undefined>(undefined);
 
   const saintLookup = useMemo(() => buildSaintLookup(saints), [saints]);
   const messages = useMemo(() => currentConversation?.messages || [], [currentConversation]);
@@ -334,6 +343,7 @@ function ChatPageContent() {
     return "";
   }, [messages]);
   const hasMoreSaints = saints.length < saintsTotal;
+  const follow = useFollowBottom(chatMessagesRef, isSending, messages);
 
   useEffect(() => {
   }, [language]);
@@ -613,6 +623,38 @@ function ChatPageContent() {
         setActiveTab("chat");
       }
 
+      const answerAbort = new AbortController();
+      answerAbortRef.current = answerAbort;
+      streamTextRef.current = "";
+      // The streamed text is collected in a ref and drawn in batches (UI-026).
+      const drawText = () => {
+        streamDrawTimerRef.current = undefined;
+        const text = streamTextRef.current;
+        setCurrentConversation((prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: prev.messages.map((message) =>
+                  message.id === optimisticAssistantId
+                    ? { ...message, content: text, isTyping: false, isStreaming: true }
+                    : message
+                ),
+              }
+            : prev
+        );
+      };
+      const receiveText = (piece: string) => {
+        const first = !streamTextRef.current;
+        streamTextRef.current += piece;
+        if (streamDrawTimerRef.current === undefined) {
+          streamDrawTimerRef.current = window.setTimeout(drawText, first ? 0 : STREAM_DRAW_MS);
+        }
+      };
+      const cancelDraw = () => {
+        window.clearTimeout(streamDrawTimerRef.current);
+        streamDrawTimerRef.current = undefined;
+      };
+
       try {
         if (!conversationId) {
           createdConversationRef.current = true;
@@ -630,38 +672,75 @@ function ChatPageContent() {
         } else {
         }
 
-        const result = await sendChatRequest({
-          question,
-          displayQuestion,
-          conversationId,
-          mode: requestMode,
-          language,
-          hideUserMessage,
-          saintId: options?.saintId,
-          saintName: options?.saintName,
-          namesakesOf: options?.namesakesOf,
-        });
-        handledChatRef.current = result.conversation.id;
-        setIsDraftChat(false);
-        setConversations((prev) => mergeConversationSummary(prev, result.conversation));
+        const result = await streamChatRequest(
+          {
+            question,
+            displayQuestion,
+            conversationId,
+            mode: requestMode,
+            language,
+            hideUserMessage,
+            saintId: options?.saintId,
+            saintName: options?.saintName,
+            namesakesOf: options?.namesakesOf,
+          },
+          { signal: answerAbort.signal, onDelta: receiveText }
+        );
+        cancelDraw();
+        const saved = result.conversation;
+        if (saved) {
+          handledChatRef.current = saved.id;
+          setIsDraftChat(false);
+          setConversations((prev) => mergeConversationSummary(prev, saved));
+        }
         setCurrentConversation((prev) => {
+          // A turn that could not be saved keeps the question as shown (GEN-007).
           const baseMessages = prev?.messages.filter(
-            (message) => message.id !== optimisticUserId && message.id !== optimisticAssistantId
+            (message) =>
+              message.id !== optimisticAssistantId && (!saved || message.id !== optimisticUserId)
           ) || [];
 
           return {
-            ...result.conversation,
+            ...(saved || prev || {
+              id: localConversationId,
+              title: t("newChat"),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }),
             messages: [
               ...baseMessages,
-              ...(result.userMessage ? [result.userMessage] : []),
+              ...(saved && result.userMessage ? [result.userMessage] : []),
               result.assistantMessage,
             ],
           };
         });
-        setActiveConversationId(result.conversation.id);
-        setLiveMessage(t("answerReady"));
-        router.replace(`/chat?chat=${encodeURIComponent(result.conversation.id)}`, { scroll: false });
+        // The whole answer is announced once, when it is complete, never word by word (UI-026).
+        setLiveMessage(`${t("answerReady")} ${plainAnswerText(result.assistantMessage.content)}`);
+        if (saved) {
+          setActiveConversationId(saved.id);
+          router.replace(`/chat?chat=${encodeURIComponent(saved.id)}`, { scroll: false });
+        }
       } catch (error) {
+        cancelDraw();
+        if (answerAbort.signal.aborted) {
+          // Stop: what has arrived stays on screen, marked as stopped. It is not saved, so it is
+          // not part of the conversation the next question is asked in (GEN-007).
+          const partial = streamTextRef.current;
+          setCurrentConversation((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  messages: prev.messages.map((message) =>
+                    message.id === optimisticAssistantId
+                      ? { ...message, content: partial, isTyping: false, isStreaming: false, stopped: true }
+                      : message
+                  ),
+                }
+              : prev
+          );
+          setLiveMessage(t("answerStopped"));
+          return;
+        }
         const messageKey = chatErrorKey(error);
         setSendFailure({
           messageKey,
@@ -679,6 +758,7 @@ function ChatPageContent() {
           };
         });
       } finally {
+        if (answerAbortRef.current === answerAbort) answerAbortRef.current = null;
         createdConversationRef.current = false;
         submittingRef.current = false;
         setIsSending(false);
@@ -686,6 +766,13 @@ function ChatPageContent() {
     },
     [activeConversationId, activeTab, currentConversation, language, router, t]
   );
+
+  const stopAnswer = useCallback(() => {
+    answerAbortRef.current?.abort();
+  }, []);
+
+  // Leaving the page stops an answer still on its way.
+  useEffect(() => () => answerAbortRef.current?.abort(), []);
 
   useEffect(() => {
     const chatId = searchParams.get("chat") || "";
@@ -934,6 +1021,14 @@ function ChatPageContent() {
                               </span>
                               <span>{t("searchingSources")}</span>
                             </div>
+                          ) : message.isStreaming || message.stopped ? (
+                            // Screen readers hear the answer once it is complete (UI-026).
+                            <div aria-busy={message.isStreaming ? "true" : undefined}>
+                              {message.content ? (
+                                <StreamingAnswer text={message.content} stopped={message.stopped} />
+                              ) : null}
+                              {message.stopped ? <p className="answer-stopped-note">{t("answerStopped")}</p> : null}
+                            </div>
                           ) : (
                             <>
                               <AnswerWithSources
@@ -983,7 +1078,7 @@ function ChatPageContent() {
                           message.content
                         )}
                       </div>
-                      {!message.isTyping ? (
+                      {!message.isTyping && !message.isStreaming ? (
                         <div className={`message-actions ${message.role === "user" ? "user-actions" : "assistant-actions"}`}>
                           <button
                             type="button"
@@ -1218,7 +1313,18 @@ function ChatPageContent() {
 
           {activeTab === "chat" ? (
             <div className="chat-bottom-bar">
-              <ChatShell initialValue={composerInitialValue} onSubmit={handleSendMessage} isSubmitting={isSending} />
+              {follow.showJump ? (
+                <button type="button" className="jump-to-latest" onClick={follow.jumpToLatest}>
+                  <IconArrowDown size={16} />
+                  <span>{t("jumpToLatest")}</span>
+                </button>
+              ) : null}
+              <ChatShell
+                initialValue={composerInitialValue}
+                onSubmit={handleSendMessage}
+                isSubmitting={isSending}
+                onStop={stopAnswer}
+              />
             </div>
           ) : null}
         </section>

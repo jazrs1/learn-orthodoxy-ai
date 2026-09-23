@@ -46,11 +46,12 @@ export function backendHeaders(request?: Request, extra: Record<string, string> 
   return headers;
 }
 
+/** `timeoutMs` bounds the whole exchange, unless the caller passes its own `signal` (a stream). */
 export async function backendFetch(
   path: string,
   init: RequestInit & { request?: Request; timeoutMs?: number } = {}
 ) {
-  const { request, timeoutMs = 20000, headers, ...rest } = init;
+  const { request, timeoutMs = 20000, headers, signal, ...rest } = init;
   const url = path.startsWith("http") ? path : `${backendUrl()}${path}`;
   return fetch(url, {
     ...rest,
@@ -59,6 +60,6 @@ export async function backendFetch(
       ...(headers as Record<string, string> | undefined),
     },
     cache: "no-store",
-    signal: AbortSignal.timeout(timeoutMs),
+    signal: signal ?? AbortSignal.timeout(timeoutMs),
   });
 }

@@ -32,6 +32,10 @@ export type ChatMessage = {
   sources?: SourceRef[];
   createdAt?: string;
   isTyping?: boolean;
+  /** Client-only, never saved: the answer is still arriving (UI-026). */
+  isStreaming?: boolean;
+  /** Client-only, never saved: the reader stopped this answer; it isn't part of the conversation. */
+  stopped?: boolean;
 };
 
 export type ConversationSummary = {

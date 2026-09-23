@@ -96,6 +96,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-023: Home page declutter: what still competes on the first screen (report, not changed)](#ui-023-home-page-declutter-what-still-competes-on-the-first-screen-report-not-changed)
   - [UI-024: The Today banner goes back to the top, as a full-width band](#ui-024-the-today-banner-goes-back-to-the-top-as-a-full-width-band)
   - [UI-025: A collapsible past-chats sidebar shared by the home and chat pages; a four-link header without divider; the language toggle set like the links](#ui-025-a-collapsible-past-chats-sidebar-shared-by-the-home-and-chat-pages-a-four-link-header-without-divider-the-language-toggle-set-like-the-links)
+  - [UI-026: Streamed answers in the chat page: words fade in, tables wait for their last row, Stop, Jump to latest, one announcement](#ui-026-streamed-answers-in-the-chat-page-words-fade-in-tables-wait-for-their-last-row-stop-jump-to-latest-one-announcement)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1545,6 +1546,58 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - Screenshots are in `ui-audit/declutter/sidebar-before` and `sidebar-after` (not committed). The chat page's "Unable to load chat" notice in both sets comes from the check's mocked `/api`, which answers 404 for a single chat.
   - Tests: frontend 135; typecheck and lint clean.
 - **Files changed:** `components/useChatSidebar.ts` (new), `components/ChatSidebar.tsx`, `components/Navbar.tsx`, `components/Icons.tsx`, `app/home-page.tsx`, `app/chat/chat-page.tsx`, `lib/i18n.ts`, `app/globals.css`, `ui-audit/tools/declutter.mjs`.
+
+### UI-026: Streamed answers in the chat page: words fade in, tables wait for their last row, Stop, Jump to latest, one announcement
+- **Date / Part:** 2026-09-23, streaming branch Step 3 (Vercel route and frontend)
+- **Audit ref:** A6; the transport is GEN-007 and GEN-008
+- **Context:** GEN-008 streams the answer from the backend. This entry covers how it reaches the reader: through the Next.js route, then into the chat page, without the page flickering, jumping or talking over itself.
+- **Decision:**
+  - **`POST /api/chat/stream`:** it runs the same checks, history and error replies as `/api/chat`, now shared in `lib/chat-proxy.ts`; `/api/chat` itself behaves as before.
+    - A JSON reply from the backend (refusal, menu, error status) is saved and returned exactly as `/api/chat` does.
+    - A stream is relayed one event at a time. When the backend's `done` arrives, the turn is saved, and the route sends its own `done` with `{conversation, userMessage, assistantMessage}`.
+    - If saving fails, the answer is still delivered, unsaved (`conversation: null`), rather than replaced by an error after the reader has seen it.
+    - The internal key stays in `lib/backend.ts`. `backendFetch` now accepts the caller's abort signal, so the route can apply its own timeouts: 20 s to the first byte, then 30 s of silence at most. `maxDuration` is 60 s.
+    - The browser leaving (Stop or a closed tab) aborts the backend fetch, which stops generation (GEN-008).
+  - **`lib/sse.ts`:** one SSE parser, used by the route and by the browser. Chunks may split an event, a line or an Arabic letter's bytes anywhere.
+  - **`streamChatRequest`** (`lib/chat-client.ts`) resolves with the same saved turn as `sendChatRequest` and hands text to the page as it arrives.
+    - It falls back to `/api/chat` when the stream route can't be reached, or answers 404, 405, 502 or 504.
+    - It doesn't fall back on 400, 429, 500 or 503, which are the backend's real answers.
+  - **Drawing:** text is collected in a ref and drawn at most every 50 ms; the first piece is drawn at once. `InteractiveAnswer` is memoised, so earlier answers aren't parsed again on every draw.
+  - **Word fade-in** (`lib/rehype-stream-words.ts`, `StreamingAnswer`):
+    - Every word gets its own span, at a stable position. A word keeps the `stream-word` class for its first 450 ms, a 0.4 s opacity fade. After that only the class changes, so later renders never replay the fade.
+    - With `prefers-reduced-motion`, the animation is off and text simply appears.
+    - The drop cap is kept while streaming, since most answers end with sources.
+  - **What is shown mid-stream** (`lib/stream-markdown.ts`):
+    - A table at the end of the text is held back until a line that isn't a row follows it, or the stream ends. "Preparing the table…" stands in its place.
+    - A citation marker cut in half ("[1", "[1,") is hidden until it closes.
+    - Open `**` is closed, so bold never flashes as asterisks.
+    - Citation numbers show unlinked while streaming. When `done` arrives, the answer is replaced by the usual `AnswerWithSources`, with linked `[n]` and the Sources list.
+  - **Auto-scroll** (`useFollowBottom`, `lib/follow-scroll.ts`): the list follows the bottom while an answer is on its way, and once more when it completes, so the Sources list comes into view.
+    - Scrolling up stops following at once, on wheel up, touch drag down or ArrowUp/PageUp/Home, or on a scroll that moves up out of the bottom 48 px. "Jump to latest" then appears above the composer.
+    - Scrolling back down to the bottom, or pressing the button, resumes following.
+    - The first version waited for the view to leave the bottom zone. In the browser, a wheel scrolls in small animated steps, and the next draw pulled the view back down every time, so upward input now counts directly.
+  - **Stop:** while an answer is on its way, the send button becomes Stop in the same place, and focus stays on it.
+    - Stop aborts the request. Text already shown stays, followed by "Stopped.".
+    - A stopped answer is not saved, so it isn't part of the conversation or of the history sent with the next question. A turn in the database is always a finished answer.
+  - **Errors:** an `error` event (or a dropped stream) removes the partial answer and shows the existing alert with Retry.
+  - **Screen readers:** the answer in progress is `aria-busy`, and the message list isn't a live region, so nothing is read word by word. When the answer completes, the polite status region announces "Answer ready." followed by the answer as plain text (`plainAnswerText`: no citation numbers, Markdown marks or table rules). A stopped answer announces "Stopped."
+  - **Arabic and phones:** the answer keeps `dir="auto"`. The fade is per word, so Arabic letters within a word stay joined. The Jump button is centred with physical `left` and `transform`, which reads the same both ways. Stop sits at the end of the composer in both directions.
+- **Checks:**
+  - Unit tests: frontend 135 → 161, with new files for the SSE parser, the stream view (table hold, citations, bold, announcement text), follow-scroll and the stream client (text in order, Stop before and during the reply, JSON replies, `error` events, a truncated stream, fallback and no-fallback statuses). Typecheck and lint are clean.
+  - Browser, production build: a local PGlite database (so no hosted database was written to) and the real `api.py` with a scripted model (no OpenAI).
+    - The stream arrived in 280 chunks; Next.js didn't buffer or compress it.
+    - Table: 0 of 98 samples showed a partial table.
+    - Stop kept 179 characters and saved 0 messages.
+    - Jump to latest held the view, then brought it back.
+    - A mid-stream error showed the alert with Retry.
+    - A 404 from the stream route fell back to `/api/chat`.
+    - Arabic at 390 px.
+- **Files changed:**
+  - `app/api/chat/stream/route.ts` (new), `app/api/chat/route.ts`
+  - `lib/chat-proxy.ts`, `lib/sse.ts`, `lib/stream-markdown.ts`, `lib/follow-scroll.ts`, `lib/rehype-stream-words.ts` (new, with tests), `lib/chat-client.ts` (+ test), `lib/backend.ts`, `lib/chat-types.ts`, `lib/i18n.ts`
+  - `components/StreamingAnswer.tsx`, `components/useFollowBottom.ts` (new), `components/InteractiveAnswer.tsx`, `components/ChatShell.tsx`, `components/Icons.tsx`
+  - `app/chat/chat-page.tsx`, `app/globals.css`
+- **Concept to learn:** *Rendering a stream without jank.* Batch updates to the frame rate, keep DOM positions stable so animations don't restart, hold back structures that are wrong until they are complete, and treat user input, not scroll position, as the sign of what the user wants. Search: "streaming markdown rendering LLM", "scroll anchoring chat auto scroll", "aria-busy live region".
 
 ## Code Cleanup
 

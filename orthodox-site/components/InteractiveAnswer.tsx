@@ -1,9 +1,10 @@
 "use client";
 
-import { Fragment, isValidElement, useMemo, type MouseEvent, type ReactNode } from "react";
+import { Fragment, isValidElement, memo, useMemo, type MouseEvent, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCitations from "../lib/remark-citations";
+import rehypeStreamWords, { type StreamWordsOptions } from "../lib/rehype-stream-words";
 import { isValidSaintName, normalizeSaintKey } from "./saintNameUtils";
 
 export type CitationTarget = {
@@ -23,6 +24,8 @@ type InteractiveAnswerProps = {
   citationSeparator?: string;
   /** Menus, refusals and other messages without sources: no drop cap (RET-010). */
   plain?: boolean;
+  /** While the answer streams: each new word fades in (UI-026). */
+  streamWords?: StreamWordsOptions;
 };
 
 // Answers are Markdown (DECISIONS.md FE-002): paragraphs, lists, bold and GFM tables.
@@ -48,7 +51,9 @@ function handleNameClick(name: string) {
   );
 }
 
-export default function InteractiveAnswer({
+// Memoised: while one answer streams, the page re-renders often, and the earlier answers'
+// Markdown should not be parsed again each time (UI-026).
+export default memo(function InteractiveAnswer({
   answer,
   entities = [],
   saintLookup = new Set<string>(),
@@ -57,6 +62,7 @@ export default function InteractiveAnswer({
   tableLabel = "Table",
   citationSeparator = ",",
   plain = false,
+  streamWords,
 }: InteractiveAnswerProps) {
   const clickableNames = useMemo(() => {
     return new Set(
@@ -141,9 +147,13 @@ export default function InteractiveAnswer({
 
   return (
     <div className={plain ? "interactive-answer is-plain" : "interactive-answer"}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkCitations]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkCitations]}
+        rehypePlugins={streamWords ? [[rehypeStreamWords, streamWords]] : undefined}
+        components={components}
+      >
         {answer}
       </ReactMarkdown>
     </div>
   );
-}
+});
