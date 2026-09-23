@@ -6,6 +6,7 @@ import type { Language } from "./i18n";
 export type HomeContent = {
   /** Set under the wordmark in spaced small caps. */
   tagline: string;
+  /** One or two lines under the wordmark (UI-021); it says "with sources shown", the AI note doesn't repeat it. */
   lead: string;
   /** Quiet note under the question box. */
   aiNote: string;
@@ -25,8 +26,8 @@ export const HOME_CONTENT: Record<Language, HomeContent> = {
   en: {
     tagline: "A Coptic Orthodox Study Guide",
     lead:
-      "Ask about Church teaching and the lives of the saints. Answers come only from Fr. Tadros Malaty's books and the Coptic Orthodox catechism, and every answer shows the book and page it drew on.",
-    aiNote: "Answers are prepared by AI from these books, with sources shown.",
+      "Ask about Church teaching and the lives of the saints. Answers come only from Fr. Tadros Malaty's books and the catechism, with sources shown.",
+    aiNote: "Answers are prepared by AI from these books.",
     examplesLabel: "Begin with a question",
     examples: [
       "Why is prayer essential in the Coptic Orthodox life?",
@@ -74,8 +75,8 @@ export const HOME_CONTENT: Record<Language, HomeContent> = {
   ar: {
     tagline: "دليل دراسي قبطي أرثوذكسي",
     lead:
-      "اسأل عن تعليم الكنيسة وسير القديسين. تأتي الإجابات فقط من كتب القمص تادرس يعقوب ملطي والتعليم الكنسي القبطي الأرثوذكسي، وكل إجابة تذكر الكتاب والصفحة التي اعتمدت عليها.",
-    aiNote: "يُعِدّ الذكاء الاصطناعي الإجابات من هذه الكتب، مع ذكر مصادرها.",
+      "اسأل عن تعليم الكنيسة وسير القديسين. تأتي الإجابات فقط من كتب القمص تادرس يعقوب ملطي والتعليم الكنسي، مع ذكر مصادرها.",
+    aiNote: "يُعِدّ الذكاء الاصطناعي الإجابات من هذه الكتب.",
     examplesLabel: "ابدأ بسؤال",
     examples: [
       "من هو الأنبا موسى الأسود؟",

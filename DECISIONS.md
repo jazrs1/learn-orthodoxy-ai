@@ -89,6 +89,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-018: The Today banner becomes one quiet line](#ui-018-the-today-banner-becomes-one-quiet-line)
   - [UI-019: Navigation cut to Chat, Catechism, Saints and Calendar; Credits and Contact in a footer; one language toggle](#ui-019-navigation-cut-to-chat-catechism-saints-and-calendar-credits-and-contact-in-a-footer-one-language-toggle)
   - [UI-020: Past chats open as a drawer on the home page; repeated titles listed once; phone header padding](#ui-020-past-chats-open-as-a-drawer-on-the-home-page-repeated-titles-listed-once-phone-header-padding)
+  - [UI-021: A two-line hero description; "sources shown" said once](#ui-021-a-two-line-hero-description-sources-shown-said-once)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1411,6 +1412,16 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - **Phone header:** the navbar's side padding goes from 4 px to 12 px. On desktop the logo is 24 px from the edge and the sidebar's content 16 px; the chat sidebar column itself meets the edge by design.
 - **Tests:** `lib/chat-sessions.test.ts`, 4 tests. The declutter check found axe 0 in the drawer states, and the drawer lists 3 chats for 6 with repeated titles.
 - **Files changed:** `app/home-page.tsx`, `components/ChatSidebar.tsx`, `lib/chat-sessions.ts`, `lib/chat-sessions.test.ts`, `app/globals.css`.
+
+### UI-021: A two-line hero description; "sources shown" said once
+- **Date / Part:** 2026-09-23, home page declutter, item 5.
+- **Context:** The description ran four lines at the large size and ended "…and every answer shows the book and page it drew on". The AI note under the question box then said "…with sources shown" again.
+- **Decision:**
+  - **English description:** "Ask about Church teaching and the lives of the saints. Answers come only from Fr. Tadros Malaty's books and the catechism, with sources shown."
+  - **Arabic:** "اسأل عن تعليم الكنيسة وسير القديسين. تأتي الإجابات فقط من كتب القمص تادرس يعقوب ملطي والتعليم الكنسي، مع ذكر مصادرها."
+  - **Size:** the reading size instead of the large one (1.0625 rem, Arabic 1.25 rem), with slightly tighter margins. It is two lines on desktop, and the phone size is unchanged.
+  - **AI note:** "Answers are prepared by AI from these books." / "يُعِدّ الذكاء الاصطناعي الإجابات من هذه الكتب." The sources are mentioned once, in the description.
+- **Files changed:** `lib/home-content.ts`, `app/globals.css`.
 
 ## Code Cleanup
 

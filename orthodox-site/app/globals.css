@@ -573,11 +573,12 @@ textarea:focus-visible {
   font-size: var(--text-lg);
 }
 
+/* One or two lines, at reading size (UI-021). */
 .hero-subtitle {
-  margin: var(--space-5) 0 var(--space-6);
+  margin: var(--space-4) 0 var(--space-5);
   max-width: 38rem;
   font-family: var(--font-reading);
-  font-size: var(--text-lg);
+  font-size: var(--text-reading);
   line-height: var(--leading-normal);
   color: var(--color-ink-soft);
 }
