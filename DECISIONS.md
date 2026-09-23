@@ -91,6 +91,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-020: Past chats open as a drawer on the home page; repeated titles listed once; phone header padding](#ui-020-past-chats-open-as-a-drawer-on-the-home-page-repeated-titles-listed-once-phone-header-padding)
   - [UI-021: A two-line hero description; "sources shown" said once](#ui-021-a-two-line-hero-description-sources-shown-said-once)
   - [UI-022: Four example questions, without dotted leaders](#ui-022-four-example-questions-without-dotted-leaders)
+  - [UI-023: Home page declutter: what still competes on the first screen (report, not changed)](#ui-023-home-page-declutter-what-still-competes-on-the-first-screen-report-not-changed)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1373,7 +1374,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - **Order:** header → hero (wordmark, description, question box, AI note) → example questions → Today line → Explore → footer.
   - **Brand:** the header's lettermark and name stay, and the hero's wordmark stays, so the brand appears once in the page.
   - **Example questions** move out of the hero into their own section, at the same distance from the question box as before.
-- **Kept, for review:** the "How it works" and "Before you start" sections stay after Explore; the brief's order didn't mention them. So does the tagline under the wordmark (UI-022 lists it).
+- **Kept, for review:** the "How it works" and "Before you start" sections stay after Explore; the brief's order didn't mention them. So does the tagline under the wordmark (UI-023 lists it).
 - **Files changed:** `app/home-page.tsx`, `app/globals.css`.
 
 ### UI-018: The Today banner becomes one quiet line
@@ -1433,6 +1434,25 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - The chat page's empty state already showed four and loses its leaders the same way.
   - "Begin with a question" is centred on desktop, as when it was part of the hero, and left-aligned on phones as before.
 - **Files changed:** `components/ExampleQuestions.tsx`, `app/home-page.tsx`, `app/globals.css`.
+
+### UI-023: Home page declutter: what still competes on the first screen (report, not changed)
+- **Date / Part:** 2026-09-23, home page declutter, item 7, for the owner's review. Screenshots are in `ui-audit/declutter/before` and `after` (desktop 1440 and mobile 390, English and Arabic; not committed).
+- **Checks after UI-017 to UI-022:**
+  - axe finds 0 violations in every state: home, past-chats drawer, chat page.
+  - Lighthouse on the home page, 3 runs each (before → after):
+    - mobile performance 95/98/98 → 95/98/98, median LCP 2.33 s both, CLS 0, TBT under 12 ms;
+    - desktop 100 → 100, LCP ≈ 0.58 s;
+    - page weight ~300 kB both.
+  - Nothing scrolls sideways.
+- **Still competing, not changed:**
+  1. **Arabic pages show the brand three times** before the question box: the header's Arabic name, the English "Learn ORTHODOXY" wordmark (decorative there), and the large Arabic name set under it as the page title. A single Arabic wordmark, or the Arabic title at a smaller size, would bring it to the one mention English pages have.
+  2. **The tagline** "A Coptic Orthodox Study Guide" / "دليل دراسي قبطي أرثوذكسي" adds a fourth line between the wordmark and the description, and in Arabic it is set large. The brief's hero order left it out.
+  3. **The desktop header keeps its vertical rule** between Saints and Calendar. It used to separate the chat modes from the pages; with four links it reads as a stray mark.
+  4. **The Arabic pages' "English" toggle** is set in the Latin face at the base size, so it looks heavier than the Arabic navigation links beside it.
+  5. **On phones, the description is four lines** in English and three in Arabic (two on desktop). One sentence ("Answers come only from Fr. Tadros Malaty's books and the catechism, with sources shown.") would make it two.
+  6. **On phones the Today line** wraps to two lines in Arabic and is below the first screen in both languages; that seems right for a quiet line.
+  7. **"How it works" and "Before you start"** stay between Explore and the footer. The brief's order ended "Explore → footer"; removing them is a content decision.
+  8. **"Past chats"** is a second underlined control under the question box. It only appears for returning visitors.
 
 ## Code Cleanup
 
