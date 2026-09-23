@@ -1,6 +1,7 @@
 """Speed changes (RET-013 onwards): each must give the same results as before, only sooner."""
 
 import hashlib
+import json as _json
 import math
 import os
 from concurrent.futures import Future
@@ -8,8 +9,10 @@ from types import SimpleNamespace
 
 import chromadb
 import pytest
+from fastapi.testclient import TestClient
 
 import api
+from answer_cache import load_questions, replay_pieces
 import task_analysis
 from request_log import RequestTrace
 from task_analysis import AnalysisCache, TaskAnalysis
@@ -290,3 +293,105 @@ def test_the_oldest_analyses_are_dropped_first():
     cache.get("a", "m")  # used recently
     cache.put("c", "m", analysed("c"))
     assert cache.get("b", "m") is None and cache.get("a", "m") and cache.get("c", "m")
+
+
+# ---------------------------------------------------------------- RET-017: answer cache
+
+
+EXAMPLE = load_questions()["en"][0]
+ARABIC_EXAMPLE = load_questions()["ar"][0]
+
+
+def test_replay_pieces_join_back_to_the_answer_exactly():
+    for answer in ("Prayer is **conversation** with God [1].\n\n- Praise\n- Thanks  [2]", "الصلاة هي صلة الإنسان بالله [1].\n\nومن أنواعها:", "  lead space"):
+        pieces = replay_pieces(answer)
+        assert "".join(pieces) == answer
+        assert len(pieces) == -(-len(answer.split()) // 3) or answer.startswith(" ")
+
+
+@pytest.fixture
+def cached_backend(monkeypatch):
+    """/chat and /chat/stream with preparation and both models stubbed; counts model calls."""
+    calls = {"prepare": 0, "model": 0}
+
+    def prepare(req, trace):
+        calls["prepare"] += 1
+
+        def finish(reply):
+            trace.set(outcome="refused" if "refuse" in reply else "answered")
+            return {"answer": reply, "sources": [] if "refuse" in reply else [{"pdf": "catechism1.pdf", "page": 3, "n": 1}], "options": []}
+
+        return api.PendingAnswer(messages=[{"role": "user", "content": req.question}], max_tokens=50, finish=finish)
+
+    def create(**kwargs):
+        calls["model"] += 1
+        text = "Prayer is conversation with God [1]." if kwargs["messages"][0]["content"] != "refuse me" else "refuse"
+        message = SimpleNamespace(content=text)
+        return SimpleNamespace(choices=[SimpleNamespace(message=message, finish_reason="stop")], usage=None)
+
+    monkeypatch.setattr(api, "_chat_prepare", prepare)
+    monkeypatch.setattr(api, "oai_client", SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
+    monkeypatch.setattr(api, "ANSWER_CACHE", True)
+    monkeypatch.setattr(api, "answer_cache", api.AnswerCache(load_questions()))
+    monkeypatch.setattr(api, "INTERNAL_API_KEY", "k")
+    monkeypatch.setattr(api, "chat_ip_limiter", api.SlidingWindowRateLimiter(100, 60))
+    monkeypatch.setattr(api, "chat_global_limiter", api.SlidingWindowRateLimiter(100, 60))
+    return calls, TestClient(api.app)
+
+
+def chat(client, **body):
+    return client.post("/chat", json={"language": "en", "mode": "chat", **body}, headers={"X-Internal-Key": "k"})
+
+
+def test_an_example_question_is_answered_once_then_served_from_the_cache(cached_backend):
+    calls, client = cached_backend
+    first = chat(client, question=EXAMPLE).json()
+    second = chat(client, question=EXAMPLE).json()
+    assert second == first and calls == {"prepare": 1, "model": 1}
+
+
+def test_the_stream_replays_a_cached_answer_in_pieces_then_done(cached_backend):
+    calls, client = cached_backend
+    stored = chat(client, question=EXAMPLE).json()
+    response = client.post("/chat/stream", json={"question": EXAMPLE, "language": "en"}, headers={"X-Internal-Key": "k"})
+    assert response.headers["content-type"].startswith("text/event-stream")
+    blocks = [b for b in response.text.strip().split("\n\n")]
+    events = [(b.split("\n")[0][7:], _json.loads(b.split("\n")[1][6:])) for b in blocks]
+    deltas = [data["t"] for name, data in events if name == "delta"]
+    assert len(deltas) > 1 and "".join(deltas) == stored["answer"]
+    assert events[-1] == ("done", stored)
+    assert calls["model"] == 1
+
+
+def test_only_first_turn_example_questions_are_cached(cached_backend):
+    calls, client = cached_backend
+    history = [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello"}]
+    for body in (
+        {"question": "What is prayer?"},  # not an example
+        {"question": EXAMPLE, "history": history},  # a follow-up
+        {"question": EXAMPLE, "debug": True},  # the eval harness
+        {"question": EXAMPLE, "mode": "catechism"},
+        {"question": ARABIC_EXAMPLE, "language": "en"},  # detected by its language list only
+    ):
+        chat(client, **body)
+        chat(client, **body)
+    assert calls["model"] == 10
+
+
+def test_a_refusal_is_not_cached(cached_backend, monkeypatch):
+    calls, client = cached_backend
+    monkeypatch.setattr(api.answer_cache, "questions", {"en": {"refuse me"}, "ar": set()})
+    chat(client, question="refuse me")
+    chat(client, question="refuse me")
+    assert calls["model"] == 2
+
+
+def test_a_prompt_or_corpus_change_misses_the_cache(cached_backend, monkeypatch):
+    calls, client = cached_backend
+    chat(client, question=EXAMPLE)
+    monkeypatch.setattr(api, "PROMPT_VERSION", "v4")
+    chat(client, question=EXAMPLE)
+    monkeypatch.setattr(api, "_corpus_manifest_sha", lambda: "another corpus")
+    chat(client, question=EXAMPLE)
+    chat(client, question=EXAMPLE)
+    assert calls["model"] == 3

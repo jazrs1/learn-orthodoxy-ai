@@ -63,6 +63,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-014: Each query text is embedded once per request, and the search is given the vectors](#ret-014-each-query-text-is-embedded-once-per-request-and-the-search-is-given-the-vectors)
   - [RET-015: The question is embedded while the analysis call runs, and reused when the analysis leaves it unchanged](#ret-015-the-question-is-embedded-while-the-analysis-call-runs-and-reused-when-the-analysis-leaves-it-unchanged)
   - [RET-016: A first-turn question asked before reuses its analysis](#ret-016-a-first-turn-question-asked-before-reuses-its-analysis)
+  - [RET-017: The home page's example questions keep their answer, replayed as a stream](#ret-017-the-home-pages-example-questions-keep-their-answer-replayed-as-a-stream)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -1012,6 +1013,29 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - The least recently used entry is dropped first.
   - Backend suite: 211 passed.
 - **Files changed:** `task_analysis.py`, `api.py`, `tests/test_speed.py`.
+
+### RET-017: The home page's example questions keep their answer, replayed as a stream
+- **Date / Part:** 2026-09-23, speed branch Part B3, change 5 of RET-012 (approved by the owner: still play the streaming fade-in; invalidate when the corpus or prompt changes)
+- **Context:** the four example questions shown on the home page and in an empty chat are the most-asked texts on the site. Each one waits 3–5 s for an answer that comes out the same every time.
+- **Decision:**
+  - **Which questions:** `data/cached_answer_questions.json` lists the four shown per language. A frontend test (`lib/cached-questions.test.ts`) fails if it drifts from `lib/home-content.ts`.
+  - **Which requests:** only a chat's first message in chat mode, with the exact text, in the language of its list. Not follow-ups, saint selections, catechism or saints mode, or the eval harness's `debug` requests, so evals always measure a freshly generated answer.
+  - **What is kept:** the first finished answer with sources (`answer_cache.py`, in memory). A refusal, a menu, a stopped or failed answer is never stored.
+  - **Invalidation:** the key includes a fingerprint of everything that shapes the answer: corpus version and the v2 manifest's hash, prompt version and the text of both answer prompts and the analysis prompt, both models, temperature, top-k, thresholds, answer lengths and the entity-check switch. Change any of them and the next ask generates afresh; older answers for that question are dropped. A restart or redeploy starts empty, so the first visitor after a deploy waits as today.
+  - **`/chat/stream`:** a hit skips analysis, retrieval and generation. The answer is replayed as `delta` events of three words every 25 ms (about twice the model's pace), then the usual `done` with the same payload. The page fades it in, saves the turn and shows the sources exactly as for a written answer.
+  - **`/chat`:** returns the payload directly.
+  - **Logging:** the trace records `answer_cache`: "hit" or "stored".
+  - `ANSWER_CACHE=0` switches it off.
+- **What the reader loses:** a fresh wording on each ask. Everyone asking an example question in the same deploy gets the same answer.
+- **Checks** (`tests/test_speed.py`, frontend test):
+  - Replay pieces rejoin exactly, including Arabic and Markdown.
+  - A second ask makes no model call and returns the same payload.
+  - The stream replays it in several pieces, then `done` equal to the stored payload.
+  - Non-example, follow-up, debug, catechism-mode and wrong-language requests aren't cached; a refusal isn't stored.
+  - A prompt-version or corpus change misses.
+  - The backend list equals the page's.
+  - Backend 217, frontend 169 passed.
+- **Files changed:** `answer_cache.py`, `data/cached_answer_questions.json`, `orthodox-site/lib/cached-questions.test.ts` (new); `api.py`, `tests/test_speed.py`.
 
 ## Prompting & Generation
 

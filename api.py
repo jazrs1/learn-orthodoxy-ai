@@ -1,5 +1,6 @@
 import asyncio
 import contextvars
+import hashlib
 import hmac
 import json
 import logging
@@ -41,7 +42,9 @@ from saint_index_overrides import (
     MANUAL_SAINT_NAME_REPLACEMENTS,
 )
 from arabic_saints_index import ARABIC_SAINTS_INDEX
+import task_analysis
 from task_analysis import AnalysisCache, TaskAnalysis, analyze_request
+from answer_cache import AnswerCache, fingerprint, load_questions, replay_pieces
 from entity_check import check_subjects
 import corpus_runtime
 from chroma_store import get_chroma_path_v2
@@ -140,6 +143,10 @@ ARABIC_LEXICAL_CACHE = _env_flag("ARABIC_LEXICAL_CACHE", "1")
 EMBEDDING_PREFETCH = _env_flag("EMBEDDING_PREFETCH", "1")
 # A first-turn question asked before reuses its analysis (RET-016).
 ANALYSIS_CACHE = _env_flag("ANALYSIS_CACHE", "1")
+# The home page's example questions keep their first-turn answer (RET-017).
+ANSWER_CACHE = _env_flag("ANSWER_CACHE", "1")
+# A cached answer is replayed as a quick stream: three words every 25 ms (about twice the model's pace).
+REPLAY_PIECE_DELAY_SECONDS = 0.025
 
 # --- Broad and list requests (DECISIONS.md RET-007) ---
 # Broad requests retrieve more chunks, from the main query plus the analysis sub-queries.
@@ -3936,6 +3943,57 @@ def chat(req: ChatRequest, request: Request, response: Response):
         return payload
 
 
+answer_cache = AnswerCache(load_questions())
+
+
+def _corpus_manifest_sha() -> str | None:
+    try:
+        return hashlib.sha1(corpus_runtime.MANIFEST_PATH.read_bytes()).hexdigest() if CORPUS_V2 else None
+    except OSError:
+        return None
+
+
+def _answer_fingerprint() -> str:
+    """Everything a cached answer depends on (RET-017): when any of it changes, cached answers miss."""
+    return fingerprint(
+        [
+            CORPUS_VERSION, _corpus_manifest_sha(), PROMPT_VERSION, ENGLISH_SYSTEM_PROMPT, ARABIC_SYSTEM_PROMPT,
+            task_analysis.ANALYSIS_SYSTEM_PROMPT, CHAT_MODEL, TASK_ANALYSIS_MODEL, CHAT_TEMPERATURE, TOP_K_V2,
+            MAX_TOP_K, VECTOR_DISTANCE_THRESHOLD, ARABIC_VECTOR_DISTANCE_THRESHOLD, ANSWER_MAX_TOKENS,
+            ANSWER_MAX_TOKENS_TASK, ENTITY_CHECK_ENABLED,
+        ]
+    )
+
+
+def _answer_cache_key(req: "ChatRequest"):
+    """The cache key when this is a home-page example question asked as a chat's first message."""
+    if not ANSWER_CACHE or req.debug or req.retrieve_only or req.saint_id or req.saint_name or req.namesakes_of:
+        return None
+    if isinstance(req.history, list) and req.history:
+        return None
+    if _normalize_chat_mode(req.mode) != "chat":
+        return None
+    question = (req.question or "").strip()
+    return answer_cache.key(question, _detect_language(req.language, question), _answer_fingerprint())
+
+
+def _cached_answer(req: "ChatRequest", trace: RequestTrace) -> Dict[str, Any] | None:
+    key = _answer_cache_key(req)
+    cached = answer_cache.get(key) if key else None
+    if cached is not None:
+        trace.set_question((req.question or "").strip())
+        trace.set(outcome="answered", refusal=False, answer_cache="hit", answer_chars=len(cached.get("answer") or ""))
+    return cached
+
+
+def _store_answer(req: "ChatRequest", payload: Dict[str, Any], trace: RequestTrace) -> None:
+    """Keeps a finished, sourced answer to an example question (never a refusal or a menu)."""
+    key = _answer_cache_key(req)
+    if key and trace.fields.get("outcome") == "answered" and payload.get("sources") and not payload.get("options"):
+        answer_cache.put(key, payload)
+        trace.set(answer_cache="stored")
+
+
 @dataclass
 class PendingAnswer:
     """Where `_chat_prepare` stops when the model has to write the answer (GEN-007).
@@ -3970,6 +4028,9 @@ def _chat_errors(trace: RequestTrace):
 
 
 def _chat_impl(req: ChatRequest, trace: RequestTrace):
+    cached = _cached_answer(req, trace)
+    if cached is not None:
+        return cached
     with _chat_errors(trace), _embedding_memo():
         prepared = _chat_prepare(req, trace)
         if not isinstance(prepared, PendingAnswer):
@@ -3982,7 +4043,9 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         )
         trace.set_generation(resp, CHAT_MODEL)
         trace.lap("generation")
-        return prepared.finish(resp.choices[0].message.content or "")
+        payload = prepared.finish(resp.choices[0].message.content or "")
+        _store_answer(req, payload, trace)
+        return payload
 
 
 def _chat_prepare(req: ChatRequest, trace: RequestTrace) -> Dict[str, Any] | PendingAnswer:
@@ -4575,6 +4638,14 @@ async def chat_stream(req: ChatRequest, request: Request):
             stream=True,
         )
         _enforce_chat_rate_limit(request)
+        cached = _cached_answer(req, trace)
+        if cached is not None:
+            trace.hand_off()
+            return StreamingResponse(
+                _replay_answer(cached, trace),
+                media_type="text/event-stream",
+                headers={**STREAM_HEADERS, "X-Request-ID": trace.request_id},
+            )
         prepared = await run_in_threadpool(_prepare_or_http_error, req, trace)
         if not isinstance(prepared, PendingAnswer):
             if req.debug:
@@ -4582,13 +4653,38 @@ async def chat_stream(req: ChatRequest, request: Request):
             return JSONResponse(_chat_payload(prepared), headers={"X-Request-ID": trace.request_id})
         trace.hand_off()
     return StreamingResponse(
-        _stream_answer(prepared, trace),
+        _stream_answer(prepared, trace, lambda payload: _store_answer(req, payload, trace)),
         media_type="text/event-stream",
         headers={**STREAM_HEADERS, "X-Request-ID": trace.request_id},
     )
 
 
-async def _stream_answer(pending: PendingAnswer, trace: RequestTrace):
+async def _replay_answer(payload: Dict[str, Any], trace: RequestTrace):
+    """A cached answer (RET-017) sent the way a written one is, in small pieces, so the page fades it
+    in as usual; then `done` with the same payload."""
+    streamed_chars = 0
+    try:
+        for index, piece in enumerate(replay_pieces(payload.get("answer") or "")):
+            if index:
+                await asyncio.sleep(REPLAY_PIECE_DELAY_SECONDS)
+            else:
+                trace.set(ttft_ms=trace.elapsed_ms())
+            streamed_chars += len(piece)
+            yield _sse("delta", {"t": piece})
+        trace.set(streamed_chars=streamed_chars)
+        yield _sse("done", _chat_payload(payload))
+    except (asyncio.CancelledError, GeneratorExit):
+        trace.set(outcome="client_disconnected", disconnected=True, streamed_chars=streamed_chars)
+        raise
+    finally:
+        trace.emit()
+
+
+async def _stream_answer(
+    pending: PendingAnswer,
+    trace: RequestTrace,
+    on_finished: Callable[[Dict[str, Any]], None] | None = None,
+):
     """Stream the model's reply, then the post-processed payload; always emits the request log line.
 
     A client that goes away (Stop, a closed tab, the proxy giving up) surfaces here as the
@@ -4638,9 +4734,11 @@ async def _stream_answer(pending: PendingAnswer, trace: RequestTrace):
             yield _sse("delta", {"t": text})
         trace.set_usage(CHAT_MODEL, usage, finish_reason)
         trace.lap("generation")
-        payload = _chat_payload(pending.finish("".join(parts)))
+        finished = pending.finish("".join(parts))
+        if on_finished is not None:
+            on_finished(finished)
         trace.set(streamed_chars=streamed_chars)
-        yield _sse("done", payload)
+        yield _sse("done", _chat_payload(finished))
     except (RateLimitError, APITimeoutError, APIConnectionError, APIStatusError) as e:
         logger.exception("OpenAI call failed in /chat/stream request_id=%s", trace.request_id)
         error = _openai_error_to_http(e)
