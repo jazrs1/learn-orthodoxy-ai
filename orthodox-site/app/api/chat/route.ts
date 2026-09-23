@@ -5,6 +5,7 @@ import { getRecentHistory, saveChatTurn } from "../../../lib/conversations";
 import { getDatabaseConfigError } from "../../../lib/db";
 import { ChatMessage, SourceRef } from "../../../lib/chat-types";
 import { Language, normalizeLanguage } from "../../../lib/i18n";
+import { backendSaintSelection, optionsFromBackend } from "../../../lib/message-options";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,7 @@ type BackendChatResponse = {
   answer?: string;
   entities?: string[];
   options?: string[];
+  option_ids?: string[];
   sources?: SourceRef[];
 };
 
@@ -26,6 +28,8 @@ type ChatRequestBody = {
   mode?: "chat" | "saints" | "catechism";
   language?: Language;
   hideUserMessage?: boolean;
+  saintId?: string;
+  saintName?: string;
 };
 
 type ChatMode = "chat" | "saints" | "catechism";
@@ -35,7 +39,8 @@ function normalizeAssistantMessage(data: BackendChatResponse): Omit<ChatMessage,
     id: crypto.randomUUID(),
     content: data.answer || "Sorry — I could not generate a response.",
     entities: Array.isArray(data.entities) ? data.entities : [],
-    options: Array.isArray(data.options) ? data.options : [],
+    // Saint menus: each option's entry ID, sent back when the option is chosen (RET-010).
+    ...optionsFromBackend(data),
     sources: Array.isArray(data.sources)
       ? data.sources.filter(
           (source) =>
@@ -58,6 +63,7 @@ export async function POST(request: Request) {
     const mode: ChatMode =
       body.mode === "saints" || body.mode === "catechism" ? body.mode : "chat";
     const language = normalizeLanguage(body.language);
+    const saintSelection = backendSaintSelection(body);
 
     if (!question) {
       const badRequest = NextResponse.json({ error: "Question is required." }, { status: 400 });
@@ -97,6 +103,7 @@ export async function POST(request: Request) {
         top_k: 8,
         mode,
         language,
+        ...saintSelection,
       }),
       timeoutMs: 20000,
     });

@@ -1240,8 +1240,9 @@ textarea:focus-visible {
 }
 
 /* Drop cap on the first paragraph, in rubric red (left-to-right text only: an initial letter
-   would break the joining of Arabic script). */
-.interactive-answer:dir(ltr) > p:first-child::first-letter {
+   would break the joining of Arabic script). Not on menus, refusals or other messages without
+   sources (`is-plain`, RET-010). */
+.interactive-answer:dir(ltr):not(.is-plain) > p:first-child::first-letter {
   float: left;
   margin: 0.08em 0.1em 0 0;
   color: var(--color-accent);
@@ -1252,7 +1253,7 @@ textarea:focus-visible {
 }
 
 @supports (initial-letter: 2) or (-webkit-initial-letter: 2) {
-  .interactive-answer:dir(ltr) > p:first-child::first-letter {
+  .interactive-answer:dir(ltr):not(.is-plain) > p:first-child::first-letter {
     float: none;
     margin: 0 0.1em 0 0;
     font-size: 1em;

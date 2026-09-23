@@ -20,6 +20,13 @@ import { ChatMessage, ConversationDetail, ConversationSummary, SourceRef } from 
 import { chatErrorKey } from "../../lib/errors";
 import type { TranslationKey } from "../../lib/i18n";
 import { displaySaintName } from "../../lib/saint-display";
+import {
+  type MessageOption,
+  followUpToUserMessage,
+  normalizeOptionText,
+  saintSelectionRequest,
+  visibleMessageOptions,
+} from "../../lib/message-options";
 
 type SaintsListResponse = {
   saints?: string[];
@@ -30,6 +37,7 @@ type SaintDetailResponse = {
   answer?: string;
   entities?: string[];
   options?: string[];
+  optionIds?: string[];
   sources?: SourceRef[];
   canLearnMore?: boolean;
   error?: string;
@@ -43,6 +51,10 @@ type SendOptions = {
   hideUserMessage?: boolean;
   /** Id of a failed user message this send replaces (Retry). */
   retryOf?: string;
+  /** A namesake-menu choice: the backend selects this entry by ID (RET-010). */
+  saintId?: string;
+  /** A saint named exactly (saints pane, or a menu saved before RET-010). */
+  saintName?: string;
 };
 
 // A failed send: shown once as an alert under the thread with a Retry button (UI-008).
@@ -215,66 +227,6 @@ function mergeUniqueSaints(current: string[], next: string[]) {
   return merged;
 }
 
-function normalizeOptionText(option: string) {
-  return option
-    .trim()
-    .replace(/^You might also ask:\s*/i, "")
-    .replace(/^يمكنك أيضًا أن تسأل[:：]\s*/i, "")
-    .replace(/^[-–—•]\s*/, "")
-    .trim();
-}
-
-function looksLikeQuestionOption(option: string) {
-  return (
-    option.includes("?") ||
-    option.includes("؟") ||
-    /^(هل|كيف|لماذا|ما|ماذا|متى|أين|من)\b/i.test(option) ||
-    /^(i\s+(?:would\s+like|want)|would|how|why|what|when|where|who|which|can|should|do|does|is|are)\b/i.test(option)
-  );
-}
-
-function followUpToUserMessage(option: string) {
-  const cleaned = option.trim().replace(/[?？]\s*$/, "").trim();
-  const replacements: Array<[RegExp, string]> = [
-    [/^would\s+you\s+like\s+to\s+/i, "I would like to "],
-    [/^would\s+you\s+like\s+/i, "I would like "],
-    [/^do\s+you\s+want\s+to\s+/i, "I want to "],
-    [/^do\s+you\s+want\s+/i, "I want "],
-  ];
-
-  for (const [pattern, replacement] of replacements) {
-    if (pattern.test(cleaned)) {
-      return cleaned.replace(pattern, replacement).trim();
-    }
-  }
-
-  return cleaned;
-}
-
-function visibleMessageOptions(options: string[] | undefined, saintLookup: Set<string>) {
-  const saintOptions: string[] = [];
-  const questionOptions: string[] = [];
-  const seen = new Set<string>();
-
-  for (const option of options || []) {
-    const normalized = normalizeOptionText(option);
-    if (!normalized) continue;
-
-    if (isValidSaintName(normalized, saintLookup)) {
-      if (seen.has(normalized.toLowerCase())) continue;
-      seen.add(normalized.toLowerCase());
-      saintOptions.push(normalized);
-    } else if (looksLikeQuestionOption(normalized)) {
-      const dedupeKey = followUpToUserMessage(normalized).toLowerCase();
-      if (seen.has(dedupeKey)) continue;
-      seen.add(dedupeKey);
-      questionOptions.push(normalized);
-    }
-  }
-
-  return questionOptions.length ? questionOptions.slice(0, 2) : saintOptions;
-}
-
 function hasSourceBackedSaintDetail(detail: SaintDetailResponse | null) {
   const answer = detail?.answer?.trim() || "";
   if (!answer) return false;
@@ -294,18 +246,19 @@ function hasSourceBackedSaintDetail(detail: SaintDetailResponse | null) {
   );
 }
 
-function saintDetailOptions(detail: SaintDetailResponse | null) {
+function saintDetailOptions(detail: SaintDetailResponse | null): MessageOption[] {
   const seen = new Set<string>();
-  const options: string[] = [];
+  const options: MessageOption[] = [];
 
-  for (const option of detail?.options || []) {
-    const normalized = normalizeOptionText(option);
-    if (!normalized) continue;
-    const key = normalized.toLowerCase();
-    if (seen.has(key)) continue;
+  (detail?.options || []).forEach((option, index) => {
+    const label = normalizeOptionText(option);
+    if (!label) return;
+    const saintId = detail?.optionIds?.[index] || "";
+    const key = saintId ? `id:${saintId}` : label.toLowerCase();
+    if (seen.has(key)) return;
     seen.add(key);
-    options.push(normalized);
-  }
+    options.push(saintId ? { label, saintId } : { label });
+  });
 
   return options;
 }
@@ -338,6 +291,8 @@ function ChatPageContent() {
   const [saintsError, setSaintsError] = useState("");
   const [saintSearch, setSaintSearch] = useState("");
   const [selectedSaint, setSelectedSaint] = useState("");
+  // The entry behind the saints pane when it was opened from a menu choice (RET-010).
+  const [selectedSaintId, setSelectedSaintId] = useState("");
   const [saintDetail, setSaintDetail] = useState<SaintDetailResponse | null>(null);
   const [saintDetailLoading, setSaintDetailLoading] = useState(false);
   const [saintDetailError, setSaintDetailError] = useState("");
@@ -673,6 +628,8 @@ function ChatPageContent() {
           mode: requestMode,
           language,
           hideUserMessage,
+          saintId: options?.saintId,
+          saintName: options?.saintName,
         });
         handledChatRef.current = result.conversation.id;
         setIsDraftChat(false);
@@ -838,11 +795,12 @@ function ChatPageContent() {
     };
   }, [mobileSidebarOpen]);
 
-  const loadSaintDetail = useCallback(async (name: string) => {
+  const loadSaintDetail = useCallback(async (name: string, saintId = "") => {
     const trimmed = name.trim();
     if (!trimmed) return;
 
     setSelectedSaint(trimmed);
+    setSelectedSaintId(saintId);
     setSaintDetail(null);
     setSaintDetailError("");
     setSaintDetailLoading(true);
@@ -851,7 +809,7 @@ function ChatPageContent() {
       const response = await fetch("/api/saint-detail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmed, language }),
+        body: JSON.stringify({ name: trimmed, language, ...(saintId ? { saintId } : {}) }),
       });
       const data = (await response.json().catch(() => ({}))) as SaintDetailResponse;
       if (!response.ok) throw new Error("saint detail failed");
@@ -863,19 +821,20 @@ function ChatPageContent() {
     }
   }, [language, t]);
 
-  const submitSaintLookup = useCallback((name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const question = language === "ar" ? `من هو ${trimmed}؟` : `search saint: ${trimmed}`;
+  // A saint choice is sent with its entry ID, so the backend selects exactly that entry and
+  // never matches the chip text against the saints index again (RET-010).
+  const submitSaintLookup = useCallback((option: MessageOption) => {
+    if (!option.label.trim()) return;
+    const { question, ...selection } = saintSelectionRequest(option, language);
     void handleSendMessage(question, {
-      displayMessage: displaySaintName(trimmed, language),
-      mode: "saints",
+      displayMessage: displaySaintName(option.label.trim(), language),
+      ...selection,
     });
   }, [handleSendMessage, language]);
 
   const submitMessageOption = useCallback(
-    (option: string) => {
-      if (isValidSaintName(option, saintLookup)) {
+    (option: MessageOption) => {
+      if (option.saintId || isValidSaintName(option.label, saintLookup)) {
         submitSaintLookup(option);
         return;
       }
@@ -883,7 +842,7 @@ function ChatPageContent() {
       // backend receives it with the server-side history, so "it"/"this" resolve from the
       // previous turns. No answer text is pasted into the question any more (AUDIT C14/C31),
       // and the request keeps the mode the conversation is already in.
-      void handleSendMessage(followUpToUserMessage(option), { mode: conversationMode });
+      void handleSendMessage(followUpToUserMessage(option.label), { mode: conversationMode });
     },
     [conversationMode, handleSendMessage, saintLookup, submitSaintLookup]
   );
@@ -988,20 +947,22 @@ function ChatPageContent() {
                                 saintLookup={saintLookup}
                               />
                               {(() => {
-                                const options = visibleMessageOptions(message.options, saintLookup);
+                                const options = visibleMessageOptions(message.options, message.optionIds, (label) =>
+                                  isValidSaintName(label, saintLookup)
+                                );
                                 return options.length > 0 ? (
                                   <div className="message-options">
                                     <div className="message-options-list">
                                       {options.map((option) => (
                                         <button
-                                          key={option}
+                                          key={option.saintId || option.label}
                                           type="button"
                                           className="message-option-chip"
                                           onClick={() => submitMessageOption(option)}
                                         >
-                                          {isValidSaintName(option, saintLookup)
-                                            ? displaySaintName(option, language)
-                                            : option}
+                                          {option.saintId || isValidSaintName(option.label, saintLookup)
+                                            ? displaySaintName(option.label, language)
+                                            : option.label}
                                         </button>
                                       ))}
                                     </div>
@@ -1142,12 +1103,12 @@ function ChatPageContent() {
                             <div className="message-options-list">
                               {options.map((option) => (
                                 <button
-                                  key={option}
+                                  key={option.saintId || option.label}
                                   type="button"
                                   className="message-option-chip"
-                                  onClick={() => void loadSaintDetail(option)}
+                                  onClick={() => void loadSaintDetail(option.label, option.saintId)}
                                 >
-                                  {displaySaintName(option, language)}
+                                  {displaySaintName(option.label, language)}
                                 </button>
                               ))}
                             </div>
@@ -1172,7 +1133,10 @@ function ChatPageContent() {
                                 language === "ar"
                                   ? `أريد أن أعرف المزيد عن ${saintName}`
                                   : `Tell me more about ${saintName}`;
-                              void handleSendMessage(question, { mode: "saints" });
+                              void handleSendMessage(question, {
+                                mode: "saints",
+                                ...(selectedSaintId ? { saintId: selectedSaintId } : { saintName }),
+                              });
                             }}
                           >
                             {t("learnMore")}

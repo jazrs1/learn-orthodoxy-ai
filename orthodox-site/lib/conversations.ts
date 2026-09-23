@@ -3,6 +3,7 @@ import "server-only";
 import { PoolClient } from "pg";
 import { ChatBackendHistoryMessage, ChatMessage, ConversationDetail, ConversationSummary, SourceRef } from "./chat-types";
 import { query, withTransaction } from "./db";
+import { decodeStoredOptions, encodeStoredOptions } from "./message-options";
 
 type ConversationRow = {
   id: string;
@@ -16,7 +17,7 @@ type MessageRow = {
   role: "user" | "assistant";
   content: string;
   entities: string[] | null;
-  options: string[] | null;
+  options: unknown;
   sources: SourceRef[] | null;
   created_at: Date;
 };
@@ -36,7 +37,7 @@ function messageFromRow(row: MessageRow): ChatMessage {
     role: row.role,
     content: row.content,
     entities: Array.isArray(row.entities) ? row.entities : [],
-    options: Array.isArray(row.options) ? row.options : [],
+    ...decodeStoredOptions(row.options),
     sources: Array.isArray(row.sources) ? row.sources : [],
     createdAt: row.created_at.toISOString(),
   };
@@ -157,7 +158,7 @@ async function insertMessage(
       message.role,
       message.content,
       JSON.stringify(message.entities || []),
-      JSON.stringify(message.options || []),
+      JSON.stringify(encodeStoredOptions(message.options, message.optionIds)),
       JSON.stringify(message.sources || []),
       sortOrder,
     ]

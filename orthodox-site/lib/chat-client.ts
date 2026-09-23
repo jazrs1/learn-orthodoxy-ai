@@ -69,6 +69,10 @@ export async function sendChatRequest(payload: {
   mode?: "chat" | "saints" | "catechism";
   language?: Language;
   hideUserMessage?: boolean;
+  /** A namesake-menu choice: the entry's ID (RET-010). */
+  saintId?: string;
+  /** A saint named exactly (a menu choice saved without an ID). */
+  saintName?: string;
 }) {
   const response = await fetch("/api/chat", {
     method: "POST",

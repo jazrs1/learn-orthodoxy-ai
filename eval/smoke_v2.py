@@ -6,8 +6,10 @@ Checks, in order, and stops at the first failure:
   1. /health reports the expected corpus_version and both collections ready (no OpenAI).
   2. /saints and /saint-suggestions answer in English and Arabic (no OpenAI).
   3. Eight /chat requests (~$0.04 with gpt-4.1-mini): each gets HTTP 200, the expected outcome
-     (answered / refused / options), and, when answered, v2-shaped sources (chunk_id, entry, pages) and
-     labels that name the question or saint. `--no-chat` skips this step.
+     (answered / refused / menu), and, when answered, v2-shaped sources (chunk_id, entry, pages) and
+     labels that name the question or saint. A namesake menu must carry an entry ID per option; the
+     script then chooses one by ID, as the site does, and needs an answer led by that entry (RET-010;
+     the menu itself costs nothing). `--no-chat` skips this step.
 Nothing is written anywhere; the backend's own request log records the calls.
 """
 
@@ -22,9 +24,10 @@ import requests
 
 CHAT = [
     # (question, mode, language, expected outcome, a word the answer or a source entry must contain)
+    # A "menu" case names the option to choose after the colon: "menu:<label contains>".
     ("What is prayer?", "chat", "en", "answered", "prayer"),
     ("Who was St. Athanasius the Apostolic?", "chat", "en", "answered", "Athanasius"),
-    ("search saint: St. George", "saints", "en", "answered", "George"),
+    ("search saint: St. George", "saints", "en", "menu:Capaducian", "George"),
     ("List the saints named Gregory", "chat", "en", "answered", "Gregory"),
     ("Who won the 2018 FIFA World Cup?", "chat", "en", "refused", ""),
     ("ما هي الصلاة؟", "catechism", "ar", "answered", "الصلاة"),
@@ -66,17 +69,30 @@ def main() -> int:
         print("OK (no chat requests)")
         return 0
 
+    def post(body):
+        response = requests.post(f"{base}/chat", json={"top_k": 8, **body}, headers=headers, timeout=90)
+        if response.status_code != 200:
+            fail(f"{body['question']!r}: HTTP {response.status_code} {response.text[:200]}")
+        return response.json()
+
     for question, mode, language, expected, must in CHAT:
         started = time.monotonic()
-        response = requests.post(f"{base}/chat", json={"question": question, "mode": mode, "language": language, "top_k": 8},
-                                 headers=headers, timeout=90)
+        data = post({"question": question, "mode": mode, "language": language})
+        if expected.startswith("menu:"):
+            options, ids = data.get("options") or [], data.get("option_ids") or []
+            if not options or len(ids) != len(options) or not all(ids) or data.get("sources"):
+                fail(f"{question!r}: expected a namesake menu with an entry ID per option, got {data}")
+            label = next((o for o in options if expected[5:] in o), None)
+            if label is None:
+                fail(f"{question!r}: no option contains {expected[5:]!r}: {options}")
+            print(f"   menu {len(options)} options: {' | '.join(options)}; choosing {label!r} by id {ids[options.index(label)]}")
+            chip = f"من هو {label}؟" if language == "ar" else f"search saint: {label}"
+            data = post({"question": chip, "mode": "saints", "language": language, "saint_id": ids[options.index(label)]})
+            expected = "answered"
         elapsed = time.monotonic() - started
-        if response.status_code != 200:
-            fail(f"{question!r}: HTTP {response.status_code} {response.text[:200]}")
-        data = response.json()
         answer, sources, options = data.get("answer") or "", data.get("sources") or [], data.get("options") or []
         refused = answer.strip().lower().startswith(REFUSALS) or answer.strip().startswith(REFUSALS)
-        outcome = "refused" if refused else ("options" if options and not answer.strip() else "answered")
+        outcome = "refused" if refused else ("options" if options and not sources else "answered")
         if outcome != expected:
             fail(f"{question!r}: expected {expected}, got {outcome}: {answer[:160]!r}")
         if expected == "answered":

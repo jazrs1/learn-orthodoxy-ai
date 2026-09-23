@@ -1,0 +1,13 @@
+{
+ "total_usd": 0.00324,
+ "max_spend": 0.02,
+ "entries": [
+  {
+   "label": "RET-010 retrieve-only menu check v2",
+   "usd": 0.00324,
+   "by_model": {
+    "gpt-4o-mini:analysis": 0.00324
+   }
+  }
+ ]
+}

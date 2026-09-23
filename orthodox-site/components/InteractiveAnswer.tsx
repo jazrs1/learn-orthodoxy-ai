@@ -21,6 +21,8 @@ type InteractiveAnswerProps = {
   tableLabel?: string;
   /** Separator between grouped markers ("," or the Arabic comma). */
   citationSeparator?: string;
+  /** Menus, refusals and other messages without sources: no drop cap (RET-010). */
+  plain?: boolean;
 };
 
 // Answers are Markdown (DECISIONS.md FE-002): paragraphs, lists, bold and GFM tables.
@@ -54,6 +56,7 @@ export default function InteractiveAnswer({
   onCitationClick,
   tableLabel = "Table",
   citationSeparator = ",",
+  plain = false,
 }: InteractiveAnswerProps) {
   const clickableNames = useMemo(() => {
     return new Set(
@@ -137,7 +140,7 @@ export default function InteractiveAnswer({
   );
 
   return (
-    <div className="interactive-answer">
+    <div className={plain ? "interactive-answer is-plain" : "interactive-answer"}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkCitations]} components={components}>
         {answer}
       </ReactMarkdown>

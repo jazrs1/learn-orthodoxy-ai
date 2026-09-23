@@ -2,18 +2,21 @@ import { NextResponse } from "next/server";
 import { backendConfigError, backendFetch } from "../../../lib/backend";
 import type { SourceRef } from "../../../lib/chat-types";
 import { Language, normalizeLanguage } from "../../../lib/i18n";
+import { backendSaintSelection, optionsFromBackend } from "../../../lib/message-options";
 
 export const runtime = "nodejs";
 
 type SaintDetailRequest = {
   name?: string;
   language?: Language;
+  saintId?: string;
 };
 
 type BackendChatResponse = {
   answer?: string;
   entities?: string[];
   options?: string[];
+  option_ids?: string[];
   sources?: SourceRef[];
   can_learn_more?: boolean;
 };
@@ -21,6 +24,9 @@ type BackendChatResponse = {
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as SaintDetailRequest;
   const name = body.name?.trim() || "";
+  // A menu choice carries the entry's ID; a name from the saints list or a calendar link is
+  // resolved by its exact name, never shown a menu for (RET-010).
+  const saintSelection = backendSaintSelection({ saintId: body.saintId, saintName: name });
   const language = normalizeLanguage(body.language);
 
   if (!name) {
@@ -45,6 +51,7 @@ export async function POST(request: Request) {
         top_k: 8,
         mode: "saints",
         language,
+        ...saintSelection,
       }),
       timeoutMs: 20000,
     });
@@ -60,7 +67,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       answer: data.answer || "",
       entities: Array.isArray(data.entities) ? data.entities : [],
-      options: Array.isArray(data.options) ? data.options : [],
+      ...optionsFromBackend(data),
       sources: Array.isArray(data.sources) ? data.sources : [],
       canLearnMore: data.can_learn_more === true,
     });

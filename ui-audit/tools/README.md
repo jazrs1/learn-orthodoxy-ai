@@ -77,3 +77,14 @@ LTR isolate Chrome shows "118–119" as "119–118" in RTL text).
 ```sh
 CHROME_BIN=/path/to/chrome node rtl-sources.mjs ../ui-audit/rtl
 ```
+
+## Namesake menus (RET-010)
+
+`saint-menu.mjs` asks "search saint: St. Athanasius" (English) and "من هو القديس أثناسيوس؟" (Arabic) with
+every `/api/*` call mocked by menus captured from the local v2 backend. It records the request body a
+chip click posts to `/api/chat` (it must carry `saintId`) and the drop cap of the menu message (none)
+and of the sourced answer (English only), and writes screenshots plus `saint-menu-report.json`.
+
+```sh
+CHROME_BIN=/path/to/chrome node saint-menu.mjs ../ui-audit/saint-menu
+```

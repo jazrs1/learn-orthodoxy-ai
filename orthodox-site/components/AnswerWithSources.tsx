@@ -82,6 +82,7 @@ export default function AnswerWithSources({
         onCitationClick={showSource}
         tableLabel={t("tableLabel")}
         citationSeparator={language === "ar" ? "،" : ","}
+        plain={items.length === 0}
       />
       {items.length > 0 ? (
         <section className="answer-sources" aria-labelledby={`${sourceDomId(answerId, 0)}-heading`}>

@@ -56,6 +56,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-007: Broad requests retrieve wider; saint lists are built from the saint index](#ret-007-broad-requests-retrieve-wider-saint-lists-are-built-from-the-saint-index)
   - [RET-008: Comparisons with another church also retrieve the passages that name it](#ret-008-comparisons-with-another-church-also-retrieve-the-passages-that-name-it)
   - [RET-009: Distance threshold 1.25, as an off-topic guard only](#ret-009-distance-threshold-125-as-an-off-topic-guard-only)
+  - [RET-010: Namesake menus select by saint ID; a menu only for genuinely shared names](#ret-010-namesake-menus-select-by-saint-id-a-menu-only-for-genuinely-shared-names)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -726,6 +727,66 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Files changed:** `api.py` (default), `eval/threshold_analysis.py` (`--simulate`), `eval/results/20260916-215250.json`, `eval/results/20260916-220035.json`.
 - **Concept to learn:** *Defence in depth for refusals.* Use the cheapest signal (distance) only where it is reliable (clearly off-topic), and give the hard cases (near misses) to a check that can actually see the difference (entity presence). Re-derive a threshold whenever an upstream stage changes the scores it sees (here, the query rewrite lowered them). Search: "cascade classifier thresholds", "answerability RAG".
 - **Revisit if:** production logs show answerable requests between 1.2 and 1.25 (raise it), off-topic requests below 1.25 that the model answers, re-ingestion changes chunk size, or the analysis failure rate becomes noticeable.
+
+### RET-010: Namesake menus select by saint ID; a menu only for genuinely shared names
+- **Date / Part:** 2026-09-23, production bug (v2 live; the owner also saw it on v1).
+- **Bug:**
+  - "Who was St. Athanasius the Apostolic?" showed a menu: the martyr or the Apostolic, 20th Pope.
+  - Choosing "St. Athanasius the Apostolic, the 20th Pope of Alexandria" brought the same menu back, so the saint could not be reached.
+- **Root cause (same code path on v1 and v2):**
+  - **Selection by text:** a chip click sent `search saint: <chip text>`, and the backend matched that text against the saints index again, with no saint ID anywhere.
+  - **Text cut at the comma:** the intent parser cuts a name at its first comma, so the chip became "St. Athanasius the Apostolic" again.
+  - **The same name on two entries:** the hand-written alias table (`SAINT_ALIAS_RECORDS`) had been copied onto namesakes. In v2 the martyr (`athanasius`) inherited the v1 aliases "St. Athanasius the Apostolic" and "St. Athanasius of Alexandria". In v1 both Athanasius records got each other's names through the table. Both entries matched equally, so the menu came back.
+  - v2 made it more visible: every namesake is now its own entry.
+  - The Agathon chips failed differently: "(The Martyr, vol. 1, p. 105)" was cut at the comma, so two entries became the same text and the request fell through to a text search.
+- **Fix (backend, `api.py`):**
+  - **Menus carry IDs:** every saint menu returns `option_ids` next to `options`, left out of other replies. `/chat` takes `saint_id` (a menu choice) and `saint_name` (a saints-list or calendar name).
+  - **Choice by ID:** `saint_id` selects that entry outright. No index matching runs, and the entry's own chunks lead the context, taken from the chosen record without a lookup by name. An unknown ID falls back to the question.
+  - **Saints-list and calendar names:** `saint_name` resolves by exact displayed name, then by the curated owner ("St. Athanasius" is the Apostolic), then by the only entry that carries it. It never produces a menu, so calendar links such as "St. Athanasius" and "St. Mary" still open one saint.
+  - **Alias ownership** (`_assign_alias_owners`, v1 and v2):
+    - A group of the alias table belongs to its curated saint, else to the one entry whose own name is one of the group's descriptive names.
+    - Any other alias of two or more words that several entries carry goes to the entries whose own name starts with it.
+    - Bare names stay with every entry that has them.
+  - **Straight to one entry:** a full name (taken whole, commas included), an owned alias ("the Apostolic", "of Alexandria", "of Nyssa", "the Great"), or an entry's own descriptor ("St. Athanasius the Martyr", `base_name + descriptor` in v2).
+    - "St. George the Great Martyr" is added to the alias table for the Cappadocian; the index had only "St. George, the Capaducian".
+  - **Menu only when genuinely ambiguous:**
+    - A bare name several entries share ("St. Athanasius": 7 entries, the curated saint first).
+    - A name two entries carry equally ("St. Agathon the Martyr": two entries on p. 105).
+    - Capped at 12.
+  - **Arabic (v2):**
+    - Same rules for "من هو / حدثني عن …" questions and saints-tab lookups; the Arabic path had no menu before.
+    - A bare name must lead the entry's name: its first word, or its second when the dictionary gives two spellings ("جريجوري (إغريغوريوس)"). "عبد المسيح" is not an answer to "من هو المسيح؟".
+    - A single close match counts: "غريغوريوس النزينزي" reaches the entry "إغريغوريوس ( غريغوريوس ) النزينزي القديس".
+    - v1 Arabic has no entry IDs and keeps its previous behaviour.
+  - The named-subject check (GEN-006) is skipped for a chosen entry, whose own passage leads the context.
+- **Fix (frontend):**
+  - `lib/message-options.ts` keeps each option's ID from the reply, through the saved conversation, to the request its chip sends. The IDs are stored as `{label, saintId}` in the existing `options` jsonb column: no migration, and old rows still read.
+  - Menus saved before this fix have no IDs and are sent by exact name (`saint_name`).
+  - The saints pane and its "Learn more" button pass the ID, or the exact name.
+  - **No drop cap** on messages without sources (menus, refusals): `is-plain`.
+- **Namesake groups (saints index, English):**
+
+  | | v1 | v2 |
+  |---|---|---|
+  | entries | 1,363 | 1,933 |
+  | groups with the same name (2+ entries) | 0 | 25 (53 entries) |
+  | groups sharing a first name, which can show a menu | 175 (628 entries) | 249 (1,078 entries) |
+
+  - v1's index kept only the first entry of each name, so it hid namesakes rather than having none.
+  - Arabic v2: 2,105 entries, 141 same-name groups (286 entries) and 295 first-name groups (1,201 entries). Many same-name groups are the dictionary repeating an entry in its last pages.
+  - So v2 can show a menu for more names, and longer menus, but only for bare or equally shared names.
+- **Verification:**
+  - **Backend tests:** `tests/test_saint_menus.py`, 17 tests, English and Arabic. Question → menu → choice by ID → answer whose first source is that entry. They use the committed index and chunks, with OpenAI stubbed. They cover Athanasius, the Agathons, the Gregorys, the Anthonys, George, calendar names, unknown IDs, and a v1 test of the alias table. 13 of the 17 fail on the previous code.
+  - **Frontend tests:** `lib/message-options.test.ts`, 6 tests. Backend reply → saved message → reload → chip → request fields.
+  - **Retrieve-only on the local v2 store** ($0.0032, ledger `eval/results/spend-ret010.json`): 13 questions and 10 choices, all reaching the right entry's first chunk.
+  - **Browser** (`ui-audit/tools/saint-menu.mjs`, Chrome, `/api` mocked):
+    - the menu has no drop cap (`initial-letter: normal`) and the sourced answer keeps it (`2`);
+    - the chip posts `saintId: "athanasius"` in English and Arabic.
+  - **`eval/smoke_v2.py` against a local v2 backend:** all 8 pass (~$0.01). Case 3 now expects the "St. George" menu, chooses the Cappadocian by ID and needs an answer led by his entry.
+- **Tests:** backend 152, frontend 125.
+- **Revisit if:**
+  - bare-name menus prove too frequent: a name whose curated saint is overwhelmingly meant (St. Mary, St. Mark) could go straight to him with a "did you mean another?" line;
+  - or the saints index is rebuilt: move the alias ownership into ingest and drop the copied v1 aliases there.
 
 ## Prompting & Generation
 

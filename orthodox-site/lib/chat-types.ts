@@ -22,6 +22,8 @@ export type ChatMessage = {
   content: string;
   entities?: string[];
   options?: string[];
+  /** Saint menus: the entry ID behind each option ("" for a follow-up question), RET-010. */
+  optionIds?: string[];
   sources?: SourceRef[];
   createdAt?: string;
   isTyping?: boolean;
