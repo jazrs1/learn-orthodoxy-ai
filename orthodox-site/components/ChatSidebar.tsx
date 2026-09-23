@@ -113,6 +113,17 @@ export default function ChatSidebar({
               ))}
               <Link
                 className="chat-sidebar-nav-btn"
+                href="/calendar"
+                onClick={() => {
+                  if (pathname === "/calendar") {
+                    onClose?.();
+                  }
+                }}
+              >
+                {t("calendar")}
+              </Link>
+              <Link
+                className="chat-sidebar-nav-btn"
                 href="/credits"
                 onClick={() => {
                   if (pathname === "/credits") {

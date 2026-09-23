@@ -92,6 +92,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [CAL-003: Katameros saint titles extracted once into one swappable file, linked conservatively to our saints index](#cal-003-katameros-saint-titles-extracted-once-into-one-swappable-file-linked-conservatively-to-our-saints-index)
   - [CAL-004: "Today" comes from the visitor's clock, picked before first paint; the day boundary and saint order are one setting each](#cal-004-today-comes-from-the-visitors-clock-picked-before-first-paint-the-day-boundary-and-saint-order-are-one-setting-each)
   - [CAL-005: Today strip at the top of the home page, linking the date to the calendar and the saint to our saints index](#cal-005-today-strip-at-the-top-of-the-home-page-linking-the-date-to-the-calendar-and-the-saint-to-our-saints-index)
+  - [CAL-006: /calendar — one server-rendered month at a time, a keyboard grid, and a detail panel with saint links](#cal-006-calendar--one-server-rendered-month-at-a-time-a-keyboard-grid-and-a-detail-panel-with-saint-links)
 - [Open questions](#open-questions)
 
 ---
@@ -1477,6 +1478,38 @@ In summary:
   - The one Katameros entry with no Arabic title is shown in English and marked `lang="en"`.
 - **Files:** `orthodox-site/components/calendar/{TodayBanner.tsx,TodayBannerStrip.tsx,labels.ts}`, `app/page.tsx`, `app/home-page.tsx`, `app/chat/chat-page.tsx` (the `?saint=` effect), `lib/pending-chat.ts`, `lib/i18n.ts`, `app/globals.css`.
 - **Revisit if:** the priest sets the ordering rule, or wants monthly commemorations left out of the strip.
+
+### CAL-006: /calendar — one server-rendered month at a time, a keyboard grid, and a detail panel with saint links
+- **Date / Part:** 2026-09-22, calendar Step 3
+- **Decision:**
+  - **URL and data:** `/calendar?d=YYYY-MM-DD` opens a day and `?m=YYYY-MM` a month. Dates outside Jan 2026 – Dec 2027 are moved to the nearest end with a note; invalid dates are ignored. The server sends only that month's days (`lib/calendar/month.ts`), already in both languages, so switching language needs no request. Selecting a day updates the URL with `history.replaceState`, so a selected day can be shared. Without a date in the URL, the page follows the visitor's own today (CAL-004) and moves to another month only when that today is in it.
+  - **Navigation:**
+    - previous/next month links (disabled at the ends);
+    - a month jump built as a plain GET form with `next/form`, so it works before JavaScript loads;
+    - a Today button;
+    - "Calendar" added to the header nav, the phone drawer and the sitemap.
+  - **Grid semantics and keyboard:**
+    - a `<table role="grid">` with weekday column headers (short labels shown, full names for screen readers) and `aria-selected` on the selected gridcell;
+    - one tab stop, a roving `tabIndex` on the day buttons;
+    - arrows move by day and week, reversed left/right in Arabic;
+    - Home/End go to the start or end of the week, PageUp/PageDown to the previous or next month;
+    - a move past the edge of the month loads the neighbouring month and focuses the target day;
+    - selection follows focus, so the detail panel always shows the focused day;
+    - each day's accessible name reads "Tuesday, 7 April 2026, 29 Paremhat 1742, Tuesday of Holy Pascha, Holy Week fast"; today adds "today" and `aria-current="date"`.
+  - **Cells:** the Gregorian day and Coptic day (with the month name on the 1st), a red dot for a feast and a ring for a fast day, a lighter background for fast-free days (legend below the grid), and on wide screens the day's first feast and a short saint preview. The preview drops "The Departure of" / "نياحة" so the name fits.
+  - **Detail panel:** sticky beside the grid on wide screens and below it otherwise. It shows the date in both calendars, feasts and holy days, the fast or fast-free period, the "not celebrated this year" note when a feast is suppressed, and every commemoration in the source's order. A saint with an index entry gets "Read about this saint" (`/chat?saint=…#saints`) and "Ask about this saint".
+  - **Mobile:** at 390 px the grid keeps seven columns of about 51 × 56 px; previews are hidden (the panel has them) and the toolbar stacks. The phone drawer is a new reusable `components/PageDrawer.tsx`, the same behaviour as the one built into the credits page. Credits and contact could move to it in the cleanup phase.
+  - **Attribution** at the foot of the page: dates calculated from the Coptic calendar rules and checked against the Coptic Orthodox Metropolis of the Southern United States (linked); saint commemorations from Katameros (katameros.app, linked).
+  - **Metadata:** title "Coptic Calendar", its own description, canonical `/calendar`.
+- **Verified before Step 4** (production build, Playwright, mocked APIs):
+  - no console errors and no horizontal overflow at 1440 and 390 px in English and Arabic;
+  - every control is at least 44 px except inline text links inside the sources paragraph, which WCAG 2.5.8 exempts;
+  - keyboard moves, a cross-month move and RTL arrows behave as described;
+  - the saint link opens St. George's entry;
+  - "Ask about this saint" sends "Tell me about St. George, the Capaducian." to the chat.
+  - 115 unit tests pass, including month building, URL handling, short titles and weekday fast names.
+- **Files:** `orthodox-site/app/calendar/{page.tsx,calendar-page.tsx}`, `lib/calendar/{month.ts,month.test.ts}`, `components/PageDrawer.tsx`, `components/calendar/useLocalToday.ts`, `components/Navbar.tsx`, `components/ChatSidebar.tsx`, `app/sitemap.ts`, `app/globals.css`.
+- **Concept to learn:** *The ARIA grid pattern.* A grid is one tab stop; arrow keys move inside it. That keeps a 31-day month from costing 31 Tab presses. Search: "WAI-ARIA APG grid pattern", "roving tabindex".
 
 ---
 

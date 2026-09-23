@@ -17,7 +17,11 @@ export default function Navbar() {
   const [hash, setHash] = useState("");
 
   const showsMobileSidebarToggle =
-    pathname === "/" || pathname === "/chat" || pathname === "/credits" || pathname === "/contact";
+    pathname === "/" ||
+    pathname === "/chat" ||
+    pathname === "/calendar" ||
+    pathname === "/credits" ||
+    pathname === "/contact";
   const chatModeHash = hash || "#chat";
 
   useEffect(() => {
@@ -97,6 +101,13 @@ export default function Navbar() {
               );
             })}
           </div>
+          <Link
+            href="/calendar"
+            className={`nav-link ${pathname === "/calendar" ? "nav-link-active" : ""}`}
+            aria-current={pathname === "/calendar" ? "page" : undefined}
+          >
+            {t("calendar")}
+          </Link>
           <Link
             href="/credits"
             className={`nav-link ${pathname === "/credits" ? "nav-link-active" : ""}`}

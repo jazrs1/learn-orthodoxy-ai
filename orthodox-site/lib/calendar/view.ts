@@ -18,6 +18,8 @@ export type CommemorationView = {
   kind: CommemorationKind;
   /** Arabic is missing for one source entry; the UI then shows the English title. */
   name: { en: string; ar?: string };
+  /** The title without "The Departure of" / "نياحة" and similar, for the small day cells. */
+  short: { en: string; ar?: string };
   index?: { en?: string; ar?: string };
 };
 
@@ -36,6 +38,8 @@ export type DayView = {
     label: Bilingual;
     /** "12 Thout". */
     short: Bilingual;
+    /** "12" / "١٢". */
+    dayNumber: Bilingual;
   };
   observances: ObservanceView[];
   fast: ObservanceView | null;
@@ -69,6 +73,13 @@ function observance(id: ObservanceId): ObservanceView {
   return { id, kind, name: { en, ar } };
 }
 
+const TITLE_EVENT = /^(the )?(departure|martyrdom|repose|commemoration) of (the )?|^(نياحة|استشهاد|إستشهاد|أستشهاد|شهادة|تذكار) +/i;
+
+function shortTitle(title: string): string {
+  const short = title.replace(TITLE_EVENT, "");
+  return short.charAt(0).toUpperCase() + short.slice(1);
+}
+
 /** "Wednesday fast" reads better on a Wednesday than the rule's name. */
 function weeklyFast(day: number): ObservanceView {
   return {
@@ -99,6 +110,7 @@ export function dayView(iso: string): DayView | null {
         ar: `${arabicDigits(copticDay)} ${monthAr} ${arabicDigits(year)}`,
       },
       short: { en: `${copticDay} ${monthEn}`, ar: `${arabicDigits(copticDay)} ${monthAr}` },
+      dayNumber: { en: String(copticDay), ar: arabicDigits(copticDay) },
     },
     observances: day.observances.map(observance),
     fast: day.fast === "wednesday-friday" ? weeklyFast(weekday(iso)) : day.fast ? observance(day.fast) : null,
@@ -108,6 +120,7 @@ export function dayView(iso: string): DayView | null {
       id: entry.id,
       kind: entry.kind,
       name: { en: entry.en, ...(entry.ar ? { ar: entry.ar } : {}) },
+      short: { en: shortTitle(entry.en), ...(entry.ar ? { ar: shortTitle(entry.ar) } : {}) },
       ...(entry.index ? { index: entry.index } : {}),
     })),
   };

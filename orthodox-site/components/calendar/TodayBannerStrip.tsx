@@ -2,20 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useSyncExternalStore } from "react";
 import { calendarStrings, fill, moreCommemorations } from "../../lib/calendar/strings";
-import { localCalendarDate, localCalendarDateScript } from "../../lib/calendar/today";
+import { localCalendarDateScript } from "../../lib/calendar/today";
 import type { DayView } from "../../lib/calendar/view";
 import type { Language } from "../../lib/i18n";
 import { queueChatMessage } from "../../lib/pending-chat";
 import { useLanguage } from "../LanguageProvider";
 import { calendarHref, commemorationTitle, dayHeadline, saintHref } from "./labels";
-
-/** Re-read the clock every minute so an open page rolls over to the next day. */
-function subscribeToClock(onChange: () => void) {
-  const timer = window.setInterval(onChange, 60_000);
-  return () => window.clearInterval(timer);
-}
+import { useLocalToday } from "./useLocalToday";
 
 /**
  * Renders every candidate day and shows the visitor's (CAL-005). The inline script right after the
@@ -24,9 +18,7 @@ function subscribeToClock(onChange: () => void) {
  */
 export default function TodayBannerStrip({ days, serverToday }: { days: DayView[]; serverToday: string }) {
   const { language } = useLanguage();
-  const getSnapshot = useCallback(() => localCalendarDate(new Date()), []);
-  const getServerSnapshot = useCallback(() => serverToday, [serverToday]);
-  const today = useSyncExternalStore(subscribeToClock, getSnapshot, getServerSnapshot);
+  const today = useLocalToday(serverToday);
   const shown = days.some((day) => day.date === today);
   const strings = calendarStrings(language);
 

@@ -22,10 +22,11 @@ export function dayHeadline(day: DayView, language: Language): string {
  * Props for the element holding a commemoration's title. One source entry has no Arabic title;
  * it is shown in English and marked as such for screen readers and fonts.
  */
-export function commemorationTitle(entry: CommemorationView, language: Language) {
-  const arabic = language === "ar" ? entry.name.ar : undefined;
+export function commemorationTitle(entry: CommemorationView, language: Language, form: "name" | "short" = "name") {
+  const text = entry[form];
+  const arabic = language === "ar" ? text.ar : undefined;
   return {
-    children: arabic ?? entry.name.en,
+    children: arabic ?? text.en,
     ...(language === "ar" && !arabic ? { lang: "en", dir: "ltr" as const } : {}),
   };
 }
