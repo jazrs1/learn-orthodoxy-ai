@@ -316,6 +316,16 @@ python build_arabic_saints_index.py                     # v1 Arabic saints list 
 On Railway, run the build from a Railway shell with `CHROMA_DIR=/app/chroma_db` (the volume mount). The embedder
 stops immediately on `insufficient_quota`, 401 or 403 and never retries them.
 
+The v2 corpus (questions, saint entries and web sections as units; headers and page-range metadata on every chunk;
+an ingest-time saints index) is prepared without any API call:
+
+```bash
+python -m ingestion build --corpus v2 --dry-run   # ~5 min; writes build/corpus/v2/chunks.jsonl and data/corpus/v2/
+```
+
+`data/corpus/v2/` holds `manifest.json`, `stats.json`, `saints_index.json` and `SAMPLES.md` (ten chunks of each type).
+Hand-reviewed saint links live in `data/corpus/saints_curation.json`. Embedding v2 is a later step and needs approval.
+
 Expected Arabic ingestion logs include:
 
 - `Arabic collection: orthodox_arabic_pdfs`

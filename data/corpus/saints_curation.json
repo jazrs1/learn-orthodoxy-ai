@@ -1,0 +1,147 @@
+{
+ "about": "Hand-reviewed saint curation for the v2 index (INGEST_PLAN.md §7, ING-003). Applied by ingestion/saints_index.py at build time. Every line has a reason.",
+ "links": [
+  {
+   "en": "athanasius-the-apostolic-the-20th-pope-of-alexandria",
+   "ar_heading": "أثناسيوس الرسولي البابا العشرون",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "athanasius-ii-the-28th-pope-of-alexandria",
+   "ar_heading": "أثناسيوس الثاني البابا الثامن والعشرون",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "athanasius-iii-the-76th-pope-of-alexandria",
+   "ar_heading": "أثناسيوس الثالث البابا السادس والسبعون",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "athanasius-bishop-of-qus",
+   "ar_heading": "أثناسيوس أسقف قوص",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "athanasius-the-bishop",
+   "ar_heading": "أثناسيوس الأسقف الشهيد",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "athanasius-the-saint",
+   "ar_heading": "أثناسيوس القديس",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "athanasius",
+   "ar_heading": "أثناسيوس الشهيد",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "gerasimus-theodotus-and-bishop-athanasius",
+   "ar_heading": "جراسيموس و أثناسيوس الأسقف وثاؤتيطس الشهداء",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "archilaus-the-18th-pope-of-alexandria",
+   "ar_heading": "أرشيلاوس البابا الثامن عشر",
+   "reason": "The Encyclopedia's index has no Arabic name for this entry (its letter-A pages skip roughly APAMON to ATRASIS)."
+  },
+  {
+   "en": "george-the-capaducian",
+   "ar_heading": "جاورجيوس الكبادوكي الشهيد",
+   "reason": "The index's Arabic name (\"الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)\") differs too much from the dictionary heading to match automatically."
+  },
+  {
+   "en": "demiana-and-the-fourty-virgins",
+   "ar_heading": "دميانة الشهيدة",
+   "reason": "Its line in the Encyclopedia's index carries no Arabic name."
+  }
+ ],
+ "seeds": [
+  {
+   "name_en": "St. Mary",
+   "target": "mary-the-virgin-theotokos",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Mark",
+   "target": "marcus-the-apostle",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Anthony the Great",
+   "target": "anthony-father-of-the-monks",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Paul the First Hermit",
+   "target": "abba-paul-the-first-hermit",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Athanasius",
+   "target": "athanasius-the-apostolic-the-20th-pope-of-alexandria",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Cyril the Great",
+   "target": "cyril-i-the-24th-pope-of-alexandria",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Shenoute the Archimandrite",
+   "target": "abba-shenouda-the-archmandrite",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Pishoy",
+   "target": "abba-bishoy-st",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Moses the Black",
+   "target": "moses-the-black",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Mena the Wonderworker",
+   "target": "mina-the-wonder-maker",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Demiana",
+   "target": "demiana-and-the-fourty-virgins",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Barbara",
+   "target": "barbara",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. George",
+   "target": "george-the-capaducian",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Abanoub",
+   "target": "abanoub-el-nehissy",
+   "reason": "v1 seed name; the automatic match picked another saint or none."
+  },
+  {
+   "name_en": "St. Thomas the Apostle",
+   "target": "ar:توما الرسول",
+   "reason": "Only the Arabic dictionary has an entry."
+  },
+  {
+   "name_en": "St. Peter the Apostle",
+   "target": null,
+   "reason": "Neither book has an entry; kept as a name-only record so the name is still recognised."
+  },
+  {
+   "name_en": "St. Paul the Apostle",
+   "target": null,
+   "reason": "Neither book has an entry; kept as a name-only record so the name is still recognised."
+  }
+ ]
+}

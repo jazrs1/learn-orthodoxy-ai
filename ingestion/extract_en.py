@@ -26,6 +26,7 @@ BOLD_FLAG = 16
 HEADER_BAND = 0.075  # top of page (fraction of height) where running headers sit
 HEADER_MIN_REPEATS = 3  # a top-band line repeated on this many pages is a running header
 FOOTNOTE_START = re.compile(r"^(\d{1,4})\s+(\S.*)$")
+GLUED_NOTE = re.compile(r"^(\d{1,4})\.?\s*([A-Z‘“'\"(].*)$")
 
 
 @dataclass
@@ -139,6 +140,9 @@ def document_profile(file: str) -> Tuple[float, Dict[str, int]]:
     return body_size, dict(top_keys)
 
 
+NOTE_CONTINUATION_TOP = 0.75
+
+
 def _footnote_region(lines: List[Line], body_size: float) -> int:
     """Index where the footnote block starts (len(lines) when there is none).
 
@@ -150,9 +154,19 @@ def _footnote_region(lines: List[Line], body_size: float) -> int:
             start = index
         else:
             break
+    if start < len(lines) and _continues_note(lines[start]):
+        return start  # the block opens with the tail of the previous page's last note
     while start < len(lines) and not FOOTNOTE_START.match(lines[start].text):
         start += 1
     return start
+
+
+def _continues_note(line: Line) -> bool:
+    """The first small line low on the page, when it is prose that does not start a note, continues
+    the previous page's last note. Reference lines ("[The Synaxarion: 4 Paona]") and the capitals of
+    the saints index look alike and are never taken."""
+    return (line.y0 >= NOTE_CONTINUATION_TOP and not line.text.startswith("[") and not FOOTNOTE_START.match(line.text)
+            and re.search(r"[a-z]{3}", line.text) is not None)
 
 
 def _parse_footnotes(lines: List[Line]) -> List[Footnote]:
@@ -166,6 +180,11 @@ def _parse_footnotes(lines: List[Line]) -> List[Footnote]:
             notes.append(Footnote(number, match.group(2)))
         elif notes:
             notes[-1].text = f"{notes[-1].text} {line.text}"
+        elif GLUED_NOTE.match(line.text):  # "276Anne Fremantle (ed.) ...", "1. ‘Rhinocorura’ was ..."
+            glued = GLUED_NOTE.match(line.text)
+            notes.append(Footnote(int(glued.group(1)), glued.group(2)))
+        else:  # the tail of the previous page's last note; extract_pages moves it there
+            notes.append(Footnote(0, line.text))
     return notes
 
 
@@ -202,6 +221,8 @@ def extract_page(source: PdfSource, doc: "pymupdf.Document", page_number: int) -
     cut = _footnote_region(kept, body_size)
     footnotes = _parse_footnotes(kept[cut:])
     removed["footnote"] = [line.text for line in kept[cut:]]
+    if footnotes and footnotes[0].number == 0:
+        removed["note_continuation"] = [footnotes[0].text]
     body = kept[:cut]
     return Page(source.doc_id, page_number, printed, body, footnotes, removed, body_size)
 
@@ -210,28 +231,51 @@ def extract_pages(key: str, pages: Optional[List[int]] = None) -> List[Page]:
     source = pdf_source(key)
     with pymupdf.open(source.path) as doc:
         numbers = pages or list(range(1, doc.page_count + 1))
-        return [extract_page(source, doc, number) for number in numbers]
+        out = [extract_page(source, doc, number) for number in numbers]
+    for previous, page in zip(out, out[1:]):  # a note that ran over the page break goes back to its page
+        if page.footnotes and page.footnotes[0].number == 0:
+            tail = page.footnotes.pop(0)
+            if previous.footnotes and previous.page == page.page - 1:
+                previous.footnotes[-1].text = f"{previous.footnotes[-1].text} {tail.text}"
+    for page in out[:1]:
+        if page.footnotes and page.footnotes[0].number == 0:
+            page.footnotes.pop(0)
+    return out
 
 
-def paragraphs(lines: List[Line], body_size: float) -> List[str]:
-    """Join layout lines into paragraphs: a new paragraph at a new block or a change of style
-    (heading vs body); a hyphen at a line end joins the word when the next line starts lower-case."""
-    result: List[str] = []
-    current = ""
-    previous: Optional[Line] = None
+WRAP_GAP = 0.005  # of the page height: a wrapped line sits right under the previous one; paragraphs leave ~0.01
+SENTENCE_END = tuple(".!?:;\"”’)]")
+LIST_ITEM = re.compile(r"^(?:[a-z]|\d{1,2}|[ivx]{1,4})[.)]\s|^[•·–-]\s")
+
+
+def paragraph_groups(lines: List[Line]) -> List[List[Line]]:
+    """Group layout lines into paragraphs: a new paragraph at a new block or a change of style
+    (bold, or a size change of 1 pt or more)."""
+    groups: List[List[Line]] = []
     for line in lines:
-        style_changed = previous is not None and (
-            line.bold != previous.bold or abs(line.size - previous.size) >= 1
-        )
-        if previous is None or line.block != previous.block or style_changed:
-            if current:
-                result.append(current)
-            current = line.text
-        elif current.endswith("-") and not current.endswith("--") and line.text[:1].islower():
-            current = current[:-1] + line.text
+        previous = groups[-1][-1] if groups else None
+        style_changed = previous is not None and (line.bold != previous.bold or abs(line.size - previous.size) >= 1)
+        # PyMuPDF puts the wrapped lines of a hanging-indent list item in their own block
+        # ("a. ... the Lakkan or Liturgy of the" / "Waters is prayed ..."): same paragraph.
+        wrapped = (previous is not None and not style_changed and line.y0 - previous.y1 < WRAP_GAP
+                   and not previous.text.rstrip().endswith(SENTENCE_END) and not LIST_ITEM.match(line.text))
+        if previous is None or (line.block != previous.block and not wrapped) or style_changed:
+            groups.append([line])
         else:
-            current = f"{current} {line.text}"
-        previous = line
-    if current:
-        result.append(current)
-    return result
+            groups[-1].append(line)
+    return groups
+
+
+def join_lines(lines: List[Line]) -> str:
+    """A line-end hyphen joins the word when the next line starts lower-case."""
+    text = ""
+    for line in lines:
+        if text.endswith("-") and not text.endswith("--") and line.text[:1].islower():
+            text = text[:-1] + line.text
+        else:
+            text = f"{text} {line.text}" if text else line.text
+    return text
+
+
+def paragraphs(lines: List[Line], body_size: float = 12.0) -> List[str]:
+    return [join_lines(group) for group in paragraph_groups(lines)]

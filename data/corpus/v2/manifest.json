@@ -1,0 +1,83 @@
+{
+ "corpus_version": "v2",
+ "chunks": 10563,
+ "chunks_by_language": {
+  "en": 6079,
+  "ar": 4484
+ },
+ "collections": {
+  "en": "orthodox_texts_v2",
+  "ar": "orthodox_texts_ar_v2"
+ },
+ "documents": {
+  "ar-cat": {
+   "chunks": 1754,
+   "text_sha1": "12aab4a524990efbde95084dbd2d6df0d0bf7017"
+  },
+  "ar-sts": {
+   "chunks": 2730,
+   "text_sha1": "90441a8e68773ac514861f706507a216feb31448"
+  },
+  "cat1": {
+   "chunks": 1292,
+   "text_sha1": "c1eb0d34a39c62b2822385e1d59e376bc3abc3bc"
+  },
+  "cat2": {
+   "chunks": 971,
+   "text_sha1": "064077a92916a2fd34a9b713f4078b8b9f14b3dc"
+  },
+  "sts1": {
+   "chunks": 1003,
+   "text_sha1": "88b7713c3105f02777d761e61ddf1b09727a83dc"
+  },
+  "sts2": {
+   "chunks": 913,
+   "text_sha1": "fb659b08087182dda9d882170aaf476414f9240d"
+  },
+  "sts3": {
+   "chunks": 784,
+   "text_sha1": "f03cabd9f1541db905cbaf437f02dee5344707fe"
+  },
+  "sts4": {
+   "chunks": 675,
+   "text_sha1": "6153b41217e6dc061490eba48669304a8fab0e7d"
+  },
+  "web-00297560357c1542": {
+   "chunks": 73,
+   "text_sha1": "559892c7e700fa04d295791d55698a63e31edafe"
+  },
+  "web-2ed65ed04f0877d2": {
+   "chunks": 250,
+   "text_sha1": "d4c9a1aa6a77efac04ea6a5e12db60a9139fc6a3"
+  },
+  "web-37cd6af18909cc26": {
+   "chunks": 47,
+   "text_sha1": "1cd9ef39b6d216c01f90d4e627bcdeb30c786d5e"
+  },
+  "web-ba81cc2674635b82": {
+   "chunks": 18,
+   "text_sha1": "3ad884b46a95de4f06d1f316a2f4e12564b34bf2"
+  },
+  "web-e94bf2104684b568": {
+   "chunks": 53,
+   "text_sha1": "f3e1c4803bb42fec39c38d53c222537cce1b2099"
+  }
+ },
+ "chunk_ids_sha1": "538e1a900abd7bbc418c52393654e93bae20010b",
+ "web_content_sha1": {
+  "web-00297560357c1542": "8b796a24cf4419f5c82b408e80449108d51e63e5",
+  "web-2ed65ed04f0877d2": "87b1de9dc7125956af5ba7dd72a2b600b3da80f7",
+  "web-37cd6af18909cc26": "db98f0dd4497a648463054ae6a7db67d4de9a91e",
+  "web-ba81cc2674635b82": "5ff11624060a443863f13d68955bd0c73ca8df33",
+  "web-e94bf2104684b568": "125478e9f56650911c113a6439802a38cfb5c539"
+ },
+ "embedding_model": "text-embedding-3-small",
+ "embedding_tokens": 6636453,
+ "versions": {
+  "python": "3.11.9",
+  "pymupdf": "1.28.2",
+  "pypdf": "5.9.0",
+  "chromadb": "0.6.3",
+  "tiktoken": "0.14.0"
+ }
+}

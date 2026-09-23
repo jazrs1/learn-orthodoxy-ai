@@ -97,6 +97,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
 - [Ingestion](#ingestion)
   - [ING-001: Re-ingestion design (Phase 5 Step 0) — PyMuPDF for English, pypdf + NFKC for Arabic, structure-aware units, v2 alongside v1](#ing-001-re-ingestion-design-phase-5-step-0--pymupdf-for-english-pypdf--nfkc-for-arabic-structure-aware-units-v2-alongside-v1)
   - [ING-002: One ingestion package; extraction and cleaning verified corpus-wide; v1 rebuild proven identical; old scripts deleted](#ing-002-one-ingestion-package-extraction-and-cleaning-verified-corpus-wide-v1-rebuild-proven-identical-old-scripts-deleted)
+  - [ING-003: Per-source segmenters, chunker, ingest-time saints index and the v2 dry run](#ing-003-per-source-segmenters-chunker-ingest-time-saints-index-and-the-v2-dry-run)
 - [Open questions](#open-questions)
 
 ---
@@ -1647,6 +1648,93 @@ In summary:
 - **Files:** `ingestion/*` (new), `tests/ingestion/*` (new), `requirements.txt`, `requirements-dev.txt` (new), `start_backend.py`, `request_log.py` (comment), `README.md`, `.gitignore`, `INGEST_PLAN.md` (approval changes, §9), and the six deleted scripts.
 - **Concept to learn:** *Golden-file (snapshot) testing* for data pipelines. Keep the exact expected output for a small, deliberately chosen sample next to the test, so any change to the pipeline shows up as a diff a human reviews, alongside targeted assertions for the properties that must never regress. Search: "golden file testing", "snapshot testing data pipelines".
 - **Revisit if:** pypdf or PyMuPDF is upgraded (re-run `samples --write` and `verify-legacy`, and review the diff), or Step 2 finds cleaning errors inside questions or entries.
+
+### ING-003: Per-source segmenters, chunker, ingest-time saints index and the v2 dry run
+- **Date / Part:** 2026-09-22, Phase 5 Step 2. **No OpenAI calls** (`build --corpus v2` refuses to run without `--dry-run` until Step 3 is approved).
+- **Audit ref:** A1, C5–C8 (C7a headers, C7b one source per chunk, C8 saints index); ING-001 §5–§7.
+- **What was built:**
+  - `structure.py`: units per source.
+    - Catechism: one unit per numbered question from the bookmarks, with Book/chapter `section_path`, and notes collected per question.
+    - Saints: one unit per entry. English entries come from 14 pt bold heading groups, with sub-headings and reference lines; Arabic entries split at ✞, with the heading matched from pypdf font runs.
+    - Web: one unit per h2/h3 section; endnote lists become a separate "Notes" unit.
+  - `chunk.py`: sentence packing, 300/450/600 cl100k tokens for English and 230/345/460 words for Arabic (D3).
+    - Overlap of up to 15 % within a unit only, dropped when it would push a chunk over the maximum.
+    - A thin last chunk is merged into the previous one, or rebalanced with it when the two don't fit together.
+  - `saints_index.py`: see below.
+  - `corpus.py`: headers, the §6 metadata, IDs `v2:{doc_id}:{unit_id}:c{n}`, and the outputs `manifest.json`, `stats.json`, `saints_index.json`, `SAMPLES.md` (plus `build/corpus/v2/chunks.jsonl`, gitignored).
+  - `snapshot_v1_names.py`: writes `data/corpus/v1_saint_names.json`, the 1,363 English and 1,937 Arabic v1 names with pages.
+- **Result (`python -m ingestion build --corpus v2 --dry-run`, ~6 min):** **10,563 chunks**, 6,079 English and 4,484 Arabic (plan: ~6,000–6,500 and ~4,000), 6.64 M embedding tokens (≈ $0.13 with text-embedding-3-small).
+
+  | type | chunks | units | body size p10 / p50 / p90 / max | over max |
+  |---|---|---|---|---|
+  | catechism-en | 2,263 | 1,475 | 125 / 384 / 554 / 600 tokens | 0 |
+  | catechism-ar | 1,754 | 1,451 | 55 / 201 / 444 / 460 words | 0 |
+  | saints-en | 3,375 | 1,933 | 140 / 372 / 543 / 610 tokens | 3 (≤ 610) |
+  | saints-ar | 2,730 | 2,105 | 45 / 213 / 449 / 460 words | 0 |
+  | web | 441 | 238 | 117 / 457 / 554 / 637 tokens | 2 (≤ 637) |
+
+  The 5 over-maximum chunks are over by at most 6 %, because token counts are not additive across joined sentences. Short units stay whole by design: a 120-token Q&A is one chunk.
+- **Coverage against the books' own indexes:**
+  - English catechism: **1,452 / 1,452 questions**. Q88 has no bookmark and was recovered from its "88 Have the rites…" heading. There are also 23 section introductions.
+  - Arabic catechism: **1,451 / 1,452**.
+    - The PDF is vol. 2, then vol. 1's table of contents (pp. 345–382, with two stray question bookmarks, 665 and 867), then vol. 1 from Book 3. Contents pages are detected by their "question؟ page" density (21+ per page vs ≤ 10 on body pages) and skipped. Without that, Q1452 absorbed 35 pages and two IDs collided.
+    - Six unbookmarked questions (264, 269, 275, 792, 794, 1037) are split out of their predecessor at their "N. …؟" heading.
+    - Q214 is not in the Arabic text at all.
+  - English saints: 1,987 entries. 54 are cross-references ("See the biography of St. Aphraates."): they are not chunked, and their names become aliases of the target (40 resolved, English and Arabic together).
+  - Arabic saints: **2,128 entries = 2,128 ✞ marks** on entry pages (the other 21 ✞ in v1's text are in the index and appendices). Headings come from font runs for 2,011, the first line for 109, and fallbacks for 8. A ✞ at the foot of a page now takes its heading from the next page (35 entries had empty headings before).
+  - **Chunks without a section or saint name: 0.** Every catechism chunk has a `section_path`, and every saints chunk has a `saint_name` and a `saint_id`; saints have no section by design. Three English catechism chunks lack a printed page because they sit on Book opening pages, which carry no page number.
+- **Saints index (`data/corpus/v2/saints_index.json`, 2,387 records):**
+  - **English ↔ Arabic:** the vol. 4 alphabetical index gives **1,897** "ENGLISH…عربي" pairs. It was read from PyMuPDF's plain-text blocks: its dict output drops the Arabic runs on those pages.
+    - 1,868 entries get an index line by best-first one-to-one fuzzy matching, gated on the first name. Regnal numbers must agree ("CYRIL IV" ≠ "CYRIL V", "كيرلس الرابع" ≠ "كيرلس الخامس", "13th" = "XIII").
+    - Exact matching managed only 78 %, because spellings differ ("EL-NEHISSY" vs "AL-NEHESSY").
+    - The index skips roughly APAMON to ATRASIS.
+  - **Arabic entries linked to an English record: 1,730 of 2,128.**
+    - 1,596 by the index's Arabic name (threshold 0.8; below it, popes of the same name get confused);
+    - 79 by prefix ("مرقس الثاني" heads "مرقس الثاني البابا التاسع والأربعون");
+    - 44 by the Latin name printed under the heading;
+    - 11 by hand;
+    - 398 are Arabic-only.
+  - **Hand curation** lives in `data/corpus/saints_curation.json`, with a reason on each line:
+    - 11 links (the Athanasius entries, George the Cappadocian, Demiana, Archelaus);
+    - where the 17 v1 seed names point. "St. George" is the Great Martyr, not "George and Fronto"; a curated name is removed from other records. Peter and Paul have no entry in either book and are kept as name-only records.
+    - `saint_index_overrides.py` is not carried over: it patched v1's runtime parsing of body text, and v2 takes headings from fonts.
+  - **v1 names kept as aliases:** 1,357 / 1,363 English by page overlap. The 6 unmapped include junk ("St. Ecclesiastical Terms", "St. Magdi Faris Malek"). All 1,937 Arabic names are kept.
+  - **Namesakes:** 172 English and 252 Arabic names point to more than one record (e.g. three St. Agathons). Step 4 must disambiguate, not pick one.
+- **Commemoration lines are preserved and captured.**
+  - "[The Synaxarion: 4 Paona]" and "[Butler: March 3]" stay in the chunk text as a references block ("[The Synaxarion: 4 Paona]" is in `v2:sts1:saint:dacius-boctor-and-irini:c1`; "[Butler: March 3]" in `v2:sts1:saint:chelidonius-and-emeterius:c1`).
+  - They are also parsed into `synaxarion_date` / `western_date`, on the saint record and on every chunk of the entry. 1,500 English entries carry reference lines, but most are bibliography. The parser reads each `[...]` group; day-first and month-first forms, "Synaxariun", Bashons and Baring-Gould all parse. The result is 217 Synaxarion dates and 446 Butler/Baring-Gould dates; the Synaxarion lines left without one contain no date ("[The Coptic Synaxarion]", "Edition of Rene Basset"). On chunks: 335 of 3,375 English saints chunks carry a Synaxarion date and 654 a western date.
+- **Header-less catechism pages (the ~10 %):** 129 pages (69 + 60) have no running header removed, and **none of them is a question page**:
+  - 10 front matter (title, dedication, acknowledgments, TOC);
+  - 13 blank;
+  - the 7 "Book N" opening pages;
+  - 99 back matter (bibliography, Index of Bible Verses, Index of Questions).
+
+  The header rule missed nothing.
+- **Extraction fixes found while reading the samples** (goldens regenerated and reviewed):
+  - **English:**
+    - a hanging-indent list item's wrapped line is its own PyMuPDF block; it is now joined when it sits right under the item and the item has no sentence end ("…Liturgy of the / Waters is prayed");
+    - a footnote continued from the previous page returns to that note, and glued note numbers ("276Anne Fremantle") are parsed;
+    - chapter titles lose glued footnote markers ("Divine Grace 552").
+  - **Arabic:**
+    - Footnotes are cut as one block: the small runs below the lowest body line, which are always the end of pypdf's stream (238/238 sampled pages). This catches Arabic-language notes and notes whose Latin line contains an Arabic comma, both previously left in the text.
+    - Quotation brackets are oriented per page, choosing whether a quote was already open from the previous page (openers follow ":", closers follow a marker or period).
+    - A line-final period that pypdf put before the last word is moved back ("وسقط . ميتًا" → "وسقط ميتًا."). After a number it becomes the number's own period ("318 .ما" → "318. ما").
+    - Markers are removed once per note and never overlap. A duplicated note number had cut a question number.
+  - **Known residue:**
+    - Some pages where pypdf scrambles the order around nested quotations still show reversed brackets (e.g. Q896).
+    - A few markers whose note is on another page remain as bare numbers.
+    - Arabic snippets inside English footnotes keep PyMuPDF's reversed lam-alef.
+- **Tests:** **104 passed**, ~13 s. New:
+  - `test_chunk.py`: sentence guards, maximum and overlap, no thin tail, pages across a break, headers, flat and complete metadata;
+  - `test_structure.py`: wrapped list lines, display names, Arabic heading choice, unbookmarked question recovery, web endnotes, punctuation and bracket fixes, vol. 2 finds Q878–1452, vol. 4 keeps reference lines;
+  - `test_saints_index.py`: dates, name tokens, regnal numbers, one-to-one matching, cross-references, and the committed index (unique IDs; St. George → the Great Martyr with both languages).
+- **Files:**
+  - `ingestion/structure.py`, `chunk.py`, `saints_index.py`, `corpus.py`, `snapshot_v1_names.py` (new);
+  - `extract_en.py`, `extract_ar.py`, `textnorm.py`, `__main__.py`;
+  - `data/corpus/v1_saint_names.json`, `data/corpus/saints_curation.json`, `data/corpus/v2/*`;
+  - tests and goldens; `README.md`, `.gitignore` (`build/`).
+- **Concept to learn:** *Record linkage* (entity resolution). Blocking (only compare names that share a first name), a similarity score, one-to-one assignment best-first, hard constraints that veto (regnal numbers), and a small hand-reviewed list for the residue. Search: "record linkage blocking", "entity resolution one-to-one matching".
+- **Revisit if:** Step 5 shows questions or saints that retrieval misses because of segmentation, or the namesake count causes wrong saint answers in Step 4.
 
 ---
 

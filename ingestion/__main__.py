@@ -142,8 +142,18 @@ def _cmd_build(args: argparse.Namespace) -> int:
     if args.corpus == "v1-legacy":
         build_v1_legacy(args.lang, resume=args.resume, dry_run=args.dry_run)
         return 0
-    print("The v2 corpus is built from Step 2 onward (INGEST_PLAN.md §14).", file=sys.stderr)
-    return 2
+    if not args.dry_run:
+        # Embedding v2 is Step 3: it runs only after the cost estimate is approved (INGEST_PLAN.md §12, §14).
+        print("Only `build --corpus v2 --dry-run` is available: embedding v2 waits for the Step 3 cost approval.", file=sys.stderr)
+        return 2
+    from .corpus import build as build_v2
+
+    stats = build_v2(with_web="web" in args.lang)
+    print(f"v2 dry run: {stats['chunks']} chunks -> build/corpus/v2/chunks.jsonl, data/corpus/v2/"
+          "{manifest.json, stats.json, saints_index.json, SAMPLES.md}. No OpenAI calls.")
+    for kind, info in stats["by_type"].items():
+        print(f"  {kind:14} {info['chunks']:6} chunks  {info['units']:5} units")
+    return 0
 
 
 def main(argv: List[str] | None = None) -> int:

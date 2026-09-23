@@ -31,7 +31,7 @@ _ARABIC_FOLD = {
 }
 
 
-def normalize_arabic(text: str) -> str:
+def normalize_arabic(text: str, balance: bool = True) -> str:
     """NFKC (presentation forms -> base letters), fold Persian look-alikes, drop tatweel and
     invisible marks, collapse whitespace, re-orient brackets, and put multi-digit Arabic-Indic
     numbers back in order (both pypdf and PyMuPDF emit them reversed, e.g. Matthew 28:20 comes out
@@ -40,18 +40,20 @@ def normalize_arabic(text: str) -> str:
     text = text.translate(_ARABIC_FOLD)
     text = re.sub(r"\s+", " ", text).strip()
     text = ARABIC_INDIC_RUN.sub(lambda m: m.group(0)[::-1], text)
-    return balance_mirrored_brackets(text)
+    return balance_mirrored_brackets(text) if balance else text
 
 
 _BRACKETS = {"(": ")", "[": "]"}
 _CLOSERS = {close: open_ for open_, close in _BRACKETS.items()}
 
 
-def balance_mirrored_brackets(text: str) -> str:
+def balance_mirrored_brackets(text: str, open_at_start: str = "") -> str:
     """pypdf emits brackets in RTL text in visual orientation, inconsistently: ")نظام الدولة("
     or "(كاثوليكية(". Read left to right in logical order, a closer with nothing open must be a
-    mirrored opener, and an opener while the same kind is already open must be a mirrored closer."""
-    depth = {"(": 0, "[": 0}
+    mirrored opener, and an opener while the same kind is already open must be a mirrored closer.
+    `open_at_start` names brackets already open when the text starts (a quotation continued from
+    the previous page), which flips the reading of every bracket of that kind after it."""
+    depth = {"(": open_at_start.count("("), "[": open_at_start.count("[")}
     out = []
     for ch in text:
         if ch in _BRACKETS:
@@ -92,3 +94,35 @@ ROMAN = re.compile(r"^(?=[ivxlcdm]+$)m{0,3}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|i
 def is_page_number(text: str) -> bool:
     value = text.strip()
     return bool(value) and (value.isdigit() and len(value) <= 4 or bool(ROMAN.match(value)))
+
+
+def orient_page_brackets(text: str) -> str:
+    """Balance a page's brackets, choosing whether a "[" quotation was already open when the page
+    began. The catechism quotes the Fathers in [ ]: an opener follows a colon ("يقول: [") and a
+    closer follows the footnote marker or the final period ("... 891 ]"), so the reading with more
+    of those wins."""
+    def score(candidate: str) -> int:
+        return (len(re.findall(r":\s*\[", candidate)) + len(re.findall(r"[\d.]\s*\]", candidate))
+                - len(re.findall(r":\s*\]", candidate)) - len(re.findall(r"[\d.]\s*\[", candidate)))
+    plain = balance_mirrored_brackets(text)
+    continued = balance_mirrored_brackets(text, open_at_start="[")
+    best = continued if score(continued) > score(plain) else plain
+    # A quotation still open at the end of the page runs on to the next: its opener follows a colon.
+    last = best.rfind("]")
+    if last > best.rfind("[") and re.search(r":\s*$", best[:last]):
+        best = best[:last] + "[" + best[last + 1:]
+    return best
+
+
+# pypdf puts a line-final period before the line's last word in some RTL pages: "وسقط . ميتًا اضطهاد"
+# is "وسقط ميتًا. اضطهاد", "إكليل .الاستشهاد نحتفل" is "إكليل الاستشهاد. نحتفل". A space before a
+# period is otherwise not written; a space before a colon is ("يقول : ..."), so colons are left alone.
+# After a number the period is the number's own: "318 .ما هو" is the question "318. ما هو"
+# ("1969 . باقات", with spaces on both sides, ends a book title and is left alone).
+DISPLACED_PUNCTUATION = re.compile(r"(?<=[^\s\d]) \. ?(" + _char_class((0x0621, 0x064A)) + r"\S*)")
+NUMBER_PERIOD = re.compile(r"(?<=\d) \.(?=" + _char_class((0x0621, 0x064A)) + ")")
+
+
+def fix_displaced_punctuation(text: str) -> str:
+    text = DISPLACED_PUNCTUATION.sub(lambda m: f" {m.group(1)}.", text)
+    return NUMBER_PERIOD.sub(". ", text)

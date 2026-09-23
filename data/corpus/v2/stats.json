@@ -1,0 +1,449 @@
+{
+ "corpus_version": "v2",
+ "chunks": 10563,
+ "by_type": {
+  "catechism-ar": {
+   "chunks": 1754,
+   "units": 1451,
+   "tokens_cl100k_with_header": {
+    "n": 1754,
+    "min": 99,
+    "p10": 277,
+    "p50": 831,
+    "p90": 1786,
+    "max": 2106,
+    "mean": 930.0,
+    "total": 1631149
+   },
+   "body_words": {
+    "n": 1754,
+    "min": 10,
+    "p10": 55,
+    "p50": 201,
+    "p90": 444,
+    "max": 460,
+    "mean": 222.7,
+    "total": 390689
+   },
+   "size_limits": {
+    "unit": "words",
+    "min": 230,
+    "target": 345,
+    "max": 460
+   },
+   "over_max": 0,
+   "under_min_whole_unit": 896,
+   "under_min_in_multi_chunk_unit": 84,
+   "no_section_path": 0,
+   "no_saint_name": 0,
+   "no_saint_id": 0,
+   "no_printed_page": 0
+  },
+  "catechism-en": {
+   "chunks": 2263,
+   "units": 1475,
+   "tokens_cl100k_with_header": {
+    "n": 2263,
+    "min": 45,
+    "p10": 167,
+    "p50": 426,
+    "p90": 597,
+    "max": 686,
+    "mean": 403.4,
+    "total": 912884
+   },
+   "body_tokens": {
+    "n": 2263,
+    "min": 20,
+    "p10": 125,
+    "p50": 384,
+    "p90": 554,
+    "max": 600,
+    "mean": 361.8,
+    "total": 818830
+   },
+   "size_limits": {
+    "unit": "cl100k tokens",
+    "min": 300,
+    "target": 450,
+    "max": 600
+   },
+   "over_max": 0,
+   "under_min_whole_unit": 649,
+   "under_min_in_multi_chunk_unit": 169,
+   "no_section_path": 0,
+   "no_saint_name": 0,
+   "no_saint_id": 0,
+   "no_printed_page": 3
+  },
+  "saints-ar": {
+   "chunks": 2730,
+   "units": 2105,
+   "tokens_cl100k_with_header": {
+    "n": 2730,
+    "min": 27,
+    "p10": 194,
+    "p50": 874,
+    "p90": 1837,
+    "max": 2093,
+    "mean": 966.3,
+    "total": 2637898
+   },
+   "body_words": {
+    "n": 2730,
+    "min": 3,
+    "p10": 45,
+    "p50": 213,
+    "p90": 449,
+    "max": 460,
+    "mean": 233.3,
+    "total": 636997
+   },
+   "size_limits": {
+    "unit": "words",
+    "min": 230,
+    "target": 345,
+    "max": 460
+   },
+   "over_max": 0,
+   "under_min_whole_unit": 1301,
+   "under_min_in_multi_chunk_unit": 155,
+   "no_section_path": 2730,
+   "no_saint_name": 0,
+   "no_saint_id": 0,
+   "no_printed_page": 0
+  },
+  "saints-en": {
+   "chunks": 3375,
+   "units": 1933,
+   "tokens_cl100k_with_header": {
+    "n": 3375,
+    "min": 27,
+    "p10": 152,
+    "p50": 392,
+    "p90": 564,
+    "max": 634,
+    "mean": 378.2,
+    "total": 1276554
+   },
+   "body_tokens": {
+    "n": 3375,
+    "min": 16,
+    "p10": 140,
+    "p50": 372,
+    "p90": 543,
+    "max": 610,
+    "mean": 359.4,
+    "total": 1212848
+   },
+   "size_limits": {
+    "unit": "cl100k tokens",
+    "min": 300,
+    "target": 450,
+    "max": 600
+   },
+   "over_max": 3,
+   "under_min_whole_unit": 788,
+   "under_min_in_multi_chunk_unit": 215,
+   "no_section_path": 3375,
+   "no_saint_name": 0,
+   "no_saint_id": 0,
+   "no_printed_page": 0
+  },
+  "web": {
+   "chunks": 441,
+   "units": 238,
+   "tokens_cl100k_with_header": {
+    "n": 441,
+    "min": 55,
+    "p10": 146,
+    "p50": 479,
+    "p90": 581,
+    "max": 656,
+    "mean": 403.6,
+    "total": 177968
+   },
+   "body_tokens": {
+    "n": 441,
+    "min": 28,
+    "p10": 117,
+    "p50": 457,
+    "p90": 554,
+    "max": 637,
+    "mean": 377.7,
+    "total": 166578
+   },
+   "size_limits": {
+    "unit": "cl100k tokens",
+    "min": 300,
+    "target": 450,
+    "max": 600
+   },
+   "over_max": 2,
+   "under_min_whole_unit": 112,
+   "under_min_in_multi_chunk_unit": 25,
+   "no_section_path": 0,
+   "no_saint_name": 0,
+   "no_saint_id": 0,
+   "no_printed_page": 0
+  }
+ },
+ "documents": {
+  "cat1": {
+   "questions_expected": 876,
+   "questions_found": 877,
+   "questions_missing": [],
+   "questions_without_bookmark_recovered": [
+    88
+   ],
+   "section_intros": 14,
+   "units": 891,
+   "chunks": 1292
+  },
+  "cat2": {
+   "questions_expected": 575,
+   "questions_found": 575,
+   "questions_missing": [],
+   "questions_without_bookmark_recovered": [],
+   "section_intros": 9,
+   "units": 584,
+   "chunks": 971
+  },
+  "sts1": {
+   "entries": 563,
+   "pages_used": "2-655",
+   "reference_lines": 397,
+   "entries_with_references": 371,
+   "units": 563,
+   "chunks": 1003
+  },
+  "sts2": {
+   "entries": 556,
+   "pages_used": "2-549",
+   "reference_lines": 518,
+   "entries_with_references": 459,
+   "units": 556,
+   "chunks": 913
+  },
+  "sts3": {
+   "entries": 452,
+   "pages_used": "2-499",
+   "reference_lines": 403,
+   "entries_with_references": 355,
+   "units": 452,
+   "chunks": 784
+  },
+  "sts4": {
+   "entries": 416,
+   "pages_used": "2-402",
+   "reference_lines": 340,
+   "entries_with_references": 315,
+   "units": 416,
+   "chunks": 675
+  },
+  "ar-cat": {
+   "questions_expected": 1445,
+   "bookmarks": 1447,
+   "bookmarks_on_contents_pages": [
+    665,
+    867
+   ],
+   "contents_pages": "345-382",
+   "questions_found": 1451,
+   "question_numbers_absent": [
+    214
+   ],
+   "questions_missing": [],
+   "questions_without_bookmark_recovered": [
+    1037,
+    792,
+    794,
+    264,
+    269,
+    275
+   ],
+   "units": 1451,
+   "chunks": 1754
+  },
+  "ar-sts": {
+   "entries": 2128,
+   "pages_used": "1-1994",
+   "headings_by": {
+    "font": 2011,
+    "first-words": 3,
+    "first-line": 109,
+    "before-latin": 5
+   },
+   "entry_marks": 2128,
+   "entries_with_latin_name": 629,
+   "units": 2128,
+   "chunks": 2730
+  },
+  "web-ba81cc2674635b82": {
+   "url": "https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z",
+   "title": "THE COPTIC ORTHODOX CHURCH & THE CHRISTIAN DOGMAS",
+   "sections": 9,
+   "content_sha1": "5ff11624060a443863f13d68955bd0c73ca8df33",
+   "units": 10,
+   "chunks": 18
+  },
+  "web-00297560357c1542": {
+   "url": "https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z-rzzxd",
+   "title": "GOD: The Coptic Orthodox Church & The Dogmas",
+   "sections": 38,
+   "content_sha1": "8b796a24cf4419f5c82b408e80449108d51e63e5",
+   "units": 39,
+   "chunks": 73
+  },
+  "web-e94bf2104684b568": {
+   "url": "https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z-rzzxd-yspaf",
+   "title": "THE ORTHODOX CONCEPT: TRADITION AND ORTHODOXY",
+   "sections": 33,
+   "content_sha1": "125478e9f56650911c113a6439802a38cfb5c539",
+   "units": 34,
+   "chunks": 53
+  },
+  "web-2ed65ed04f0877d2": {
+   "url": "https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z-rzzxd-xw8g5",
+   "title": "The Coptic Orthodox Church as a Church of ERUDITION & THEOLOGY",
+   "sections": 136,
+   "content_sha1": "87b1de9dc7125956af5ba7dd72a2b600b3da80f7",
+   "units": 137,
+   "chunks": 250
+  },
+  "web-37cd6af18909cc26": {
+   "url": "https://www.mindofchristlight.com/library-blog/blog-post-title-one-4p8fk-wslyt-7kd9z-rzzxd-xw8g5-jejkp",
+   "title": "Orthodox Thought and Instruction: In the Orthodox Church",
+   "sections": 17,
+   "content_sha1": "db98f0dd4497a648463054ae6a7db67d4de9a91e",
+   "units": 18,
+   "chunks": 47
+  }
+ },
+ "saints_index": {
+  "english_entries": 1987,
+  "english_cross_references": 54,
+  "arabic_only_cross_references": 8,
+  "cross_references_resolved": 40,
+  "arabic_entries": 2128,
+  "records": 2387,
+  "index_pairs": 1897,
+  "index_lines_without_arabic": 6,
+  "english_entries_with_index_arabic_name": 1868,
+  "arabic_entries_linked": {
+   "reviewed": 11,
+   "index-arabic-name": 1596,
+   "latin-name": 44,
+   "index-arabic-prefix": 79,
+   "arabic-only": 398
+  },
+  "arabic_matches_vetoed_by_latin_name": 1,
+  "records_with_both_languages": 1730,
+  "english_entries_with_references": 1500,
+  "with_synaxarion_date": 217,
+  "with_western_date": 446,
+  "v1_en_names_mapped": 1357,
+  "v1_en_names_unmapped": 6,
+  "v1_en_unmapped_sample": [
+   "St. Abdel-messih El-masoudy, the Great",
+   "St. Alexandros, Father",
+   "St. Christophorus, the Bearer of Christ",
+   "St. Ecclesiastical Terms",
+   "St. Fathers",
+   "St. Magdi Faris Malek"
+  ],
+  "v1_ar_names_mapped": 1937,
+  "v1_ar_names_unmapped": 0,
+  "v1_ar_unmapped_sample": [],
+  "seed_only_records": [
+   "seed-peter-the-apostle",
+   "seed-paul-the-apostle"
+  ]
+ },
+ "units_not_chunked": {
+  "cross_reference": 77,
+  "empty": 0
+ },
+ "units_not_chunked_list": {
+  "cross_reference": [
+   "sts1/saint:afrahat",
+   "sts1/saint:agathy-the-mother",
+   "sts1/saint:agnatius-the-theophorus",
+   "sts1/saint:agregorius-of-nyssa",
+   "sts1/saint:agregorius-the-armenian",
+   "sts1/saint:agregorius-the-monk",
+   "sts1/saint:agregorius-the-nazianzus",
+   "sts1/saint:agregorius-the-wonder-maker",
+   "sts1/saint:alexander-2",
+   "sts1/saint:alidus-the-bishop",
+   "sts1/saint:alphaeus",
+   "sts1/saint:anatolis",
+   "sts1/saint:andronicus-and-athanasia",
+   "sts1/saint:aprimus-the-5th-pope-of-alexandria",
+   "sts1/saint:bagoug",
+   "sts1/saint:barklas-the-martyr",
+   "sts1/saint:basilissa-2",
+   "sts1/saint:claudine",
+   "sts1/saint:didra-and-her-children",
+   "sts1/saint:dionysius-rusticus-eleutherius",
+   "sts1/saint:donithus-the-gnostic",
+   "sts2/saint:ebn-al-raheb",
+   "sts2/saint:eklimandos-of-alexandria",
+   "sts2/saint:eklimandos-the-roman-pope",
+   "sts2/saint:eklimandos-bishop-of-ancyra",
+   "sts2/saint:esperidon-father",
+   "sts2/saint:eudoxia",
+   "sts2/saint:eulogius",
+   "sts2/saint:euphemia",
+   "sts2/saint:euzoxia",
+   "sts2/saint:ezekios",
+   "sts2/saint:felicitias",
+   "sts2/saint:herai",
+   "sts2/saint:irene-the-virgin",
+   "sts2/saint:irene-the-virgin-2",
+   "sts2/saint:john-cassian",
+   "sts2/saint:john-climacus",
+   "sts2/saint:julitta-and-cyriacus",
+   "sts3/saint:marcorius-and-marcianus",
+   "sts3/saint:mariah",
+   "sts3/saint:martha-marius-and-their-children-the-persian",
+   "sts3/saint:martyrs-of-ephesus",
+   "sts3/saint:martyrs-of-the-himyarites-in-yemen",
+   "sts3/saint:michael-i-the-46th-pope-of-alexandria",
+   "sts3/saint:michael-ii-the-53rd-pope-of-alexandria",
+   "sts3/saint:michael-iii-the-56th-pope-of-alexandria",
+   "sts3/saint:mougi",
+   "sts3/saint:onanius",
+   "sts3/saint:onesimus-bishop-of-nicomedia",
+   "sts4/saint:sabinisius-bishop-of-cyrenaica",
+   "sts4/saint:sinesius-the-bishop",
+   "sts4/saint:veronia-the-virgin",
+   "sts4/saint:yohanna-abu-nagah-the-great",
+   "sts4/saint:younan-the-monk",
+   "ar-sts/e0013",
+   "ar-sts/e0077",
+   "ar-sts/e0204",
+   "ar-sts/e0241",
+   "ar-sts/e0271",
+   "ar-sts/e0277",
+   "ar-sts/e0295",
+   "ar-sts/e0418",
+   "ar-sts/e0429",
+   "ar-sts/e0724",
+   "ar-sts/e0736",
+   "ar-sts/e0752",
+   "ar-sts/e0862",
+   "ar-sts/e0919",
+   "ar-sts/e0936",
+   "ar-sts/e1003",
+   "ar-sts/e1025",
+   "ar-sts/e1268",
+   "ar-sts/e1365",
+   "ar-sts/e1374",
+   "ar-sts/e1418",
+   "ar-sts/e1957",
+   "ar-sts/e1987"
+  ],
+  "empty": []
+ }
+}
