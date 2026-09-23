@@ -98,9 +98,11 @@ describe("the saints file", () => {
 
   test("links the well-known saints checked by hand", () => {
     const find = (key: string, pattern: RegExp) => saints.days[key].find((entry) => pattern.test(entry.en))!;
-    assert.deepEqual(find("8-23", /George/).index, { en: "St. George, the Capaducian", ar: "القديس جرجس" });
-    assert.deepEqual(find("5-21", /Virgin St. Mary/).index, { en: "St. Mary", ar: "السيدة العذراء مريم" });
-    assert.equal(find("10-12", /Kyrillos II/).index?.ar, "كيرلس الثاني البابا السابع والستين");
+    // v2 names (runbook step 3.5, CAL-008); each is the default saint of its bare name (RET-011).
+    assert.deepEqual(find("8-23", /George/).index, { en: "St. George, the Capaducian", ar: "جاورجيوس الكبادوكي الشهيد" });
+    assert.deepEqual(find("5-21", /Virgin St. Mary/).index, { en: "St. Mary, the Virgin Theotokos.", ar: "مريم العذراء" });
+    assert.deepEqual(find("5-22", /Anthony/).index, { en: "St. Anthony, Father of the Monks", ar: "أنطونيوس القديس أب الرهبان" });
+    assert.equal(find("10-12", /Kyrillos II/).index?.ar, "كيرلس الثاني");
     assert.equal(find("10-12", /Euphemia/).index, undefined, "two Euphemias: no automatic link");
   });
 

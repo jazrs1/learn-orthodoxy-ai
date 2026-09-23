@@ -57,7 +57,13 @@ for story, link in overrides["links"].items():
             changed.append(f"{story} {language}: {name} -> {target}")
         else:
             missing.append(f"{story} {language}: {name}")
-path.write_text(json.dumps(overrides, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+def dumps_overrides(data):
+    """The file's own layout, one line per story, so a review diff shows only the links that moved."""
+    lines = [f'    {json.dumps(story)}: {{ {json.dumps(link, ensure_ascii=False)[1:-1]} }}' for story, link in data["links"].items()]
+    return '{\n  "about": ' + json.dumps(data["about"], ensure_ascii=False) + ',\n  "links": {\n' + ",\n".join(lines) + "\n  }\n}\n"
+
+
+path.write_text(dumps_overrides(overrides), encoding="utf-8")
 print(f"{len(changed)} names moved to v2:")
 print("\n".join(f"  {line}" for line in changed))
 if missing:

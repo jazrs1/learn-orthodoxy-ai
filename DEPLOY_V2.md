@@ -144,8 +144,11 @@ The links work without this step (aliases). Regenerating uses v2's own names and
 ```sh
 CORPUS_VERSION=v2 .venv/Scripts/python.exe orthodox-site/scripts/calendar/snapshot-saints-index.py
 .venv/Scripts/python.exe orthodox-site/scripts/calendar/migrate-overrides-v2.py      # 19 override names -> v2 names, 0 unmapped
-cd orthodox-site && npm run calendar:saints -- <path-to-katameros-api clone> && npm test
+cd orthodox-site && npm run calendar:saints -- <path-to-katameros-api clone> && npm test && cd ..
+.venv/Scripts/python.exe orthodox-site/scripts/calendar/compare-saint-links.py   # kept / changed / new / lost; fails if a link opens another entry
 ```
+
+**Done 2026-09-23 (CAL-008, branch `calendar-v2-links`):** 156 English and 196 Arabic links, none lost, every link opening its own entry; the preview below was the plan.
 
 - **Expected result (previewed 2026-09-23, not committed):** 149 English links (82 kept, 67 new, 5 lost) and 184 Arabic (153 kept, 31 new, 12 lost), vs 87 / 165 today.
 - **The losses are names the conservative matcher now finds ambiguous:**

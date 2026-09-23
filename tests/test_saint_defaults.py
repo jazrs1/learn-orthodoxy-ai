@@ -156,3 +156,11 @@ def test_v1_theotokos_names_belong_to_the_theotokos(monkeypatch):
     assert (kind, decided[0]["name"]) == ("entry", "St. Mary, the Virgin Theotokos")
     kind, decided = api._english_saint_decision("St. Mary")  # the defaults list: v1 has the Theotokos too
     assert (kind, decided[0]["name"]) == ("default", "St. Mary, the Virgin Theotokos")
+
+
+def test_an_index_name_ending_in_a_full_stop_is_found_by_its_exact_name(v2):
+    # The calendar links "St. Mary, the Virgin Theotokos." (CAL-008): the exact lookup must find it.
+    record = api._find_saint_record_exact("St. Mary, the Virgin Theotokos.")
+    assert record is not None and record["id"] == "mary-the-virgin-theotokos"
+    reply = ask("search saint: St. Mary, the Virgin Theotokos.", mode="saints", saint_name="St. Mary, the Virgin Theotokos.")
+    assert_answer_about(reply, "mary-the-virgin-theotokos")
