@@ -9,6 +9,7 @@ import threading
 import time
 import unicodedata
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
@@ -135,6 +136,8 @@ ENTITY_CHECK_ENABLED = _env_flag("ENTITY_CHECK_ENABLED", "1")
 # Speed (RET-013 onwards); each can be switched off to compare or roll back.
 # The Arabic lexical scan reads and normalises the Arabic chunks once, then scans them in memory.
 ARABIC_LEXICAL_CACHE = _env_flag("ARABIC_LEXICAL_CACHE", "1")
+# The question is embedded while the analysis call runs, for retrieval to reuse (RET-015).
+EMBEDDING_PREFETCH = _env_flag("EMBEDDING_PREFETCH", "1")
 
 # --- Broad and list requests (DECISIONS.md RET-007) ---
 # Broad requests retrieve more chunks, from the main query plus the analysis sub-queries.
@@ -1101,6 +1104,8 @@ def _embed_queries(texts: List[str]) -> List[Any] | None:
             except Exception:
                 logger.warning("prefetched embedding failed; embedding again", exc_info=True)
                 continue
+            if current_trace() is not None:
+                current_trace().set(embedding_prefetch="reused")
         known[text] = value
     missing = [text for text in texts if text not in known]
     trace = current_trace()
@@ -1114,6 +1119,31 @@ def _embed_queries(texts: List[str]) -> List[Any] | None:
         reused = len(texts) - len(missing)
         trace.set(embeddings_reused=trace.fields.get("embeddings_reused", 0) + reused)
     return [known[text] for text in texts]
+
+
+_prefetch_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="embedding-prefetch")
+
+
+def _analysis_will_run(question: str) -> bool:
+    return TASK_ANALYSIS_ENABLED and not re.match(r"^\s*search\s+saints?\s*:", question, flags=re.IGNORECASE)
+
+
+def _prefetch_question_embedding(question: str) -> None:
+    """Embed the question while the analysis call runs (RET-015). Retrieval finds it in the
+    request's memo when the analysis leaves the question as it is (73% of first turns on tune);
+    otherwise it goes unused, at the cost of one ~15-token embedding."""
+    memo = _request_embeddings.get()
+    if not EMBEDDING_PREFETCH or embed_fn is None or memo is None or not _analysis_will_run(question):
+        return
+    # The text exactly as `_retrieve_documents` will send it, so only an unchanged question matches.
+    text = re.sub(r"\s+", " ", _canonicalize_saint_text(question).strip())
+    if not text or text in memo:
+        return
+    embed = embed_fn
+    memo[text] = _prefetch_pool.submit(lambda: embed([text])[0])
+    trace = current_trace()
+    if trace is not None:
+        trace.set(embedding_prefetch="unused")
 
 
 def _retrieve_documents(
@@ -2236,7 +2266,7 @@ def _cited_sources(answer: str, numbered: List[Dict[str, Any]], fallback_limit: 
 def _analyze_request(question: str, history: List[Dict[str, str]]) -> TaskAnalysis:
     """Standalone retrieval query + requested format for this turn (RET-006), logged in the trace."""
     trace = current_trace()
-    if not TASK_ANALYSIS_ENABLED or re.match(r"^\s*search\s+saints?\s*:", question, flags=re.IGNORECASE):
+    if not _analysis_will_run(question):
         analysis = TaskAnalysis(retrieval_query=question, error="skipped")
     else:
         analysis = analyze_request(
@@ -3999,7 +4029,9 @@ def _chat_prepare(req: ChatRequest, trace: RequestTrace) -> Dict[str, Any] | Pen
             return menu
 
     # Separate WHAT to retrieve from HOW to present it (RET-006). Saint-tab lookups
-    # ("search saint: X") are already a bare name and skip the call.
+    # ("search saint: X") are already a bare name and skip the call. Meanwhile the question is
+    # embedded, in case the analysis leaves it unchanged (RET-015).
+    _prefetch_question_embedding(original_question)
     analysis = _analyze_request(original_question, history)
     trace.lap("analysis")
     # `question` keeps the user's words for the saint-intent patterns below; retrieval

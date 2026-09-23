@@ -4,6 +4,7 @@ import hashlib
 import math
 import os
 from concurrent.futures import Future
+from types import SimpleNamespace
 
 import chromadb
 import pytest
@@ -168,3 +169,61 @@ def test_querying_with_our_vectors_is_what_chroma_does_with_texts():
         by_vector = collection.query(query_embeddings=embedding(texts), n_results=16)
         assert by_vector["ids"] == by_text["ids"]
         assert by_vector["distances"] == by_text["distances"]
+
+
+# ---------------------------------------------------------------- RET-015: prefetch during analysis
+
+
+@pytest.fixture
+def prefetching(monkeypatch):
+    embedding = HashEmbedding()
+    monkeypatch.setattr(api, "embed_fn", embedding)
+    monkeypatch.setattr(api, "EMBEDDING_PREFETCH", True)
+    monkeypatch.setattr(api, "TASK_ANALYSIS_ENABLED", True)
+    return embedding
+
+
+def test_an_unchanged_question_reuses_the_prefetched_embedding(prefetching):
+    with RequestTrace("test") as trace, api._embedding_memo():
+        api._prefetch_question_embedding("What is  prayer?")
+        api._retrieve_documents(["What is prayer?"], top_k=4, target_collection=RecordingCollection())
+    assert prefetching.calls == [["What is prayer?"]]
+    assert trace.fields["embedding_prefetch"] == "reused"
+
+
+def test_a_rewritten_question_is_embedded_as_rewritten(prefetching):
+    with RequestTrace("test") as trace, api._embedding_memo():
+        api._prefetch_question_embedding("it's feast?")
+        api._retrieve_documents(["When is the feast of St. Mark?"], top_k=4, target_collection=RecordingCollection())
+    # The prefetch runs on another thread, so the two calls may come in either order.
+    assert sorted(prefetching.calls) == sorted([["it's feast?"], ["When is the feast of St. Mark?"]])
+    assert trace.fields["embedding_prefetch"] == "unused"
+
+
+def test_no_prefetch_where_no_analysis_runs(prefetching):
+    with api._embedding_memo():
+        api._prefetch_question_embedding("search saint: St. Mark")
+        assert api._request_embeddings.get() == {}
+
+
+def test_chat_starts_the_prefetch_before_the_analysis_and_retrieval_reuses_it(prefetching, monkeypatch):
+    from task_analysis import TaskAnalysis
+
+    seen_at_analysis = {}
+
+    def analyze(question, history):
+        seen_at_analysis.update(api._request_embeddings.get())
+        return TaskAnalysis(retrieval_query=question, ok=True)
+
+    collection = RecordingCollection()
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(api, "_analyze_request", analyze)
+    monkeypatch.setattr(api, "collection", collection)
+    monkeypatch.setattr(api, "arabic_collection", FakeArabicCollection([]))
+    monkeypatch.setattr(api, "oai_client", SimpleNamespace())
+    with RequestTrace("chat") as trace:
+        api._prepare_or_http_error(api.ChatRequest(question="What is prayer?", language="en"), trace)
+    assert list(seen_at_analysis) == ["What is prayer?"]
+    assert prefetching.calls[0] == ["What is prayer?"]
+    assert all(call != ["What is prayer?"] for call in prefetching.calls[1:])
+    assert trace.fields["embedding_prefetch"] == "reused"

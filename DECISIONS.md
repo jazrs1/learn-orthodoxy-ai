@@ -61,6 +61,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-012: Where a request's time goes, and what could make it faster (report, not changed)](#ret-012-where-a-requests-time-goes-and-what-could-make-it-faster-report-not-changed)
   - [RET-013: The Arabic lexical scan runs over an in-memory copy of the normalised chunks](#ret-013-the-arabic-lexical-scan-runs-over-an-in-memory-copy-of-the-normalised-chunks)
   - [RET-014: Each query text is embedded once per request, and the search is given the vectors](#ret-014-each-query-text-is-embedded-once-per-request-and-the-search-is-given-the-vectors)
+  - [RET-015: The question is embedded while the analysis call runs, and reused when the analysis leaves it unchanged](#ret-015-the-question-is-embedded-while-the-analysis-call-runs-and-reused-when-the-analysis-leaves-it-unchanged)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -970,6 +971,26 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - The trace records a new sub-stage, `stages_ms.embedding` (time spent embedding, inside `retrieval`), and `embeddings_reused`.
 - **Why the results can't change:** Chroma's `query_texts` path calls the same embedding function and searches with its output. A test on the real v2 store, with a deterministic stand-in embedding, shows the same IDs and distances, in the same order, for both collections.
 - **Checks:** `tests/test_speed.py` covers three searches of one text in a request (one embedding call; the second search keeps its `where_document`), a new request embedding again, a failed prefetch being embedded again, the fallback without an embedding function, and the real-store equivalence. Backend suite: 203 passed.
+- **Files changed:** `api.py`, `tests/test_speed.py`.
+
+### RET-015: The question is embedded while the analysis call runs, and reused when the analysis leaves it unchanged
+- **Date / Part:** 2026-09-23, speed branch Part B3, change 2 of RET-012 (approved)
+- **Context:** the query embedding (~0.25 s) waited for the analysis call (~1.0 s), although most analyses return the question unchanged. On tune, 67 of 92 first-turn questions came back exactly as asked.
+- **Options considered:** reuse when the rewrite matches after normalising case and punctuation (proposed in RET-012), or only on an exact match. On tune, normalising adds a single question ("What is prayer" → "What is prayer?"), and a vector for different text can shift the results slightly.
+- **Decision:**
+  - Just before the analysis call, `_chat_prepare` puts a future for the question's embedding into the request's memo (RET-014), under the text exactly as retrieval would send it: canonicalised, with whitespace collapsed. The future runs in a small thread pool.
+  - Retrieval finds it only when its first query is that same text, so **results are identical**. Anything else is embedded as before, and the prefetched vector goes unused.
+  - No prefetch when the analysis call won't run ("search saint:", or analysis switched off): there is nothing to overlap.
+  - A failed prefetch is embedded again.
+  - The trace records `embedding_prefetch`: "reused" or "unused".
+  - `EMBEDDING_PREFETCH=0` switches it off.
+- **Cost:** an unused prefetch is one embedding of about 15 tokens, about $0.0000003.
+- **Checks** (`tests/test_speed.py`):
+  - An unchanged question makes one embedding call and records "reused".
+  - A rewritten question embeds the rewrite and records "unused".
+  - "search saint:" doesn't prefetch.
+  - Through `_prepare_or_http_error` with a stub analysis, the prefetch is already under way when the analysis starts, and retrieval doesn't embed the question again.
+  - Backend suite: 207 passed, three times over.
 - **Files changed:** `api.py`, `tests/test_speed.py`.
 
 ## Prompting & Generation
