@@ -1181,6 +1181,7 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   1. **Change 6: go ahead,** with two conditions: a failed write after the answer is on screen must be retried or must not silently break the next turn, and the answer and sources go out before the conversation IDs. Done in RET-021: it retries, and if the save still fails the reader is told plainly.
   2. **Production hop timing:** first check Railway's region in the dashboard and report it. Then, after the owner's `railway login`, run 3 new chats and 3 follow-ups on the live site (~$0.03). *Status:* the Railway CLI's login has expired, and the dashboard needs the owner's sign-in too, so both steps wait for `railway login`.
   3. **AR-03** (0.94/1.0 before the RET-010/011 saint commits, 0.81/0.56 after, RET-019): investigate separately from this branch, and don't let it block merging. Run AR-03 alone at least 3 times with those commits on and off; no full tune run.
+     *Result* (RET-023, branch `ar03-check`): 4 runs each; on 0.89, off 0.84 mean coverage. No regression; the 0.56 was noise.
   4. **Neon:** stay on the free plan, with no keep-warm ping for now. Its ~2 s wake after 5 minutes idle stays; RET-021 has taken it off a new chat's first question.
 - **How small a regression one tune run can catch:**
   - Estimated from the two pairs of same-code runs (the two baselines, and the two RET-019 "after" runs), per question, so the comparison is paired. The per-question run-to-run spread is about 0.09 (English) and 0.11 (Arabic) in coverage.
