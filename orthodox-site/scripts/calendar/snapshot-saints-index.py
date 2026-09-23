@@ -55,6 +55,9 @@ if api.CORPUS_V2:
     for record in api._build_v2_arabic_saint_records():
         saint = index.get(record["saint_id"], {})
         aliases = {saint.get("name_ar"), saint.get("heading_ar"), *saint.get("aliases_ar", [])} - {None, "", record["name"]}
+        # Only the aliases the API still accepts for this entry: RET-011 drops seed aliases that are
+        # another entry's own name ("مينا الشهيد" is not the Wonderworker).
+        aliases = {a for a in aliases if api._normalize_arabic_alias_key(a) in record["keys"]}
         if aliases:
             snapshot["ar_aliases"][record["name"]] = sorted(aliases)
 OUT.write_text(json.dumps(snapshot, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

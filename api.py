@@ -908,10 +908,15 @@ def _find_saint_record_by_id(saint_id: str) -> Dict[str, Any] | None:
 
 def _find_saint_record_exact(name: str) -> Dict[str, Any] | None:
     """The entry shown under exactly this name (names are unique once namesakes are told apart)."""
-    target = re.sub(r"\s+", " ", name or "").strip().rstrip("?!.").strip().lower()
+    def key(value: str) -> str:
+        # Both sides lose trailing punctuation: a question ends in "?", and some index names end in
+        # "." ("St. Mary, the Virgin Theotokos.", found by the calendar regeneration, CAL-008).
+        return re.sub(r"\s+", " ", value or "").strip().rstrip("?!.").strip().lower()
+
+    target = key(name)
     if not target:
         return None
-    return next((r for r in _build_saint_record_index() if str(r.get("name", "")).lower() == target), None)
+    return next((r for r in _build_saint_record_index() if key(str(r.get("name", ""))) == target), None)
 
 
 def _find_saint_record_for_name(name: str) -> Dict[str, Any] | None:

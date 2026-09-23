@@ -105,6 +105,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [CAL-005: Today strip at the top of the home page, linking the date to the calendar and the saint to our saints index](#cal-005-today-strip-at-the-top-of-the-home-page-linking-the-date-to-the-calendar-and-the-saint-to-our-saints-index)
   - [CAL-006: /calendar — one server-rendered month at a time, a keyboard grid, and a detail panel with saint links](#cal-006-calendar--one-server-rendered-month-at-a-time-a-keyboard-grid-and-a-detail-panel-with-saint-links)
   - [CAL-007: Verification of the calendar feature](#cal-007-verification-of-the-calendar-feature)
+  - [CAL-008: Calendar saint links regenerated from v2 (runbook step 3.5)](#cal-008-calendar-saint-links-regenerated-from-v2-runbook-step-35)
 - [Ingestion](#ingestion)
   - [ING-001: Re-ingestion design (Phase 5 Step 0) — PyMuPDF for English, pypdf + NFKC for Arabic, structure-aware units, v2 alongside v1](#ing-001-re-ingestion-design-phase-5-step-0--pymupdf-for-english-pypdf--nfkc-for-arabic-structure-aware-units-v2-alongside-v1)
   - [ING-002: One ingestion package; extraction and cleaning verified corpus-wide; v1 rebuild proven identical; old scripts deleted](#ing-002-one-ingestion-package-extraction-and-cleaning-verified-corpus-wide-v1-rebuild-proven-identical-old-scripts-deleted)
@@ -1817,6 +1818,51 @@ In summary:
   - English month spellings;
   - the 21 hand-picked saint links.
 - **Not done here:** the Katameros permission reply (pending), and moving the credits and contact pages to `PageDrawer`.
+
+### CAL-008: Calendar saint links regenerated from v2 (runbook step 3.5)
+- **Date / Part:** 2026-09-23, after the v2 switch (Phase 5 live, production smoke set passing).
+- **Branch:** `calendar-v2-links`. Katameros is at the same commit (87461f3), so every change comes from the index.
+- **OpenAI:** none.
+- **Steps:**
+  1. v2 snapshot of the saints index.
+  2. `migrate-overrides-v2.py`: the 19 existing override names moved to v2 names.
+  3. Overrides for every link the regeneration would lose.
+  4. `npm run calendar:saints`.
+  5. `compare-saint-links.py` (new): per language, kept / changed / new / lost against the committed data. It also checks that every link opens the entry it names, through the backend's own saint-name lookup (RET-010/011).
+- **Result:**
+
+  | | linked | kept | changed | new | lost | from overrides | link problems |
+  |---|---|---|---|---|---|---|---|
+  | English | 156 (was 87) | 83 | 4 | 69 | 0 | 20 | 0 |
+  | Arabic | 196 (was 165) | 160 | 5 | 31 | 0 | 29 | 0 |
+
+  - **New links** are mostly the numbered Popes and joint entries that v2 names ("St. Cyril I, the 24th Pope", "Sts. Cyriacus and Julitta").
+  - **"Changed"** means the old v1 name could not be shown to be the same v2 entry:
+    - one correction: Sophia, below;
+    - one better target: "John and James, Bishops of Persia" now links their joint entry, not "St. John of Persia";
+    - the rest are the same saint under the v2 name: Philotheus, Irene, Abibus, Joseph of Arimathea, Abaskhiron, Abanoub the Confessor, and Alexander of Jerusalem with his fuller name.
+- **Overrides added for the links that would be lost** (v2 names; the default saints as in `data/saint_defaults.json`):
+  - **Anthony (Tobi 22):** "St. Anthony, Father of the Monks", his default entry.
+  - **Sophia (Thout 5):** "St. Sophia, Buried in 'Hagia Sophia' Church". Her entry says she was martyred on 5 Tout. The v1 link went to "St. Sophia", who reposed on 21 Toba.
+  - **Basilissa (Thout 6):** "St. Basilissa", as v1. **To confirm:** her entry gives 6 Hator.
+  - **Philotheus (Tobi 16):** the martyr of vol. 3, p. 457, whose Synaxarion reference is 16 Toba.
+  - **Irene (Mesori 21):** vol. 2, p. 304, who "reposed … on the 21st of Mesra".
+  - **Arabic (9):**
+    - Abibus, the Egyptian martyr of Hermopolis (ص 98). **To confirm:** neither Abibus entry gives a date.
+    - Herwag, Hanania and Khozi (ص 79, 16 Kiahk).
+    - Euphrosyne (her entry: 9 Amshir).
+    - Abu Fana (ص 66), Joseph of Arimathea (ص 331), Abaskhiron (ص 53), Abamon of Tukh (ص 30), Abanoub the Confessor (ص 30, 23 Paona) and Abanoub of Nahisa (ص 31).
+  - **Why most Arabic links were lost:** the dictionary repeats these entries in its last pages ("مدخل 2"), and the matcher took the repeats for namesakes.
+  - The preview's other three Arabic losses (Philip the Apostle, Milius, Balana) now link automatically.
+  - **Also added:** Mark the Apostle's English link (83001, "St. Marcus, the Apostle"), his default entry, now that v2 has an English entry for him.
+- **Also changed:**
+  - **The exact-name lookup** (`api._find_saint_record_exact`) now ignores trailing punctuation on the index names too. The Theotokos is listed as "St. Mary, the Virgin Theotokos.", so her calendar link was found only through an alias. Test added.
+  - **The v2 snapshot's Arabic aliases** are only those the API still accepts (RET-011 drops seed aliases that are another entry's own name).
+  - **`migrate-overrides-v2.py`** now writes the overrides file in its own one-line-per-story layout.
+  - **`lib/calendar/saints.test.ts`** pins the v2 names (George, the Theotokos, Anthony, Kyrillos II).
+- **Tests:** frontend 127, backend 184.
+- **Index issue seen, not fixed here:** the two Abibus entries' IDs are swapped relative to their Arabic texts: `abibus-of-edessa` carries the Hermopolis martyr. That's an EN↔AR link in `saints_index.json`, for the next index rebuild.
+- **Revisit if:** the Basilissa or Abibus choice is corrected, or Katameros or the index changes. Rerun step 3.5 and `compare-saint-links.py`.
 
 ## Ingestion
 
