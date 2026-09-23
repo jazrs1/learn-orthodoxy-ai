@@ -85,6 +85,7 @@ class RequestTrace:
         # Passage texts for the eval harness only: returned in debug_payload(), never logged.
         self.debug_passages: Optional[List[Dict[str, Any]]] = None
         self.emitted = False
+        self._handed_off = False
         self._token: contextvars.Token | None = None
 
     # --- lifecycle -------------------------------------------------------
@@ -96,10 +97,18 @@ class RequestTrace:
     def __exit__(self, exc_type, exc, tb) -> bool:
         if exc is not None and not self.emitted:
             self._record_exception(exc)
-        self.emit()
+        if exc is not None or not self._handed_off:
+            self.emit()
         if self._token is not None:
             _current_trace.reset(self._token)
         return False  # never swallow exceptions
+
+    def hand_off(self) -> None:
+        """The request outlives the `with` block (a streamed answer); `emit()` is then called by the stream."""
+        self._handed_off = True
+
+    def elapsed_ms(self) -> float:
+        return round((time.monotonic() - self.started) * 1000.0, 1)
 
     def _record_exception(self, exc: BaseException) -> None:
         status = getattr(exc, "status_code", None)
@@ -168,16 +177,21 @@ class RequestTrace:
             self.fields["filter_rejected"] = rejected_count
 
     def set_generation(self, response: Any, model: str) -> None:
+        try:
+            finish_reason = response.choices[0].finish_reason
+        except Exception:  # pragma: no cover - defensive
+            finish_reason = None
+        self.set_usage(model, getattr(response, "usage", None), finish_reason)
+
+    def set_usage(self, model: str, usage: Any, finish_reason: str | None) -> None:
+        """Token usage and finish reason; a stream reports usage in its last chunk, if it got that far."""
         self.fields["model"] = model
-        usage = getattr(response, "usage", None)
         if usage is not None:
             self.fields["prompt_tokens"] = getattr(usage, "prompt_tokens", None)
             self.fields["completion_tokens"] = getattr(usage, "completion_tokens", None)
             self.fields["total_tokens"] = getattr(usage, "total_tokens", None)
-        try:
-            self.fields["finish_reason"] = response.choices[0].finish_reason
-        except Exception:  # pragma: no cover - defensive
-            pass
+        if finish_reason is not None:
+            self.fields["finish_reason"] = finish_reason
 
     # --- output ----------------------------------------------------------
 

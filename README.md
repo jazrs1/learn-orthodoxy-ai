@@ -12,6 +12,7 @@ This project has:
 - Browser -> Next.js frontend
 - Next.js API routes -> Postgres for chat persistence
 - Next.js API routes -> FastAPI `/chat` for retrieval + answer generation
+- Next.js API routes -> FastAPI `/chat/stream` for the same, with the answer streamed as Server-Sent Events (the chat page; `/chat` stays for the saints pane, the eval harness and smoke tests)
 - Next.js API routes -> FastAPI `/saints` and `/saint-suggestions` for saint search and list loading
 
 The browser never calls the FastAPI backend directly. Every backend call goes through a

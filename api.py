@@ -1,3 +1,4 @@
+import asyncio
 import hmac
 import json
 import logging
@@ -7,18 +8,22 @@ import threading
 import time
 import unicodedata
 from collections import deque
+from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Any, Deque, Set, Tuple
+from typing import Any, Callable, Deque, Dict, List, Set, Tuple
 
+import anyio
 from dotenv import load_dotenv
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 from chromadb.utils import embedding_functions
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, model_serializer
-from openai import OpenAI, APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
+from openai import AsyncOpenAI, OpenAI, APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
 from request_log import RequestTrace, chunk_id_from_metadata, configure_request_logging, current_trace
 from chroma_store import (
     ARABIC_COLLECTION_NAME,
@@ -1770,6 +1775,10 @@ def _enforce_entity_decline(answer: str, result: Dict[str, Any] | None, language
     return f"I could not find anything about {missing} in the loaded sources."
 
 
+def _expects_decline(result: Dict[str, Any] | None) -> bool:
+    return bool(result) and result.get("action") == "decline"
+
+
 def _answer_max_tokens(analysis: TaskAnalysis, broad: bool) -> int:
     if broad or analysis.output_format in {"table", "list", "comparison", "study_guide"}:
         return max(ANSWER_MAX_TOKENS, ANSWER_MAX_TOKENS_TASK)
@@ -2471,6 +2480,8 @@ chroma_client = None
 collection = None
 arabic_collection = None
 oai_client = None
+# The same settings as `oai_client`, for /chat/stream (GEN-007).
+async_oai_client = None
 saint_name_index: List[str] = []
 saint_record_index: List[Dict[str, Any]] = []
 arabic_saint_name_index: List[str] = []
@@ -2575,7 +2586,7 @@ def _collect_chroma_debug_info() -> Dict[str, Any]:
 
 @app.on_event("startup")
 def startup():
-    global chroma_client, collection, arabic_collection, oai_client
+    global chroma_client, collection, arabic_collection, oai_client, async_oai_client
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -2623,6 +2634,7 @@ def startup():
     # timeout + max_retries: the SDK retries once on 408/409/429/5xx/connection errors
     # and timeouts, with backoff, so a transient OpenAI blip does not become a 500.
     oai_client = OpenAI(api_key=api_key, timeout=OPENAI_TIMEOUT_SECONDS, max_retries=OPENAI_MAX_RETRIES)
+    async_oai_client = AsyncOpenAI(api_key=api_key, timeout=OPENAI_TIMEOUT_SECONDS, max_retries=OPENAI_MAX_RETRIES)
     if not INTERNAL_API_KEY:
         logger.error("INTERNAL_API_KEY is not set. All endpoints except /health will return 503.")
     if ENABLE_DEBUG:
@@ -3780,236 +3792,277 @@ def chat(req: ChatRequest, request: Request, response: Response):
         return payload
 
 
+@dataclass
+class PendingAnswer:
+    """Where `_chat_prepare` stops when the model has to write the answer (GEN-007).
+
+    `/chat` generates in one call and `/chat/stream` token by token; both pass the full reply
+    text to `finish`, which runs the same post-processing and returns the `/chat` payload.
+    """
+
+    messages: List[Dict[str, str]]
+    max_tokens: int
+    finish: Callable[[str], Dict[str, Any]]
+    # The entity check expects a decline (GEN-006): a stream holds the opening back until it
+    # can tell whether the reply declines.
+    expects_decline: bool = False
+
+
+@contextmanager
+def _chat_errors(trace: RequestTrace):
+    """Turn failures into the generic client-safe HTTP errors; details go to the log only."""
+    try:
+        yield
+    except HTTPException:
+        raise
+    except (RateLimitError, APITimeoutError, APIConnectionError, APIStatusError) as e:
+        logger.exception("OpenAI call failed in /chat request_id=%s", trace.request_id)
+        trace.set(error_type=type(e).__name__)
+        raise _openai_error_to_http(e) from e
+    except Exception as e:
+        logger.exception("Unhandled error in /chat request_id=%s", trace.request_id)
+        trace.set(error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
+
+
 def _chat_impl(req: ChatRequest, trace: RequestTrace):
+    with _chat_errors(trace):
+        prepared = _chat_prepare(req, trace)
+        if not isinstance(prepared, PendingAnswer):
+            return prepared
+        resp = oai_client.chat.completions.create(
+            model=CHAT_MODEL,
+            temperature=CHAT_TEMPERATURE,
+            max_tokens=prepared.max_tokens,
+            messages=prepared.messages,
+        )
+        trace.set_generation(resp, CHAT_MODEL)
+        trace.lap("generation")
+        return prepared.finish(resp.choices[0].message.content or "")
+
+
+def _chat_prepare(req: ChatRequest, trace: RequestTrace) -> Dict[str, Any] | PendingAnswer:
+    """Everything before generation: a finished payload (refusal, menu, retrieve-only) or a PendingAnswer."""
     global collection, arabic_collection, oai_client
 
-    try:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            logger.error("OPENAI_API_KEY is missing; cannot serve /chat")
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logger.error("OPENAI_API_KEY is missing; cannot serve /chat")
+        raise HTTPException(status_code=503, detail="Server is not configured.")
+
+    if collection is None or arabic_collection is None or oai_client is None:
+        startup()
+        if collection is None or arabic_collection is None or oai_client is None:
+            logger.error("Server not initialized (collections or OpenAI client missing)")
             raise HTTPException(status_code=503, detail="Server is not configured.")
 
-        if collection is None or arabic_collection is None or oai_client is None:
-            startup()
-            if collection is None or arabic_collection is None or oai_client is None:
-                logger.error("Server not initialized (collections or OpenAI client missing)")
-                raise HTTPException(status_code=503, detail="Server is not configured.")
-
-        original_question = (req.question or "").strip()
-        if not original_question:
-            raise HTTPException(status_code=400, detail="Question cannot be empty")
-        if len(original_question) > MAX_QUESTION_CHARS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Question is too long. Please keep it under {MAX_QUESTION_CHARS} characters.",
-            )
-        original_question = _canonicalize_saint_text(original_question)
-        history = _sanitize_history(req.history)
-        requested_top_k = max(1, min(int(req.top_k or 8), MAX_TOP_K))
-        if CORPUS_V2 and TOP_K_V2:
-            requested_top_k = min(TOP_K_V2, MAX_TOP_K)
-
-        mode = _normalize_chat_mode(req.mode)
-        detected_language = _detect_language(req.language, original_question)
-        manual_saint_match = (
-            _resolve_manual_saint_alias(original_question)
-            if detected_language == "ar"
-            else None
+    original_question = (req.question or "").strip()
+    if not original_question:
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
+    if len(original_question) > MAX_QUESTION_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Question is too long. Please keep it under {MAX_QUESTION_CHARS} characters.",
         )
-        matched_saint_alias = (
-            f"{manual_saint_match['alias']} -> {manual_saint_match['record_name']}"
-            if manual_saint_match
-            else ""
-        )
-        trace.set_question(original_question)
+    original_question = _canonicalize_saint_text(original_question)
+    history = _sanitize_history(req.history)
+    requested_top_k = max(1, min(int(req.top_k or 8), MAX_TOP_K))
+    if CORPUS_V2 and TOP_K_V2:
+        requested_top_k = min(TOP_K_V2, MAX_TOP_K)
+
+    mode = _normalize_chat_mode(req.mode)
+    detected_language = _detect_language(req.language, original_question)
+    manual_saint_match = (
+        _resolve_manual_saint_alias(original_question)
+        if detected_language == "ar"
+        else None
+    )
+    matched_saint_alias = (
+        f"{manual_saint_match['alias']} -> {manual_saint_match['record_name']}"
+        if manual_saint_match
+        else ""
+    )
+    trace.set_question(original_question)
+    trace.set(
+        language=detected_language,
+        mode=mode,
+        matched_saint_alias=matched_saint_alias or None,
+        history_messages_used=len(history),
+    )
+
+    # "Looking for a different St. X?" (RET-011): the other saints of that name, as a menu.
+    if req.namesakes_of:
+        menu = _namesake_menu(req.namesakes_of, "ar" if detected_language == "ar" else "en")
+        if menu is not None:
+            trace.set(outcome="options", refusal=False, options_count=len(menu["options"]), namesakes_of=req.namesakes_of[:120])
+            return menu
+
+    # Separate WHAT to retrieve from HOW to present it (RET-006). Saint-tab lookups
+    # ("search saint: X") are already a bare name and skip the call.
+    analysis = _analyze_request(original_question, history)
+    trace.lap("analysis")
+    # `question` keeps the user's words for the saint-intent patterns below; retrieval
+    # uses the standalone query (pronouns resolved, formatting words removed).
+    question = original_question
+    retrieval_question = _canonicalize_saint_text(analysis.retrieval_query)
+    entity = manual_saint_match["record_name"] if manual_saint_match else None
+    clean_entities = []
+
+    if detected_language == "ar":
+        metadata_filter = _arabic_metadata_filter_for_mode(mode)
+        top_k = requested_top_k
+        retrieval_top_k = min(16, max(top_k, 10))
+        arabic_selected_saint = ""
+        arabic_saint_id = ""
+        arabic_list: List[Dict[str, Any]] = []
+        arabic_list_total = 0
+        if CORPUS_V2 and analysis.saint_name_filter:
+            arabic_list, arabic_list_total = _arabic_saint_list_entries(analysis.saint_name_filter)
+        # v2: a menu choice (by ID) or a saints-list / calendar name selects one entry outright; a
+        # "who is" question goes straight to the one entry it names, or shows a menu when the name
+        # is genuinely shared (RET-010).
+        arabic_selected_record = None
+        namesake_link = None
+        if CORPUS_V2 and not arabic_list:
+            if req.saint_id:
+                arabic_selected_record = _find_v2_arabic_record_by_id(req.saint_id)
+                trace.set(saint_selection="id" if arabic_selected_record else "id_unknown", saint_selected_id=req.saint_id[:120])
+            elif req.saint_name:
+                arabic_selected_record = _find_v2_arabic_record_for_name(req.saint_name)
+                row = _saint_default_row(req.saint_name, "ar")
+                if arabic_selected_record is None and row:
+                    arabic_selected_record = _find_v2_arabic_record_by_id(str(row.get("target") or ""))
+                if arabic_selected_record is not None and row and _namesake_menu(req.saint_name, "ar"):
+                    namesake_link = _namesake_link(row, "ar")
+                trace.set(saint_selection="name" if arabic_selected_record else "name_unresolved")
+            if arabic_selected_record is None and mode != "catechism" and not req.saint_name:
+                name_query = _arabic_saint_lookup_query(original_question, mode)
+                if name_query:
+                    decision, decided = _arabic_saint_decision(name_query)
+                    trace.set(saint_decision=decision)
+                    if decision == "menu":
+                        trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(decided)))
+                        return _saint_menu_response(name_query, decided, "lookup", language="ar")
+                    if decision in ("entry", "default"):
+                        arabic_selected_record = decided[0]
+                    if decision == "default" and len(decided) > 1:
+                        namesake_link = _namesake_link(_saint_default_row(name_query, "ar"), "ar")
+            if arabic_selected_record is not None:
+                arabic_selected_saint = _arabic_lookup_name(arabic_selected_record)
+                arabic_saint_id = arabic_selected_record["saint_id"]
+                retrieval_question = arabic_selected_saint
+                trace.set(saint_selected=arabic_selected_record["name"][:120])
+        if mode == "saints" and not arabic_list and not arabic_saint_id:
+            try:
+                if CORPUS_V2:
+                    v2_matches = _find_v2_arabic_saint_matches(original_question, limit=1)
+                    arabic_selected_saint = v2_matches[0]["name"] if v2_matches else ""
+                    arabic_saint_id = v2_matches[0]["saint_id"] if v2_matches else ""
+                else:
+                    saint_matches = _find_arabic_saint_index_matches(original_question, limit=1)
+                    arabic_selected_saint = saint_matches[0] if saint_matches else ""
+            except Exception:
+                logger.warning("Arabic saint index match failed", exc_info=True)
+            if arabic_selected_saint:
+                retrieval_question = arabic_selected_saint
+        retrieval_queries = [retrieval_question]
         trace.set(
-            language=detected_language,
-            mode=mode,
-            matched_saint_alias=matched_saint_alias or None,
-            history_messages_used=len(history),
+            collection=ARABIC_COLLECTION_NAME,
+            metadata_filter=metadata_filter,
+            retrieval_top_k=retrieval_top_k,
+            retrieval_queries=retrieval_queries,
+            arabic_selected_saint=arabic_selected_saint or None,
+        )
+        trace.lap("prepare")
+
+        arabic_list_note = None
+        if arabic_list:
+            # A list of saints chosen by name comes from the index, like the English saint list.
+            docs = [r["name"] + "\n" + _saint_list_excerpt(r.get("body", "")) for r in arabic_list]
+            metas = [r["metadata"] for r in arabic_list]
+            distances, lexical_docs, lexical_metas = [], [], []
+            arabic_list_note = _arabic_saint_list_note(analysis.saint_name_filter, len(arabic_list), arabic_list_total)
+            trace.set(retrieval_plan="saint_list",
+                      saint_list={"filter": analysis.saint_name_filter, "shown": len(arabic_list), "matched": arabic_list_total})
+        else:
+            docs, metas, distances = _retrieve_documents(
+                retrieval_queries,
+                top_k=retrieval_top_k,
+                target_collection=arabic_collection,
+                metadata_filter=metadata_filter,
+            )
+            lexical_docs, lexical_metas = _retrieve_arabic_lexical_documents(
+                retrieval_question,
+                top_k=retrieval_top_k,
+                metadata_filter=metadata_filter,
+            )
+        best_distance = min(distances) if distances else None
+        if lexical_docs:
+            docs, metas = _merge_document_batches(
+                lexical_docs,
+                lexical_metas,
+                docs,
+                metas,
+                retrieval_top_k,
+            )
+        if arabic_saint_id:  # v2: the selected saint's own dictionary entry leads the context
+            entry_docs, entry_metas = _saint_entry_chunks(arabic_collection, arabic_saint_id)
+            docs, metas = _prepend_entry_chunks(docs, metas, entry_docs, entry_metas)
+        trace.lap("retrieval")
+        trace.set(
+            retrieved_count=len(docs),
+            merged_ids=[chunk_id_from_metadata(m) for m in metas],
+            best_distance=best_distance,
+            distance_threshold=ARABIC_VECTOR_DISTANCE_THRESHOLD or None,
+            lexical_hits=len(lexical_docs),
+        )
+        trace.set_kept(metas, 0)
+        if req.retrieve_only:
+            return _retrieve_only_payload(docs, metas, normalize=_normalize_arabic_context_text)
+
+        # No keyword filter any more (RET-002). Refuse only when nothing came back, or
+        # when the lexical search found nothing and the vector distance check is on and fails.
+        no_relevant_source = not docs or (
+            not lexical_docs
+            and ARABIC_VECTOR_DISTANCE_THRESHOLD > 0
+            and (best_distance is None or best_distance > ARABIC_VECTOR_DISTANCE_THRESHOLD)
+        )
+        # Arabic has no usable distance threshold (RET-003), so the analysis' scope flag is
+        # the guard against off-topic questions answered from an incidental word (GEN-006).
+        if docs and not no_relevant_source and not analysis.in_scope:
+            trace.set(outcome="refused", refusal=True, refusal_reason="out_of_scope")
+            return {"answer": _no_source_answer("ar"), "sources": [], "entities": [], "options": [], "can_learn_more": False}
+        if no_relevant_source:
+            trace.set(outcome="refused", refusal=True, refusal_reason="no_relevant_source")
+            answer = (
+                "وجدت اسم القديس في فهرس القديسين، لكن لم أجد معلومات كافية عنه في المصادر العربية المتاحة."
+                if mode == "saints" and arabic_selected_saint
+                else _no_source_answer("ar")
+            )
+            return {
+                "answer": answer,
+                "sources": [],
+                "entities": [],
+                "options": [],
+                "can_learn_more": False,
+            }
+
+        context, numbered_sources = _build_numbered_context(docs, metas, normalize=_normalize_arabic_context_text)
+        entity_result = _check_named_subjects(analysis, docs, "ar") if not arabic_list and arabic_selected_record is None else None
+        note = "\n".join(
+            part for part in (arabic_list_note, _entity_note(entity_result, "ar"), _format_note(analysis, "ar")) if part
+        ) or None
+        messages = _build_chat_messages(ARABIC_SYSTEM_PROMPT, history, original_question, context, "ar", note=note)
+        trace.set(
+            context_chunks=len(docs),
+            context_chars=len(context),
+            prompt_chars=sum(len(m["content"]) for m in messages),
+            prompt_version=PROMPT_VERSION,
+            history_turns_sent=min(len(history), HISTORY_TURNS_FOR_MODEL),
         )
 
-        # "Looking for a different St. X?" (RET-011): the other saints of that name, as a menu.
-        if req.namesakes_of:
-            menu = _namesake_menu(req.namesakes_of, "ar" if detected_language == "ar" else "en")
-            if menu is not None:
-                trace.set(outcome="options", refusal=False, options_count=len(menu["options"]), namesakes_of=req.namesakes_of[:120])
-                return menu
-
-        # Separate WHAT to retrieve from HOW to present it (RET-006). Saint-tab lookups
-        # ("search saint: X") are already a bare name and skip the call.
-        analysis = _analyze_request(original_question, history)
-        trace.lap("analysis")
-        # `question` keeps the user's words for the saint-intent patterns below; retrieval
-        # uses the standalone query (pronouns resolved, formatting words removed).
-        question = original_question
-        retrieval_question = _canonicalize_saint_text(analysis.retrieval_query)
-        entity = manual_saint_match["record_name"] if manual_saint_match else None
-        clean_entities = []
-
-        if detected_language == "ar":
-            metadata_filter = _arabic_metadata_filter_for_mode(mode)
-            top_k = requested_top_k
-            retrieval_top_k = min(16, max(top_k, 10))
-            arabic_selected_saint = ""
-            arabic_saint_id = ""
-            arabic_list: List[Dict[str, Any]] = []
-            arabic_list_total = 0
-            if CORPUS_V2 and analysis.saint_name_filter:
-                arabic_list, arabic_list_total = _arabic_saint_list_entries(analysis.saint_name_filter)
-            # v2: a menu choice (by ID) or a saints-list / calendar name selects one entry outright; a
-            # "who is" question goes straight to the one entry it names, or shows a menu when the name
-            # is genuinely shared (RET-010).
-            arabic_selected_record = None
-            namesake_link = None
-            if CORPUS_V2 and not arabic_list:
-                if req.saint_id:
-                    arabic_selected_record = _find_v2_arabic_record_by_id(req.saint_id)
-                    trace.set(saint_selection="id" if arabic_selected_record else "id_unknown", saint_selected_id=req.saint_id[:120])
-                elif req.saint_name:
-                    arabic_selected_record = _find_v2_arabic_record_for_name(req.saint_name)
-                    row = _saint_default_row(req.saint_name, "ar")
-                    if arabic_selected_record is None and row:
-                        arabic_selected_record = _find_v2_arabic_record_by_id(str(row.get("target") or ""))
-                    if arabic_selected_record is not None and row and _namesake_menu(req.saint_name, "ar"):
-                        namesake_link = _namesake_link(row, "ar")
-                    trace.set(saint_selection="name" if arabic_selected_record else "name_unresolved")
-                if arabic_selected_record is None and mode != "catechism" and not req.saint_name:
-                    name_query = _arabic_saint_lookup_query(original_question, mode)
-                    if name_query:
-                        decision, decided = _arabic_saint_decision(name_query)
-                        trace.set(saint_decision=decision)
-                        if decision == "menu":
-                            trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(decided)))
-                            return _saint_menu_response(name_query, decided, "lookup", language="ar")
-                        if decision in ("entry", "default"):
-                            arabic_selected_record = decided[0]
-                        if decision == "default" and len(decided) > 1:
-                            namesake_link = _namesake_link(_saint_default_row(name_query, "ar"), "ar")
-                if arabic_selected_record is not None:
-                    arabic_selected_saint = _arabic_lookup_name(arabic_selected_record)
-                    arabic_saint_id = arabic_selected_record["saint_id"]
-                    retrieval_question = arabic_selected_saint
-                    trace.set(saint_selected=arabic_selected_record["name"][:120])
-            if mode == "saints" and not arabic_list and not arabic_saint_id:
-                try:
-                    if CORPUS_V2:
-                        v2_matches = _find_v2_arabic_saint_matches(original_question, limit=1)
-                        arabic_selected_saint = v2_matches[0]["name"] if v2_matches else ""
-                        arabic_saint_id = v2_matches[0]["saint_id"] if v2_matches else ""
-                    else:
-                        saint_matches = _find_arabic_saint_index_matches(original_question, limit=1)
-                        arabic_selected_saint = saint_matches[0] if saint_matches else ""
-                except Exception:
-                    logger.warning("Arabic saint index match failed", exc_info=True)
-                if arabic_selected_saint:
-                    retrieval_question = arabic_selected_saint
-            retrieval_queries = [retrieval_question]
-            trace.set(
-                collection=ARABIC_COLLECTION_NAME,
-                metadata_filter=metadata_filter,
-                retrieval_top_k=retrieval_top_k,
-                retrieval_queries=retrieval_queries,
-                arabic_selected_saint=arabic_selected_saint or None,
-            )
-            trace.lap("prepare")
-
-            arabic_list_note = None
-            if arabic_list:
-                # A list of saints chosen by name comes from the index, like the English saint list.
-                docs = [r["name"] + "\n" + _saint_list_excerpt(r.get("body", "")) for r in arabic_list]
-                metas = [r["metadata"] for r in arabic_list]
-                distances, lexical_docs, lexical_metas = [], [], []
-                arabic_list_note = _arabic_saint_list_note(analysis.saint_name_filter, len(arabic_list), arabic_list_total)
-                trace.set(retrieval_plan="saint_list",
-                          saint_list={"filter": analysis.saint_name_filter, "shown": len(arabic_list), "matched": arabic_list_total})
-            else:
-                docs, metas, distances = _retrieve_documents(
-                    retrieval_queries,
-                    top_k=retrieval_top_k,
-                    target_collection=arabic_collection,
-                    metadata_filter=metadata_filter,
-                )
-                lexical_docs, lexical_metas = _retrieve_arabic_lexical_documents(
-                    retrieval_question,
-                    top_k=retrieval_top_k,
-                    metadata_filter=metadata_filter,
-                )
-            best_distance = min(distances) if distances else None
-            if lexical_docs:
-                docs, metas = _merge_document_batches(
-                    lexical_docs,
-                    lexical_metas,
-                    docs,
-                    metas,
-                    retrieval_top_k,
-                )
-            if arabic_saint_id:  # v2: the selected saint's own dictionary entry leads the context
-                entry_docs, entry_metas = _saint_entry_chunks(arabic_collection, arabic_saint_id)
-                docs, metas = _prepend_entry_chunks(docs, metas, entry_docs, entry_metas)
-            trace.lap("retrieval")
-            trace.set(
-                retrieved_count=len(docs),
-                merged_ids=[chunk_id_from_metadata(m) for m in metas],
-                best_distance=best_distance,
-                distance_threshold=ARABIC_VECTOR_DISTANCE_THRESHOLD or None,
-                lexical_hits=len(lexical_docs),
-            )
-            trace.set_kept(metas, 0)
-            if req.retrieve_only:
-                return _retrieve_only_payload(docs, metas, normalize=_normalize_arabic_context_text)
-
-            # No keyword filter any more (RET-002). Refuse only when nothing came back, or
-            # when the lexical search found nothing and the vector distance check is on and fails.
-            no_relevant_source = not docs or (
-                not lexical_docs
-                and ARABIC_VECTOR_DISTANCE_THRESHOLD > 0
-                and (best_distance is None or best_distance > ARABIC_VECTOR_DISTANCE_THRESHOLD)
-            )
-            # Arabic has no usable distance threshold (RET-003), so the analysis' scope flag is
-            # the guard against off-topic questions answered from an incidental word (GEN-006).
-            if docs and not no_relevant_source and not analysis.in_scope:
-                trace.set(outcome="refused", refusal=True, refusal_reason="out_of_scope")
-                return {"answer": _no_source_answer("ar"), "sources": [], "entities": [], "options": [], "can_learn_more": False}
-            if no_relevant_source:
-                trace.set(outcome="refused", refusal=True, refusal_reason="no_relevant_source")
-                answer = (
-                    "وجدت اسم القديس في فهرس القديسين، لكن لم أجد معلومات كافية عنه في المصادر العربية المتاحة."
-                    if mode == "saints" and arabic_selected_saint
-                    else _no_source_answer("ar")
-                )
-                return {
-                    "answer": answer,
-                    "sources": [],
-                    "entities": [],
-                    "options": [],
-                    "can_learn_more": False,
-                }
-
-            context, numbered_sources = _build_numbered_context(docs, metas, normalize=_normalize_arabic_context_text)
-            entity_result = _check_named_subjects(analysis, docs, "ar") if not arabic_list and arabic_selected_record is None else None
-            note = "\n".join(
-                part for part in (arabic_list_note, _entity_note(entity_result, "ar"), _format_note(analysis, "ar")) if part
-            ) or None
-            messages = _build_chat_messages(ARABIC_SYSTEM_PROMPT, history, original_question, context, "ar", note=note)
-            trace.set(
-                context_chunks=len(docs),
-                context_chars=len(context),
-                prompt_chars=sum(len(m["content"]) for m in messages),
-                prompt_version=PROMPT_VERSION,
-                history_turns_sent=min(len(history), HISTORY_TURNS_FOR_MODEL),
-            )
-
-            resp = oai_client.chat.completions.create(
-                model=CHAT_MODEL,
-                temperature=CHAT_TEMPERATURE,
-                max_tokens=_answer_max_tokens(analysis, broad=analysis.broad),
-                messages=messages,
-            )
-            trace.set_generation(resp, CHAT_MODEL)
-            trace.lap("generation")
-
-            answer = _enforce_entity_decline(resp.choices[0].message.content or "", entity_result, "ar")
+        def finish_arabic(reply: str) -> Dict[str, Any]:
+            answer = _enforce_entity_decline(reply, entity_result, "ar")
             followup_options: List[str] = []
             if mode == "catechism":
                 followup_options = _catechism_followup_options(answer, original_question, language="ar")
@@ -4037,249 +4090,251 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 "namesakes": namesake_link if response_sources else None,
             }
 
-        # A menu choice (by ID) or a saints-list / calendar name selects one entry outright (RET-010).
-        selected_record = None
-        if req.saint_id:
-            selected_record = _find_saint_record_by_id(req.saint_id)
-            trace.set(saint_selection="id" if selected_record else "id_unknown", saint_selected_id=req.saint_id[:120])
-        elif req.saint_name:
-            selected_record = _find_saint_record_for_name(req.saint_name)
-            trace.set(saint_selection="name" if selected_record else "name_unresolved")
-        namesake_link = None
-        if req.saint_name and selected_record is not None and len(_normalize_saint_match_key(req.saint_name).split()) == 1:
-            row = _saint_default_row(req.saint_name, "en")
-            if row and selected_record is _saint_default_record(row) and _namesake_menu(req.saint_name, "en"):
-                namesake_link = _namesake_link(row, "en")
-        entity_record = selected_record
-        if selected_record is not None:
-            entity = str(selected_record.get("name", ""))
-            lookup_name = str(selected_record.get("base_name") or entity)
-            question = f"{lookup_name} Orthodox saint biography life feast teachings martyr monk bishop"
-            retrieval_question = question
-            trace.set(saint_selected=entity[:120])
-
-        saint_intent = _extract_saint_chat_intent(question) if mode != "catechism" and selected_record is None else None
-        if saint_intent:
-            raw_saint_query = saint_intent["query"]
-            saint_records = _find_saint_record_matches(raw_saint_query, limit=12)
-            saint_matches = [str(r.get("name", "")) for r in saint_records]
-            strong_matches, medium_matches = _split_saint_matches(saint_records)
-            _log_saint_query(raw_saint_query, _normalize_saint_search_query(raw_saint_query), saint_matches)
-            trace.set(
-                saint_intent=saint_intent["mode"],
-                saint_intent_explicit=saint_intent.get("explicit", False),
-                saint_strong_matches=len(strong_matches),
-                saint_medium_matches=len(medium_matches),
-            )
-
-            # A saint-index miss must never end the request (AUDIT C17, DECISIONS RET-001):
-            # the index is built from heading heuristics and misses real entries, so an
-            # unconfident lookup falls through to ordinary retrieval on the user's own words.
-            if saint_intent["mode"] == "list" and saint_records:
-                trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(saint_records)))
-                return _saint_menu_response(raw_saint_query, saint_records, "list", language=detected_language)
-
-            # A menu only for a genuinely ambiguous name: a bare name several entries share
-            # ("St. Athanasius"), or a name two entries carry equally. A full name or an alias
-            # that one entry owns ("the Apostolic", "of Nyssa") goes straight to it (RET-010).
-            if saint_intent.get("record") is not None:
-                decision, decided = "entry", [saint_intent["record"]]
-            else:
-                decision, decided = _english_saint_decision(raw_saint_query)
-            trace.set(saint_decision=decision)
-            if decision == "menu":
-                trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(decided)))
-                return _saint_menu_response(raw_saint_query, decided, "lookup", language=detected_language)
-
-            if decision == "default" and len(decided) > 1:
-                # A bare name that means one major saint (data/saint_defaults.json, RET-011); the
-                # answer ends with a link to the others.
-                namesake_link = _namesake_link(_saint_default_row(raw_saint_query, "en"), "en")
-            if decision in ("entry", "default"):
-                entity_record = decided[0]
-                entity = str(entity_record.get("name", ""))
-                if saint_intent.get("explicit"):
-                    # The user typed only a name; a descriptive query retrieves better than "search saint: X".
-                    lookup_name = str(entity_record.get("base_name") or entity)
-                    question = f"{lookup_name} Orthodox saint biography life feast teachings martyr monk bishop"
-                    retrieval_question = question
-                # Otherwise keep the user's question; `_build_retrieval_queries` adds entity variants.
-            else:
-                trace.set(saint_intent_fallthrough=True)
-                # Only a name lookup ("search saint: X") is rewritten into a biography query. A
-                # "list ..." request with no index match ("list saints who were martyred in Egypt")
-                # keeps the analysed query; the canned biography string used to replace it (RET-006).
-                if saint_intent.get("explicit") and saint_intent["mode"] == "lookup":
-                    question = f"{raw_saint_query} Orthodox saint biography life feast teachings martyr monk bishop"
-                    retrieval_question = question
-
-        # TODO(per-conversation follow-ups): numbered follow-ups ("the 2nd one") used to be
-        # resolved against a process-global `last_list` shared by every user, keyed off any
-        # digit in the question (AUDIT.md C16). That was removed. When rebuilt, resolve
-        # against the *previous assistant message of this conversation* (the frontend already
-        # stores `options`/`entities` per message) and only when the question is clearly an
-        # ordinal selection, not any question that happens to contain a number.
-
-        trace.set(rewritten_question=retrieval_question[:300], entity=entity)
-
-        ambiguous_query = _extract_ambiguous_saint_query(question) if mode != "catechism" else ""
-        if ambiguous_query and entity is None:
-            core_name = _core_name_from_query(ambiguous_query)
-            if core_name in AMBIGUOUS_SAINT_FALLBACKS:
-                clean_entities = _filter_sourced_saint_options(AMBIGUOUS_SAINT_FALLBACKS[core_name])
-                fallback_records = [r for r in (_find_saint_record_for_name(name) for name in clean_entities) if r]
-                if len(fallback_records) > 1:
-                    trace.set(outcome="options", refusal=False, options_count=len(fallback_records), ambiguous_query=ambiguous_query)
-                    return _saint_menu_response(ambiguous_query, fallback_records, "lookup", language=detected_language)
-
-            # Only strong/medium matches count as "several saints match"; weak substring
-            # hits are not a reason to interrupt the user with a menu.
-            decision, decided = _english_saint_decision(_canonicalize_saint_text(ambiguous_query))
-            if decision == "menu":
-                trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(decided)), ambiguous_query=ambiguous_query)
-                return _saint_menu_response(ambiguous_query, decided, "lookup", language=detected_language)
-
-        broad_list = _is_broad_list_question(retrieval_question)
-        definition_question = _is_definition_question(retrieval_question)
-        top_k = requested_top_k
-        retrieval_top_k = min(16, max(top_k, 12 if broad_list else 10 if definition_question else top_k))
-
-        # Retrieval plan (RET-007): a saint list selected by name comes from the saint index;
-        # a broad request searches with the sub-queries too and keeps more chunks.
-        retrieval_plan = "default"
-        list_note = None
-        saint_list_records: List[Dict[str, Any]] = []
-        saint_list_total = 0
-        if analysis.saint_name_filter and entity is None:
-            saint_list_records, saint_list_total = _saint_list_entries(analysis.saint_name_filter)
-            if saint_list_records:
-                retrieval_plan = "saint_list"
-        if retrieval_plan == "default" and analysis.broad:
-            retrieval_plan = "broad"
-            retrieval_top_k = max(retrieval_top_k, BROAD_RETRIEVAL_TOP_K)
-
-        retrieval_entity = str((entity_record or {}).get("base_name") or entity or "") or None
-        retrieval_queries = _build_retrieval_queries(retrieval_question, entity=retrieval_entity)
-        if retrieval_plan == "broad":
-            retrieval_queries = retrieval_queries[:1] + analysis.sub_queries + retrieval_queries[1:]
-        trace.set(
-            collection=COLLECTION_NAME,
-            metadata_filter=None,
-            retrieval_top_k=retrieval_top_k,
-            retrieval_queries=[q[:300] for q in retrieval_queries],
-            broad_list=broad_list,
-            definition_question=definition_question,
-            retrieval_plan=retrieval_plan,
-        )
-        trace.lap("prepare")
-        if retrieval_plan == "saint_list":
-            docs, metas = _saint_list_context(saint_list_records)
-            distances = []
-            best_distance = None
-            list_note = _saint_list_note(analysis.saint_name_filter, len(saint_list_records), saint_list_total)
-            trace.set(saint_list={"filter": analysis.saint_name_filter, "shown": len(saint_list_records), "matched": saint_list_total})
-        else:
-            docs, metas, distances = _retrieve_documents(
-                retrieval_queries,
-                top_k=retrieval_top_k,
-                entity=entity,
-                per_query_min=BROAD_PER_QUERY_MIN if retrieval_plan == "broad" else 0,
-            )
-            best_distance = min(distances) if distances else None
-            # Comparisons with another tradition: the Coptic books mention it only in passing,
-            # so similarity search rarely surfaces those pages. Rank again among chunks that
-            # contain the tradition's name (RET-008).
-            tradition_terms = _compared_tradition_terms(original_question, analysis)
-            if tradition_terms and docs:
-                seen_ids = {chunk_id_from_metadata(m) for m in metas}
-                for term in tradition_terms:
-                    extra_docs, extra_metas, extra_distances = _retrieve_documents(
-                        [retrieval_question],
-                        top_k=TRADITION_RETRIEVAL_TOP_K,
-                        where_document={"$contains": term},
-                    )
-                    for doc, meta, dist in zip(extra_docs, extra_metas, extra_distances):
-                        chunk_id = chunk_id_from_metadata(meta)
-                        if chunk_id in seen_ids:
-                            continue
-                        seen_ids.add(chunk_id)
-                        docs.append(doc)
-                        metas.append(meta)
-                        distances.append(dist)
-                trace.set(tradition_terms=tradition_terms)
-        # v2 puts a confidently identified saint's own entry first in every mode; v1 only in saints mode.
-        if mode == "saints" or (CORPUS_V2 and entity):
-            docs, metas = _prepend_saint_record_context(docs, metas, entity, record=entity_record)
-        trace.lap("retrieval")
-        trace.set(
-            retrieved_count=len(docs),
-            merged_ids=[chunk_id_from_metadata(m) for m in metas],
-            best_distance=best_distance,
-            distance_threshold=VECTOR_DISTANCE_THRESHOLD or None,
-        )
-        # The keyword relevance filter is gone (RET-002); every retrieved chunk is kept and the
-        # model is trusted to cite only what it uses. "No relevant source" is decided by the
-        # best vector distance across all queries (RET-003).
-        trace.set_kept(metas, 0)
-        if req.retrieve_only:
-            return _retrieve_only_payload(docs, metas)
-
-        # A saint list is selected by exact name match, not by similarity, so the distance
-        # check does not apply to it.
-        no_relevant_source = not docs or (
-            retrieval_plan != "saint_list"
-            and VECTOR_DISTANCE_THRESHOLD > 0
-            and (best_distance is None or best_distance > VECTOR_DISTANCE_THRESHOLD)
-        )
-        # English off-topic questions are caught by the distance threshold; the analysis' scope
-        # flag is only enforced for Arabic (it flagged an answerable calendar question here).
-        if no_relevant_source:
-            trace.set(outcome="refused", refusal=True, refusal_reason="nothing_retrieved" if not docs else "distance_above_threshold")
-            return {
-                "answer": _no_source_answer(detected_language),
-                "sources": [],
-                "entities": [],
-                "options": [],
-                "can_learn_more": False,
-            }
-
-        # Numbered passages the model cites as [n]; the last few turns go in as real messages
-        # so pronouns and follow-ups resolve naturally (DECISIONS.md GEN-001..003).
-        context, numbered_sources = _build_numbered_context(docs, metas)
-        # Named-subject check (GEN-006): not for saint lists, which are selected by name already.
-        # Not for saint lists (selected by name already) or a saint chosen from a menu or the saints
-        # list, whose own entry leads the context.
-        entity_result = (
-            _check_named_subjects(analysis, docs, "en")
-            if retrieval_plan != "saint_list" and selected_record is None
-            else None
-        )
-        note = "\n".join(
-            part for part in (list_note, _entity_note(entity_result, "en"), _format_note(analysis, "en")) if part
-        ) or None
-        messages = _build_chat_messages(ENGLISH_SYSTEM_PROMPT, history, original_question, context, "en", note=note)
-        trace.set(
-            context_chunks=len(docs),
-            context_chars=len(context),
-            prompt_chars=sum(len(m["content"]) for m in messages),
-            prompt_version=PROMPT_VERSION,
-            history_turns_sent=min(len(history), HISTORY_TURNS_FOR_MODEL),
-        )
-
-        resp = oai_client.chat.completions.create(
-            model=CHAT_MODEL,
-            temperature=CHAT_TEMPERATURE,
-            max_tokens=_answer_max_tokens(analysis, broad=retrieval_plan != "default"),
+        return PendingAnswer(
             messages=messages,
+            max_tokens=_answer_max_tokens(analysis, broad=analysis.broad),
+            finish=finish_arabic,
+            expects_decline=_expects_decline(entity_result),
         )
-        trace.set_generation(resp, CHAT_MODEL)
-        trace.lap("generation")
 
-        answer = _enforce_entity_decline(resp.choices[0].message.content or "", entity_result, "en")
+    # A menu choice (by ID) or a saints-list / calendar name selects one entry outright (RET-010).
+    selected_record = None
+    if req.saint_id:
+        selected_record = _find_saint_record_by_id(req.saint_id)
+        trace.set(saint_selection="id" if selected_record else "id_unknown", saint_selected_id=req.saint_id[:120])
+    elif req.saint_name:
+        selected_record = _find_saint_record_for_name(req.saint_name)
+        trace.set(saint_selection="name" if selected_record else "name_unresolved")
+    namesake_link = None
+    if req.saint_name and selected_record is not None and len(_normalize_saint_match_key(req.saint_name).split()) == 1:
+        row = _saint_default_row(req.saint_name, "en")
+        if row and selected_record is _saint_default_record(row) and _namesake_menu(req.saint_name, "en"):
+            namesake_link = _namesake_link(row, "en")
+    entity_record = selected_record
+    if selected_record is not None:
+        entity = str(selected_record.get("name", ""))
+        lookup_name = str(selected_record.get("base_name") or entity)
+        question = f"{lookup_name} Orthodox saint biography life feast teachings martyr monk bishop"
+        retrieval_question = question
+        trace.set(saint_selected=entity[:120])
+
+    saint_intent = _extract_saint_chat_intent(question) if mode != "catechism" and selected_record is None else None
+    if saint_intent:
+        raw_saint_query = saint_intent["query"]
+        saint_records = _find_saint_record_matches(raw_saint_query, limit=12)
+        saint_matches = [str(r.get("name", "")) for r in saint_records]
+        strong_matches, medium_matches = _split_saint_matches(saint_records)
+        _log_saint_query(raw_saint_query, _normalize_saint_search_query(raw_saint_query), saint_matches)
+        trace.set(
+            saint_intent=saint_intent["mode"],
+            saint_intent_explicit=saint_intent.get("explicit", False),
+            saint_strong_matches=len(strong_matches),
+            saint_medium_matches=len(medium_matches),
+        )
+
+        # A saint-index miss must never end the request (AUDIT C17, DECISIONS RET-001):
+        # the index is built from heading heuristics and misses real entries, so an
+        # unconfident lookup falls through to ordinary retrieval on the user's own words.
+        if saint_intent["mode"] == "list" and saint_records:
+            trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(saint_records)))
+            return _saint_menu_response(raw_saint_query, saint_records, "list", language=detected_language)
+
+        # A menu only for a genuinely ambiguous name: a bare name several entries share
+        # ("St. Athanasius"), or a name two entries carry equally. A full name or an alias
+        # that one entry owns ("the Apostolic", "of Nyssa") goes straight to it (RET-010).
+        if saint_intent.get("record") is not None:
+            decision, decided = "entry", [saint_intent["record"]]
+        else:
+            decision, decided = _english_saint_decision(raw_saint_query)
+        trace.set(saint_decision=decision)
+        if decision == "menu":
+            trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(decided)))
+            return _saint_menu_response(raw_saint_query, decided, "lookup", language=detected_language)
+
+        if decision == "default" and len(decided) > 1:
+            # A bare name that means one major saint (data/saint_defaults.json, RET-011); the
+            # answer ends with a link to the others.
+            namesake_link = _namesake_link(_saint_default_row(raw_saint_query, "en"), "en")
+        if decision in ("entry", "default"):
+            entity_record = decided[0]
+            entity = str(entity_record.get("name", ""))
+            if saint_intent.get("explicit"):
+                # The user typed only a name; a descriptive query retrieves better than "search saint: X".
+                lookup_name = str(entity_record.get("base_name") or entity)
+                question = f"{lookup_name} Orthodox saint biography life feast teachings martyr monk bishop"
+                retrieval_question = question
+            # Otherwise keep the user's question; `_build_retrieval_queries` adds entity variants.
+        else:
+            trace.set(saint_intent_fallthrough=True)
+            # Only a name lookup ("search saint: X") is rewritten into a biography query. A
+            # "list ..." request with no index match ("list saints who were martyred in Egypt")
+            # keeps the analysed query; the canned biography string used to replace it (RET-006).
+            if saint_intent.get("explicit") and saint_intent["mode"] == "lookup":
+                question = f"{raw_saint_query} Orthodox saint biography life feast teachings martyr monk bishop"
+                retrieval_question = question
+
+    # TODO(per-conversation follow-ups): numbered follow-ups ("the 2nd one") used to be
+    # resolved against a process-global `last_list` shared by every user, keyed off any
+    # digit in the question (AUDIT.md C16). That was removed. When rebuilt, resolve
+    # against the *previous assistant message of this conversation* (the frontend already
+    # stores `options`/`entities` per message) and only when the question is clearly an
+    # ordinal selection, not any question that happens to contain a number.
+
+    trace.set(rewritten_question=retrieval_question[:300], entity=entity)
+
+    ambiguous_query = _extract_ambiguous_saint_query(question) if mode != "catechism" else ""
+    if ambiguous_query and entity is None:
+        core_name = _core_name_from_query(ambiguous_query)
+        if core_name in AMBIGUOUS_SAINT_FALLBACKS:
+            clean_entities = _filter_sourced_saint_options(AMBIGUOUS_SAINT_FALLBACKS[core_name])
+            fallback_records = [r for r in (_find_saint_record_for_name(name) for name in clean_entities) if r]
+            if len(fallback_records) > 1:
+                trace.set(outcome="options", refusal=False, options_count=len(fallback_records), ambiguous_query=ambiguous_query)
+                return _saint_menu_response(ambiguous_query, fallback_records, "lookup", language=detected_language)
+
+        # Only strong/medium matches count as "several saints match"; weak substring
+        # hits are not a reason to interrupt the user with a menu.
+        decision, decided = _english_saint_decision(_canonicalize_saint_text(ambiguous_query))
+        if decision == "menu":
+            trace.set(outcome="options", refusal=False, options_count=min(SAINT_MENU_MAX, len(decided)), ambiguous_query=ambiguous_query)
+            return _saint_menu_response(ambiguous_query, decided, "lookup", language=detected_language)
+
+    broad_list = _is_broad_list_question(retrieval_question)
+    definition_question = _is_definition_question(retrieval_question)
+    top_k = requested_top_k
+    retrieval_top_k = min(16, max(top_k, 12 if broad_list else 10 if definition_question else top_k))
+
+    # Retrieval plan (RET-007): a saint list selected by name comes from the saint index;
+    # a broad request searches with the sub-queries too and keeps more chunks.
+    retrieval_plan = "default"
+    list_note = None
+    saint_list_records: List[Dict[str, Any]] = []
+    saint_list_total = 0
+    if analysis.saint_name_filter and entity is None:
+        saint_list_records, saint_list_total = _saint_list_entries(analysis.saint_name_filter)
+        if saint_list_records:
+            retrieval_plan = "saint_list"
+    if retrieval_plan == "default" and analysis.broad:
+        retrieval_plan = "broad"
+        retrieval_top_k = max(retrieval_top_k, BROAD_RETRIEVAL_TOP_K)
+
+    retrieval_entity = str((entity_record or {}).get("base_name") or entity or "") or None
+    retrieval_queries = _build_retrieval_queries(retrieval_question, entity=retrieval_entity)
+    if retrieval_plan == "broad":
+        retrieval_queries = retrieval_queries[:1] + analysis.sub_queries + retrieval_queries[1:]
+    trace.set(
+        collection=COLLECTION_NAME,
+        metadata_filter=None,
+        retrieval_top_k=retrieval_top_k,
+        retrieval_queries=[q[:300] for q in retrieval_queries],
+        broad_list=broad_list,
+        definition_question=definition_question,
+        retrieval_plan=retrieval_plan,
+    )
+    trace.lap("prepare")
+    if retrieval_plan == "saint_list":
+        docs, metas = _saint_list_context(saint_list_records)
+        distances = []
+        best_distance = None
+        list_note = _saint_list_note(analysis.saint_name_filter, len(saint_list_records), saint_list_total)
+        trace.set(saint_list={"filter": analysis.saint_name_filter, "shown": len(saint_list_records), "matched": saint_list_total})
+    else:
+        docs, metas, distances = _retrieve_documents(
+            retrieval_queries,
+            top_k=retrieval_top_k,
+            entity=entity,
+            per_query_min=BROAD_PER_QUERY_MIN if retrieval_plan == "broad" else 0,
+        )
+        best_distance = min(distances) if distances else None
+        # Comparisons with another tradition: the Coptic books mention it only in passing,
+        # so similarity search rarely surfaces those pages. Rank again among chunks that
+        # contain the tradition's name (RET-008).
+        tradition_terms = _compared_tradition_terms(original_question, analysis)
+        if tradition_terms and docs:
+            seen_ids = {chunk_id_from_metadata(m) for m in metas}
+            for term in tradition_terms:
+                extra_docs, extra_metas, extra_distances = _retrieve_documents(
+                    [retrieval_question],
+                    top_k=TRADITION_RETRIEVAL_TOP_K,
+                    where_document={"$contains": term},
+                )
+                for doc, meta, dist in zip(extra_docs, extra_metas, extra_distances):
+                    chunk_id = chunk_id_from_metadata(meta)
+                    if chunk_id in seen_ids:
+                        continue
+                    seen_ids.add(chunk_id)
+                    docs.append(doc)
+                    metas.append(meta)
+                    distances.append(dist)
+            trace.set(tradition_terms=tradition_terms)
+    # v2 puts a confidently identified saint's own entry first in every mode; v1 only in saints mode.
+    if mode == "saints" or (CORPUS_V2 and entity):
+        docs, metas = _prepend_saint_record_context(docs, metas, entity, record=entity_record)
+    trace.lap("retrieval")
+    trace.set(
+        retrieved_count=len(docs),
+        merged_ids=[chunk_id_from_metadata(m) for m in metas],
+        best_distance=best_distance,
+        distance_threshold=VECTOR_DISTANCE_THRESHOLD or None,
+    )
+    # The keyword relevance filter is gone (RET-002); every retrieved chunk is kept and the
+    # model is trusted to cite only what it uses. "No relevant source" is decided by the
+    # best vector distance across all queries (RET-003).
+    trace.set_kept(metas, 0)
+    if req.retrieve_only:
+        return _retrieve_only_payload(docs, metas)
+
+    # A saint list is selected by exact name match, not by similarity, so the distance
+    # check does not apply to it.
+    no_relevant_source = not docs or (
+        retrieval_plan != "saint_list"
+        and VECTOR_DISTANCE_THRESHOLD > 0
+        and (best_distance is None or best_distance > VECTOR_DISTANCE_THRESHOLD)
+    )
+    # English off-topic questions are caught by the distance threshold; the analysis' scope
+    # flag is only enforced for Arabic (it flagged an answerable calendar question here).
+    if no_relevant_source:
+        trace.set(outcome="refused", refusal=True, refusal_reason="nothing_retrieved" if not docs else "distance_above_threshold")
+        return {
+            "answer": _no_source_answer(detected_language),
+            "sources": [],
+            "entities": [],
+            "options": [],
+            "can_learn_more": False,
+        }
+
+    # Numbered passages the model cites as [n]; the last few turns go in as real messages
+    # so pronouns and follow-ups resolve naturally (DECISIONS.md GEN-001..003).
+    context, numbered_sources = _build_numbered_context(docs, metas)
+    # Named-subject check (GEN-006): not for saint lists, which are selected by name already.
+    # Not for saint lists (selected by name already) or a saint chosen from a menu or the saints
+    # list, whose own entry leads the context.
+    entity_result = (
+        _check_named_subjects(analysis, docs, "en")
+        if retrieval_plan != "saint_list" and selected_record is None
+        else None
+    )
+    note = "\n".join(
+        part for part in (list_note, _entity_note(entity_result, "en"), _format_note(analysis, "en")) if part
+    ) or None
+    messages = _build_chat_messages(ENGLISH_SYSTEM_PROMPT, history, original_question, context, "en", note=note)
+    trace.set(
+        context_chunks=len(docs),
+        context_chars=len(context),
+        prompt_chars=sum(len(m["content"]) for m in messages),
+        prompt_version=PROMPT_VERSION,
+        history_turns_sent=min(len(history), HISTORY_TURNS_FOR_MODEL),
+    )
+
+    def finish_english(reply: str) -> Dict[str, Any]:
+        answer = _enforce_entity_decline(reply, entity_result, "en")
         followup_options: List[str] = []
         if mode == "catechism":
             followup_options = _catechism_followup_options(answer, original_question, language=detected_language)
 
+        # Saint names from a numbered list in the answer; otherwise whatever the menu fallback
+        # above left in `clean_entities`.
+        entities = clean_entities
         items = re.findall(r"(?:\d+[\.\)]\s*)(.+)", answer)
 
         if items:
@@ -4297,12 +4352,12 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             if candidate_entities:
                 # Preserve order but deduplicate exact matches.
                 seen_entities = set()
-                clean_entities = []
+                entities = []
                 for item in candidate_entities:
                     if item in seen_entities:
                         continue
                     seen_entities.add(item)
-                    clean_entities.append(item)
+                    entities.append(item)
 
         grounding = _response_grounding_status(answer, docs)
         refused = grounding == "no-source"
@@ -4313,7 +4368,7 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             refusal_reason="model_refusal" if refused else None,
             grounding=grounding,
             answer_chars=len(answer),
-            entities_extracted=len(clean_entities),
+            entities_extracted=len(entities),
             citations=cited_count,
             sources_returned=len(response_sources),
         )
@@ -4322,22 +4377,146 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         return {
             "answer": answer,
             "sources": response_sources,
-            "entities": clean_entities,
+            "entities": entities,
             "options": followup_options,
             "can_learn_more": _has_viable_saint_learn_more(answer, docs, metas, mode),
             "namesakes": namesake_link if response_sources else None,
         }
 
-    except HTTPException:
-        raise
+    return PendingAnswer(
+        messages=messages,
+        max_tokens=_answer_max_tokens(analysis, broad=retrieval_plan != "default"),
+        finish=finish_english,
+        expects_decline=_expects_decline(entity_result),
+    )
+
+
+# Proxies must pass the events on as they come: no buffering, no compression (GEN-007).
+STREAM_HEADERS = {"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
+# When a decline is expected (GEN-006), this much of the reply is held back before the first
+# event: enough to cover the longest decline opening `_response_grounding_status` recognises.
+DECLINE_HOLD_CHARS = 48
+
+
+def _sse(event: str, data: Dict[str, Any]) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+def _chat_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """A /chat payload serialised the way /chat's response model sends it."""
+    return ChatResponse(**payload).model_dump(mode="json")
+
+
+def _prepare_or_http_error(req: ChatRequest, trace: RequestTrace) -> Dict[str, Any] | PendingAnswer:
+    with _chat_errors(trace):
+        return _chat_prepare(req, trace)
+
+
+@app.post("/chat/stream")
+async def chat_stream(req: ChatRequest, request: Request):
+    """/chat with the answer streamed as Server-Sent Events (GEN-007).
+
+    Everything before generation is /chat's own code. A refusal, a saint menu or an HTTP error
+    comes back at once as JSON, exactly as /chat sends it. Only an answer the model writes is
+    streamed: `delta` events with text, then `done` with the /chat payload, or `error`.
+    """
+    with RequestTrace("chat_stream") as trace:
+        trace.set(
+            language_requested=req.language,
+            mode_requested=req.mode,
+            history_messages=len(req.history) if isinstance(req.history, list) else 0,
+            client_ip=_client_ip(request),
+            stream=True,
+        )
+        _enforce_chat_rate_limit(request)
+        prepared = await run_in_threadpool(_prepare_or_http_error, req, trace)
+        if not isinstance(prepared, PendingAnswer):
+            if req.debug:
+                prepared = {**prepared, "debug": trace.debug_payload()}
+            return JSONResponse(_chat_payload(prepared), headers={"X-Request-ID": trace.request_id})
+        trace.hand_off()
+    return StreamingResponse(
+        _stream_answer(prepared, trace),
+        media_type="text/event-stream",
+        headers={**STREAM_HEADERS, "X-Request-ID": trace.request_id},
+    )
+
+
+async def _stream_answer(pending: PendingAnswer, trace: RequestTrace):
+    """Stream the model's reply, then the post-processed payload; always emits the request log line.
+
+    A client that goes away (Stop, a closed tab, the proxy giving up) surfaces here as the
+    generator being cancelled or closed at a `yield`; the OpenAI stream is closed, which stops
+    generation, and the log line records `client_disconnected`.
+    """
+    stream = None
+    parts: List[str] = []
+    streamed_chars = 0
+    holding = pending.expects_decline
+    usage = None
+    finish_reason = None
+    try:
+        stream = await async_oai_client.chat.completions.create(
+            model=CHAT_MODEL,
+            temperature=CHAT_TEMPERATURE,
+            max_tokens=pending.max_tokens,
+            messages=pending.messages,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+        async for chunk in stream:
+            if chunk.usage is not None:
+                usage = chunk.usage
+            if not chunk.choices:
+                continue
+            choice = chunk.choices[0]
+            finish_reason = choice.finish_reason or finish_reason
+            text = choice.delta.content if choice.delta is not None else None
+            if not text:
+                continue
+            parts.append(text)
+            if holding:
+                so_far = "".join(parts)
+                if len(so_far.strip()) < DECLINE_HOLD_CHARS:
+                    continue
+                holding = False
+                if _response_grounding_status(so_far, ["-"]) != "no-source":
+                    # Not the decline the entity check asked for: stop here, and `finish`
+                    # replaces the reply with the enforced decline, so none of it is shown.
+                    finish_reason = "decline_enforced"
+                    break
+                text = so_far
+            if streamed_chars == 0:
+                trace.set(ttft_ms=trace.elapsed_ms())
+            streamed_chars += len(text)
+            yield _sse("delta", {"t": text})
+        trace.set_usage(CHAT_MODEL, usage, finish_reason)
+        trace.lap("generation")
+        payload = _chat_payload(pending.finish("".join(parts)))
+        trace.set(streamed_chars=streamed_chars)
+        yield _sse("done", payload)
     except (RateLimitError, APITimeoutError, APIConnectionError, APIStatusError) as e:
-        logger.exception("OpenAI call failed in /chat request_id=%s", trace.request_id)
-        trace.set(error_type=type(e).__name__)
-        raise _openai_error_to_http(e) from e
+        logger.exception("OpenAI call failed in /chat/stream request_id=%s", trace.request_id)
+        error = _openai_error_to_http(e)
+        trace.set(outcome="error", error_type=type(e).__name__, http_status=error.status_code, streamed_chars=streamed_chars)
+        yield _sse("error", {"message": error.detail, "retryable": True})
     except Exception as e:
-        logger.exception("Unhandled error in /chat request_id=%s", trace.request_id)
-        trace.set(error_type=type(e).__name__)
-        raise HTTPException(status_code=500, detail=GENERIC_SERVER_ERROR)
+        logger.exception("Unhandled error in /chat/stream request_id=%s", trace.request_id)
+        trace.set(outcome="error", error_type=type(e).__name__, http_status=500, streamed_chars=streamed_chars)
+        yield _sse("error", {"message": GENERIC_SERVER_ERROR, "retryable": True})
+    except (asyncio.CancelledError, GeneratorExit):
+        trace.set_usage(CHAT_MODEL, usage, finish_reason)
+        trace.set(outcome="client_disconnected", disconnected=True, streamed_chars=streamed_chars)
+        raise
+    finally:
+        if stream is not None:
+            # Shielded: a cancelled request would otherwise cancel the close as well.
+            with anyio.CancelScope(shield=True):
+                try:
+                    await stream.close()
+                except Exception:
+                    logger.warning("Closing the OpenAI stream failed request_id=%s", trace.request_id, exc_info=True)
+        trace.emit()
 
 
 @app.get("/saint-suggestions", response_model=SaintSuggestionResponse)

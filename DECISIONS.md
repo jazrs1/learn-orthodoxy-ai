@@ -66,6 +66,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [GEN-005: Generation model: gpt-4.1-mini recommended over gpt-4o-mini](#gen-005-generation-model-gpt-41-mini-recommended-over-gpt-4o-mini)
   - [GEN-006: Named-subject check before generation, plus a scope gate for Arabic](#gen-006-named-subject-check-before-generation-plus-a-scope-gate-for-arabic)
   - [GEN-007: Streaming answers — plan: SSE from FastAPI through the Next.js route, /chat unchanged](#gen-007-streaming-answers--plan-sse-from-fastapi-through-the-nextjs-route-chat-unchanged)
+  - [GEN-008: /chat/stream — one shared preparation, the answer streamed, the log line written when the stream ends](#gen-008-chatstream--one-shared-preparation-the-answer-streamed-the-log-line-written-when-the-stream-ends)
 - [Frontend](#frontend)
   - [FE-001: Follow-up chips are ordinary user turns in the conversation's own mode](#fe-001-follow-up-chips-are-ordinary-user-turns-in-the-conversations-own-mode)
   - [FE-002: Answers are rendered as Markdown (GFM tables), wide tables scroll inside the bubble](#fe-002-answers-are-rendered-as-markdown-gfm-tables-wide-tables-scroll-inside-the-bubble)
@@ -1014,6 +1015,35 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - **Logging:** one request line per stream, as now (`endpoint="chat_stream"`), plus `stream=true`, `ttft_ms` (request start to the first token sent), `generation_ms`, the token usage from the final chunk and `disconnected`.
 - **Risks checked before building:** Starlette 1.0's `StreamingResponse` notices a disconnect only when the next write fails. That is fine here, because text is written many times a second. Railway and Vercel both pass streamed responses through; the headers above stop proxies from buffering or compressing them. Both are checked end to end in Step 4 (local only; production is checked after deploy).
 - **Concept to learn:** *Server-Sent Events over fetch.* One long HTTP response carries small framed messages (`event:` / `data:` lines, a blank line between messages). It works through ordinary proxies, and the final message can carry structured data. Search: "server-sent events fetch ReadableStream", "OpenAI stream_options include_usage".
+
+### GEN-008: /chat/stream — one shared preparation, the answer streamed, the log line written when the stream ends
+- **Date / Part:** 2026-09-23, streaming branch Step 2 (backend)
+- **Audit ref:** A6; builds on GEN-007
+- **Context:** GEN-007's plan needs the streaming endpoint to make exactly the decisions `/chat` makes. It must not become a second copy of 500 lines that drifts from the first.
+- **Decision:**
+  - **One preparation, two ways to generate.** `_chat_impl`'s body became `_chat_prepare`. It returns either a finished payload (refusal, saint menu, retrieve-only) or a `PendingAnswer`: the messages, `max_tokens`, whether the entity check expects a decline, and `finish(reply)`, the post-processing that used to follow the model call, unchanged. `/chat` (`_chat_impl`) makes the same single OpenAI call as before and passes the text to `finish`. The error mapping moved into `_chat_errors`, and `/chat`'s responses are unchanged.
+  - **`POST /chat/stream`** runs `_chat_prepare` in the thread pool, since it is blocking code (Chroma, the analysis call). The request trace stays current there, which the entity check relies on (tested). A finished payload comes back at once as JSON, serialised through `ChatResponse` like `/chat`. HTTP errors keep their status (400, 429, 503). Otherwise it returns `text/event-stream` with `delta`, then `done` (the `/chat` payload) or `error`.
+  - **Generation** uses an `AsyncOpenAI` client with the same timeout and retry settings as the sync one, `stream=True` and `stream_options.include_usage`, so the token counts still reach the log.
+  - **Held opening for expected declines (GEN-006).** When the entity check has told the model to decline, nothing is sent until 48 characters exist. A reply that opens with a decline is then released and streams on. Any other reply is cut off there; `finish` replaces it with the enforced decline, which arrives in `done` (`finish_reason="decline_enforced"`). Nothing written from memory reaches the screen.
+  - **Disconnects:** Starlette closes or cancels the generator when a write fails. The generator then closes the OpenAI stream (shielded from the cancellation, so the close itself isn't cancelled), which ends generation, and it logs `outcome="client_disconnected"`, `disconnected=true` and `streamed_chars`.
+  - **Errors after the first byte** can't change the HTTP status, so they become an `error` event with the usual generic text (`GENERIC_BUSY_ERROR` for OpenAI outages, `GENERIC_SERVER_ERROR` otherwise) and `retryable: true`. The log line records `outcome="error"`, the error type and the status `/chat` would have used.
+  - **One log line per request, as before.** `RequestTrace.hand_off()` keeps the `with` block from writing it when the response is a stream, and the stream writes it when it ends, however it ends. New fields: `endpoint="chat_stream"`, `stream`, `ttft_ms` (request start to the first text sent), `streamed_chars`, plus the usual `stages_ms.generation`, token counts and `finish_reason`.
+- **Checks:**
+  - `tests/test_chat_stream.py` (10 tests, no OpenAI):
+    - an answer arrives as deltas, then `done`, which equals `/chat`'s serialisation;
+    - a menu comes back as JSON;
+    - a 400 keeps its status;
+    - the internal key and the rate limit apply;
+    - an expected decline streams after the hold;
+    - a non-declining reply is cut off and never sent;
+    - an OpenAI failure mid-stream becomes an `error` event;
+    - a client leaving closes the OpenAI stream and logs `client_disconnected`;
+    - `/chat` makes the same non-streamed call;
+    - the trace stays current in the thread pool.
+  - Existing suite: 184 → 194 passing.
+  - **Real server:** uvicorn with the auth middleware and a slow fake model. The client read two events and closed the connection. The fake had given 2 of its 42 chunks, its stream was closed, and one log line said `client_disconnected`.
+- **Files changed:** `api.py`, `request_log.py`, `tests/test_chat_stream.py` (new), `README.md`.
+- **Concept to learn:** *Async generators and cancellation.* A streamed response is a generator the server pulls from. If the client leaves, the server stops pulling and closes the generator, so cleanup belongs in `finally`, and work that must finish during a cancellation needs a shield. Search: "python async generator aclose finally", "anyio CancelScope shield".
 
 ## Frontend
 
