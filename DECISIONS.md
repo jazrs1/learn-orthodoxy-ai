@@ -94,6 +94,8 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [CAL-005: Today strip at the top of the home page, linking the date to the calendar and the saint to our saints index](#cal-005-today-strip-at-the-top-of-the-home-page-linking-the-date-to-the-calendar-and-the-saint-to-our-saints-index)
   - [CAL-006: /calendar — one server-rendered month at a time, a keyboard grid, and a detail panel with saint links](#cal-006-calendar--one-server-rendered-month-at-a-time-a-keyboard-grid-and-a-detail-panel-with-saint-links)
   - [CAL-007: Verification of the calendar feature](#cal-007-verification-of-the-calendar-feature)
+- [Ingestion](#ingestion)
+  - [ING-001: Re-ingestion design (Phase 5 Step 0) — PyMuPDF for English, pypdf + NFKC for Arabic, structure-aware units, v2 alongside v1](#ing-001-re-ingestion-design-phase-5-step-0--pymupdf-for-english-pypdf--nfkc-for-arabic-structure-aware-units-v2-alongside-v1)
 - [Open questions](#open-questions)
 
 ---
@@ -1539,6 +1541,38 @@ In summary:
   - English month spellings;
   - the 21 hand-picked saint links.
 - **Not done here:** the Katameros permission reply (pending), and moving the credits and contact pages to `PageDrawer`.
+
+## Ingestion
+
+### ING-001: Re-ingestion design (Phase 5 Step 0) — PyMuPDF for English, pypdf + NFKC for Arabic, structure-aware units, v2 alongside v1
+- **Date / Part:** 2026-09-22, Phase 5 Step 0 (branch `phase-5-ingest`). **Proposal, awaiting approval.** The full design is `INGEST_PLAN.md`.
+- **Audit ref:** A1, C1–C8, C33, S9; RET-001/RET-007/RET-009 revisits; UI-006 limit 1; open questions 9 and 22.
+- **Context:** v1 stores one pypdf page per chunk: intra-word splits, running headers and footnotes in the text, Arabic stored as presentation forms, and no section, question or saint metadata. Retrieval, citations, the runtime saint index, the eval and the calendar's saint links all depend on that shape.
+- **Evidence gathered** (local only, 0 OpenAI calls; three extractors on 20 sample pages, Arabic repeated on 79 random pages):
+  - **English:** pypdf splits 1–6 words on 11 of 14 pages ("sufferin g", "fath er", "co nfessed"). PyMuPDF and pdfplumber split none, and fix all 7 artefacts found in the v1 store. PyMuPDF is ~10× faster than pypdf and ~15× faster than pdfplumber, and exposes font, size and position per line. That is enough to strip running headers (top 5 %, 10–11 pt), page numbers and footnotes (10 pt, numbered, bottom), and to find saint entry headings (14 pt bold) and sub-headings (12 pt bold ending ":").
+  - **Arabic:** pdfplumber returns visual (reversed) order. PyMuPDF returns base letters in logical order but reverses every lam-alef ligature ("ال تريد", "ألنها"; repairable from the zero-width alef glyph). It also misplaces punctuation, and it **drops letters** in some spans: after repair it still disagrees with pypdf on > 5 % of words on 17/39 catechism and 10/40 saints pages. pypdf + NFKC is complete, keeps logical order and ligatures correct, and only needs Persian ی/ھ folded to ي/ه and its word-per-line output joined.
+  - **Structure available:**
+    - catechism bookmarks index every question (English vol. 1 Q1–877, vol. 2 Q878–1452; Arabic Q1–1452);
+    - the Encyclopedia's alphabetical index pairs 1,598 English entry headings with their Arabic names;
+    - the Arabic dictionary marks entries with ✞ (2,149).
+  - **Size and pages:** the corpus is ≈ 2.5 M English + 4.6 M Arabic cl100k tokens; cl100k spends 2.9× more tokens per Arabic character. Catechism printed page = PDF index − 10.
+- **Proposed decision** (details and the nine decision points D1–D9 are in `INGEST_PLAN.md` §0):
+  - PyMuPDF for English (AGPL; offline ingestion only, never imported by the API; pdfplumber is the MIT fallback);
+  - pypdf + NFKC + folding for Arabic, with PyMuPDF used only to locate page numbers and Latin footnotes;
+  - one unit per catechism question and per saint entry (split by sub-heading) or web section;
+  - 300–600-token chunks on sentence boundaries with in-unit overlap across pages, and the same word budget for Arabic;
+  - a contextual header on every chunk;
+  - a flat, versioned metadata schema with page ranges and reserved scripture-reference fields;
+  - an ingest-time bilingual saints index that keeps every v1 name as an alias;
+  - `CORPUS_VERSION` selecting a separate Chroma directory and `_v2` collection names;
+  - a one-off Railway build instead of boot ingestion, with verify-or-exit at startup;
+  - page-range-aware recall compared at equal context budget;
+  - one source per cited passage;
+  - a quota-safe embedder that stops on `insufficient_quota`/401/403.
+- **Estimated OpenAI cost for Phase 5:** ≈ $0.17 per v2 embedding build; ≈ $1 per coverage run on tune+holdout; ≈ $5.5–6.5 in total.
+- **Files changed:** `INGEST_PLAN.md` (new), `DECISIONS.md`.
+- **Concept to learn:** *Structure-aware chunking.* Retrieval quality is bounded by the unit you index: a chunk should be one coherent answer (a Q&A, a saint's entry section), carry enough context to stand alone (a header naming the question or saint), and keep its provenance (page range, section) so it can be cited precisely. Search: "semantic chunking RAG", "contextual chunk headers", "parent-child chunking".
+- **Revisit if:** you choose differently on D1–D9, or Step 2's counts (questions or entries found vs expected) show the structure rules miss more than a few percent.
 
 ---
 
