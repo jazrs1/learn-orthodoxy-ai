@@ -88,3 +88,17 @@ and of the sourced answer (English only), and writes screenshots plus `saint-men
 ```sh
 CHROME_BIN=/path/to/chrome node saint-menu.mjs ../ui-audit/saint-menu
 ```
+
+## Home page declutter (UI-017 to UI-022)
+
+`declutter.mjs` captures the home page in English and Arabic at 1440 and 390 px (first screen, full
+page, past-chats drawer open) and the chat page at 1440, with every `/api/*` call mocked and past
+chats that repeat a title, and runs axe on each state. Screenshots and `declutter-report.json` go
+to `ui-audit/declutter/<before|after>/` (not committed); `lighthouse.mjs` with `PAGES=home` adds
+the performance numbers.
+
+```sh
+CHROME_BIN=/path/to/chrome node declutter.mjs ../ui-audit/declutter/after
+PAGES=home CHROME_BIN=/path/to/chrome node lighthouse.mjs ../ui-audit/declutter/after 3
+```
+
