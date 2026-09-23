@@ -66,3 +66,14 @@ node compare.mjs ../ui-audit/before-traditional ../ui-audit/after-traditional
 BASE_URL=http://localhost:3217 CHROME_BIN=/path/to/chrome node calendar.mjs ../calendar
 PAGES=calendar,home BASE_URL=http://localhost:3217 CHROME_BIN=/path/to/chrome node lighthouse.mjs ../calendar 2
 ```
+
+## Arabic citations right-to-left (ING-007)
+
+`rtl-sources.mjs` renders a real v2 Arabic answer and its sources (`rtl-sources.fixture.json`) with every
+`/api/*` call mocked, and writes screenshots plus `rtl-report.json`: text direction of each source and,
+for every page range, whether the first number is laid out before the second (it must be; without an
+LTR isolate Chrome shows "118–119" as "119–118" in RTL text).
+
+```sh
+CHROME_BIN=/path/to/chrome node rtl-sources.mjs ../ui-audit/rtl
+```

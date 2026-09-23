@@ -20,7 +20,9 @@ describe("answer sources", () => {
         chunk_id: "v2:sts1:saint:abanoub-el-nehissy:c2" },
     ]);
     assert.equal(sourceDetails(source, "en"), "Vol. 1 · pp. 33–35");
-    assert.equal(sourceDetails(source, "ar"), "المجلد 1 · ص 33–35");
+    // the range is isolated left-to-right so RTL layout does not show it as "35–33"
+    assert.equal(sourceDetails(source, "ar"), `المجلد 1 · ص ${String.fromCharCode(0x2066)}33–35${String.fromCharCode(0x2069)}`);
+    assert.equal(sourceSummary(source, "ar").split("، ").length, 3);
     assert.equal(sourceSummary(source, "en"), "St. Abanoub El-Nehissy, Encyclopedia of the Saints and Fathers of the Church, Vol. 1 · pp. 33–35");
   });
 

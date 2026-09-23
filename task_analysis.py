@@ -42,7 +42,7 @@ ANALYSIS_SYSTEM_PROMPT = """You prepare a user's message for a search over two C
 "output_format": the presentation the user asked for, one of "prose", "table", "list", "comparison", "summary", "study_guide", "other". Use "prose" when none was requested. A quiz or set of review questions is "study_guide".
 "broad": true if a good answer needs many separate entries or passages (listing saints by some criterion, all the fasts, differences between two churches, a study guide on a whole topic); false for a question about one person, term or teaching.
 "sub_queries": if broad is true, 2 to 4 short search queries that together cover the request, each about one aspect the user actually named or implied; do not introduce new topics. When the request compares the Coptic Church with another church or tradition, make one sub-query just that church's name as a book would write it (e.g. "Roman Catholic Church"). Otherwise [].
-"saint_name_filter": only when the user wants SEVERAL saints chosen by their name: {"starts_with": "<letters>"} (e.g. saints whose names start with G) or {"contains": "<name>"} (e.g. all the saints named Gregory). null for a question about one saint, and null otherwise.
+"saint_name_filter": only when the user wants SEVERAL saints chosen by their name, with exactly one key: {"contains": "<name>"} for saints named or called a name ("all the saints named Gregory" -> {"contains": "Gregory"}; "القديسون الذين يحملون اسم جرجس" -> {"contains": "جرجس"}; never the name's first letter), or {"starts_with": "<letters>"} only when the user asks for names that start or begin with some letters ("saints whose names start with G" -> {"starts_with": "G"}). null for a question about one saint, and null otherwise.
 "named_subjects": the specific saints, people, doctrines, councils, feasts, rites, objects or technical terms the message asks about, written as the user wrote them. Always fill this when the message names such a thing, including doctrines of other churches and things outside religion. Examples: "Who was St. Anthony of Padua?" -> ["St. Anthony of Padua"]; "the Catholic doctrine of papal infallibility" -> ["papal infallibility"]; "the Protestant principle of sola scriptura" -> ["sola scriptura"]; "a table of Catholic teachings on purgatory" -> ["purgatory"]; "why did the Coptic Church reject the filioque" -> ["filioque"]; "teaching on cryptocurrency" -> ["cryptocurrency"]; "the Council of Nicaea" -> ["Council of Nicaea"]. Leave out presentation words, broad categories ("saints", "differences", "teachings", "fasts"), and the churches or traditions themselves ("Catholic Church", "Protestants", "Coptic Orthodox Church"): "differences between Catholicism and the Coptic Church" -> []; "saints whose names start with G" -> []. Use [] if there are none.
 "in_scope": false only if the message is clearly not about Christianity: not about God, Scripture, the Church (any Christian church), prayer, worship, sacraments, saints, Church Fathers, Church history, Christian life and ethics, or anything the Coptic catechism itself discusses (calendars and feasts, church buildings and icons, hymns and music, the history of Egypt and the Copts). Examples of false: sports results, geography, recipes, technology, novels, another religion's own teachings. Otherwise true; when unsure, true."""
 
@@ -67,6 +67,32 @@ class TaskAnalysis:
         data = asdict(self)
         data["retrieval_query"] = self.retrieval_query[:MAX_QUERY_CHARS]
         return data
+
+
+# "saints named Gregory", "saints called George", "القديسين الذين يحملون اسم جرجس", "القديسين باسم مينا"
+NAMED_CUE = re.compile(
+    r"\b(?:named|called)\s+(?:st\.?\s+|saint\s+|abba\s+|anba\s+)?([A-Za-z][\w'’-]+)"
+    r"|(?:يحملون\s+اسم|يحمل\s+اسم|اسمهم|باسم|المسم[ىيو]ن?|الذين\s+يدعون|ي[ُ]?دعون)\s+([ء-ي]+)",
+    re.IGNORECASE,
+)
+# "names that start with G", "whose names begin with Ab", "تبدأ أسماؤهم بحرف ج"
+STARTS_WITH_CUE = re.compile(r"\b(?:start|starts|starting|begin|begins|beginning)\s+with\b|تبدأ|يبدأ|بحرف", re.IGNORECASE)
+STARTS_WITH_VALUE = re.compile(
+    r"\b(?:start|starts|starting|begin|begins|beginning)\s+with\s+(?:the\s+letter\s+|letters?\s+)?[\"'“‘]?([A-Za-z]{1,4})\b"
+    r"|(?:تبدأ|يبدأ)\s+(?:أسماؤهم\s+|اسمه\s+|أسماؤهن\s+)?(?:بحرف\s+|بالحرف\s+|ب)[\"'“«]?\s*([ء-ي]{1,3})(?![ء-ي])",
+    re.IGNORECASE,
+)
+
+
+def name_filter_from_question(question: str) -> Optional[Dict[str, str]]:
+    """A saint-list filter read straight from the user's words, when they are unambiguous."""
+    starts = STARTS_WITH_VALUE.search(question or "")
+    if starts:
+        return {"starts_with": (starts.group(1) or starts.group(2)).strip()}
+    named = NAMED_CUE.search(question or "")
+    if named and re.search(r"(?i)\bsaints\b|\blist\b|القديسين|القديسون|القديسات|اذكر|قائمة", question or ""):
+        return {"contains": (named.group(1) or named.group(2)).strip()}
+    return None
 
 
 def _clean_text(value: Any, limit: int) -> str:
@@ -96,11 +122,17 @@ def _parse(data: Dict[str, Any], question: str) -> TaskAnalysis:
     name_filter = None
     raw_filter = data.get("saint_name_filter")
     if isinstance(raw_filter, dict):
-        for key in ("starts_with", "contains"):
+        # "contains" first: given both keys for "saints named Gregory", the model's "starts_with": "G"
+        # listed every G saint and, with a 30-entry cap, missed the Gregorys (ING-007).
+        order = ("starts_with", "contains") if STARTS_WITH_CUE.search(question) else ("contains", "starts_with")
+        for key in order:
             value = _clean_text(raw_filter.get(key), 40)
             if value:
                 name_filter = {key: value}
                 break
+    explicit = name_filter_from_question(question)
+    if explicit:
+        name_filter = explicit  # the user's own words beat the model's reading
     subjects = []
     if isinstance(data.get("named_subjects"), list):
         subjects = [_clean_text(item, 80) for item in data["named_subjects"] if _clean_text(item, 80)][:MAX_SUBJECTS]

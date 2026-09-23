@@ -101,6 +101,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [ING-004: v2 embedded locally into chroma_db/v2; v1 byte-identical before and after](#ing-004-v2-embedded-locally-into-chroma_dbv2-v1-byte-identical-before-and-after)
   - [ING-005: Retrieval on v2 behind CORPUS_VERSION; one source per cited passage; ingest-time saints index; v1 output proven identical](#ing-005-retrieval-on-v2-behind-corpus_version-one-source-per-cited-passage-ingest-time-saints-index-v1-output-proven-identical)
   - [ING-006: v1 vs v2 evaluation — v2 raises Arabic coverage by 13 points, English is unchanged; v2 top-k 16, threshold stays 1.25](#ing-006-v1-vs-v2-evaluation--v2-raises-arabic-coverage-by-13-points-english-is-unchanged-v2-top-k-16-threshold-stays-125)
+  - [ING-007: "Saints named X" lists by name, Arabic saint lists on v2, top-k 16 kept, Arabic page ranges read in order](#ing-007-saints-named-x-lists-by-name-arabic-saint-lists-on-v2-top-k-16-kept-arabic-page-ranges-read-in-order)
 - [Open questions](#open-questions)
 
 ---
@@ -1879,6 +1880,43 @@ In summary:
 - **Tests:** backend 116 (4 new eval-helper tests).
 - **Files:** `eval/run_eval.py`, `eval/scoring.py`, `eval/spend.py`, `eval/retrieval_sweep.py`, `eval/budget_recall.py`, `eval/faithfulness_subset.py`, `eval/phase5_compare.py`, `eval/questions.jsonl`, `eval/results/*` (runs, sweeps, `phase5-compare.txt`, ledger, analysis cache), `api.py` (`MAX_TOP_K`/`TOP_K_V2`).
 - **Revisit if:** the saint-list filter is fixed (re-run TSK-11 and PRD-01); production moves to k=12 for cost; or more Arabic negatives are added (then an Arabic threshold may be viable on v2).
+
+
+### ING-007: "Saints named X" lists by name, Arabic saint lists on v2, top-k 16 kept, Arabic page ranges read in order
+- **Date / Part:** 2026-09-23, Phase 5, before Step 6. **OpenAI: retrieve-only checks, $0.0011** (pre-approved up to $0.05; ledger `eval/results/spend-ing007.json`).
+- **1. "Saints named X" (the ING-006 regression):**
+  - **Cause:** for "List the saints named Gregory" the analysis produced `starts_with: "G"`. Given both keys, the parser took `starts_with` first. The 30-entry list of G saints then ran out before the Gregorys (v2's index has 60 G saints).
+  - **Fix (`task_analysis.py`):**
+    - `name_filter_from_question` reads the user's own words and wins over the model. "named/called X" gives `contains`; "start/begin with X" gives `starts_with`. Arabic forms are covered: يحملون اسم، باسم، تبدأ أسماؤهم بحرف.
+    - When the model returns both keys, `contains` is preferred unless the question asks for a starting letter.
+    - The prompt now says: exactly one key, and "named X" is never its first letter.
+  - This is shared code, so v1 lists are fixed too.
+- **Arabic saint lists (v2):** the Arabic path had no name-list feature. `_arabic_saint_list_entries` selects dictionary entries by name.
+  - A `contains` match is a whole word of the heading, the index name or an alias, allowing a leading ا/ال/مار/و: "إغريغوريوس" is "غريغوريوس".
+  - A `starts_with` match compares the first letters after titles are dropped.
+  - Each entry's opening becomes context, with an Arabic note that the list may be incomplete, as in English.
+  - While testing, 18 Arabic entries turned out hidden: their record's *English* side is a cross-reference ("AGREGORIUS … Cf. Gregory of Nyssa"), and the Arabic records skipped every such record. They are included now (2,087 → 2,105 Arabic names).
+- **Retrieve-only checks (v2):**
+
+  | request | filter | entries |
+  |---|---|---|
+  | List the saints named Gregory | contains Gregory | **6** (Nyssa, Spoleto, the Armenian, Nazianzus, the Monk, the Wonder-Maker) |
+  | saints named George | contains George | 5 |
+  | saints whose names start with G | starts with G | 60 (30 shown) |
+  | اذكر القديسين الذين يحملون اسم غريغوريوس | contains | **6** |
+  | اذكر القديسين الذين يحملون اسم جرجس | contains | 10 |
+  | اذكر القديسين الذين تبدأ أسماؤهم بحرف ج | starts with ج | 81 (30 shown) |
+
+  On v1 the three English requests give 6, 3 and 42 (30 shown).
+- **2. Top-k:** production stays at **16** (`TOP_K_V2`, the measured configuration in ING-006). **Future cost optimisation:** k=12 had the same tune recall (0.91) with ~20 % less context. It would cut the Arabic generation cost most (+42 % at k=16). Re-measure coverage before switching.
+- **3. Arabic citations right-to-left:** a real v2 Arabic answer (AR-14) was rendered in Chrome with the production build at 1440 and 390 px (`ui-audit/tools/rtl-sources.mjs`).
+  - The document and every source are RTL (`dir=rtl`, bidi-isolated).
+  - **But page ranges were laid out reversed:** "ص 118–119" displayed as "119–118". A hyphen does the same.
+  - `lib/sources.ts` now wraps Arabic page ranges in an LTR isolate (U+2066…U+2069). Measured on screen, the first number is now left of the second in all 10 ranges.
+  - The accessible label now joins with the Arabic comma: "المصدر 1: أثناسيوس الرسولي البابا العشرون، قاموس آباء الكنيسة وقديسيها، ص 118–119".
+  - The "scrambled" label in the terminal was only the terminal's bidi handling. The stored text is in logical order.
+- **Tests:** backend 129 (13 new filter tests); frontend 119 (the RTL isolate and Arabic comma asserted).
+- **Files:** `task_analysis.py`, `api.py`, `orthodox-site/lib/sources.ts`, `lib/sources.test.ts`, `tests/test_task_analysis_filters.py`, `ui-audit/tools/rtl-sources.mjs` (+ fixture, README).
 
 ---
 

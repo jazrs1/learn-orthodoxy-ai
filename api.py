@@ -1301,6 +1301,21 @@ def _saint_list_context(records: List[Dict[str, Any]]) -> Tuple[List[str], List[
     return docs, metas
 
 
+def _saint_list_excerpt(body: str) -> str:
+    body = str(body or "")
+    return body[:SAINT_LIST_EXCERPT_CHARS].rsplit(" ", 1)[0] + (" …" if len(body) > SAINT_LIST_EXCERPT_CHARS else "")
+
+
+def _arabic_saint_list_note(name_filter: Dict[str, str], shown: int, total: int) -> str:
+    if "starts_with" in name_filter:
+        criterion = f"الأسماء التي تبدأ بـ «{name_filter['starts_with']}»"
+    else:
+        criterion = f"الأسماء التي تحتوي على «{name_filter['contains']}»"
+    note = f"المقاطع التالية هي مداخل القاموس التي طابقها فهرس القديسين حسب {criterion}: عُرض {shown}"
+    note += f" من {total}." if total > shown else "."
+    return note + " قل للقارئ إن القائمة قد لا تكون كاملة، وصف كل قديس من مقطعه فقط في جملة قصيرة."
+
+
 def _saint_list_note(name_filter: Dict[str, str], shown: int, total: int) -> str:
     if "starts_with" in name_filter:
         criterion = f"names starting with “{name_filter['starts_with']}”"
@@ -2758,7 +2773,9 @@ def _build_v2_arabic_saint_records() -> List[Dict[str, Any]]:
     global arabic_v2_saint_records
     if arabic_v2_saint_records or arabic_collection is None:
         return arabic_v2_saint_records
-    saints = [s for s in corpus_runtime.load_saints_index() if not s.get("see")]
+    # A record whose *English* entry is a pointer ("AGREGORIUS … Cf. Gregory of Nyssa") can still own a
+    # real Arabic entry; Arabic pointers have no chunks and drop out below.
+    saints = corpus_runtime.load_saints_index()
     entries = {s["id"]: next((e for e in s.get("entries", []) if e["lang"] == "ar"), None) for s in saints}
     chunks = _first_chunks(arabic_collection, [corpus_runtime.first_chunk_id(e) for e in entries.values() if e])
     records = []
@@ -2766,13 +2783,14 @@ def _build_v2_arabic_saint_records() -> List[Dict[str, Any]]:
         entry = entries[saint["id"]]
         if entry is None or corpus_runtime.first_chunk_id(entry) not in chunks:
             continue
-        _, metadata = chunks[corpus_runtime.first_chunk_id(entry)]
+        document, metadata = chunks[corpus_runtime.first_chunk_id(entry)]
         names = [corpus_runtime.arabic_display_name(saint), saint.get("name_ar", ""), *saint.get("aliases_ar", [])]
         records.append({
             "saint_id": saint["id"],
             "name": _normalize_arabic_display_text(corpus_runtime.arabic_display_name(saint)),
             "keys": {key for key in (_normalize_arabic_alias_key(n) for n in names if n) if key},
             "metadata": metadata,
+            "body": corpus_runtime.strip_header(document),
         })
     by_name: Dict[str, List[Dict[str, Any]]] = {}
     for record in records:
@@ -2789,6 +2807,37 @@ def _build_v2_arabic_saint_records() -> List[Dict[str, Any]]:
             record["name"] = f"{record['name'][:-1]}، مدخل {seen[record['name']]})"
     arabic_v2_saint_records = sorted(records, key=lambda record: record["name"])
     return arabic_v2_saint_records
+
+
+ARABIC_NAME_TITLES = {"القديس", "القديسه", "القديسة", "الانبا", "انبا", "البابا", "ابا", "الاب", "مار", "الشهيد", "الشهيده"}
+ARABIC_NAME_PREFIXES = {"ا", "ال", "مار", "و"}
+
+
+def _arabic_saint_list_entries(name_filter: Dict[str, str]) -> Tuple[List[Dict[str, Any]], int]:
+    """Arabic dictionary entries selected by name (v2): "contains" matches a whole word of the
+    heading, the index name or an alias ("جرجس", "غريغوريوس"); "starts_with" the first letters of the
+    name without its titles. The Arabic counterpart of `_saint_list_entries` (ING-007)."""
+    starts = _normalize_arabic_alias_key(name_filter.get("starts_with", ""))
+    contains = _normalize_arabic_alias_key(name_filter.get("contains", ""))
+    if not (_contains_arabic(starts) or _contains_arabic(contains)):
+        return [], 0
+    def names_word(word: str) -> bool:
+        # "إغريغوريوس" is "غريغوريوس" with a leading alef; "مارجرجس" is "جرجس" with its title.
+        return word == contains or (word.endswith(contains) and word[: len(word) - len(contains)] in ARABIC_NAME_PREFIXES)
+
+    matched = []
+    for record in _build_v2_arabic_saint_records():
+        keys = record["keys"]
+        if contains and " " in contains and not any(f" {contains} " in f" {key} " for key in keys):
+            continue
+        if contains and " " not in contains and not any(names_word(word) for key in keys for word in key.split()):
+            continue
+        if starts:
+            names = [" ".join(w for w in key.split() if w not in ARABIC_NAME_TITLES) for key in keys]
+            if not any(name.startswith(starts) for name in names):
+                continue
+        matched.append(record)
+    return matched[:SAINT_LIST_MAX_ENTRIES], len(matched)
 
 
 def _find_v2_arabic_saint_matches(query: str, limit: int = 12) -> List[Dict[str, Any]]:
@@ -3329,7 +3378,11 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             retrieval_top_k = min(16, max(top_k, 10))
             arabic_selected_saint = ""
             arabic_saint_id = ""
-            if mode == "saints":
+            arabic_list: List[Dict[str, Any]] = []
+            arabic_list_total = 0
+            if CORPUS_V2 and analysis.saint_name_filter:
+                arabic_list, arabic_list_total = _arabic_saint_list_entries(analysis.saint_name_filter)
+            if mode == "saints" and not arabic_list:
                 try:
                     if CORPUS_V2:
                         v2_matches = _find_v2_arabic_saint_matches(original_question, limit=1)
@@ -3352,18 +3405,28 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
             )
             trace.lap("prepare")
 
-            docs, metas, distances = _retrieve_documents(
-                retrieval_queries,
-                top_k=retrieval_top_k,
-                target_collection=arabic_collection,
-                metadata_filter=metadata_filter,
-            )
+            arabic_list_note = None
+            if arabic_list:
+                # A list of saints chosen by name comes from the index, like the English saint list.
+                docs = [r["name"] + "\n" + _saint_list_excerpt(r.get("body", "")) for r in arabic_list]
+                metas = [r["metadata"] for r in arabic_list]
+                distances, lexical_docs, lexical_metas = [], [], []
+                arabic_list_note = _arabic_saint_list_note(analysis.saint_name_filter, len(arabic_list), arabic_list_total)
+                trace.set(retrieval_plan="saint_list",
+                          saint_list={"filter": analysis.saint_name_filter, "shown": len(arabic_list), "matched": arabic_list_total})
+            else:
+                docs, metas, distances = _retrieve_documents(
+                    retrieval_queries,
+                    top_k=retrieval_top_k,
+                    target_collection=arabic_collection,
+                    metadata_filter=metadata_filter,
+                )
+                lexical_docs, lexical_metas = _retrieve_arabic_lexical_documents(
+                    retrieval_question,
+                    top_k=retrieval_top_k,
+                    metadata_filter=metadata_filter,
+                )
             best_distance = min(distances) if distances else None
-            lexical_docs, lexical_metas = _retrieve_arabic_lexical_documents(
-                retrieval_question,
-                top_k=retrieval_top_k,
-                metadata_filter=metadata_filter,
-            )
             if lexical_docs:
                 docs, metas = _merge_document_batches(
                     lexical_docs,
@@ -3415,9 +3478,9 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
                 }
 
             context, numbered_sources = _build_numbered_context(docs, metas, normalize=_normalize_arabic_context_text)
-            entity_result = _check_named_subjects(analysis, docs, "ar")
+            entity_result = _check_named_subjects(analysis, docs, "ar") if not arabic_list else None
             note = "\n".join(
-                part for part in (_entity_note(entity_result, "ar"), _format_note(analysis, "ar")) if part
+                part for part in (arabic_list_note, _entity_note(entity_result, "ar"), _format_note(analysis, "ar")) if part
             ) or None
             messages = _build_chat_messages(ARABIC_SYSTEM_PROMPT, history, original_question, context, "ar", note=note)
             trace.set(

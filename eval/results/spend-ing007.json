@@ -1,0 +1,28 @@
+{
+ "total_usd": 0.00114,
+ "max_spend": 0.05,
+ "entries": [
+  {
+   "label": "ING-007 list check v2",
+   "usd": 0.00114,
+   "by_model": {
+    "gpt-4o-mini:analysis": 0.00114
+   }
+  },
+  {
+   "label": "ING-007 list check v1",
+   "usd": 0.0,
+   "by_model": {}
+  },
+  {
+   "label": "ING-007 list check v2",
+   "usd": 0.0,
+   "by_model": {}
+  },
+  {
+   "label": "ING-007 list check v2",
+   "usd": 0.0,
+   "by_model": {}
+  }
+ ]
+}

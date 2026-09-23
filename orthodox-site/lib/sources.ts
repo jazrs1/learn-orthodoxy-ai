@@ -15,6 +15,9 @@ const BOOKS: Record<string, { title: string; volume?: number }> = {
   "full saints arabic.pdf": { title: "قاموس آباء الكنيسة وقديسيها" },
 };
 
+const LTR_ISOLATE = String.fromCharCode(0x2066);
+const POP_ISOLATE = String.fromCharCode(0x2069);
+
 export type DisplaySource = {
   /** The passage number the answer cites as [n]. */
   n: number;
@@ -86,7 +89,9 @@ export function sourceDetails(source: DisplaySource, language: Language) {
   if (source.volume) parts.push(language === "ar" ? `المجلد ${source.volume}` : `Vol. ${source.volume}`);
   if (source.pages) {
     const marker = /[–-]/.test(source.pages) ? "pp." : "p.";
-    parts.push(language === "ar" ? `ص ${source.pages}` : `${marker} ${source.pages}`);
+    // In right-to-left text a range such as "118–119" is laid out as "119–118"; an LTR isolate keeps
+    // it in reading order (checked in Chrome, ING-007).
+    parts.push(language === "ar" ? `ص ${LTR_ISOLATE}${source.pages}${POP_ISOLATE}` : `${marker} ${source.pages}`);
   } else if (source.page) {
     parts.push(language === "ar" ? `ص ${source.page}` : `p. ${source.page}`);
   }
@@ -97,7 +102,7 @@ export function sourceDetails(source: DisplaySource, language: Language) {
 /** One-line description used for the citation marker's accessible name and tooltip. */
 export function sourceSummary(source: DisplaySource, language: Language) {
   const details = sourceDetails(source, language);
-  return [source.entry, source.title, details].filter(Boolean).join(", ");
+  return [source.entry, source.title, details].filter(Boolean).join(language === "ar" ? "، " : ", ");
 }
 
 export function sourceDomId(answerId: string, n: number) {
