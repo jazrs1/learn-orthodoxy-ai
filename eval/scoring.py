@@ -247,7 +247,8 @@ def faithfulness_judge(client: Any, model: str, answer: str, passages: List[Dict
     valid_numbers = {int(p["n"]) for p in passages}
     context = "\n\n".join(f"[{p['n']}] {p.get('label', '')}\n{p.get('text', '')}" for p in passages)
     user = f"SOURCE PASSAGES:\n\n{context}\n\nSYSTEM ANSWER:\n{answer}\n"
-    data, error = _chat_json(client, model, FAITHFULNESS_SYSTEM, user, max_tokens=2500)
+    # 5000: long saint answers yield 20+ claims; at 2500 the JSON was cut off (ING-006).
+    data, error = _chat_json(client, model, FAITHFULNESS_SYSTEM, user, max_tokens=5000)
     if data is None:
         return {"error": error, "claims": [], "n_claims": 0}
     claims_out: List[Dict[str, Any]] = []

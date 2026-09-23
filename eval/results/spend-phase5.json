@@ -1,0 +1,90 @@
+{
+ "total_usd": 4.07615,
+ "max_spend": 6.0,
+ "entries": [
+  {
+   "label": "20260922-233119.json smoke v2 retrieve-only",
+   "usd": 0.00071,
+   "by_model": {
+    "gpt-4o-mini:analysis": 0.00071,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  },
+  {
+   "label": "retrieval sweep v1 ks=[8]",
+   "usd": 0.01712,
+   "by_model": {
+    "gpt-4o-mini:analysis": 0.01707,
+    "text-embedding-3-small:embedding": 5e-05
+   }
+  },
+  {
+   "label": "retrieval sweep v2 ks=[6, 8, 10, 12, 14, 16]",
+   "usd": 0.0003,
+   "by_model": {
+    "text-embedding-3-small:embedding": 0.0003
+   }
+  },
+  {
+   "label": "retrieval sweep v2 ks=[14, 16]",
+   "usd": 0.0001,
+   "by_model": {
+    "text-embedding-3-small:embedding": 0.0001
+   }
+  },
+  {
+   "label": "20260922-235126.json phase5 step5 coverage v1 run1",
+   "usd": 0.76305,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.45666,
+    "gpt-4.1:judge": 0.28244,
+    "gpt-4o-mini:analysis": 0.02385,
+    "text-embedding-3-small:embedding": 0.0001
+   }
+  },
+  {
+   "label": "20260923-000307.json phase5 step5 coverage v2 run1",
+   "usd": 0.82542,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.51155,
+    "gpt-4.1:judge": 0.28989,
+    "gpt-4o-mini:analysis": 0.02387,
+    "text-embedding-3-small:embedding": 0.00011
+   }
+  },
+  {
+   "label": "20260923-001435.json phase5 step5 coverage v1 run2",
+   "usd": 0.76417,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.45399,
+    "gpt-4.1:judge": 0.28625,
+    "gpt-4o-mini:analysis": 0.02383,
+    "text-embedding-3-small:embedding": 0.0001
+   }
+  },
+  {
+   "label": "20260923-002553.json phase5 step5 coverage v2 run2",
+   "usd": 0.82289,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.51093,
+    "gpt-4.1:judge": 0.28794,
+    "gpt-4o-mini:analysis": 0.0239,
+    "text-embedding-3-small:embedding": 0.00011
+   }
+  },
+  {
+   "label": "20260923-003433.json faithfulness subset",
+   "usd": 0.809,
+   "by_model": {
+    "gpt-4.1:judge": 0.809
+   }
+  },
+  {
+   "label": "faithfulness re-judge SNT-09 SNT-15 (v2) at max_tokens 5000",
+   "usd": 0.07339,
+   "by_model": {
+    "gpt-4.1:judge": 0.07339
+   }
+  }
+ ]
+}

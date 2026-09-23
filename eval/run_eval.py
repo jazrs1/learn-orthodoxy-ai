@@ -63,8 +63,14 @@ except Exception:  # pragma: no cover
     pass
 
 import scoring  # noqa: E402
+import spend  # noqa: E402
 
 EVAL_DIR = Path(__file__).resolve().parent
+V2_CHUNKS = REPO_ROOT / "build" / "corpus" / "v2" / "chunks.jsonl"
+DEFAULT_LEDGER = EVAL_DIR / "results" / "spend-phase5.json"
+# A first guess at one answerable question's cost (generation + coverage judge) before the run
+# has measured its own; used only to decide whether the next question still fits under the ceiling.
+INITIAL_QUESTION_COST = 0.03
 DEFAULT_QUESTIONS = EVAL_DIR / "questions.jsonl"
 DEFAULT_RESULTS_DIR = EVAL_DIR / "results"
 DEFAULT_JUDGE_MODEL = "gpt-4.1"
@@ -149,31 +155,75 @@ def parse_chunk_id(chunk_id: str) -> Optional[Tuple[str, int]]:
     return match.group("pdf"), int(match.group("page"))
 
 
-def pages_from_ids(chunk_ids: List[str]) -> Set[Tuple[str, int]]:
-    pages: Set[Tuple[str, int]] = set()
+Span = Tuple[str, int, int]  # (pdf, first PDF page, last PDF page)
+_V2_SPANS: Dict[str, Span] = {}
+
+
+def _v2_spans() -> Dict[str, Span]:
+    """v2 ids carry no page (INGEST_PLAN.md §10.1): the page range of every v2 chunk, read once
+    from the local build output. Debug hits also carry it (see `remember_hit_spans`)."""
+    if not _V2_SPANS and V2_CHUNKS.exists():
+        with V2_CHUNKS.open(encoding="utf-8") as handle:
+            for line in handle:
+                meta = json.loads(line)["metadata"]
+                _V2_SPANS[meta["chunk_id"]] = (meta.get("pdf") or meta.get("url"), int(meta["page_start"]), int(meta["page_end"]))
+    return _V2_SPANS
+
+
+def remember_hit_spans(debug: Dict[str, Any]) -> None:
+    for query in debug.get("retrieval") or []:
+        for hit in query.get("hits", []):
+            if hit.get("page_start") is not None and hit.get("id"):
+                _v2_spans().setdefault(hit["id"], (hit.get("pdf"), int(hit["page_start"]), int(hit["page_end"])))
+
+
+def spans_from_ids(chunk_ids: List[str]) -> List[Span]:
+    spans: List[Span] = []
     for chunk_id in chunk_ids or []:
         parsed = parse_chunk_id(chunk_id)
         if parsed:
-            pages.add(parsed)
-    return pages
+            spans.append((parsed[0], parsed[1], parsed[1]))
+        elif chunk_id in _v2_spans():
+            spans.append(_v2_spans()[chunk_id])
+    return spans
 
 
-def pages_from_sources(sources: List[Dict[str, Any]]) -> Set[Tuple[str, int]]:
-    pages: Set[Tuple[str, int]] = set()
+def pages_from_ids(chunk_ids: List[str]) -> List[Span]:  # kept for callers; now page ranges
+    return spans_from_ids(chunk_ids)
+
+
+def pages_from_sources(sources: List[Dict[str, Any]]) -> List[Span]:
+    spans: List[Span] = []
     for source in sources or []:
         if source.get("pdf") and source.get("page") is not None:
-            pages.add((source["pdf"], int(source["page"])))
-    return pages
+            start = int(source["page"])
+            spans.append((source["pdf"], start, int(source.get("page_end") or start)))
+    return spans
 
 
-def recall(expected: Set[Tuple[str, int]], found: Set[Tuple[str, int]], tolerance: int = 0) -> float:
+def recall(expected: Set[Tuple[str, int]], found: List[Span], tolerance: int = 0) -> float:
+    """Share of expected pages covered by a retrieved chunk: v1 chunks are single pages, v2 chunks
+    cover page ranges (range-aware recall, INGEST_PLAN.md §10.1; identical to the old definition
+    for v1)."""
     if not expected:
         return float("nan")
     hits = 0
     for pdf, page in expected:
-        if any(fpdf == pdf and abs(fpage - page) <= tolerance for fpdf, fpage in found):
+        if any(fpdf == pdf and start - tolerance <= page <= end + tolerance for fpdf, start, end in found):
             hits += 1
     return hits / len(expected)
+
+
+_ENCODING = None
+
+
+def count_tokens(text: str) -> int:
+    global _ENCODING
+    if _ENCODING is None:
+        import tiktoken
+
+        _ENCODING = tiktoken.get_encoding("cl100k_base")
+    return len(_ENCODING.encode(text or ""))
 
 
 def classify_outcome(answer: str, sources: List[Dict[str, Any]], options: List[str], debug: Dict[str, Any] | None) -> str:
@@ -237,7 +287,8 @@ def load_passages_from_chroma(chunk_ids: List[str]) -> List[Dict[str, Any]]:
 # backend
 # ----------------------------------------------------------------------------
 
-def call_backend(base_url: str, api_key: str, item: Dict[str, Any], top_k: int, timeout: float) -> Tuple[Dict[str, Any], float, int]:
+def call_backend(base_url: str, api_key: str, item: Dict[str, Any], top_k: int, timeout: float,
+                 retrieve_only: bool = False) -> Tuple[Dict[str, Any], float, int]:
     payload = {
         "question": item["question"],
         "history": item.get("history", []) or [],
@@ -246,6 +297,8 @@ def call_backend(base_url: str, api_key: str, item: Dict[str, Any], top_k: int, 
         "language": item.get("language", "en"),
         "debug": True,
     }
+    if retrieve_only:
+        payload["retrieve_only"] = True
     headers = {"Content-Type": "application/json", "X-Internal-Key": api_key, "X-Client-IP": "127.0.0.1"}
     last_error: Optional[Exception] = None
     for attempt in range(2):
@@ -253,8 +306,10 @@ def call_backend(base_url: str, api_key: str, item: Dict[str, Any], top_k: int, 
         try:
             response = requests.post(f"{base_url}/chat", json=payload, headers=headers, timeout=timeout)
             elapsed = time.monotonic() - started
-            if response.status_code == 429:
-                retry_after = int(response.headers.get("Retry-After", "5"))
+            if response.status_code in (429, 500, 503) and attempt == 0:
+                # 503 can be a transient OpenAI blip or insufficient_quota (the backend maps both to
+                # "busy"); retry once, and let the caller stop the run if it persists.
+                retry_after = int(response.headers.get("Retry-After", "10"))
                 time.sleep(min(retry_after, 60))
                 continue
             try:
@@ -514,7 +569,9 @@ def run_live(args: argparse.Namespace) -> int:
         print("No questions selected.", file=sys.stderr)
         return 2
 
-    client = None if args.no_judge else make_judge_client()
+    ledger = spend.SpendLedger(Path(args.spend_ledger) if args.spend_ledger else None, args.max_spend)
+    raw_client = None if (args.no_judge or args.retrieve_only) else make_judge_client()
+    client = spend.MeteredClient(raw_client, ledger) if raw_client is not None else None
 
     try:
         health = requests.get(f"{base_url}/health", timeout=10).json()
@@ -523,18 +580,40 @@ def run_live(args: argparse.Namespace) -> int:
         return 2
     print(f"Backend {base_url}: {health}")
     judge_mode = "off" if client is None else (f"{args.judge_model} (coverage only)" if args.coverage_only else args.judge_model)
-    print(f"Questions: {len(items)}   split: {args.split or 'all'}   judge: {judge_mode}   k={args.k}\n")
+    print(f"Questions: {len(items)}   split: {args.split or 'all'}   judge: {judge_mode}   k={args.k}   "
+          f"corpus: {args.corpus_label or health.get('corpus_version')}   retrieve-only: {args.retrieve_only}")
+    if args.max_spend is not None:
+        print(f"Spend ledger {args.spend_ledger}: ${ledger.prior:.4f} spent so far, ceiling ${args.max_spend:.2f}\n")
 
     records: List[Dict[str, Any]] = []
+    stopped: Optional[str] = None
+    costs: List[float] = []
     for index, item in enumerate(items, start=1):
-        data, elapsed, status = call_backend(base_url, api_key, item, args.k, args.timeout)
+        projected = (max(costs) if costs else INITIAL_QUESTION_COST) * (0.1 if args.retrieve_only else 1.0)
+        try:
+            ledger.check(projected)
+        except spend.BudgetExceeded as exc:
+            stopped = str(exc)
+            print(f"STOP: {stopped}", file=sys.stderr)
+            break
+        before = ledger.run_usd
+        data, elapsed, status = call_backend(base_url, api_key, item, args.k, args.timeout, retrieve_only=args.retrieve_only)
+        if status in (401, 403, 500, 503) or status == 0:
+            # Persisting after one retry: possibly insufficient_quota or an auth failure behind a
+            # generic backend error. The key is shared with production, so stop and look at the log.
+            stopped = f"backend returned HTTP {status} for {item['id']} after a retry: {str(data.get('detail'))[:200]}"
+            print(f"STOP: {stopped}", file=sys.stderr)
+            break
         answer = str(data.get("answer", "") or "")
         sources = data.get("sources") or []
         options = data.get("options") or []
         debug = data.get("debug") or {}
         error = data.get("detail") if status != 200 else None
+        remember_hit_spans(debug)
+        spend.record_backend_spend(ledger, debug, len(item["question"]))
 
-        outcome = "error" if error else classify_outcome(answer, sources, options, debug)
+        outcome = "error" if error else ("retrieve_only" if args.retrieve_only and debug.get("outcome") == "retrieve_only"
+                                         else classify_outcome(answer, sources, options, debug))
         exp = expected_pages(item)
         merged_ids = debug.get("merged_ids") or []
         retrieved_ids = debug.get("retrieved_ids") or []
@@ -575,6 +654,12 @@ def run_live(args: argparse.Namespace) -> int:
             "task_analysis": debug.get("task_analysis"),
             "analysis_tokens": debug.get("analysis_tokens"),
             "entity_check": debug.get("entity_check"),
+            "model": debug.get("model"),
+            # For recall at equal context budget (INGEST_PLAN.md §10.2): each passage's size and pages,
+            # in the order the model saw them.
+            "passage_tokens": [count_tokens(p.get("text", "")) for p in passages],
+            "passage_spans": [list(s) for s in spans_from_ids([p.get("id") for p in passages])] if passages else [],
+            "context_tokens": sum(count_tokens(p.get("text", "")) for p in passages),
         }
         record["format_ok"] = scoring.format_check(item.get("expected_format"), answer) if outcome == "answered" and not item.get("should_refuse") else None
 
@@ -587,8 +672,15 @@ def run_live(args: argparse.Namespace) -> int:
             record["expected_pages"] = sorted(f"{pdf}:p{page}" for pdf, page in exp)
 
         if client is not None and not item.get("should_refuse"):
-            score_record(record, item, client, args.judge_model, passages, coverage_only=args.coverage_only)
+            try:
+                score_record(record, item, client, args.judge_model, passages, coverage_only=args.coverage_only)
+            except spend.FatalOpenAIError:
+                records.append(record)
+                stopped = "fatal OpenAI error in the judge (quota or auth)"
+                break
 
+        record["spend_usd"] = round(ledger.run_usd - before, 5)
+        costs.append(ledger.run_usd - before)
         records.append(record)
         r_at_k = record.get("recall_at_k")
         print(
@@ -604,6 +696,7 @@ def run_live(args: argparse.Namespace) -> int:
     summary = summarize(records, args.k)
     payload = {
         "label": args.label,
+        "corpus_label": args.corpus_label or health.get("corpus_version"),
         "backend": base_url,
         "backend_health": health,
         "questions_file": str(Path(args.questions)),
@@ -611,12 +704,21 @@ def run_live(args: argparse.Namespace) -> int:
         "judge_model": None if client is None else args.judge_model,
         "split_filter": args.split,
         "coverage_only": bool(args.coverage_only),
+        "retrieve_only": bool(args.retrieve_only),
+        "spend_usd": round(ledger.run_usd, 5),
+        "spend_by_model": {k: round(v, 5) for k, v in sorted(ledger.run_by_model.items())},
+        "stopped": stopped,
         "summary": summary,
         "records": records,
     }
     out_path = write_results(Path(args.results_dir), payload)
+    ledger.save(f"{out_path.name} {args.label}".strip())
     print_summary(summary)
-    print(f"\nresults written to {out_path}")
+    print(f"\nspend this run ${ledger.run_usd:.4f}; ledger total ${ledger.total:.4f}")
+    print(f"results written to {out_path}")
+    if stopped:
+        print(f"RUN STOPPED EARLY: {stopped}", file=sys.stderr)
+        return 3
     return 0
 
 
@@ -635,6 +737,10 @@ def main() -> int:
     parser.add_argument("--coverage-only", action="store_true", help="skip the faithfulness and legacy judges (coverage + refusal metrics only)")
     parser.add_argument("--rejudge", metavar="RESULTS_JSON", help="re-score an existing results file with the current judges")
     parser.add_argument("--label", default="", help="free-text label stored in the results file")
+    parser.add_argument("--corpus-label", default="", help="which corpus the backend serves (v1/v2); defaults to /health")
+    parser.add_argument("--retrieve-only", action="store_true", help="stop the backend after retrieval (no answer, no judge)")
+    parser.add_argument("--max-spend", type=float, help="stop before a question would take the ledger total over this (USD)")
+    parser.add_argument("--spend-ledger", default=str(DEFAULT_LEDGER), help="JSON file that accumulates spend across runs")
     args = parser.parse_args()
     if args.rejudge:
         return run_rejudge(args)

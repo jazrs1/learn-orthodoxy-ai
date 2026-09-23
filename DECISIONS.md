@@ -100,6 +100,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [ING-003: Per-source segmenters, chunker, ingest-time saints index and the v2 dry run](#ing-003-per-source-segmenters-chunker-ingest-time-saints-index-and-the-v2-dry-run)
   - [ING-004: v2 embedded locally into chroma_db/v2; v1 byte-identical before and after](#ing-004-v2-embedded-locally-into-chroma_dbv2-v1-byte-identical-before-and-after)
   - [ING-005: Retrieval on v2 behind CORPUS_VERSION; one source per cited passage; ingest-time saints index; v1 output proven identical](#ing-005-retrieval-on-v2-behind-corpus_version-one-source-per-cited-passage-ingest-time-saints-index-v1-output-proven-identical)
+  - [ING-006: v1 vs v2 evaluation — v2 raises Arabic coverage by 13 points, English is unchanged; v2 top-k 16, threshold stays 1.25](#ing-006-v1-vs-v2-evaluation--v2-raises-arabic-coverage-by-13-points-english-is-unchanged-v2-top-k-16-threshold-stays-125)
 - [Open questions](#open-questions)
 
 ---
@@ -1807,6 +1808,77 @@ In summary:
 - **Tests:** backend **112 passed** (5 new API tests: labels, v1 sources and serialization unchanged, v2 fields, two saints on one page stay two sources, names tidied and namesakes told apart); frontend 119.
 - **Files:** `corpus_runtime.py`, `api.py`, `start_backend.py`, `request_log.py`, `chroma_store.py` (earlier), `ingestion/saints_index.py`, `data/corpus/v2/saints_index.json`, `orthodox-site/lib/sources.ts`, `lib/chat-types.ts`, `lib/sources.test.ts`, `tests/test_corpus_v2_api.py`, `README.md`, `.env.example`.
 - **Revisit if:** Step 5 shows saint lookups sending the wrong entry first, or v2 needs a different top-k or threshold.
+
+
+### ING-006: v1 vs v2 evaluation — v2 raises Arabic coverage by 13 points, English is unchanged; v2 top-k 16, threshold stays 1.25
+- **Date / Part:** 2026-09-23, Phase 5 Step 5. **OpenAI: approved, ceiling $6; spent $4.08** (ledger `eval/results/spend-phase5.json`; no quota or auth errors).
+- **Harness (before any run):**
+  - `run_eval.py`: range-aware recall (a v2 chunk covers a page range; identical to the old definition for v1), `passage_tokens`/`passage_spans` per record, `--corpus-label`, `--retrieve-only`, and a spend ledger with `--max-spend`. The ledger is checked before every question; a quota or auth error in the judge stops the run, as does a 500/503 that persists after one retry.
+  - `retrieval_sweep.py`: in-process top-k sweep with one cached analysis per question, shared by both corpora.
+  - `budget_recall.py`: recall at equal context budget.
+  - `faithfulness_subset.py`: the same 15 ids for both corpora, re-judging stored answers.
+  - `phase5_compare.py`: the tables below.
+  - `scoring.py`: the faithfulness judge's output limit goes 2,500 → 5,000 tokens. Two long v2 saint answers (20+ claims) had cut the judge's JSON off; they were re-judged.
+- **D9 questions (tune only), 15 new:**
+  - English saints: George, Mina, Shenouda, Athanasius, Macarius.
+  - Arabic saints: George, Shenouda, Mina, Athanasius, Bishoy.
+  - Arabic catechism: tears of repentance, iconostasis, purpose of the Creed, angels, the Church as God's kingdom.
+
+  The topics were chosen by name before any v2 retrieval was looked at. **Every one of the 84 evidence snippets was checked automatically against the extracted text of its PDF page.** Tune now has 17 Arabic and 14 English saints questions; the set has 134 questions.
+- **Top-k (tune, retrieval only, $0.02):**
+  - v1 at k=8: recall 0.79, median context 6,683 tokens.
+  - v2: recall 0.90 at k=8–10 and 0.91 at k=12–16. Median context is 4,139 at k=8 and **6,631 at k=16**, which matches v1's.
+  - Per plan §10.2, **v2 serves k=16** (`TOP_K_V2=16`, `MAX_TOP_K` 16 under v2, where the cap was hard-coded 12; v1 unchanged).
+  - k=12 gives the same tune recall with ~20 % less context and is the cheaper production option.
+- **Threshold:** re-derived by RET-009's rule; it **stays 1.25**.
+  - Answerable questions reach 0.92 on the analysed query and 1.14 on the raw text (the fallback when analysis fails). That margin is 0.11; v1's was 0.004.
+  - Easy negatives start at 1.43. The cryptocurrency trap sits at 0.97 on both corpora and is refused by the model.
+  - Arabic stays off: answerable questions reach 1.24, and the two negatives sit at 1.21 and 1.46.
+- **Coverage runs:** tune + holdout, 134 questions, two runs per corpus, same code and config (gpt-4.1-mini, prompt v3, entity check on, gpt-4.1 judge).
+  - Files: v1 `20260922-235126` and `20260923-001435`; v2 `20260923-000307` and `20260923-002553`.
+  - Cost: $0.76 per run on v1, $0.82 on v2.
+
+  **Coverage (all answerable, refusals 0; mean ± half the run spread):**
+
+  | | v1 | v2 | n |
+  |---|---|---|---|
+  | EN tune | 74.9 ± 1.1 | 74.5 ± 0.1 | 53 |
+  | EN holdout | 80.4 ± 0.4 | 80.9 ± 0.1 | 23 |
+  | **AR tune** | 60.1 ± 0.4 | **73.4 ± 0.1** | 17 |
+  | **AR holdout** | 71.7 ± 1.2 | **84.5 ± 1.7** | 3 |
+  | all | 73.5 | 76.1 | 96 |
+
+  By category:
+  - **Arabic saints:** 46.5 → 73.3.
+  - **Arabic catechism:** 77.2 → 76.8.
+  - English catechism: 72.9 → 76.7.
+  - **English saints:** 79.3 → 78.7.
+  - Multi-part: 80.4 → 96.7.
+  - Keyword: 86.0 → 82.1.
+  - **Task:** 68.1 → 61.4.
+- **Recall at equal context budget** (the budget is v1's mean context tokens per category):
+  - English: 82.9 → **89.5**.
+  - Arabic: 62.5 → **92.5**.
+  - All: 78.6 → 90.1.
+- **Refusals:**
+  - Answerable questions refused: 0 % → 1.0 %. That is TSK-11, "list the saints named Gregory" (see below).
+  - Out-of-corpus refused: 93.4 % on both (easy 100, near-miss 89.1, task 100, Arabic 100). The flips roughly cancel:
+    - on v2 only, OOC-22 (sola scriptura) was answered in both runs, and OOC-31 in one;
+    - on v1 only, OOC-26 and OOC-28 were answered.
+- **Faithfulness** (15 answers per corpus, same ids, gpt-4.1 judge): supported claims **94.9 % → 97.8 %**, unsupported 3.8 → 2.2 %, bad citation 1.3 → 0 %, uncited 0.6 → 2.2 % (157 vs 178 claims).
+- **Regressions** (coverage down ≥ 0.25, mean of 2 runs):
+  - **TSK-11** "list the saints named Gregory" (0.43 → 0, refused on v2). The analysis call turns it into a `starts_with: "G"` filter on both corpora, and the list shows 30 entries. v2's complete index has many more G saints (the Gabriels), so the Gregorys fall past the cap and the model says none were found.
+    - This is an analysis-prompt bug the old, sparser index hid.
+    - The fix is a `contains` filter for "named X" requests.
+  - **TSK-02** "saints martyred in Egypt" (0.35 → 0). Recall is 0 on both. It is a broad list whose key facts name specific saints; v2 lists other, valid martyrs.
+  - **PRD-02, AR-07, KW-02, SNT-02, SNT-03, TSK-13:** recall was equal or better on v2 (SNT-02 and SNT-03 went from 0.5 to 1.0). The answers left out key facts that were in context, so this is generation variance on longer contexts, not retrieval.
+  - **Saints and Arabic:** English saints are flat (-0.6, within noise). **Arabic saints gained 27 points, and no Arabic saints question regressed** (AR-01 fell in run 1 only).
+- **Cost and latency per request:**
+  - Generation is about $0.0036 → $0.0041 per answer (+12 %): English +5 %, Arabic +42 % from 16 larger Arabic chunks.
+  - Mean latency 3.9 → 4.1 s.
+- **Tests:** backend 116 (4 new eval-helper tests).
+- **Files:** `eval/run_eval.py`, `eval/scoring.py`, `eval/spend.py`, `eval/retrieval_sweep.py`, `eval/budget_recall.py`, `eval/faithfulness_subset.py`, `eval/phase5_compare.py`, `eval/questions.jsonl`, `eval/results/*` (runs, sweeps, `phase5-compare.txt`, ledger, analysis cache), `api.py` (`MAX_TOP_K`/`TOP_K_V2`).
+- **Revisit if:** the saint-list filter is fixed (re-run TSK-11 and PRD-01); production moves to k=12 for cost; or more Arabic negatives are added (then an Arabic threshold may be viable on v2).
 
 ---
 

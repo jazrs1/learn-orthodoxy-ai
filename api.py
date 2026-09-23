@@ -88,7 +88,10 @@ AUTH_EXEMPT_PATHS = {"/health"}
 ENABLE_DEBUG = _env_flag("ENABLE_DEBUG")
 
 MAX_QUESTION_CHARS = _env_int("MAX_QUESTION_CHARS", 1000, minimum=1)
-MAX_TOP_K = 12
+MAX_TOP_K = _env_int("MAX_TOP_K", 16 if CORPUS_V2 else 12, minimum=1)
+# v2 chunks are about a third smaller, so the same number of passages is less context. v2 serves the
+# top-k whose median context matches v1's at the client's 8 (ING-006: 16 on tune); 0 honours the request.
+TOP_K_V2 = _env_int("TOP_K_V2", 16)
 MAX_HISTORY_MESSAGES = 12
 MAX_HISTORY_MESSAGE_CHARS = 4000
 ANSWER_MAX_TOKENS = _env_int("ANSWER_MAX_TOKENS", 1200, minimum=64)
@@ -3286,6 +3289,8 @@ def _chat_impl(req: ChatRequest, trace: RequestTrace):
         original_question = _canonicalize_saint_text(original_question)
         history = _sanitize_history(req.history)
         requested_top_k = max(1, min(int(req.top_k or 8), MAX_TOP_K))
+        if CORPUS_V2 and TOP_K_V2:
+            requested_top_k = min(TOP_K_V2, MAX_TOP_K)
 
         mode = _normalize_chat_mode(req.mode)
         detected_language = _detect_language(req.language, original_question)

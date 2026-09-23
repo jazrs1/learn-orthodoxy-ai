@@ -1,0 +1,1579 @@
+{
+ "[\"Why is prayer essential in the Coptic Orthodox life?\", []]": {
+  "retrieval_query": "Why is prayer essential in the Coptic Orthodox life?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 65
+ },
+ "[\"How does the Coptic Orthodox Church explain the Lord's Prayer?\", []]": {
+  "retrieval_query": "How does the Coptic Orthodox Church explain the Lord's Prayer?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "Lord's Prayer"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 71
+ },
+ "[\"What guidance does the Coptic Orthodox Church give for a daily prayer rule?\", []]": {
+  "retrieval_query": "What guidance does the Coptic Orthodox Church give for a daily prayer rule?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 917,
+  "completion_tokens": 69
+ },
+ "[\"What does the Coptic Orthodox Church teach about salvation?\", []]": {
+  "retrieval_query": "What does the Coptic Orthodox Church teach about salvation?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "salvation"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 68
+ },
+ "[\"What is faith, according to the Coptic catechism?\", []]": {
+  "retrieval_query": "What is faith, according to the Coptic catechism?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 67
+ },
+ "[\"How does the death of Christ on the cross save us from sin, the curse and death?\", []]": {
+  "retrieval_query": "How does the death of Christ on the cross save us from sin, the curse and death?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "death of Christ",
+   "sin",
+   "curse",
+   "death"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 921,
+  "completion_tokens": 86
+ },
+ "[\"What does the Coptic Orthodox Church teach about the Eucharist?\", []]": {
+  "retrieval_query": "What does the Coptic Orthodox Church teach about the Eucharist?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "Eucharist"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 71
+ },
+ "[\"What are the signs of true repentance in Coptic Orthodox teaching?\", []]": {
+  "retrieval_query": "What are the signs of true repentance in Coptic Orthodox teaching?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 67
+ },
+ "[\"How should someone respond after falling again into the same sin?\", []]": {
+  "retrieval_query": "How should someone respond after falling again into the same sin?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 914,
+  "completion_tokens": 66
+ },
+ "[\"Why is Holy Tradition important in the Coptic Orthodox Church?\", []]": {
+  "retrieval_query": "Why is Holy Tradition important in the Coptic Orthodox Church?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "Holy Tradition"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 914,
+  "completion_tokens": 69
+ },
+ "[\"Why does the Coptic Orthodox Church place such emphasis on fasting?\", []]": {
+  "retrieval_query": "Why does the Coptic Orthodox Church place such emphasis on fasting?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 67
+ },
+ "[\"What is the spiritual purpose of fasting in the Coptic Orthodox Church?\", []]": {
+  "retrieval_query": "What is the spiritual purpose of fasting in the Coptic Orthodox Church?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 916,
+  "completion_tokens": 68
+ },
+ "[\"How does fasting prepare us for spiritual warfare?\", []]": {
+  "retrieval_query": "How does fasting prepare us for spiritual warfare?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "fasting",
+   "spiritual warfare"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 911,
+  "completion_tokens": 71
+ },
+ "[\"What is the Jesus Prayer?\", []]": {
+  "retrieval_query": "What is the Jesus Prayer?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 908,
+  "completion_tokens": 60
+ },
+ "[\"Who was St. Abanoub el-Nehissy?\", []]": {
+  "retrieval_query": "Who was St. Abanoub el-Nehissy?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Abanoub el-Nehissy"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 914,
+  "completion_tokens": 76
+ },
+ "[\"How did St. Moses the Black come to faith?\", []]": {
+  "retrieval_query": "How did St. Moses the Black come to faith?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Moses the Black"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 71
+ },
+ "[\"Who was St. Bishoy?\", []]": {
+  "retrieval_query": "Who was St. Bishoy?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Bishoy"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 909,
+  "completion_tokens": 66
+ },
+ "[\"Who was St. Anthony, the Father of the Monks?\", []]": {
+  "retrieval_query": "Who was St. Anthony, the Father of the Monks?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Anthony"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 71
+ },
+ "[\"Who was Pope Cyril I of Alexandria?\", []]": {
+  "retrieval_query": "Who was Pope Cyril I of Alexandria?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "Pope Cyril I of Alexandria"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 910,
+  "completion_tokens": 69
+ },
+ "[\"Who was St. Takla Haymanot?\", []]": {
+  "retrieval_query": "Who was St. Takla Haymanot?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Takla Haymanot"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 72
+ },
+ "[\"Who was St. Simeon the Stylite?\", []]": {
+  "retrieval_query": "Who was St. Simeon the Stylite?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Simeon the Stylite"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 72
+ },
+ "[\"Who was St. Barbara the martyr?\", []]": {
+  "retrieval_query": "Who was St. Barbara the martyr?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Barbara the martyr"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 910,
+  "completion_tokens": 68
+ },
+ "[\"Who was St. Paul the First Hermit?\", []]": {
+  "retrieval_query": "Who was St. Paul the First Hermit?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Paul the First Hermit"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 72
+ },
+ "[\"Who was St. Abanoub, and how old was he when his parents died?\", []]": {
+  "retrieval_query": "Who was St. Abanoub, and how old was he when his parents died?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Abanoub"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 920,
+  "completion_tokens": 78
+ },
+ "[\"What is prayer, and why does God sometimes delay answering it?\", []]": {
+  "retrieval_query": "What is prayer, and why does God sometimes delay answering it?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 67
+ },
+ "[\"Who was St. Demiana, and on which day is her martyrdom commemorated?\", []]": {
+  "retrieval_query": "Who was St. Demiana, and on which day is her martyrdom commemorated?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Demiana"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 920,
+  "completion_tokens": 77
+ },
+ "[\"What does St. Anthony say about practicing it?\", [{\"role\": \"user\", \"content\": \"What is the Jesus Prayer?\"}, {\"role\": \"assistant\", \"content\": \"The Jesus Prayer is a short prayer in which the believer repeats the name of Jesus often, at any time and even during work, to keep his thought from distraction and live in constant communication with God.\"}]]": {
+  "retrieval_query": "What does St. Anthony say about practicing the Jesus Prayer?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Anthony",
+   "Jesus Prayer"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": true,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 968,
+  "completion_tokens": 74
+ },
+ "[\"Why was he called 'Bishoy the Jeremian'?\", [{\"role\": \"user\", \"content\": \"Who was St. Bishoy?\"}, {\"role\": \"assistant\", \"content\": \"**St. Bishoy** was born in Shansa in Menufyia around 320 AD, one of six brothers; an angel chose him for God's service and he became a great monk of Scetis.\"}]]": {
+  "retrieval_query": "Why was St. Bishoy called 'Bishoy the Jeremian'?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Bishoy"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": true,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 975,
+  "completion_tokens": 75
+ },
+ "[\"Why did Christ tell us to pray it in the plural?\", [{\"role\": \"user\", \"content\": \"Why is the Lord's Prayer important?\"}, {\"role\": \"assistant\", \"content\": \"Because the Son of God Himself taught it to His disciples, so we pray to the Father with the words of our Advocate, as St. Augustine and St. Cyprian explain.\"}]]": {
+  "retrieval_query": "Why did Christ tell us to pray the Lord's Prayer in the plural?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "Lord's Prayer"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": true,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 969,
+  "completion_tokens": 73
+ },
+ "[\"من هو الأنبا موسى الأسود؟\", []]": {
+  "retrieval_query": "من هو الأنبا موسى الأسود؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "الأنبا موسى الأسود"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 910,
+  "completion_tokens": 70
+ },
+ "[\"من هو مارمرقس الرسول؟\", []]": {
+  "retrieval_query": "من هو مارمرقس الرسول؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "مارمرقس الرسول"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 909,
+  "completion_tokens": 67
+ },
+ "[\"من هو الأنبا بولا أول السواح؟\", []]": {
+  "retrieval_query": "من هو الأنبا بولا أول السواح؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "الأنبا بولا أول السواح"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 74
+ },
+ "[\"من هو الأنبا أنطونيوس أب الرهبان؟\", []]": {
+  "retrieval_query": "من هو الأنبا أنطونيوس أب الرهبان؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "الأنبا أنطونيوس أب الرهبان"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 80
+ },
+ "[\"ما هي أهمية الصلاة الربانية؟\", []]": {
+  "retrieval_query": "ما هي أهمية الصلاة الربانية؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 909,
+  "completion_tokens": 62
+ },
+ "[\"ما هو سر المعمودية وما هي بركاته؟\", []]": {
+  "retrieval_query": "ما هو سر المعمودية وما هي بركاته؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "سر المعمودية",
+   "بركات المعمودية"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 78
+ },
+ "[\"ما هو سر الشركة في الإفخارستيا؟\", []]": {
+  "retrieval_query": "ما هو سر الشركة في الإفخارستيا؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 65
+ },
+ "[\"Who won the 2018 FIFA World Cup?\", []]": {
+  "retrieval_query": "Who won the 2018 FIFA World Cup?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": false,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 64
+ },
+ "[\"What is the Buddhist concept of nirvana?\", []]": {
+  "retrieval_query": "What is the Buddhist concept of nirvana?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": false,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 911,
+  "completion_tokens": 63
+ },
+ "[\"How do I bake sourdough bread at home?\", []]": {
+  "retrieval_query": "How do I bake sourdough bread at home?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": false,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 65
+ },
+ "[\"What does the Coptic Orthodox Church teach about cryptocurrency and Bitcoin?\", []]": {
+  "retrieval_query": "What does the Coptic Orthodox Church teach about cryptocurrency and Bitcoin?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "cryptocurrency",
+   "Bitcoin"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 73
+ },
+ "[\"In what year was the first iPhone released?\", []]": {
+  "retrieval_query": "In what year was the first iPhone released?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": false,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 64
+ },
+ "[\"Summarize the plot of the Harry Potter books.\", []]": {
+  "retrieval_query": "What is the plot of the Harry Potter books?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": false,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 64
+ },
+ "[\"ما هي عاصمة فرنسا؟\", []]": {
+  "retrieval_query": "ما هي عاصمة فرنسا؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": false,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 908,
+  "completion_tokens": 61
+ },
+ "[\"Who was St. Seraphim of Sarov?\", []]": {
+  "retrieval_query": "Who was St. Seraphim of Sarov?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Seraphim of Sarov"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 74
+ },
+ "[\"search saint: Therese of Lisieux\", []]": {
+  "retrieval_query": "search saint: Therese of Lisieux",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": false,
+  "used_history": false,
+  "error": "skipped",
+  "model": null,
+  "prompt_tokens": null,
+  "completion_tokens": null
+ },
+ "[\"Tell me about St. Francis of Assisi and his rule for the friars.\", []]": {
+  "retrieval_query": "Who was St. Francis of Assisi and what was his rule for the friars?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Francis of Assisi",
+   "rule for the friars"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 919,
+  "completion_tokens": 86
+ },
+ "[\"Who was St. Herman of Alaska?\", []]": {
+  "retrieval_query": "Who was St. Herman of Alaska?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Herman of Alaska"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 910,
+  "completion_tokens": 68
+ },
+ "[\"Who was St. Anthony of Padua?\", []]": {
+  "retrieval_query": "Who was St. Anthony of Padua?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Anthony of Padua"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 911,
+  "completion_tokens": 70
+ },
+ "[\"Who was St. Ignatius of Loyola?\", []]": {
+  "retrieval_query": "Who was St. Ignatius of Loyola?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Ignatius of Loyola"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 911,
+  "completion_tokens": 70
+ },
+ "[\"What does the Coptic Orthodox Church teach about purgatory?\", []]": {
+  "retrieval_query": "What does the Coptic Orthodox Church teach about purgatory?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "purgatory"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 71
+ },
+ "[\"How does the catechism explain the Catholic doctrine of papal infallibility?\", []]": {
+  "retrieval_query": "How does the Catechism of the Coptic Orthodox Church explain the Catholic doctrine of papal infallibility?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "papal infallibility"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 919,
+  "completion_tokens": 83
+ },
+ "[\"What does the Coptic Orthodox Church say about the Protestant principle of sola scriptura?\", []]": {
+  "retrieval_query": "What does the Coptic Orthodox Church say about the Protestant principle of sola scriptura?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "sola scriptura"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 919,
+  "completion_tokens": 76
+ },
+ "[\"What is the filioque clause and why did the Coptic Church reject it?\", []]": {
+  "retrieval_query": "What is the filioque clause and why did the Coptic Church reject it?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "filioque"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 919,
+  "completion_tokens": 75
+ },
+ "[\"When did St. Anthony the Great found his monastery on Mount Athos?\", []]": {
+  "retrieval_query": "When did St. Anthony the Great found his monastery on Mount Athos?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Anthony the Great",
+   "Mount Athos"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 917,
+  "completion_tokens": 80
+ },
+ "[\"Who was St. Paul the First Hermit's wife?\", []]": {
+  "retrieval_query": "Who was St. Paul the First Hermit's wife?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Paul the First Hermit"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 73
+ },
+ "[\"What did St. Bishoy write in his commentary on the Book of Revelation?\", []]": {
+  "retrieval_query": "What did St. Bishoy write in his commentary on the Book of Revelation?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Bishoy",
+   "Book of Revelation"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 918,
+  "completion_tokens": 80
+ },
+ "[\"Tell me about St. Methodius, the brother of St. Cyril, and their mission to the Slavs.\", []]": {
+  "retrieval_query": "Tell me about St. Methodius and his mission to the Slavs.",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Methodius",
+   "St. Cyril",
+   "mission to the Slavs"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 925,
+  "completion_tokens": 86
+ },
+ "[\"What year did St. Barbara move to Egypt and where did she live there?\", []]": {
+  "retrieval_query": "What year did St. Barbara move to Egypt and where did she live there?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Barbara"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 918,
+  "completion_tokens": 74
+ },
+ "[\"من هو القديس فرنسيس الأسيزي؟\", []]": {
+  "retrieval_query": "من هو القديس فرنسيس الأسيزي؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "القديس فرنسيس الأسيزي"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 76
+ },
+ "[\"I would like to know what chrismation means\", [{\"role\": \"user\", \"content\": \"Why is baptism necessary according to the Coptic Orthodox Church?\"}, {\"role\": \"assistant\", \"content\": \"Baptism is necessary because, as the Creed confesses, it is \\\"one baptism for the remission of sins\\\" [1]. The one being baptized is immersed three times in the name of the Holy Trinity and accepts being buried with Christ so as to die to the life of sin and enjoy the resurrected life [2]. Christ Himself declared that no one can enter the kingdom of God unless born of water and the Spirit [2].\\n\\nIts first blessing is the death of the old man: baptism washes away our sins and slays the lusts, as St. John Chrysostom explains [3].\"}]]": {
+  "retrieval_query": "What does chrismation mean?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "chrismation"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": true,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 1055,
+  "completion_tokens": 65
+ },
+ "[\"What is prayer\", []]": {
+  "retrieval_query": "What is prayer?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 905,
+  "completion_tokens": 58
+ },
+ "[\"fasting\", []]": {
+  "retrieval_query": "What does the Church teach about fasting?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 904,
+  "completion_tokens": 62
+ },
+ "[\"St. Moses the Black\", []]": {
+  "retrieval_query": "Who was St. Moses the Black?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Moses the Black"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 907,
+  "completion_tokens": 68
+ },
+ "[\"Jesus Prayer\", []]": {
+  "retrieval_query": "What is the Jesus Prayer?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 904,
+  "completion_tokens": 60
+ },
+ "[\"eucharist\", []]": {
+  "retrieval_query": "What does the Church teach about the Eucharist?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 905,
+  "completion_tokens": 64
+ },
+ "[\"confession\", []]": {
+  "retrieval_query": "What does the Church teach about confession?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 904,
+  "completion_tokens": 62
+ },
+ "[\"Anthony the Great\", []]": {
+  "retrieval_query": "Who was St. Anthony the Great?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Anthony the Great"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 905,
+  "completion_tokens": 68
+ },
+ "[\"create a table with all saints whos names start with g\", []]": {
+  "retrieval_query": "saints whose names start with G",
+  "output_format": "table",
+  "broad": true,
+  "sub_queries": [],
+  "saint_name_filter": {
+   "starts_with": "G"
+  },
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 914,
+  "completion_tokens": 70
+ },
+ "[\"why is coptic easter different than catholic\", []]": {
+  "retrieval_query": "Why is Coptic Easter different than Catholic Easter?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 911,
+  "completion_tokens": 64
+ },
+ "[\"make a table with the differences between catholicism and coptic\", []]": {
+  "retrieval_query": "What are the differences between Catholicism and the Coptic Orthodox Church?",
+  "output_format": "table",
+  "broad": true,
+  "sub_queries": [
+   "Catholicism",
+   "Coptic Orthodox Church"
+  ],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 914,
+  "completion_tokens": 82
+ },
+ "[\"list saints who were martyred in Egypt\", []]": {
+  "retrieval_query": "Which saints were martyred in Egypt?",
+  "output_format": "list",
+  "broad": true,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 911,
+  "completion_tokens": 62
+ },
+ "[\"List the names of the Coptic months\", []]": {
+  "retrieval_query": "What are the names of the Coptic months?",
+  "output_format": "list",
+  "broad": true,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 910,
+  "completion_tokens": 63
+ },
+ "[\"Compare baptism and chrismation\", []]": {
+  "retrieval_query": "What are the differences between baptism and chrismation?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 908,
+  "completion_tokens": 65
+ },
+ "[\"summarize what the catechism says about baptism\", []]": {
+  "retrieval_query": "What does the Catechism of the Coptic Orthodox Church say about baptism?",
+  "output_format": "summary",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "baptism"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 73
+ },
+ "[\"Make a table of the tunes used in Coptic worship and when each is used\", []]": {
+  "retrieval_query": "What are the tunes used in Coptic worship and when is each used?",
+  "output_format": "table",
+  "broad": true,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 918,
+  "completion_tokens": 68
+ },
+ "[\"Summarize the Jesus Prayer in three bullet points\", []]": {
+  "retrieval_query": "What is the Jesus Prayer?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 60
+ },
+ "[\"Write five quiz questions with answers about fasting\", []]": {
+  "retrieval_query": "What does the Church teach about fasting?",
+  "output_format": "study_guide",
+  "broad": true,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "fasting"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 910,
+  "completion_tokens": 66
+ },
+ "[\"Put the difference between the ancient Egyptian calendar and the Julian calendar in a table\", []]": {
+  "retrieval_query": "What are the differences between the ancient Egyptian calendar and the Julian calendar?",
+  "output_format": "table",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": false,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 917,
+  "completion_tokens": 67
+ },
+ "[\"make a table of Catholic teachings on purgatory\", []]": {
+  "retrieval_query": "What are the Catholic teachings on purgatory?",
+  "output_format": "table",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "purgatory"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 67
+ },
+ "[\"Make a table of the miracles of St. Francis of Assisi\", []]": {
+  "retrieval_query": "What are the miracles of St. Francis of Assisi?",
+  "output_format": "table",
+  "broad": true,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Francis of Assisi"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 72
+ },
+ "[\"Give me a bullet list of what the Coptic Church teaches about the Immaculate Conception\", []]": {
+  "retrieval_query": "What does the Coptic Church teach about the Immaculate Conception?",
+  "output_format": "list",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "Immaculate Conception"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 921,
+  "completion_tokens": 74
+ },
+ "[\"Who was St. George the Cappadocian?\", []]": {
+  "retrieval_query": "Who was St. George the Cappadocian?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. George the Cappadocian"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 913,
+  "completion_tokens": 74
+ },
+ "[\"Who was St. Mina the Wonder-Maker?\", []]": {
+  "retrieval_query": "Who was St. Mina the Wonder-Maker?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Mina the Wonder-Maker"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 72
+ },
+ "[\"Who was St. Shenouda the Archimandrite?\", []]": {
+  "retrieval_query": "Who was St. Shenouda the Archimandrite?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Shenouda the Archimandrite"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 78
+ },
+ "[\"Who was St. Athanasius the Apostolic?\", []]": {
+  "retrieval_query": "Who was St. Athanasius the Apostolic?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Athanasius the Apostolic"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 914,
+  "completion_tokens": 76
+ },
+ "[\"Who was St. Macarius the Great?\", []]": {
+  "retrieval_query": "Who was St. Macarius the Great?",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "St. Macarius the Great"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 911,
+  "completion_tokens": 70
+ },
+ "[\"من هو القديس مارجرجس الكبادوكي؟\", []]": {
+  "retrieval_query": "من هو القديس مارجرجس الكبادوكي؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "القديس مارجرجس الكبادوكي"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 80
+ },
+ "[\"من هو الأنبا شنودة رئيس المتوحدين؟\", []]": {
+  "retrieval_query": "من هو الأنبا شنودة رئيس المتوحدين؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "الأنبا شنودة رئيس المتوحدين"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 914,
+  "completion_tokens": 78
+ },
+ "[\"من هو مارمينا العجائبي؟\", []]": {
+  "retrieval_query": "من هو مارمينا العجائبي؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "مارمينا العجائبي"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 73
+ },
+ "[\"من هو القديس أثناسيوس الرسولي؟\", []]": {
+  "retrieval_query": "من هو القديس أثناسيوس الرسولي؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "القديس أثناسيوس الرسولي"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 912,
+  "completion_tokens": 74
+ },
+ "[\"من هو الأنبا بيشوي؟\", []]": {
+  "retrieval_query": "من هو الأنبا بيشوي؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "الأنبا بيشوي"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 910,
+  "completion_tokens": 70
+ },
+ "[\"ما هي فاعلية دموع التوبة في حياتنا؟\", []]": {
+  "retrieval_query": "ما هي فاعلية دموع التوبة في حياتنا؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 68
+ },
+ "[\"ما هو ترتيب الأيقونات على حامل الأيقونات (الأيقونستاسز)؟\", []]": {
+  "retrieval_query": "ما هو ترتيب الأيقونات على حامل الأيقونات (الأيقونستاسز)؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 922,
+  "completion_tokens": 75
+ },
+ "[\"ما هي غاية قانون الإيمان؟\", []]": {
+  "retrieval_query": "ما هي غاية قانون الإيمان؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 910,
+  "completion_tokens": 63
+ },
+ "[\"من هم الملائكة ولماذا دُعوا ملائكة؟\", []]": {
+  "retrieval_query": "من هم الملائكة ولماذا دُعوا ملائكة؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [
+   "الملائكة"
+  ],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 917,
+  "completion_tokens": 75
+ },
+ "[\"ماذا تعني عبارة الكنيسة ملكوت الله على الأرض؟\", []]": {
+  "retrieval_query": "ماذا تعني عبارة الكنيسة ملكوت الله على الأرض؟",
+  "output_format": "prose",
+  "broad": false,
+  "sub_queries": [],
+  "saint_name_filter": null,
+  "named_subjects": [],
+  "in_scope": true,
+  "ok": true,
+  "used_history": false,
+  "error": null,
+  "model": "gpt-4o-mini",
+  "prompt_tokens": 915,
+  "completion_tokens": 68
+ }
+}

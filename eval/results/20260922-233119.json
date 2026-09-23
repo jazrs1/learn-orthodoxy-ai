@@ -1,0 +1,2109 @@
+{
+  "label": "smoke v2 retrieve-only",
+  "corpus_label": "v2",
+  "backend": "http://127.0.0.1:8001",
+  "backend_health": {
+    "status": "ok",
+    "corpus_version": "v2",
+    "collection_ready": true,
+    "arabic_collection_ready": true,
+    "openai_ready": true
+  },
+  "questions_file": "C:\\Users\\johnb\\Projects\\learn-orthodoxy-ai\\eval\\questions.jsonl",
+  "k": 8,
+  "judge_model": null,
+  "split_filter": null,
+  "coverage_only": false,
+  "retrieve_only": true,
+  "spend_usd": 0.00071,
+  "spend_by_model": {
+    "gpt-4o-mini:analysis": 0.00071,
+    "text-embedding-3-small:embedding": 0.0
+  },
+  "stopped": null,
+  "summary": {
+    "k": 8,
+    "overall": {
+      "n": 4,
+      "n_answerable": 3,
+      "n_out_of_corpus": 1,
+      "answered_rate": 0.0,
+      "refusal_rate": 0.0,
+      "clarification_rate": 0.0,
+      "ooc_correct_refusal_rate": 0.0,
+      "ooc_false_answer_rate": 0.0,
+      "refusal_rate_short": 0.0,
+      "refusal_rate_task": NaN,
+      "n_short": 1,
+      "n_task": 0,
+      "ooc_refused_easy": 0.0,
+      "ooc_refused_near_miss": NaN,
+      "ooc_refused_task": NaN,
+      "n_ooc_easy": 1,
+      "n_ooc_near_miss": 0,
+      "n_ooc_task": 0,
+      "format_ok_rate": NaN,
+      "n_format_checked": 0,
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "hit_rate_at_k": 1.0,
+      "coverage_answered": NaN,
+      "coverage_all": NaN,
+      "off_target_rate": 0.0,
+      "faith_supported": NaN,
+      "faith_unsupported": NaN,
+      "faith_bad_citation": NaN,
+      "faith_uncited": NaN,
+      "faith_n_claims": 0,
+      "faith_supported_per_answer": NaN,
+      "judge_mean_answered": NaN,
+      "judge_mean_all": NaN,
+      "judge_prev_mean_all": NaN,
+      "answer_chars_mean": NaN,
+      "latency_s_mean": 2.0825,
+      "prompt_tokens_mean": NaN,
+      "completion_tokens_mean": NaN,
+      "analysis_tokens_mean": 980.25,
+      "retrieval_ms_mean": 601.5
+    },
+    "by_category": {
+      "arabic": {
+        "n": 1,
+        "n_answerable": 1,
+        "n_out_of_corpus": 0,
+        "answered_rate": 0.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": NaN,
+        "ooc_false_answer_rate": NaN,
+        "refusal_rate_short": NaN,
+        "refusal_rate_task": NaN,
+        "n_short": 0,
+        "n_task": 0,
+        "ooc_refused_easy": NaN,
+        "ooc_refused_near_miss": NaN,
+        "ooc_refused_task": NaN,
+        "n_ooc_easy": 0,
+        "n_ooc_near_miss": 0,
+        "n_ooc_task": 0,
+        "format_ok_rate": NaN,
+        "n_format_checked": 0,
+        "recall_at_k": 1.0,
+        "recall_at_k_tol1": 1.0,
+        "recall_any": 1.0,
+        "recall_kept": 1.0,
+        "recall_shown": 1.0,
+        "hit_rate_at_k": 1.0,
+        "coverage_answered": NaN,
+        "coverage_all": NaN,
+        "off_target_rate": 0.0,
+        "faith_supported": NaN,
+        "faith_unsupported": NaN,
+        "faith_bad_citation": NaN,
+        "faith_uncited": NaN,
+        "faith_n_claims": 0,
+        "faith_supported_per_answer": NaN,
+        "judge_mean_answered": NaN,
+        "judge_mean_all": NaN,
+        "judge_prev_mean_all": NaN,
+        "answer_chars_mean": NaN,
+        "latency_s_mean": 2.41,
+        "prompt_tokens_mean": NaN,
+        "completion_tokens_mean": NaN,
+        "analysis_tokens_mean": 995,
+        "retrieval_ms_mean": 1125.0
+      },
+      "keyword": {
+        "n": 1,
+        "n_answerable": 1,
+        "n_out_of_corpus": 0,
+        "answered_rate": 0.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": NaN,
+        "ooc_false_answer_rate": NaN,
+        "refusal_rate_short": 0.0,
+        "refusal_rate_task": NaN,
+        "n_short": 1,
+        "n_task": 0,
+        "ooc_refused_easy": NaN,
+        "ooc_refused_near_miss": NaN,
+        "ooc_refused_task": NaN,
+        "n_ooc_easy": 0,
+        "n_ooc_near_miss": 0,
+        "n_ooc_task": 0,
+        "format_ok_rate": NaN,
+        "n_format_checked": 0,
+        "recall_at_k": 1.0,
+        "recall_at_k_tol1": 1.0,
+        "recall_any": 1.0,
+        "recall_kept": 1.0,
+        "recall_shown": 1.0,
+        "hit_rate_at_k": 1.0,
+        "coverage_answered": NaN,
+        "coverage_all": NaN,
+        "off_target_rate": 0.0,
+        "faith_supported": NaN,
+        "faith_unsupported": NaN,
+        "faith_bad_citation": NaN,
+        "faith_uncited": NaN,
+        "faith_n_claims": 0,
+        "faith_supported_per_answer": NaN,
+        "judge_mean_answered": NaN,
+        "judge_mean_all": NaN,
+        "judge_prev_mean_all": NaN,
+        "answer_chars_mean": NaN,
+        "latency_s_mean": 1.59,
+        "prompt_tokens_mean": NaN,
+        "completion_tokens_mean": NaN,
+        "analysis_tokens_mean": 963,
+        "retrieval_ms_mean": 390.0
+      },
+      "out_of_corpus": {
+        "n": 1,
+        "n_answerable": 0,
+        "n_out_of_corpus": 1,
+        "answered_rate": NaN,
+        "refusal_rate": NaN,
+        "clarification_rate": NaN,
+        "ooc_correct_refusal_rate": 0.0,
+        "ooc_false_answer_rate": 0.0,
+        "refusal_rate_short": NaN,
+        "refusal_rate_task": NaN,
+        "n_short": 0,
+        "n_task": 0,
+        "ooc_refused_easy": 0.0,
+        "ooc_refused_near_miss": NaN,
+        "ooc_refused_task": NaN,
+        "n_ooc_easy": 1,
+        "n_ooc_near_miss": 0,
+        "n_ooc_task": 0,
+        "format_ok_rate": NaN,
+        "n_format_checked": 0,
+        "recall_at_k": NaN,
+        "recall_at_k_tol1": NaN,
+        "recall_any": NaN,
+        "recall_kept": NaN,
+        "recall_shown": NaN,
+        "hit_rate_at_k": NaN,
+        "coverage_answered": NaN,
+        "coverage_all": NaN,
+        "off_target_rate": NaN,
+        "faith_supported": NaN,
+        "faith_unsupported": NaN,
+        "faith_bad_citation": NaN,
+        "faith_uncited": NaN,
+        "faith_n_claims": 0,
+        "faith_supported_per_answer": NaN,
+        "judge_mean_answered": NaN,
+        "judge_mean_all": NaN,
+        "judge_prev_mean_all": NaN,
+        "answer_chars_mean": NaN,
+        "latency_s_mean": 3.08,
+        "prompt_tokens_mean": NaN,
+        "completion_tokens_mean": NaN,
+        "analysis_tokens_mean": 976,
+        "retrieval_ms_mean": 688.0
+      },
+      "saints": {
+        "n": 1,
+        "n_answerable": 1,
+        "n_out_of_corpus": 0,
+        "answered_rate": 0.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": NaN,
+        "ooc_false_answer_rate": NaN,
+        "refusal_rate_short": NaN,
+        "refusal_rate_task": NaN,
+        "n_short": 0,
+        "n_task": 0,
+        "ooc_refused_easy": NaN,
+        "ooc_refused_near_miss": NaN,
+        "ooc_refused_task": NaN,
+        "n_ooc_easy": 0,
+        "n_ooc_near_miss": 0,
+        "n_ooc_task": 0,
+        "format_ok_rate": NaN,
+        "n_format_checked": 0,
+        "recall_at_k": 1.0,
+        "recall_at_k_tol1": 1.0,
+        "recall_any": 1.0,
+        "recall_kept": 1.0,
+        "recall_shown": 1.0,
+        "hit_rate_at_k": 1.0,
+        "coverage_answered": NaN,
+        "coverage_all": NaN,
+        "off_target_rate": 0.0,
+        "faith_supported": NaN,
+        "faith_unsupported": NaN,
+        "faith_bad_citation": NaN,
+        "faith_uncited": NaN,
+        "faith_n_claims": 0,
+        "faith_supported_per_answer": NaN,
+        "judge_mean_answered": NaN,
+        "judge_mean_all": NaN,
+        "judge_prev_mean_all": NaN,
+        "answer_chars_mean": NaN,
+        "latency_s_mean": 1.25,
+        "prompt_tokens_mean": NaN,
+        "completion_tokens_mean": NaN,
+        "analysis_tokens_mean": 987,
+        "retrieval_ms_mean": 203.0
+      }
+    },
+    "by_split": {
+      "tune": {
+        "n": 4,
+        "n_answerable": 3,
+        "n_out_of_corpus": 1,
+        "answered_rate": 0.0,
+        "refusal_rate": 0.0,
+        "clarification_rate": 0.0,
+        "ooc_correct_refusal_rate": 0.0,
+        "ooc_false_answer_rate": 0.0,
+        "refusal_rate_short": 0.0,
+        "refusal_rate_task": NaN,
+        "n_short": 1,
+        "n_task": 0,
+        "ooc_refused_easy": 0.0,
+        "ooc_refused_near_miss": NaN,
+        "ooc_refused_task": NaN,
+        "n_ooc_easy": 1,
+        "n_ooc_near_miss": 0,
+        "n_ooc_task": 0,
+        "format_ok_rate": NaN,
+        "n_format_checked": 0,
+        "recall_at_k": 1.0,
+        "recall_at_k_tol1": 1.0,
+        "recall_any": 1.0,
+        "recall_kept": 1.0,
+        "recall_shown": 1.0,
+        "hit_rate_at_k": 1.0,
+        "coverage_answered": NaN,
+        "coverage_all": NaN,
+        "off_target_rate": 0.0,
+        "faith_supported": NaN,
+        "faith_unsupported": NaN,
+        "faith_bad_citation": NaN,
+        "faith_uncited": NaN,
+        "faith_n_claims": 0,
+        "faith_supported_per_answer": NaN,
+        "judge_mean_answered": NaN,
+        "judge_mean_all": NaN,
+        "judge_prev_mean_all": NaN,
+        "answer_chars_mean": NaN,
+        "latency_s_mean": 2.0825,
+        "prompt_tokens_mean": NaN,
+        "completion_tokens_mean": NaN,
+        "analysis_tokens_mean": 980.25,
+        "retrieval_ms_mean": 601.5,
+        "by_category": {
+          "arabic": {
+            "n": 1,
+            "n_answerable": 1,
+            "n_out_of_corpus": 0,
+            "answered_rate": 0.0,
+            "refusal_rate": 0.0,
+            "clarification_rate": 0.0,
+            "ooc_correct_refusal_rate": NaN,
+            "ooc_false_answer_rate": NaN,
+            "refusal_rate_short": NaN,
+            "refusal_rate_task": NaN,
+            "n_short": 0,
+            "n_task": 0,
+            "ooc_refused_easy": NaN,
+            "ooc_refused_near_miss": NaN,
+            "ooc_refused_task": NaN,
+            "n_ooc_easy": 0,
+            "n_ooc_near_miss": 0,
+            "n_ooc_task": 0,
+            "format_ok_rate": NaN,
+            "n_format_checked": 0,
+            "recall_at_k": 1.0,
+            "recall_at_k_tol1": 1.0,
+            "recall_any": 1.0,
+            "recall_kept": 1.0,
+            "recall_shown": 1.0,
+            "hit_rate_at_k": 1.0,
+            "coverage_answered": NaN,
+            "coverage_all": NaN,
+            "off_target_rate": 0.0,
+            "faith_supported": NaN,
+            "faith_unsupported": NaN,
+            "faith_bad_citation": NaN,
+            "faith_uncited": NaN,
+            "faith_n_claims": 0,
+            "faith_supported_per_answer": NaN,
+            "judge_mean_answered": NaN,
+            "judge_mean_all": NaN,
+            "judge_prev_mean_all": NaN,
+            "answer_chars_mean": NaN,
+            "latency_s_mean": 2.41,
+            "prompt_tokens_mean": NaN,
+            "completion_tokens_mean": NaN,
+            "analysis_tokens_mean": 995,
+            "retrieval_ms_mean": 1125.0
+          },
+          "keyword": {
+            "n": 1,
+            "n_answerable": 1,
+            "n_out_of_corpus": 0,
+            "answered_rate": 0.0,
+            "refusal_rate": 0.0,
+            "clarification_rate": 0.0,
+            "ooc_correct_refusal_rate": NaN,
+            "ooc_false_answer_rate": NaN,
+            "refusal_rate_short": 0.0,
+            "refusal_rate_task": NaN,
+            "n_short": 1,
+            "n_task": 0,
+            "ooc_refused_easy": NaN,
+            "ooc_refused_near_miss": NaN,
+            "ooc_refused_task": NaN,
+            "n_ooc_easy": 0,
+            "n_ooc_near_miss": 0,
+            "n_ooc_task": 0,
+            "format_ok_rate": NaN,
+            "n_format_checked": 0,
+            "recall_at_k": 1.0,
+            "recall_at_k_tol1": 1.0,
+            "recall_any": 1.0,
+            "recall_kept": 1.0,
+            "recall_shown": 1.0,
+            "hit_rate_at_k": 1.0,
+            "coverage_answered": NaN,
+            "coverage_all": NaN,
+            "off_target_rate": 0.0,
+            "faith_supported": NaN,
+            "faith_unsupported": NaN,
+            "faith_bad_citation": NaN,
+            "faith_uncited": NaN,
+            "faith_n_claims": 0,
+            "faith_supported_per_answer": NaN,
+            "judge_mean_answered": NaN,
+            "judge_mean_all": NaN,
+            "judge_prev_mean_all": NaN,
+            "answer_chars_mean": NaN,
+            "latency_s_mean": 1.59,
+            "prompt_tokens_mean": NaN,
+            "completion_tokens_mean": NaN,
+            "analysis_tokens_mean": 963,
+            "retrieval_ms_mean": 390.0
+          },
+          "out_of_corpus": {
+            "n": 1,
+            "n_answerable": 0,
+            "n_out_of_corpus": 1,
+            "answered_rate": NaN,
+            "refusal_rate": NaN,
+            "clarification_rate": NaN,
+            "ooc_correct_refusal_rate": 0.0,
+            "ooc_false_answer_rate": 0.0,
+            "refusal_rate_short": NaN,
+            "refusal_rate_task": NaN,
+            "n_short": 0,
+            "n_task": 0,
+            "ooc_refused_easy": 0.0,
+            "ooc_refused_near_miss": NaN,
+            "ooc_refused_task": NaN,
+            "n_ooc_easy": 1,
+            "n_ooc_near_miss": 0,
+            "n_ooc_task": 0,
+            "format_ok_rate": NaN,
+            "n_format_checked": 0,
+            "recall_at_k": NaN,
+            "recall_at_k_tol1": NaN,
+            "recall_any": NaN,
+            "recall_kept": NaN,
+            "recall_shown": NaN,
+            "hit_rate_at_k": NaN,
+            "coverage_answered": NaN,
+            "coverage_all": NaN,
+            "off_target_rate": NaN,
+            "faith_supported": NaN,
+            "faith_unsupported": NaN,
+            "faith_bad_citation": NaN,
+            "faith_uncited": NaN,
+            "faith_n_claims": 0,
+            "faith_supported_per_answer": NaN,
+            "judge_mean_answered": NaN,
+            "judge_mean_all": NaN,
+            "judge_prev_mean_all": NaN,
+            "answer_chars_mean": NaN,
+            "latency_s_mean": 3.08,
+            "prompt_tokens_mean": NaN,
+            "completion_tokens_mean": NaN,
+            "analysis_tokens_mean": 976,
+            "retrieval_ms_mean": 688.0
+          },
+          "saints": {
+            "n": 1,
+            "n_answerable": 1,
+            "n_out_of_corpus": 0,
+            "answered_rate": 0.0,
+            "refusal_rate": 0.0,
+            "clarification_rate": 0.0,
+            "ooc_correct_refusal_rate": NaN,
+            "ooc_false_answer_rate": NaN,
+            "refusal_rate_short": NaN,
+            "refusal_rate_task": NaN,
+            "n_short": 0,
+            "n_task": 0,
+            "ooc_refused_easy": NaN,
+            "ooc_refused_near_miss": NaN,
+            "ooc_refused_task": NaN,
+            "n_ooc_easy": 0,
+            "n_ooc_near_miss": 0,
+            "n_ooc_task": 0,
+            "format_ok_rate": NaN,
+            "n_format_checked": 0,
+            "recall_at_k": 1.0,
+            "recall_at_k_tol1": 1.0,
+            "recall_any": 1.0,
+            "recall_kept": 1.0,
+            "recall_shown": 1.0,
+            "hit_rate_at_k": 1.0,
+            "coverage_answered": NaN,
+            "coverage_all": NaN,
+            "off_target_rate": 0.0,
+            "faith_supported": NaN,
+            "faith_unsupported": NaN,
+            "faith_bad_citation": NaN,
+            "faith_uncited": NaN,
+            "faith_n_claims": 0,
+            "faith_supported_per_answer": NaN,
+            "judge_mean_answered": NaN,
+            "judge_mean_all": NaN,
+            "judge_prev_mean_all": NaN,
+            "answer_chars_mean": NaN,
+            "latency_s_mean": 1.25,
+            "prompt_tokens_mean": NaN,
+            "completion_tokens_mean": NaN,
+            "analysis_tokens_mean": 987,
+            "retrieval_ms_mean": 203.0
+          }
+        }
+      }
+    },
+    "errors": 0
+  },
+  "records": [
+    {
+      "id": "OOC-03",
+      "category": "out_of_corpus",
+      "subtype": null,
+      "expected_format": null,
+      "split": "tune",
+      "language": "en",
+      "mode": "chat",
+      "should_refuse": true,
+      "verified": true,
+      "question": "Who won the 2018 FIFA World Cup?",
+      "http_status": 200,
+      "latency_s": 3.08,
+      "outcome": "retrieve_only",
+      "answer": "",
+      "answer_chars": 0,
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 499,
+          "url": null,
+          "title": null,
+          "n": 1,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q641 “What is the paten?”, p. 489",
+          "chunk_id": "v2:cat1:q641:c1",
+          "entry": "641. What is the paten?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 499,
+          "pages": "489"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 188,
+          "url": null,
+          "title": null,
+          "n": 2,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q210 “Do we know why God created the world, and how He created it?”, p. 178",
+          "chunk_id": "v2:cat1:q210:c1",
+          "entry": "210. Do we know why God created the world, and how He created it?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 188,
+          "pages": "178"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 405,
+          "url": null,
+          "title": null,
+          "n": 3,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q500 “How is Jacob’s marriage a symbol of the Church, the bride?”, pp. 395–396",
+          "chunk_id": "v2:cat1:q500:c1",
+          "entry": "500. How is Jacob’s marriage a symbol of the Church, the bride?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 406,
+          "pages": "395–396"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 347,
+          "url": null,
+          "title": null,
+          "n": 4,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q436 “What does the Lord Christ mean when He says of the Holy Spirit: “And when He has come, He will convict the world … of judgment” (John 16:8)?”, pp. 337–338",
+          "chunk_id": "v2:cat1:q436:c1",
+          "entry": "436. What does the Lord Christ mean when He says of the Holy Spirit: “And when He has come, He will convict the world … of judgment” (John 16:8)?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 348,
+          "pages": "337–338"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 407,
+          "url": null,
+          "title": null,
+          "n": 5,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q500 “How is Jacob’s marriage a symbol of the Church, the bride?”, p. 397",
+          "chunk_id": "v2:cat1:q500:c3",
+          "entry": "500. How is Jacob’s marriage a symbol of the Church, the bride?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 407,
+          "pages": "397"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 368,
+          "url": null,
+          "title": null,
+          "n": 6,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q451 “What are the characteristics of this bride and what is her relationship with the Bridegroom the King of kings like?”, pp. 358–359",
+          "chunk_id": "v2:cat1:q451:c11",
+          "entry": "451. What are the characteristics of this bride and what is her relationship with the Bridegroom the King of kings like?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 369,
+          "pages": "358–359"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 302,
+          "url": null,
+          "title": null,
+          "n": 7,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q1157 “What do we know about the archangel Michael’s war against the devil?”, pp. 292–293",
+          "chunk_id": "v2:cat2:q1157:c2",
+          "entry": "1157. What do we know about the archangel Michael’s war against the devil?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 303,
+          "pages": "292–293"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism1.pdf",
+          "page": 438,
+          "url": null,
+          "title": null,
+          "n": 8,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q551 “Are there always going to be victories without end?”, pp. 428–429",
+          "chunk_id": "v2:cat1:q551:c1",
+          "entry": "551. Are there always going to be victories without end?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 439,
+          "pages": "428–429"
+        }
+      ],
+      "options": [],
+      "error": null,
+      "request_id": "ba1ce1becfed4600a70c5b8f5fb224f8",
+      "retrieval_queries": [
+        "Who won the 2018 FIFA World Cup?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "Who won the 2018 FIFA World Cup?",
+          "hits": [
+            {
+              "id": "v2:cat1:q641:c1",
+              "distance": 1.7331
+            },
+            {
+              "id": "v2:cat1:q210:c1",
+              "distance": 1.7455
+            },
+            {
+              "id": "v2:cat1:q500:c1",
+              "distance": 1.7475
+            },
+            {
+              "id": "v2:cat1:q436:c1",
+              "distance": 1.7478
+            },
+            {
+              "id": "v2:cat1:q500:c3",
+              "distance": 1.753
+            },
+            {
+              "id": "v2:cat1:q451:c11",
+              "distance": 1.7613
+            },
+            {
+              "id": "v2:cat2:q1157:c2",
+              "distance": 1.7644
+            },
+            {
+              "id": "v2:cat1:q551:c1",
+              "distance": 1.7663
+            }
+          ],
+          "collection": "orthodox_pdfs_v2",
+          "where": null,
+          "where_document": null,
+          "n_results": 8
+        }
+      ],
+      "merged_ids": [
+        "v2:cat1:q641:c1",
+        "v2:cat1:q210:c1",
+        "v2:cat1:q500:c1",
+        "v2:cat1:q436:c1",
+        "v2:cat1:q500:c3",
+        "v2:cat1:q451:c11",
+        "v2:cat2:q1157:c2",
+        "v2:cat1:q551:c1"
+      ],
+      "kept_ids": [
+        "v2:cat1:q641:c1",
+        "v2:cat1:q210:c1",
+        "v2:cat1:q500:c1",
+        "v2:cat1:q436:c1",
+        "v2:cat1:q500:c3",
+        "v2:cat1:q451:c11",
+        "v2:cat2:q1157:c2",
+        "v2:cat1:q551:c1"
+      ],
+      "passages": [
+        {
+          "n": 1,
+          "id": "v2:cat1:q641:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q641 “What is the paten?”, p. 489",
+          "text": "Catechism, Book 3: The Church: The Kingdom of God › The Holy Utensils — 641. What is the paten?\n\nThe Coptic Ϯⲇⲓⲥⲕⲟⲥ (ti-diskos) or δισχος (diskos) in Greek is a small round tray, without a stand and having no engravings. It is usually made of silver or gold, resembling the Lord’s manger or His tomb. Some people believe that the Lord did not use a paten, but rather blessed the bread on His hands. However, since the liturgy takes a long time, the Church preferred to use a paten."
+        },
+        {
+          "n": 2,
+          "id": "v2:cat1:q210:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q210 “Do we know why God created the world, and how He created it?”, p. 178",
+          "text": "Catechism, Book 2: Christian Dogma › The Wondrous Creator, the Guardian of the World — 210. Do we know why God created the world, and how He created it?\n\nWith the progress of human science and knowledge, people are constantly proposing theories about the creation, and just as quickly, they are replaced by new theories that take their place. Some of the top researchers have wondered whether there might be some unknown force that is responsible for the creation, both visible and invisible. Some of the faithful have presented evidence to the top researchers who rejected the existence of a divine Creator; some of whom, late in life, have considered the possibility that they might soon stand before the Creator when they die and leave this world, and so came to accept the words of the Holy Bible."
+        },
+        {
+          "n": 3,
+          "id": "v2:cat1:q500:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q500 “How is Jacob’s marriage a symbol of the Church, the bride?”, pp. 395–396",
+          "text": "Catechism, Book 3: The Church: The Kingdom of God › The Church as a Heavenly Wedding Feast — 500. How is Jacob’s marriage a symbol of the Church, the bride?\n\nAccording to St. Jacob of Sarug, the saints prophesied about the Incarnate Son of God by their works. Jacob loved Rachel and they were engaged. Rachel symbolizes the Church, the beautiful bride. He also married Leah who represents the Jewish nation, who took Rachel’s position after Laban tricked him (Gen. 29). St. Jacob of Sarug says the following:\n\nFirst: “Rachel the daughter of the heathens was sanctified by Jacob, her fiancé. She was betrothed, who was raised among the idols, to him who was prosperous because of the blessings and inspirations. The non-believing woman was sanctified by the holy man (1 Cor. 7:14). Rachel became a saint because of Jacob, how much more will the church be sanctified through the God of Jacob! How was Leah, whose eyes were delicate, neglected? Why then except for the mystery to be fulfilled in her? Rachel was honored more because the beauty of the church was hidden within her, and this is why her victory is great! Oh how wondrous is Jacob’s mystery, who is like his Lord and for this reason, he is considered in the scriptures to be great.”\n\nSecond: “Also look at Jacob who walked in poverty, how he was like the Son who humbled Himself … he left his land to Haran in poverty, and the mysteries followed him and were revealed in him. He arrived at the well not of the water, but of the mysteries. If you look closely, it is full of mysteries more than water. He found it shut with no water coming out as the flock of sheep and shepherds were waiting. He found a great stone on its mouth and the flock was thirsty waiting for the stone to be rolled away (Gen. 29:2) … Jacob stood and looked at the flocks who were burning with thirst but not capable of rolling the stone away to drink. As he stood by, Rachel came and when he saw her, he rolled the stone away so that the flocks could drink … The mystery of the church was crystal clear in her face and Jacob longed to marry her. The church was the reason for the beauty of the daughter of the heathens, so that Jacob may see her and conquer … All the flocks drank water because of Rachel; her beauty, her love, and her splendor.”"
+        },
+        {
+          "n": 4,
+          "id": "v2:cat1:q436:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q436 “What does the Lord Christ mean when He says of the Holy Spirit: “And when He has come, He will convict the world … of judgment” (John 16:8)?”, pp. 337–338",
+          "text": "Catechism, Book 2: Christian Dogma › The Holy Spirit and Divine Salvation — 436. What does the Lord Christ mean when He says of the Holy Spirit: “And when He has come, He will convict the world … of judgment” (John 16:8)?\n\nThe Holy Spirit convicts the world of judgment for He declared that He will say to those on the left: “Depart from Me, you cursed, into the everlasting fire prepared for the devil and his angels” (Matt. 25:41). In the Bible there are many passages about the Lord Christ being the one who convicts. Why then does He attribute this to the Holy Spirit as if this prerogative were proper to the Spirit? St. Augustine’s answer is that the Holy Spirit was poured out into the hearts of the disciples (Rom. 5:5), granting them the love that casts out fear (1 John 4:8) and bestowing upon them the right to rebuke and reproach. The saint continues: “We have frequently said, however, that the operations of the Trinity are inseparable; but the Persons needed to be set forth one by one, that not only without separating Them, but also without confounding Them together, we may have a right understanding both of Their Unity and Trinity.”\n\nThe Holy Spirit convicts of judgment, “because the ruler of this world is judged” (John 16:11). The world thought that it had judged Christ and condemned Him; but the Holy Spirit reveals to the faithful that through the cross, it is the enemy of good who is judged and made a spectacle (Col. 2:15). Through the preaching of the cross of Christ, the devil was exposed as a deceiver and destroyer of humanity, and the nations began to reject him and abandon worshipping him. The work of the Holy Spirit affirms that Christ is greater and stronger than the devil, Christ who gave authority to His disciples to trample upon the powers of darkness. Thus, the believer experiences in his daily life the token of authority that is given to him, that he may enjoy its perfection on the Day of Judgment, when the devil will be condemned and humanity will be greatly honored. Humanity occupies the highest echelon of heaven, that from which Satan and all his army fell. Therefore, the verb “judge” carries the meaning of continuity, for the victory over the powers of darkness is an ongoing daily work.\n\nSt. Augustine says, “And therefore of judgment too is the world convinced, because the prince of this world has been judged already; that is, the devil, the prince of the unrighteous, who in heart are invested only in this world which they love, and therefore are called the world; whereas our conversation is in heaven, if we have risen again with Christ. Therefore"
+        },
+        {
+          "n": 5,
+          "id": "v2:cat1:q500:c3",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q500 “How is Jacob’s marriage a symbol of the Church, the bride?”, p. 397",
+          "text": "Catechism, Book 3: The Church: The Kingdom of God › The Church as a Heavenly Wedding Feast — 500. How is Jacob’s marriage a symbol of the Church, the bride?\n\nSeventh: Jacob figured out Laban’s trick and asked him for Rachel. “Where is Rachel for whom I served you? I never asked for Leah and she came into my place without my knowledge. Laban said: It must not be done so in our country that the younger should be given before the firstborn. However, I will not keep Rachel from you if you would like to take both of them, but without violating our law. Jacob agreed to take both from the house of Laban … Here, the mystery of the two nations was fulfilled through the two sisters who married the same husband. The nation and the nations were resembled by Leah and Rachel. The church and the gentiles were symbolized by the sisters. God called all the nations to a marriage with Him, since no nation on earth is not His own … The veil that Moses used to cover his face became an image of Leah’s veil … She looked at the calf and considered it to be a god for she was blind and had no sight to discern the truths. She who was deprived from sight came in first, and the splendid church was left out like Rachel. She was covered with Moses’ veil and no one knew that she was blind since she seemed beautiful because of the veil. The one who had sight was concealed in the nations and remained unknown, the ugly was entirely covered and entered in the house of God.”\n\nEighth: Leah was a symbol of the Jews, who knew God first, followed by Rachel who was a type of the church of the Gentiles. “The former people were the firstborn of God and even though the daughter of the nations was beautiful, she was left behind. It was not appropriate for the youngster to enter before the eldest. Laban testified of this since he gave him Leah before Rachel. Moses led her out of Egypt at midnight so that no one would see that the bride he brought out was not beautiful. She went out at night just as Leah went in at night, but the morning exposed the matter … Rachel the youngest and the young church who were both beautiful came in at the end for the Light revealed their beauty. The beautiful, beloved, and glorious in all things was betrothed to Jacob. They gave him the one with weak sight, ugly eyes, wrinkled skin, gloomy face, and flaws. Our Lord also betrothed the great church, the daughter of kings to Himself. She is the one who knew the Father, worshiped the Son, and accepted the Spirit. He was also given the nation that worshiped the idols, that built the calf, that denied the Father and crucified the Son … Rachel did not enter the just man’s place with deception, and the church does not stand before the Holy One with a veil. The church’s face is more beautiful than Rachel’s, and she entered in the morning so that everyone might see her beauty.”"
+        },
+        {
+          "n": 6,
+          "id": "v2:cat1:q451:c11",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q451 “What are the characteristics of this bride and what is her relationship with the Bridegroom the King of kings like?”, pp. 358–359",
+          "text": "Catechism, Book 3: The Church: The Kingdom of God › The Church: The Kingdom of God — 451. What are the characteristics of this bride and what is her relationship with the Bridegroom the King of kings like?\n\nHence, as the hymn in the Psalms (Ps. 18:6) would have it, the Bridegroom, having emerged as from the bridal chamber, espoused the virgin—that is to say, us— in the mystic rebirth, even though she had been prostituted to idols, and restored her nature to virginal incorruptibility. Since, then, the marriage rites have already been carried out and the Church has been taken by the Word as His Bride (just as John says: ‘He who has the bride is the bride groom’ [John 3:29]), and the Bride has been taken into the inner chamber of the mysteries and the angels are awaiting the return of the King of Glory as He leads His Church as a bride, preparing her nature to be ready for His grace. And the point is that in our living we are to become like them, in order that just as they, dwelling far from evil and error, are ready to greet their Lord at His coming, so we also, sitting wakeful by the gates of our dwellings, may render ourselves for may render ourselves ready to hear when he arrives and knocks at the door, “for,” he says, ‘blessed are those servants whom their Lord finds doing this when he comes’ (Luke 12:37, 43). Since then, it is a blessed thing to hear and answer the one who knocks, the soul that ever seeks blessedness and that rightly watches over her treasures detects the one who stands at her door, and she says, ‘The voice of my Beloved knocks at the door’ (Song. 2:5).”"
+        },
+        {
+          "n": 7,
+          "id": "v2:cat2:q1157:c2",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q1157 “What do we know about the archangel Michael’s war against the devil?”, pp. 292–293",
+          "text": "Catechism, Book 5: The Believer and the Heavenly Hosts › The Order of the Heavenly Hosts — 1157. What do we know about the archangel Michael’s war against the devil?\n\nh. The god of this age (2 Cor. 4:4).\n\ni. The prince of the power of the air (Eph. 2:2).\n\nj. Beelzebub, the lord of the flies (Matt. 12:24).\n\nk. Belial (2 Cor. 6:15).\n\nl. The serpent of old (2 Cor. 11:3, Rev. 12:9).\n\nm. The great dragon (Rev. 12:3, 7, 9).\n\nn. The accuser (Rev. 12:10).\n\no. The deceiver (Rev. 12:9; 20:3).\n\np. The murderer (John 8:44).\n\nq. The liar, and the father of it (John 8:44).\n\nWhen the enemy reaches the last moments before his end, St. John the beloved says, “Then I heard a loud voice, saying in heaven: Now salvation, and strength, and the kingdom of our God, and the power of His Christ have come, for the accuser of our brethren, who accused them before our God day and night, has been cast down. And they overcame him by the blood of the Lamb and by the word of their testimony, and they did not love their lives to the death. Therefore rejoice, O heavens, and you who dwell in them! Woe to the inhabitants of the earth and the sea! For the devil has come down to you, having great wrath, because he knows that he has a short time” (Rev. 12:10–12).\n\nThese heavenly hosts expose the weakness of the devil, and his defeat is apparent from his fall from heaven. The heavenly hosts rejoice in the glorious day of judgement at the proclamation of humanity’s victory by the precious Blood. In their exultation and love for humanity, they call the Church that fights continuously in this world, their “brothers,” for they become like the angels of God."
+        },
+        {
+          "n": 8,
+          "id": "v2:cat1:q551:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 1 — Q551 “Are there always going to be victories without end?”, pp. 428–429",
+          "text": "Catechism, Book 3: The Church: The Kingdom of God › The Church and Daily Renewal — 551. Are there always going to be victories without end?\n\nOrigen used to commend the true believers for their victory over Satan and sin. The Church “men” crush all the powers of darkness by the divine grace and “the gates of Hades shall not prevail on them” (Matt. 16:18).\n\nOrigen says, “Having torn and trampled the nets, He so emboldens His Church that she too dares to trample now upon the snares and to pass over the nets and with all joy to say, ‘Our soul has escaped as a bird from the snare of the fowlers. The snare is broken and we have escaped’ (Ps. 124:7). Who rent the snare except He who alone could not be held by it? For, although He suffered death, He did so willingly and not as we do, by necessity of sin, for He alone was free among the dead. And because He was free among the dead, when He had conquered him who had the empire of death, he brought forth the captives that were being held by death. And He did not raise only Himself from the dead, He also raised together with Himself, those who were held by death and made them to sit with Him in the heavenly places. For ascending on high, He led captivity captive, not only bringing forth the souls, but also raising their bodies as the Gospel testifies, ‘The graves were opened, and many bodies of the saints who had fallen asleep were raised; and coming out of the graves, after His resurrection, they went into the holy city and appeared to many’ (Matt. 27:52).”\n\nHe also says, “The church, as a building of Christ who built His own house wisely upon the rock (Matt. 7:24), is incapable of admitting the gates of Hades which prevail against every man who is outside the rock and the church, but have no power against it.”\n\nNotes: [1105] Origen, Origen: The Song of Songs, Commentary and Homilies 3.13 (ACW 26:237). [1106] Origen, Commentary on the Gospel of Matthew 12:11 (Cf. ANF 4:457)."
+        }
+      ],
+      "retrieved_count": 8,
+      "best_distance": 1.7331264019012451,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "stages_ms": {
+        "analysis": 2375.0,
+        "prepare": 0.0,
+        "retrieval": 688.0
+      },
+      "refusal_reason": null,
+      "task_analysis": {
+        "retrieval_query": "Who won the 2018 FIFA World Cup?",
+        "output_format": "prose",
+        "broad": false,
+        "sub_queries": [],
+        "saint_name_filter": null,
+        "named_subjects": [],
+        "in_scope": false,
+        "ok": true,
+        "used_history": false,
+        "error": null,
+        "model": "gpt-4o-mini",
+        "prompt_tokens": 912,
+        "completion_tokens": 64
+      },
+      "analysis_tokens": 976,
+      "entity_check": null,
+      "model": null,
+      "passage_tokens": [
+        151,
+        162,
+        530,
+        576,
+        627,
+        391,
+        455,
+        488
+      ],
+      "passage_spans": [
+        [
+          "catechism1.pdf",
+          499,
+          499
+        ],
+        [
+          "catechism1.pdf",
+          188,
+          188
+        ],
+        [
+          "catechism1.pdf",
+          405,
+          406
+        ],
+        [
+          "catechism1.pdf",
+          347,
+          348
+        ],
+        [
+          "catechism1.pdf",
+          407,
+          407
+        ],
+        [
+          "catechism1.pdf",
+          368,
+          369
+        ],
+        [
+          "catechism2.pdf",
+          302,
+          303
+        ],
+        [
+          "catechism1.pdf",
+          438,
+          439
+        ]
+      ],
+      "context_tokens": 3380,
+      "format_ok": null,
+      "spend_usd": 0.00018
+    },
+    {
+      "id": "KW-01",
+      "category": "keyword",
+      "subtype": null,
+      "expected_format": null,
+      "split": "tune",
+      "language": "en",
+      "mode": "chat",
+      "should_refuse": false,
+      "verified": true,
+      "question": "What is prayer",
+      "http_status": 200,
+      "latency_s": 1.59,
+      "outcome": "retrieve_only",
+      "answer": "",
+      "answer_chars": 0,
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 89,
+          "url": null,
+          "title": null,
+          "n": 1,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q947 “What is the hidden (or secret) prayer to which the Lord Christ invites us?”, pp. 79–80",
+          "chunk_id": "v2:cat2:q947:c2",
+          "entry": "947. What is the hidden (or secret) prayer to which the Lord Christ invites us?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 90,
+          "pages": "79–80"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 31,
+          "url": null,
+          "title": null,
+          "n": 2,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q896 “What is prayer?”, p. 21",
+          "chunk_id": "v2:cat2:q896:c1",
+          "entry": "896. What is prayer?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 31,
+          "pages": "21"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 32,
+          "url": null,
+          "title": null,
+          "n": 3,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q898 “How can we offer prayer that is acceptable before God?”, p. 22",
+          "chunk_id": "v2:cat2:q898:c1",
+          "entry": "898. How can we offer prayer that is acceptable before God?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 32,
+          "pages": "22"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 89,
+          "url": null,
+          "title": null,
+          "n": 4,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q947 “What is the hidden (or secret) prayer to which the Lord Christ invites us?”, p. 79",
+          "chunk_id": "v2:cat2:q947:c1",
+          "entry": "947. What is the hidden (or secret) prayer to which the Lord Christ invites us?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 89,
+          "pages": "79"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 94,
+          "url": null,
+          "title": null,
+          "n": 5,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q953 “What is unceasing prayer?”, pp. 84–85",
+          "chunk_id": "v2:cat2:q953:c1",
+          "entry": "953. What is unceasing prayer?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 95,
+          "pages": "84–85"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 36,
+          "url": null,
+          "title": null,
+          "n": 6,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q901 “What are the effects of prayer?”, p. 26",
+          "chunk_id": "v2:cat2:q901:c3",
+          "entry": "901. What are the effects of prayer?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 36,
+          "pages": "26"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 34,
+          "url": null,
+          "title": null,
+          "n": 7,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q901 “What are the effects of prayer?”, pp. 24–25",
+          "chunk_id": "v2:cat2:q901:c1",
+          "entry": "901. What are the effects of prayer?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 35,
+          "pages": "24–25"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 35,
+          "url": null,
+          "title": null,
+          "n": 8,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q901 “What are the effects of prayer?”, pp. 25–26",
+          "chunk_id": "v2:cat2:q901:c2",
+          "entry": "901. What are the effects of prayer?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 36,
+          "pages": "25–26"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 120,
+          "url": null,
+          "title": null,
+          "n": 9,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q982 “What is the relationship between metanoias and prayer?”, pp. 110–111",
+          "chunk_id": "v2:cat2:q982:c1",
+          "entry": "982. What is the relationship between metanoias and prayer?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 121,
+          "pages": "110–111"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "catechism2.pdf",
+          "page": 103,
+          "url": null,
+          "title": null,
+          "n": 10,
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q960 “What is the “Jesus Prayer”?”, p. 93",
+          "chunk_id": "v2:cat2:q960:c1",
+          "entry": "960. What is the “Jesus Prayer”?",
+          "work": "Catechism of the Coptic Orthodox Church",
+          "page_end": 103,
+          "pages": "93"
+        }
+      ],
+      "options": [],
+      "error": null,
+      "request_id": "2eb600e413d14cc49826893263652c9f",
+      "retrieval_queries": [
+        "What is prayer?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "What is prayer?",
+          "hits": [
+            {
+              "id": "v2:cat2:q947:c2",
+              "distance": 0.9237
+            },
+            {
+              "id": "v2:cat2:q896:c1",
+              "distance": 0.9582
+            },
+            {
+              "id": "v2:cat2:q898:c1",
+              "distance": 0.9593
+            },
+            {
+              "id": "v2:cat2:q947:c1",
+              "distance": 0.9684
+            },
+            {
+              "id": "v2:cat2:q953:c1",
+              "distance": 0.9685
+            },
+            {
+              "id": "v2:cat2:q901:c3",
+              "distance": 0.9801
+            },
+            {
+              "id": "v2:cat2:q901:c1",
+              "distance": 0.9937
+            },
+            {
+              "id": "v2:cat2:q901:c2",
+              "distance": 0.994
+            },
+            {
+              "id": "v2:cat2:q982:c1",
+              "distance": 0.9991
+            },
+            {
+              "id": "v2:cat2:q960:c1",
+              "distance": 1.0057
+            }
+          ],
+          "collection": "orthodox_pdfs_v2",
+          "where": null,
+          "where_document": null,
+          "n_results": 10
+        }
+      ],
+      "merged_ids": [
+        "v2:cat2:q947:c2",
+        "v2:cat2:q896:c1",
+        "v2:cat2:q898:c1",
+        "v2:cat2:q947:c1",
+        "v2:cat2:q953:c1",
+        "v2:cat2:q901:c3",
+        "v2:cat2:q901:c1",
+        "v2:cat2:q901:c2",
+        "v2:cat2:q982:c1",
+        "v2:cat2:q960:c1"
+      ],
+      "kept_ids": [
+        "v2:cat2:q947:c2",
+        "v2:cat2:q896:c1",
+        "v2:cat2:q898:c1",
+        "v2:cat2:q947:c1",
+        "v2:cat2:q953:c1",
+        "v2:cat2:q901:c3",
+        "v2:cat2:q901:c1",
+        "v2:cat2:q901:c2",
+        "v2:cat2:q982:c1",
+        "v2:cat2:q960:c1"
+      ],
+      "passages": [
+        {
+          "n": 1,
+          "id": "v2:cat2:q947:c2",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q947 “What is the hidden (or secret) prayer to which the Lord Christ invites us?”, pp. 79–80",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › Prayer of the Mind and Contemplation — 947. What is the hidden (or secret) prayer to which the Lord Christ invites us?\n\nBut he said this about deceitful prayer, which is not accepted. For you must hear with excellence all the words, then you will understand their power.”\n\nAlso, Anthimus of Jerusalem says, “Prayer is the hidden conversation of the heart with God, or a form of connection with Him. Even if it were silent, many times God hears the cries of our hearts which we cannot express in words. There is no weapon that is more powerful than prayer. If it is offered from a pure heart, the Lord will hear it. And if it is accompanied with good deeds, He will respond and listen to it.”\n\nNotes: [262] St. Clement of Alexandria, The Stromata, or Miscellanies 7.7 (ANF 2:534). [263] St. Aphraphat, Aphrahat: Demonstrations I, trans., Kuriakose Valavanolickal (Kottayam, India: St Ephrem Ecumenical Research Institute, 2005) 4.10: pp. 85–86."
+        },
+        {
+          "n": 2,
+          "id": "v2:cat2:q896:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q896 “What is prayer?”, p. 21",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › The Life of Prayer — 896. What is prayer?\n\nSt. Clement of Alexandria says, “Prayer is, then, to speak more boldly, converse with God.”\n\nSt. John Climacus says, “Prayer by reason of its nature is the converse and union of man with God, and by reason of its action upholds the world and brings about reconciliation with God … it is … a work of angels, the food of all the bodiless spirits, future gladness, unending activity, a source of virtues, a means of obtaining graces, invisible progress, food of the soul, the enlightenment of the mind, an axe against despair, a demonstration of hope, a cure for sorrow.”\n\n“Let your prayer be completely simple. For both the publican and the prodigal son were reconciled to God by a single phrase.”\n\n“The benefit of prayer can be inferred from the assaults of the demons during the divine service; and its fruit from the defeat of the foe.”\n\nSt. Basil the Great says, “Thus will you pray without ceasing, if you not only pray in words, but unite yourself to God through all the course of life so that your life be made one ceaseless and uninterrupted prayer.”\n\nThe Letter to Diognetus says of Christians that “their days are passed on the earth, but their citizenship is above in the heavens.”\n\nNotes: [37] St. Clement of Alexandria, The Stromata, or Miscellanies 7.7 (ANF 2:534). [38] St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press, 1982) 28.1: p. 212. [39] St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press, 1982) 28.5: p. 213. [40] St. John Climacus: Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press, 1982) 28.61: p. 220. [41] St. Basil of Caesarea, Homily on the Martyr Julitta quoted in NPNF II/8: p. lxix, amended. [42] “Epistle to Diognetus,” in Staniforth, Maxwell, and Andrew Louth, eds. Early Christian Writings, (Penguin Classics, 2000) 5: p. 145."
+        },
+        {
+          "n": 3,
+          "id": "v2:cat2:q898:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q898 “How can we offer prayer that is acceptable before God?”, p. 22",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › The Life of Prayer — 898. How can we offer prayer that is acceptable before God?\n\nThe purpose of prayer is to keep the relationship between God and the person alive and effective. Therefore, we should consider the following when we pray:\n\na. Trust in God who has complete love for humanity, ability, wisdom, and knowledge (cf. Col. 2:2; Eccl. 8:17).\n\nb. Pray for the will of God in every matter, for He is the Pantocrator: “Thy will be done” (Matt. 6:10).\n\nc. Offer prayer from a heart that is unsoiled and pure.\n\nd. Begin every prayer with thanksgiving for the things that God has granted us, for there is no gift that is not increased except that which is received without thanksgiving, according to St. Isaac the Syrian.\n\ne. Believe in the verse that says, “Unless the lord builds the house, they labor in vain who built it” (Ps. 127:1).\n\nf. Acknowledge that divine grace works in synergy with human striving. The Lord saved the child Moses and at the same time He rewarded the two midwives for ignoring pharaoh’s evil decree (Ex. 1:20).\n\nSt. Basil the Great says, “There are conditions for a prayer to be answered: it must be according to the will of God (Matt. 26:39); we must be steadfast and persistent (Luke 11:8); we must realize that God’s wants us to reform our conduct, which is much more important than answering our prayers (Isa. 1:15); we must be aware of our unworthiness of that for which we ask (1 Chron. 17:4) or the unworthiness of those for whom we pray (Jer. 14:11); and that sometimes the lack of an answer to prayer is preferable to it being answered (2 Cor. 12:7) … If all these conditions are met, then there is no doubt that God will answer our prayers.”\n\nAbba Zeno says, “If a man wants God to hear his prayer quickly, then before he prays for anything else, even his own soul, when he stands and stretches out his hands towards God, he must pray with all his heart for his enemies. Through this action God will hear everything that he asks.”"
+        },
+        {
+          "n": 4,
+          "id": "v2:cat2:q947:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q947 “What is the hidden (or secret) prayer to which the Lord Christ invites us?”, p. 79",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › Prayer of the Mind and Contemplation — 947. What is the hidden (or secret) prayer to which the Lord Christ invites us?\n\nSt. Clement of Alexandria says, “Prayer is, then, to speak more boldly, converse with God. Though whispering, consequently, and not opening the lips, we speak in silence, yet we cry inwardly. For God hears continually all the inward converse.”\n\nSt. Aphrahat says, “Again our Savior taught the prayer and said, ‘You should pray secretly to the Hidden One; He sees everything’ (Matt. 6:6). For he said, ‘Enter the inner chamber and pray secretly to your Father, and the Father who sees in secret will reward you’ (Matt. 6:6). But why, my beloved, did our Savior teach and say, ‘Pray to your Father in secret with the door closed?’ I will explain this to you as much as I have understood. For he said, ‘Pray to your Father in secret with the door closed.’ What is the door that he said to close? If not your mouth, which is (the door to) the temple in which Christ dwells as the Apostle said, ‘You are the temple of the Lord’ (1 Cor. 3:16), for him to enter into your inner man, to this house, cleanse it from everything that is unclean, while the door, that is your mouth, is to be closed. If that was not so, how would you understand this matter? For if it happens to you that you were in a land, and there is no house and door, would you not pray in secret? Or if it happens to you again that you were on the top of a mountain, would you not pray?\n\n“And our Savior showed this that God knows the will of the heart and of the thought, just as our Lord said, ‘Your Father knows what you need before you ask Him’ (Matt. 6:8). It is written in the prophet Isaiah, ‘Before they who were chosen by me call, I will hear them, and before they make the cry I will answer them’ (Isa. 65:24). Isaiah said again about the wicked, ‘Even though you multiply prayer I will not listen’ (Isa. 1:15). He said again, ‘They may cry in my ears with a loud voice, but I shall not hear them’ (Ezek. 8:18). But he said this about deceitful prayer, which is not accepted. For you must hear with excellence all the words, then you will understand their power.”"
+        },
+        {
+          "n": 5,
+          "id": "v2:cat2:q953:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q953 “What is unceasing prayer?”, pp. 84–85",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › Prayer of the Mind and Contemplation — 953. What is unceasing prayer?\n\nPrayer without ceasing is achieved through the practice of being in the presence of God. St. Basil says that a monk, by his unceasing prayer and meditation, would be able “to imitate on earth the choirs of angels.” He also says, “If he is resolved that he stands before the eyes of God, for if someone who sees his judge or ruler and converses with him does not allow his eye the liberty to roam about or look away elsewhere while he is engaged in speaking, how much more ought someone who approaches God never divert the eyes of his heart but remain intent on him who searches hearts and inward parts (Ps. 7:9), so that he fulfils what is written: Lifting up holy hands without anger and argument (1 Tim. 2:8).”\n\n“What do I say then? I say that we must not think that our prayer consists only of syllables. The strength of prayer lies rather in the purpose of our soul and in deeds of virtue reaching every part and moment of our life. ‘Whether you eat, or drink, or whatever you do, do all to the glory of God’ (1 Cor. 10:31). When you sit down to eat, pray. When you eat bread, do so thanking Him for being so generous to you. When you sustain your bodily weakness with wine, remember Him who supplies you with this gift, to make your heart glad and to comfort your infirmity. Has your need for taking food passed away? Let not the thought of your Benefactor pass away too. When you dress, thank the Giver of it. As you wrap your cloak around yourself, feel yet greater love to God, who alike in summer and winter has given us clothing convenient for us, both to cover what is unseemly and to preserve our life. Is the day over? Give thanks to Him who has given us the sun for our daily work, and has provided us a fire to light up the night, and to serve the rest of the needs of life. Let the night give the other occasions of prayer.\n\n“When you look up to heaven and gaze at the beauty of the stars, pray to the Lord of the visible world; pray to God the Arch-artificer of the universe, who in wisdom has made them all. When you see all nature sunk in sleep, then again worship Him who gives us even against our wills release from the continuous strain of toil, and by a short refreshment restores us once again to the vigor of our strength. Let not night herself be all, as it were, the special and peculiar property of sleep. Let not half your life be useless through the senselessness of slumber. Divide the time of night between sleep and prayer."
+        },
+        {
+          "n": 6,
+          "id": "v2:cat2:q901:c3",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q901 “What are the effects of prayer?”, p. 26",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › The Life of Prayer — 901. What are the effects of prayer?\n\nHe wishes to benefit you still more by making you persist longer in your patient prayer before Him. For what can be higher than to address one’s converse to God and be in communion with Him?”\n\nSt. Hesychius of Jerusalem says, “If you offer your prayers with a pure and blameless heart on behalf of any inappropriate act, and if you offer groanings for yourself before Him, you will encounter God. Instead of sorrow, you will have joy; instead of misfortunes, you will receive blessings; and the expressions on your face will be bright, like pure water … You will no longer fear other defects, for God will cast them away from you. You will find rest from your troubles and thanksgiving for the calmness which will overshadow you. You shall not fear temptations, for you will be like one who found rest in a safe harbor; you will fear no billows, for the sea is not able to harm you.”\n\nThird: By prayer, the divine commandments are fulfilled. St. John of Dalyatha says, “Our Lord said to Simon, chief of the Apostles: I will give you the keys of the Kingdom of heaven, that you may close and open to all whom you wish (Matt. 16:19) … [prayer] wears itself out giving rest to the weary and when they have been refreshed sees that they not become weary again.”\n\n“Sanctify your bed by the descent of the Spirit over you and the fragrance of your members will be wafted like perfume.”\n\n“Through prayer, the mind is mingled with God. Through prayer, one can open the treasures of God and divide His spoils. Through prayer, one is made worthy of the vision of of God, of entering within the clouds of the light of His greatness in the country of the spiritual beings. Through prayer, a person becomes the dwelling of God. Through prayer, the soul is united with Christ, and beholds the radiance of His great glory. Through prayer, the fire of Christ’s love is kindled in the soul and the heart burns with desire for God; this desire that burns away every lustful desire of one’s members. Through prayer, the soul exults in love and goes beyond her rank, and the world is cast out from her heart.”"
+        },
+        {
+          "n": 7,
+          "id": "v2:cat2:q901:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q901 “What are the effects of prayer?”, pp. 24–25",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › The Life of Prayer — 901. What are the effects of prayer?\n\nFirst: The soul is inflamed with the love of God. St. Basil the Great says, “Prayers, too, following reading, take hold upon a fresher and more vigorous soul already stirred to a longing for God. And prayer which imprints in the soul a clear conception of God is an excellent thing. This abiding of God in our memory is the indwelling of God. Thus we become in a special manner the temples of God when earthly thoughts cease to interrupt our continual remembrance of Him.”\n\nTertullian says, “Prayer is alone that which vanquishes God [cf. Gen. 32:22–30; Matt. 11:12]. But Christ has willed that it be operative for no evil: He had conferred on it all its virtue in the cause of good. And so it knows nothing save how to recall the souls of the departed from the very path of death, to transform the weak, to restore the sick, to purge the possessed, to open prison-bars, to loose the bonds of the innocent. Likewise it washes away faults, repels temptations, extinguishes persecutions, consoles the faint-spirited, cheers the high-spirited, escorts travelers, appeases waves, makes robbers stand aghast, nourishes the poor, governs the rich, upraises the fallen, arrests the falling, confirms the standing. Prayer is the wall of faith: her arms and missiles against the foe who keeps watch over us on all sides. And, so never walk we unarmed. By day, be we mindful of Station; by night, of vigil. Under the arms of prayer guard we the standard of our General; await we in prayer the angel’s trump … What more then, touching the office of prayer? Even the Lord Himself prayed; to whom be honour and virtue unto the ages of the ages!”\n\nSt. Hesychius of Jerusalem says, “‘Oh, that I my request may be fulfilled before the Lord.’ Should my prayers ascend on high, my enemies would perish, and the righteous person would stand firm (Wisd. of Sol. 5:1); the net would be broken, and the bird would be liberated and fly freely (Ps. 124:7); the oppressors would bow their heads, and the oppressed would rejoice (Matt. 5:10–12).”"
+        },
+        {
+          "n": 8,
+          "id": "v2:cat2:q901:c2",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q901 “What are the effects of prayer?”, pp. 25–26",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › The Life of Prayer — 901. What are the effects of prayer?\n\nShould my prayers ascend on high, my enemies would perish, and the righteous person would stand firm (Wisd. of Sol. 5:1); the net would be broken, and the bird would be liberated and fly freely (Ps. 124:7); the oppressors would bow their heads, and the oppressed would rejoice (Matt. 5:10–12).”\n\nSecond: Prayer propagates the spirit of inner joy. St. Cyril the Great says, “For it is, I affirm, the duty of those who set apart their lives for His service, not to be sluggish in their prayers, nor again to consider it as a hard and laborious duty: but rather to rejoice, because of the freedom of access granted them by God; for He would have us converse with Him as sons with a father. Is not this then a privilege worthy of being valued by us most highly? For suppose that some one of those possessed of great earthly power were easy of access to us, and were to permit us to converse with him with full license, should we not consider it as a reason for extraordinary rejoicing? What possible doubt can there be of this? When therefore God permits us each one to offer our addresses unto Him for whatever we wish, and has set before those who fear Him an honor so truly great and worthy of their gaining, let all slothfulness cease that would lead men to an injurious silence therein; and rather let us draw near with praises, and rejoicing that we have been commanded to converse with the Lord and God of all, having Christ as our Mediator, who with God the Father grants us the accomplishment of our supplications. For the blessed Paul somewhere writes, ‘Grace be unto you, and peace, from God our Father, and from our Lord Jesus Christ’ (2 Cor. 1:2). And He somewhere Himself said to the holy apostles, ‘Hitherto you have asked nothing in My Name: ask, and it shall be given unto you’ (John 16:24). For He is our Mediator, our Propitiation, our Comforter, and the Bestower of every request.”\n\nSt. Nilus of Sinai says, “Prayer is a remedy against grief and depression.” “Do not grieve if you do not at once receive from God that which you ask. He wishes to benefit you still more by making you persist longer in your patient prayer before Him. For what can be higher than to address one’s converse to God and be in communion with Him?”"
+        },
+        {
+          "n": 9,
+          "id": "v2:cat2:q982:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q982 “What is the relationship between metanoias and prayer?”, pp. 110–111",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › Metanoias and Prostrations — 982. What is the relationship between metanoias and prayer?\n\nIf prayer is the offering up of a rational sacrifice, then through metanoias, the body cooperates with the mind in this offering, as the apostle said: “I beseech you therefore, brethren, by the mercies of God, that you present your bodies a living sacrifice, holy, acceptable to God, which is your reasonable service” (Rom. 12:1). The Lord Christ taught us the model prayer that begins with the words, “Our Father, who art in heaven,” thus granting the faithful the boldness of children who may address the Father with great daring. But they ought also to be armed with the spirit of divine fear, as He says, “A son honors his father, and a servant his master; if then I am a Father, where is my honor; and if I am a Master, where is my reverence?” (Mal. 1:6). By performing metanoias, we reveal the fear of God that is within us, without negating His Fatherhood. As a matter of nature, a son honors his father; and according to civil law, a servant obeys his employer’s instructions and cares for his well-being. A son who does not honor his father comes under the judgment of natural law, and the servant who does not obey his employer comes under the judgment of civil law. This is the case of a son or servant. But for us, according to the law of the divine grace, we ought to honor God as our Father without abusing His love and compassion. For this reason, our prayers are mingled with metanoias; especially the short arrow prayers.\n\nSt. Isaac the Syrian teaches us this practice: if our boredom afflicts our prayers for one reason or another, for example, if our emotions are distracted by a certain thought, we ought to perform metanoias, asking God to “nail my flesh with the fear of You” (cf. Ps. 118:120 LXX). He says, “Sow metanoias than psalms among your prayers [if a person is beset by mind-wandering when he prays the psalms and struggles with distraction of thought), and when prayer offers you her hand, she will recompense you for that which you missed from your canon.”"
+        },
+        {
+          "n": 10,
+          "id": "v2:cat2:q960:c1",
+          "label": "Catechism of the Coptic Orthodox Church, Vol. 2 — Q960 “What is the “Jesus Prayer”?”, p. 93",
+          "text": "Catechism, Book 4: Church Worship as a Journey to Heaven › The Jesus Prayer or the Arrow Prayer — 960. What is the “Jesus Prayer”?\n\nThe goal of sacred worship — and of prayer in particular — is closeness to God through constant dialogue with Him. Hence, both scripture and holy tradition provide a varied approach to prayer through which the believer is able to attain to constant prayer without ceasing. The believer begins with prayer in every work he undertakes; even before he sleeps. He participates in liturgies, prays the psalms, and his own personal prayers. To preserve his thought from distraction, he offers up prayers that cannot be counted with words or sentences, remembering always the presence of God in his life, so that he lives in a state of constant communication with Him; prayers that he can recite or repeat at any time, even when he is performing any kind of work. Being confident in the power of the name of Jesus, the believer repeats it often. This is what we call the Jesus Prayer.\n\nThe Desert Fathers often recited this prayer or other short prayers, which represent a cry to the Lord. St. Augustine used to repeat this prayer: “Make haste, O God, to deliver me. Make haste to help me, O Lord” (Ps. 70:1); and he encouraged the faithful to repeat it on every occasion: at home; at work; while eating or drinking; while awake or asleep; in grief or joy; when spiritually zealous or lukewarm in worship — for this prayer is particularly helpful. St. Augustine used to call this short prayer, “the arrow prayer,” for it shoots an arrow into the heart of the devil and prevents him from distracting our thoughts so long as we pray it. St. John of the Ladder (Climacus) urges us to employ this short prayer saying, “Let your prayer be completely simple. For both the publican and the prodigal son were reconciled to God by a single phrase.”\n\nNotes: [293] St. John Climacus, The Ladder of Divine Ascent, trans., Colm Luibheid and Norman Russell (Paulist Press, 1982) 28.5: p. 251."
+        }
+      ],
+      "retrieved_count": 10,
+      "best_distance": 0.9237435460090637,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "stages_ms": {
+        "analysis": 1188.0,
+        "prepare": 0.0,
+        "retrieval": 390.0
+      },
+      "refusal_reason": null,
+      "task_analysis": {
+        "retrieval_query": "What is prayer?",
+        "output_format": "prose",
+        "broad": false,
+        "sub_queries": [],
+        "saint_name_filter": null,
+        "named_subjects": [],
+        "in_scope": true,
+        "ok": true,
+        "used_history": false,
+        "error": null,
+        "model": "gpt-4o-mini",
+        "prompt_tokens": 905,
+        "completion_tokens": 58
+      },
+      "analysis_tokens": 963,
+      "entity_check": null,
+      "model": null,
+      "passage_tokens": [
+        263,
+        542,
+        506,
+        559,
+        600,
+        502,
+        518,
+        549,
+        506,
+        462
+      ],
+      "passage_spans": [
+        [
+          "catechism2.pdf",
+          89,
+          90
+        ],
+        [
+          "catechism2.pdf",
+          31,
+          31
+        ],
+        [
+          "catechism2.pdf",
+          32,
+          32
+        ],
+        [
+          "catechism2.pdf",
+          89,
+          89
+        ],
+        [
+          "catechism2.pdf",
+          94,
+          95
+        ],
+        [
+          "catechism2.pdf",
+          36,
+          36
+        ],
+        [
+          "catechism2.pdf",
+          34,
+          35
+        ],
+        [
+          "catechism2.pdf",
+          35,
+          36
+        ],
+        [
+          "catechism2.pdf",
+          120,
+          121
+        ],
+        [
+          "catechism2.pdf",
+          103,
+          103
+        ]
+      ],
+      "context_tokens": 5007,
+      "format_ok": null,
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "catechism2.pdf:p31"
+      ],
+      "spend_usd": 0.00017
+    },
+    {
+      "id": "SNT-14",
+      "category": "saints",
+      "subtype": null,
+      "expected_format": null,
+      "split": "tune",
+      "language": "en",
+      "mode": "chat",
+      "should_refuse": false,
+      "verified": true,
+      "question": "Who was St. George the Cappadocian?",
+      "http_status": 200,
+      "latency_s": 1.25,
+      "outcome": "retrieve_only",
+      "answer": "",
+      "answer_chars": 0,
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "saints2.pdf",
+          "page": 169,
+          "url": null,
+          "title": null,
+          "n": 1,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, pp. 169–170",
+          "chunk_id": "v2:sts2:saint:george-the-capaducian:c1",
+          "entry": "St. George, the Capaducian",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 170,
+          "pages": "169–170"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints2.pdf",
+          "page": 170,
+          "url": null,
+          "title": null,
+          "n": 2,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, p. 170",
+          "chunk_id": "v2:sts2:saint:george-the-capaducian:c2",
+          "entry": "St. George, the Capaducian",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 170,
+          "pages": "170"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints2.pdf",
+          "page": 173,
+          "url": null,
+          "title": null,
+          "n": 3,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, pp. 173–174",
+          "chunk_id": "v2:sts2:saint:george-the-capaducian:c6",
+          "entry": "St. George, the Capaducian",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 174,
+          "pages": "173–174"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints2.pdf",
+          "page": 171,
+          "url": null,
+          "title": null,
+          "n": 4,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, p. 171",
+          "chunk_id": "v2:sts2:saint:george-the-capaducian:c3",
+          "entry": "St. George, the Capaducian",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 171,
+          "pages": "171"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints2.pdf",
+          "page": 168,
+          "url": null,
+          "title": null,
+          "n": 5,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George of Alexandria, pp. 168–169",
+          "chunk_id": "v2:sts2:saint:george-of-alexandria:c1",
+          "entry": "St. George of Alexandria",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 169,
+          "pages": "168–169"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints4.pdf",
+          "page": 263,
+          "url": null,
+          "title": null,
+          "n": 6,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 4 — St. Theodore, Bishop of Cappadocia, p. 263",
+          "chunk_id": "v2:sts4:saint:theodore-bishop-of-cappadocia:c1",
+          "entry": "St. Theodore, Bishop of Cappadocia",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 263,
+          "pages": "263"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints2.pdf",
+          "page": 174,
+          "url": null,
+          "title": null,
+          "n": 7,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Deacon, p. 174",
+          "chunk_id": "v2:sts2:saint:george-the-deacon:c1",
+          "entry": "St. George, the Deacon",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 174,
+          "pages": "174"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints2.pdf",
+          "page": 171,
+          "url": null,
+          "title": null,
+          "n": 8,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, pp. 171–172",
+          "chunk_id": "v2:sts2:saint:george-the-capaducian:c4",
+          "entry": "St. George, the Capaducian",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 172,
+          "pages": "171–172"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints2.pdf",
+          "page": 169,
+          "url": null,
+          "title": null,
+          "n": 9,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George of Alexandria, p. 169",
+          "chunk_id": "v2:sts2:saint:george-of-alexandria:c2",
+          "entry": "St. George of Alexandria",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 169,
+          "pages": "169"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "saints3.pdf",
+          "page": 461,
+          "url": null,
+          "title": null,
+          "n": 10,
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 3 — St. Phocas, the Gardner, pp. 461–462",
+          "chunk_id": "v2:sts3:saint:phocas-the-gardner:c2",
+          "entry": "St. Phocas, the Gardner",
+          "work": "Encyclopedia of the Saints and Fathers of the Church",
+          "page_end": 462,
+          "pages": "461–462"
+        }
+      ],
+      "options": [],
+      "error": null,
+      "request_id": "6ab9f116b1e5419d885296c547618814",
+      "retrieval_queries": [
+        "Who was St. George the Cappadocian?"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "Who was St. George the Cappadocian?",
+          "hits": [
+            {
+              "id": "v2:sts2:saint:george-the-capaducian:c1",
+              "distance": 0.6214
+            },
+            {
+              "id": "v2:sts2:saint:george-the-capaducian:c2",
+              "distance": 0.7542
+            },
+            {
+              "id": "v2:sts2:saint:george-the-capaducian:c6",
+              "distance": 0.8063
+            },
+            {
+              "id": "v2:sts2:saint:george-the-capaducian:c3",
+              "distance": 0.8185
+            },
+            {
+              "id": "v2:sts2:saint:george-of-alexandria:c1",
+              "distance": 0.8486
+            },
+            {
+              "id": "v2:sts4:saint:theodore-bishop-of-cappadocia:c1",
+              "distance": 0.8528
+            },
+            {
+              "id": "v2:sts2:saint:george-the-deacon:c1",
+              "distance": 0.8785
+            },
+            {
+              "id": "v2:sts2:saint:george-the-capaducian:c4",
+              "distance": 0.8847
+            },
+            {
+              "id": "v2:sts2:saint:george-of-alexandria:c2",
+              "distance": 0.9184
+            },
+            {
+              "id": "v2:sts3:saint:phocas-the-gardner:c2",
+              "distance": 0.9546
+            }
+          ],
+          "collection": "orthodox_pdfs_v2",
+          "where": null,
+          "where_document": null,
+          "n_results": 10
+        }
+      ],
+      "merged_ids": [
+        "v2:sts2:saint:george-the-capaducian:c1",
+        "v2:sts2:saint:george-the-capaducian:c2",
+        "v2:sts2:saint:george-the-capaducian:c6",
+        "v2:sts2:saint:george-the-capaducian:c3",
+        "v2:sts2:saint:george-of-alexandria:c1",
+        "v2:sts4:saint:theodore-bishop-of-cappadocia:c1",
+        "v2:sts2:saint:george-the-deacon:c1",
+        "v2:sts2:saint:george-the-capaducian:c4",
+        "v2:sts2:saint:george-of-alexandria:c2",
+        "v2:sts3:saint:phocas-the-gardner:c2"
+      ],
+      "kept_ids": [
+        "v2:sts2:saint:george-the-capaducian:c1",
+        "v2:sts2:saint:george-the-capaducian:c2",
+        "v2:sts2:saint:george-the-capaducian:c6",
+        "v2:sts2:saint:george-the-capaducian:c3",
+        "v2:sts2:saint:george-of-alexandria:c1",
+        "v2:sts4:saint:theodore-bishop-of-cappadocia:c1",
+        "v2:sts2:saint:george-the-deacon:c1",
+        "v2:sts2:saint:george-the-capaducian:c4",
+        "v2:sts2:saint:george-of-alexandria:c2",
+        "v2:sts3:saint:phocas-the-gardner:c2"
+      ],
+      "passages": [
+        {
+          "n": 1,
+          "id": "v2:sts2:saint:george-the-capaducian:c1",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, pp. 169–170",
+          "text": "Saint: GEORGE, THE CAPADUCIAN (The martyr) — Time of His Martyrdom\n\nTime of His Martyrdom:\n\nSaint George was most probably considered as the Prince of Martyrs in the time of Emperor Diocletian (284-305 AD). He led a revolt in the province of Cappadocia against the persecution decree of the Christians. However, the majority of the Coptic manuscripts did refer to this saint as a martyr who lived in an era before Diocletian time. He lived during the reign of a pagan king of Persia called Dadianus, whom the province of Cappadocia was under his control. This version would be in agreement with what was documented in the biography of the martyr George of Alexandria, where he was born after his father attended the feast of the consecration of the church of St. George, the Cappadocian in the city of Lydda in Palestine. Some of the Coptic manuscripts did not assign his era, but only mentioned that its events happened “in the old,” probably meaning before the time of Diocletian.\n\nHis Upbringing:\n\nThis saint was born in Cappadocia in Asia Minor, to pious, wealthy parents of noble origin. His father was Anastasius, the governor of Melitene in Cappadocia, and his mother was Theobesta (Theognosta), the daughter of the governor of Lydda in Palestine. His father was said to be a pious man, faithful to God and the king, that he was so loved by the king to make him one of his entourage who accompanied him wherever he would go, but when he discovered that Anastasius believed in the Lord Jesus Christ, he gave the command to cut off his head. This happened when his son St. George was only fourteen years of age. Anyhow, St. George came as a fruit of a holy seed, buried in a holy land, to provide to the church, as well as to the celestials, what brought pleasure to their hearts. The martyrdom of his father governor Anastasius did not break the souls of his family but inflamed the heart of his blessed son George with the fire of the Divine Love to make him a martyr for the Lord, as well. After the martyrdom of her husband, governor Anastasius, Theobesta took her children: George, Casset, and Madrona, and she set forth to her homeland Diospolis in Palestine."
+        },
+        {
+          "n": 2,
+          "id": "v2:sts2:saint:george-the-capaducian:c2",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, p. 170",
+          "text": "Saint: GEORGE, THE CAPADUCIAN (The martyr) — His Upbringing\n\nThe martyrdom of his father governor Anastasius did not break the souls of his family but inflamed the heart of his blessed son George with the fire of the Divine Love to make him a martyr for the Lord, as well. After the martyrdom of her husband, governor Anastasius, Theobesta took her children: George, Casset, and Madrona, and she set forth to her homeland Diospolis in Palestine.\n\nPrince George the Roman\n\nAfter the martyrdom of governor Anastasius, a prince named Justus replaced him. He was a God-fearing man who loved the Lord Jesus Christ. Hence, he did well to the household of Anastasius, the martyr, and made the young man George a cavalryman to prepare him for a military career. George surpassed all his peers on every aspect and showed rare courage that he soon became a hero whose fame spread all over Palestine and was promoted to a leader of 1,000 warriors. The prince sent him to the emperor with a message that revealed his achievements and sought from the emperor to grant him the rank of a prince. There, the emperor was very impressed by him and gave him the title: Prince George the Roman. He made him a leader of 5,000 warriors and gave him a blonde horse of the rarest kind to show how he was pleased with him. All loved George, and his noble characters, prudence, and his stature that would project his courage in battle qualified him to become the highest commander in the army. He was still twenty years of age at that time, and his mother also reposed in the Lord shortly after."
+        },
+        {
+          "n": 3,
+          "id": "v2:sts2:saint:george-the-capaducian:c6",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, pp. 173–174",
+          "text": "Saint: GEORGE, THE CAPADUCIAN (The martyr) — In the Royal Palace\n\nIn the Royal Palace:\n\nAfter such a multitude of Divine miracles performed by God through the saint, the emperor felt so ashamed, he took the young man George to his palace, in a final round of seduction. There, the empress heard him praying and sought from him to explain his faith to her, and God opened her heart up, and the Spirit of God led her to faith. The empress started to admonish her husband, the emperor, saying: “I told you not to go against those of Galilees, for their God is strong!” Perceiving that she was seduced by the saint to faith in the Lord, the emperor gave the order to comb her body with an iron comb, then to cut her head off.\n\nOn her way to the place of execution, the empress asked the saint, how she would go to death without being baptized. The saint told her not to worry, for shedding her blood for the faith in Christ would be a Holy Baptism in itself, which would open the gates of Paradise before her. On hearing those words, the empress exultantly approached her martyrdom, saying: “O Lord, as I left the gates of my palace wide open, I pray to You not to close the gate of Your Paradise before my face, but open it the way You did for the right-hand thief on the Cross.” The empress had her head cut off, and her soul set forth to Paradise to enjoy the company of Jesus Christ, her Savior.\n\nThe Martyrdom of St. George:\n\nThe emperor finally gave the order to cut the head of St. George off because of his fear that a possible public revolt against him would erupt due to all God's works through His saint. This took place on the 23rd of the Coptic month of Baramhat.\n\nAbout the Icon of St. George the Roman:\n\nIt carries the following symbolic meanings:  The young girl in the icon refers to the church that looks at her martyred children with joy and appreciation.  The dragon refers to Satan, who moves the evil world against faith.\n\n The spear refers to the Cross of Jesus, the Lord of Glory, that grants the conquest.  The defeat of the dragon refers to the defeat of evil and its initiator (Satan)\n\nby the power of faith."
+        },
+        {
+          "n": 4,
+          "id": "v2:sts2:saint:george-the-capaducian:c3",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, p. 171",
+          "text": "Saint: GEORGE, THE CAPADUCIAN (The martyr) — The Love of the Governor for Him\n\nThe Love of the Governor for Him:\n\nJustus planned to select George to be wed to his only daughter, the little pure princess who feared God. He revealed his intention to Theobesta, the mother of George, before she died, and she was immensely exultant to hear it. He also appointed George as his deputy on all his possessions. However, Justus had to postpone the wedding because of the young age of his girl, unaware that God prepared something more significant for the young man.\n\nThe Zeal of Prince George:\n\nWhen George heard that the emperor had gathered an assembly of seventy of his governors and proclaimed his intention to wipe out Christianity from the face of the earth, he readied himself to confront the persecution. He planned to make his religion known to the emperor and sold all that he inherited from his father, including his clothes and his house furniture, and gave the entire proceeds to the poor. Then he released all his slaves, and when the emperor issued his decree, George took it and tore it off in public before multitudes of people, and he prepared himself for martyrdom with joy.\n\nBefore the Emperor:\n\nThen, they led him before the emperor, who started by talking to him nicely, promising him with extraordinary gifts. However, the young man utterly disregarded all these promises. On failing to seduce him, the emperor tortured the saint for an extended period. He kept torturing him for a whole seven years period. During that time, God's hand supported him and made him a tool to bring a multitude of souls to the true faith. During being tortured, St. George died three times, and God kept raising him to be glorified in him, and amid his suffering, He made him enjoy heavenly visions to support him."
+        },
+        {
+          "n": 5,
+          "id": "v2:sts2:saint:george-of-alexandria:c1",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George of Alexandria, pp. 168–169",
+          "text": "Saint: GEORGE OF ALEXANDRIA (The martyr) — His Upbringing\n\nHis Upbringing:\n\nSt. George (Gawargios) was born to wealthy pagan parents. His father was a merchant in the city of Alexandria, and the family had no children. Then, once he traveled to the city of Lydda in Palestine, where it happened that the people there were celebrating the feast of the consecration of the church of the martyr St. George the Cappadocian. He was quite impressed and moved by the awesome celebration and with the church hymns, and when he listened to the biography of the martyr, he so loved the Christian faith that his soul was happy, and he sought to be baptized. The saint's father prayed to God that through the intercession of the great martyr, he would be granted a son. On returning home to Alexandria, he narrated to his wife what he encountered, and she believed as well and got baptized. God received their supplications and granted them a boy whom they called George. The child was raised in a pious atmosphere, loved the church, and had compassion on the poor and the needy. When he reached the age of twenty-five years, his parents departed to heaven.\n\nWith His Uncle Armenius's Daughter:\n\nAfter the death of his parents, his uncle Armenius, the governor of Alexandria, took him under his care. The uncle had a kind-hearted daughter, she happened to go for a picnic with some of her girlfriends, and they passed by a monastery outside Alexandria. She was very impressed to hear the monks praising God with sweet hymns. On coming back home, she inquired from her cousin George about what she heard, and he told her that it was Divine Christian praises sung by monks, who forsook the world to practice angelic lives. The young man then talked to her about the faith in the Lord Jesus Christ, eternal life, and the endless suffering. She was so impressed with what she heard that she accepted belief in the Lord Jesus.\n\nGetting to know about what happened to his daughter, her father governor Armenius attempted first to lure her into changing her mind, and she did not, then he threatened her. Yet, she, in complete love for her Lord Jesus Christ, was ready to deliver her own life as a sacrifice to God. So, her cruel father cut her head off, and she gained the crown of martyrdom."
+        },
+        {
+          "n": 6,
+          "id": "v2:sts4:saint:theodore-bishop-of-cappadocia:c1",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 4 — St. Theodore, Bishop of Cappadocia, p. 263",
+          "text": "Saint: THEODORE, BISHOP OF CAPPADOCIA\n\nThis St. Theodore (Tadros), apparently was a shepherd before he was ordained as a bishop on Cappadocia. Even though he was freshly ordained and just got acquainted with St. Gregory of Nazianzus (329-390 AD), he was assigned to urge St. Gregory to shepherd the Orthodox congregation in Constantinople. St. Gregory wrote him in response [Letter# 222], to tell him about what he did. He told him also about the insults that came on him from the bishops of that region. He also apologized about what happened to him, being new in his bishopric.\n\n[Smith and Wace, Vol. 4, p. 932]"
+        },
+        {
+          "n": 7,
+          "id": "v2:sts2:saint:george-the-deacon:c1",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Deacon, p. 174",
+          "text": "Saint: GEORGE, THE DEACON\n\nHe was a contemporary of the 42nd Pope of Alexandria, St. Simeon I (692- 700 AD). After the departure of that pope to heaven, he was sought by some to be worthy of sitting on the Seat of Alexandria, although because he was not in the rank of priesthood, he was not selected for the papal seat. This did not bother him, and he continued to serve diligently and faithfully in his church, and eventually, he got the priestly rank. While dedicating all his energy to ministry, he managed to document the biographies of the popes of Alexandria. When he was residing in the monastery of Prince Tadros in Ablag, he started to write the journal of the 24th Pope St. Cyril I, the Pillar of Faith (412-444 AD). Then, he followed it by his successors, until he reached the biography of the 43rd Pope St. Alexandros II (704-729 AD), who was leading the Coptic Church at that time. This pope at that period was residing in the monastery of Abba Macarius the Great in the Scetis. Fr. George gave a good account of the political events through which Egypt was passing, as well as the civil rulers who governed the land. He covered almost four centuries, from the 4th to the 8th century, during which twenty Alexandrian popes sat on the throne of St. Mark.\n\n[Iris Habib El-Masry: The Story of the Coptic Church – Bk 2, p. 328]"
+        },
+        {
+          "n": 8,
+          "id": "v2:sts2:saint:george-the-capaducian:c4",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George, the Capaducian, pp. 171–172",
+          "text": "Saint: GEORGE, THE CAPADUCIAN (The martyr) — More durable than Magic or Poison\n\nMore durable than Magic or Poison:\n\nAmong the tortures that St. George was exposed to was that the emperor brought a famous magician named Athanasius, who prepared a highly deadly poison and gave it to the saint to drink. By faith, the saint drank it, and it did him no harm. Right away, the magician declared his faith in the Lord Jesus Christ. The angry emperor gave the order to squeeze the saint by a press with sharp iron teeth until he gave his last breath, but the Lord Jesus Christ raised him from death, and a multitude of those who watched him tortured, died and getting raised from the dead, declared their faith in the Lord Jesus Christ and their readiness to be martyred for His sake.\n\nWith the emperor, there were several governors among the spectators. Those governors sought to test the saint, so they asked him to make their wooden chairs blossom with leaves, flowers, and fruits. By the saint's prayer, their request was granted. The governors were genuinely astonished, and they took him to the cemetery and sought from him to raise some of the dead. The saint prayed to the Lord, and few of the dead were raised to life, testified to the salvation of the Lord Jesus Christ, and then went again to sleep.\n\nIn the Temple of Idols:\n\nTrying to seduce the saint, the emperor talked again to him nicely and tried to tell him how his heart was bleeding on seeing him suffering, how he was so dear to him to let him have the highest position in the State. Thus, St. George did not refuse the emperor's request to go with him to the temple of the idols. The emperor thought that the young man would have a change of heart, and he would burn incense before the idols to qualify for becoming his son-in-law, as promised. The emperor headed to the temple, in a crowd of his officials and a multitude of people, where George stood before the statue of the idol Apollo and cried out: “Are you a god, to whom I should offer a sacrifice?” The idol answered back with a loud voice: “No! I am not a god!” The saint made the sign of the Cross, and all the idols in the temple fell and got broken into pieces. On seeing that, the people cried out, seeking death to the enemy of their gods. Feeling great shame, the emperor returned with a bitter soul back to his palace."
+        },
+        {
+          "n": 9,
+          "id": "v2:sts2:saint:george-of-alexandria:c2",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 2 — St. George of Alexandria, p. 169",
+          "text": "Saint: GEORGE OF ALEXANDRIA (The martyr) — His Martyrdom\n\nHis Martyrdom:\n\nWhen the governor knew that it was his nephew George, the one who convinced his daughter to receive her new faith, he put him under arrest. Then, he tortured him fiercely and sent him to Arianus, the governor of Ansena, who tortured him more and finally had his head cut off, and he too gained the crown of martyrdom during the reign of Emperor Diocletian (284-305 AD). A deacon, by the name of Samuel, took his holy body, shrouded him with great respect, and took it Manuf in the province of Giza. On hearing about it, his uncle's wife took the body and buried it in Alexandria next to that of her martyred daughter. His relics now are in St. Mark's church in the city of Rashid.\n\nth\n\n[Synaxarion of the 7 of Hator] [OLeary: The Saints of Egypt, pp. 145-146]"
+        },
+        {
+          "n": 10,
+          "id": "v2:sts3:saint:phocas-the-gardner:c2",
+          "label": "Encyclopedia of the Saints and Fathers of the Church, Vol. 3 — St. Phocas, the Gardner, pp. 461–462",
+          "text": "Saint: PHOCAS, THE GARDNER (The martyr) — His Courage\n\nHis Courage:\n\nIn the morning, he went to his guests and told them that Phocas was around and ready for them to arrest him whenever they decide. When they asked him where he was, he answered them: “He is here! I am the man you are looking after.” Amazed at his love, generosity, courage, and steadfastness; the soldiers were shocked and did not know what to do. On seeing that, Phocas indirectly encouraged them and told them that he would consider his death for the sake of Christ, as the most excellent service they could offer him. After getting over their confusion, they cut his head off, and the Christians eventually built a great Church to carry his name. God granted him the gift of performing wonders through his relics, that he was called Thaumaturgus (Miracle-maker). His body was moved to Constantinople in the days of St. John Chrysostom, who gave a sermon on occasion. A monastery was also built on the same location.\n\nIt was said that part of his relics was moved to the church of the apostles in Vienna. St. Phocas is beloved by the Greek sailors, who are counting him as a partner in their meals, and used to put aside a part of the price of their food in his name and distribute it among the poor once they land safely ashore. The contemporary Greeks celebrate him on the 22nd of July and the 22nd of September. St. Gregory the Nazianzus called him The Renewable Disciple of Christ.\n\n[Baring-Gould: September 22]\n\n[Butler: July 3]"
+        }
+      ],
+      "retrieved_count": 10,
+      "best_distance": 0.6213982105255127,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "stages_ms": {
+        "analysis": 1000.0,
+        "prepare": 15.0,
+        "retrieval": 203.0
+      },
+      "refusal_reason": null,
+      "task_analysis": {
+        "retrieval_query": "Who was St. George the Cappadocian?",
+        "output_format": "prose",
+        "broad": false,
+        "sub_queries": [],
+        "saint_name_filter": null,
+        "named_subjects": [
+          "St. George the Cappadocian"
+        ],
+        "in_scope": true,
+        "ok": true,
+        "used_history": false,
+        "error": null,
+        "model": "gpt-4o-mini",
+        "prompt_tokens": 913,
+        "completion_tokens": 74
+      },
+      "analysis_tokens": 987,
+      "entity_check": null,
+      "model": null,
+      "passage_tokens": [
+        516,
+        352,
+        495,
+        379,
+        493,
+        156,
+        333,
+        510,
+        220,
+        351
+      ],
+      "passage_spans": [
+        [
+          "saints2.pdf",
+          169,
+          170
+        ],
+        [
+          "saints2.pdf",
+          170,
+          170
+        ],
+        [
+          "saints2.pdf",
+          173,
+          174
+        ],
+        [
+          "saints2.pdf",
+          171,
+          171
+        ],
+        [
+          "saints2.pdf",
+          168,
+          169
+        ],
+        [
+          "saints4.pdf",
+          263,
+          263
+        ],
+        [
+          "saints2.pdf",
+          174,
+          174
+        ],
+        [
+          "saints2.pdf",
+          171,
+          172
+        ],
+        [
+          "saints2.pdf",
+          169,
+          169
+        ],
+        [
+          "saints3.pdf",
+          461,
+          462
+        ]
+      ],
+      "context_tokens": 3805,
+      "format_ok": null,
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "saints2.pdf:p169",
+        "saints2.pdf:p170"
+      ],
+      "spend_usd": 0.00018
+    },
+    {
+      "id": "AR-11",
+      "category": "arabic",
+      "subtype": null,
+      "expected_format": null,
+      "split": "tune",
+      "language": "ar",
+      "mode": "chat",
+      "should_refuse": false,
+      "verified": true,
+      "question": "من هو القديس مارجرجس الكبادوكي؟",
+      "http_status": 200,
+      "latency_s": 2.41,
+      "outcome": "retrieve_only",
+      "answer": "",
+      "answer_chars": 0,
+      "sources": [
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 947,
+          "url": null,
+          "title": null,
+          "n": 1,
+          "label": "قاموس آباء الكنيسة وقديسيها — جاورجيوس السكندري الشهيد، ص 12–13",
+          "chunk_id": "v2:ar-sts:e1084:c1",
+          "entry": "جاورجيوس السكندري الشهيد",
+          "work": "قاموس آباء الكنيسة وقديسيها",
+          "page_end": 948,
+          "pages": "12–13"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 949,
+          "url": null,
+          "title": null,
+          "n": 2,
+          "label": "قاموس آباء الكنيسة وقديسيها — الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)، ص 14–15",
+          "chunk_id": "v2:ar-sts:e1086:c1",
+          "entry": "الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)",
+          "work": "قاموس آباء الكنيسة وقديسيها",
+          "page_end": 950,
+          "pages": "14–15"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 950,
+          "url": null,
+          "title": null,
+          "n": 3,
+          "label": "قاموس آباء الكنيسة وقديسيها — الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)، ص 15–16",
+          "chunk_id": "v2:ar-sts:e1086:c2",
+          "entry": "الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)",
+          "work": "قاموس آباء الكنيسة وقديسيها",
+          "page_end": 951,
+          "pages": "15–16"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 951,
+          "url": null,
+          "title": null,
+          "n": 4,
+          "label": "قاموس آباء الكنيسة وقديسيها — الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)، ص 16–17",
+          "chunk_id": "v2:ar-sts:e1086:c3",
+          "entry": "الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)",
+          "work": "قاموس آباء الكنيسة وقديسيها",
+          "page_end": 952,
+          "pages": "16–17"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full arabic catechism.pdf",
+          "page": 469,
+          "url": null,
+          "title": null,
+          "n": 5,
+          "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية — س 629 «ما هي أهم ملامح الأيقونات القبطية؟»، ص 405",
+          "chunk_id": "v2:ar-cat:q629:c1",
+          "entry": "629. ما هي أهم ملامح الأيقونات القبطية؟",
+          "work": "كاتيكيزم الكنيسة القبطية الأرثوذكسية",
+          "page_end": 469,
+          "pages": "405"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full arabic catechism.pdf",
+          "page": 749,
+          "url": null,
+          "title": null,
+          "n": 6,
+          "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية — س 448 «ما هو دور الروح القدس في تكريس القلب لله؟»، ص 251–5",
+          "chunk_id": "v2:ar-cat:q448:c2",
+          "entry": "448. ما هو دور الروح القدس في تكريس القلب لله؟",
+          "work": "كاتيكيزم الكنيسة القبطية الأرثوذكسية",
+          "page_end": 756,
+          "pages": "251–5"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 223,
+          "url": null,
+          "title": null,
+          "n": 7,
+          "label": "قاموس آباء الكنيسة وقديسيها — متاؤس الثالث البابا المائة، ص 470",
+          "chunk_id": "v2:ar-sts:e0260:c2",
+          "entry": "متاؤس الثالث البابا المائة",
+          "work": "قاموس آباء الكنيسة وقديسيها",
+          "page_end": 223,
+          "pages": "470"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 359,
+          "url": null,
+          "title": null,
+          "n": 8,
+          "label": "قاموس آباء الكنيسة وقديسيها — كيريّة الأم، ص 322–323",
+          "chunk_id": "v2:ar-sts:e0407:c1",
+          "entry": "كيريّة الأم",
+          "work": "قاموس آباء الكنيسة وقديسيها",
+          "page_end": 360,
+          "pages": "322–323"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 454,
+          "url": null,
+          "title": null,
+          "n": 9,
+          "label": "قاموس آباء الكنيسة وقديسيها — فيلوباتير مرقوريوس الشهيد(أبو سيفين)، ص 145–146",
+          "chunk_id": "v2:ar-sts:e0523:c3",
+          "entry": "فيلوباتير مرقوريوس الشهيد(أبو سيفين)",
+          "work": "قاموس آباء الكنيسة وقديسيها",
+          "page_end": 455,
+          "pages": "145–146"
+        },
+        {
+          "source_type": "pdf",
+          "pdf": "full saints arabic.pdf",
+          "page": 603,
+          "url": null,
+          "title": null,
+          "n": 10,
+          "label": "قاموس آباء الكنيسة وقديسيها — شهداء بسبب البدعة الأريوسية، ص 431–432",
+          "chunk_id": "v2:ar-sts:e0689:c1",
+          "entry": "شهداء بسبب البدعة الأريوسية",
+          "work": "قاموس آباء الكنيسة وقديسيها",
+          "page_end": 604,
+          "pages": "431–432"
+        }
+      ],
+      "options": [],
+      "error": null,
+      "request_id": "25f35b02ed7e4437a97773ff2fc7276e",
+      "retrieval_queries": [
+        "من هو القديس مارجرجس الكبادوكي؟"
+      ],
+      "retrieval": [
+        {
+          "source": "vector",
+          "query": "من هو القديس مارجرجس الكبادوكي؟",
+          "hits": [
+            {
+              "id": "v2:ar-sts:e1555:c1",
+              "distance": 1.1611
+            },
+            {
+              "id": "v2:ar-sts:e2108:c1",
+              "distance": 1.1763
+            },
+            {
+              "id": "v2:ar-sts:e1821:c1",
+              "distance": 1.1806
+            },
+            {
+              "id": "v2:ar-sts:e1156:c1",
+              "distance": 1.1987
+            },
+            {
+              "id": "v2:ar-sts:e0330:c1",
+              "distance": 1.2225
+            },
+            {
+              "id": "v2:ar-sts:e1086:c1",
+              "distance": 1.2386
+            },
+            {
+              "id": "v2:ar-sts:e0404:c1",
+              "distance": 1.2478
+            },
+            {
+              "id": "v2:ar-sts:e0286:c1",
+              "distance": 1.2522
+            },
+            {
+              "id": "v2:ar-sts:e1048:c1",
+              "distance": 1.2544
+            },
+            {
+              "id": "v2:ar-sts:e0184:c1",
+              "distance": 1.27
+            }
+          ],
+          "collection": "orthodox_arabic_pdfs_v2",
+          "where": null,
+          "where_document": null,
+          "n_results": 10
+        },
+        {
+          "source": "lexical",
+          "query": "من هو القديس مارجرجس الكبادوكي؟",
+          "hits": [
+            {
+              "id": "v2:ar-sts:e1084:c1",
+              "score": 45.0
+            },
+            {
+              "id": "v2:ar-sts:e1086:c1",
+              "score": 45.0
+            },
+            {
+              "id": "v2:ar-sts:e1086:c2",
+              "score": 45.0
+            },
+            {
+              "id": "v2:ar-sts:e1086:c3",
+              "score": 45.0
+            },
+            {
+              "id": "v2:ar-cat:q629:c1",
+              "score": 10.0
+            },
+            {
+              "id": "v2:ar-cat:q448:c2",
+              "score": 10.0
+            },
+            {
+              "id": "v2:ar-sts:e0260:c2",
+              "score": 10.0
+            },
+            {
+              "id": "v2:ar-sts:e0407:c1",
+              "score": 10.0
+            },
+            {
+              "id": "v2:ar-sts:e0523:c3",
+              "score": 10.0
+            },
+            {
+              "id": "v2:ar-sts:e0689:c1",
+              "score": 10.0
+            }
+          ],
+          "collection": "orthodox_arabic_pdfs_v2",
+          "where": null,
+          "terms": [
+            "مارجرجس",
+            "الكبادوكي"
+          ],
+          "phrase_count": 2,
+          "candidates_scored": 36
+        }
+      ],
+      "merged_ids": [
+        "v2:ar-sts:e1084:c1",
+        "v2:ar-sts:e1086:c1",
+        "v2:ar-sts:e1086:c2",
+        "v2:ar-sts:e1086:c3",
+        "v2:ar-cat:q629:c1",
+        "v2:ar-cat:q448:c2",
+        "v2:ar-sts:e0260:c2",
+        "v2:ar-sts:e0407:c1",
+        "v2:ar-sts:e0523:c3",
+        "v2:ar-sts:e0689:c1"
+      ],
+      "kept_ids": [
+        "v2:ar-sts:e1084:c1",
+        "v2:ar-sts:e1086:c1",
+        "v2:ar-sts:e1086:c2",
+        "v2:ar-sts:e1086:c3",
+        "v2:ar-cat:q629:c1",
+        "v2:ar-cat:q448:c2",
+        "v2:ar-sts:e0260:c2",
+        "v2:ar-sts:e0407:c1",
+        "v2:ar-sts:e0523:c3",
+        "v2:ar-sts:e0689:c1"
+      ],
+      "passages": [
+        {
+          "n": 1,
+          "id": "v2:ar-sts:e1084:c1",
+          "label": "قاموس آباء الكنيسة وقديسيها — جاورجيوس السكندري الشهيد، ص 12–13",
+          "text": "سيرة: جاورجيوس السكندري الشهيد نشأته كان والداه وثنيين غنيين. سافر والده التاجر بالإسكندرية إلى اللد بفلسطين، وحضر عيد تكريس كنيسة الشهيد مارجرجس (جاورجيوس الكبادوكي). تأثر بالاحتفال المهيب لهذا الشهيد والألحان الكنسية، وإذ سمع عن سيرة الشهيد أحب الحياة المسيحية. نال سرّ العماد، وتهللت نفسه جدًا. صلى إلى الله متشفعًا بقديسه العظيم أن يرزقه ولدًا، وإذ عاد إلى الإسكندرية أخبر زوجته بما تمتع به، فآمنت هي أيضًا واعتمدت. قبل الرب طلبتهما، ورزقهما طفلاً أسمياه جاورجيوس. نشأ الطفل في جوّ تقوي حيّ حتى بلغ الخامسة والعشرين من عمره حين تنيح والداه، وكان جاورجيوس إنسانًا تقيًا محبًا للكنيسة، مترفقًا بالمساكين والفقراء. مع ابنة خاله أرمانيوس إذ تنيح والداه احتضنه خاله أرمانيوس والي الإسكندرية، الذي كان له ابنة وحيدة طيبة القلب، خرجت ذات يومٍ مع بعض صديقاتها للنزهة، فشاهدت ديرًا خارج المدينة وسمعت رهبانه يسبحون الله بتسابيح عذبة. فتأثرت جدًا مما سمعته، ولما عادت إلى بيتها سألت ابن عمتها جاورجيوس عما سمعته، فأجابها بأنها تسابيح إلهية يترنم بها الرهبان الذين قد تركوا العالم ليمارسوا الحياة الملائكية. وأخذ الشاب يحدث ابنة خاله عن الإيمان بالسيد المسيح، وعن الحياة الأبدية وأيضًا عن العذاب الأبدي، فتأثرت جدًا وقبلت الإيمان بالسيد المسيح. عرف أرمانيوس بالأمر فصار يلاطف ابنته ويخادعها، وإذ لم تنثنِ صار يهددها، أما هي ففي محبة كاملة لمسيحها قدمت حياتها ذبيحة حب لله، إذ قطع والدها رأسها ونالت إكليل الشهادة. استشهاده عرف أرمانيوس أن جاورجيوس هو السبب في إيمان ابنته، فقبض عليه وعذبه عذابًا شديدًا، ثم أرسله إلى أريانوس والي أنصنا، الذي قام بدوره بتعذيبه، وأخيرًا قطع رأسه المقدس ونال إكليل الشهادة. وكان هناك شماس يسمى صموئيل أخذ جسده المقدس وكفنه بإكرامٍ جزيلٍ، ومضى به إلى منف من أعمال الجيزة. ولما علمت امرأة خاله ذلك أرسلت فأخذت الجسد ووضعته مع جسد ابنتها الشهيدة بالإسكندرية. يُقال أن جسده موجود حاليًا في كنيسة مار مرقس برشيد. السنكسار، 7 هاتور O’ Leary: The Saints of Egypt, p. 145,146."
+        },
+        {
+          "n": 2,
+          "id": "v2:ar-sts:e1086:c1",
+          "label": "قاموس آباء الكنيسة وقديسيها — الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)، ص 14–15",
+          "text": "سيرة: جاورجيوس الكبادوكي الشهيد زمن استشهاده غالبًا ما يُنظر إلى القديس مارجرجس كأمير للشهداء في عصر دقلديانوس، فقد تزعّم في منطقة الكبادوك حركة الثورة على منشور الاضطهاد ضد المسيحيين، لكن المخطوطات القبطية في غالبيتها تنظر إليه أنه في عصر سابق لهذا الإمبراطور، في عهد ملك غير شرعي يُدعى داديانوس Dadianus الفارسي، وهو رجل وثني وليس مسيحي جحد مسيحه، وكان له سلطان على منطقة الكبادوك. لذلك جاءت سيرة الشهيد جاورجيوس السكندري تعلن أن الأخير استشهد في عهد دقلديانوس مع أنه ولد بناء على شفاعة الأول حين حضر والده تكريس كنيسته باللدّ. وفي بعض المخطوطات القبطية لم يذكر عصره إنما قيل \"في أيام القدم\" ربما قاصدا ما قبل عصر دقلديانوس. نشأته وُلد هذا القديس في الكبادوك بآسيا الصغرى، من أبوين تقيين غنيين ينتسبان إلى عائلة شريفة. كان والده أناسطاسيوس واليًا على Melitene بكبادوكية ، وكانت والدته ثاؤبستى أو ثاؤغنسطا من فلسطين ابنة والي اللدّ. قيل أن والده كان إنسانًا تقيًا ومخلصًا لله وللملك، فأحبه الملك جدًا، وجعله من حاشيته التي ترافقه في رحلاته وغدواته. لكنه إذ اكتشف إيمانه بالسيد المسيح أمر بقطع رأسه. كان القديس جاورجيوس في الرابعة عشرة من عمره. على أي الأحوال جاء القديس جاورجيوس ثمرة لبذرة مقدسة دُفنت في أرض مقدسة، فقدمت للكنيسةٍ كما للسمائيين ما يفرح قلوبهم. لم يسبب استشهاد الوالي أناسطاسيوس إحباطًا للعائلة، بل ألهب قلب الابن المبارك جاورجيوس بنار الحب الإلهي، ليصير هو أيضًا شهيدًا للرب. إذ استشهد أناسطاسيوس أخذت ثاؤبستى أولادها: جاورجيوس وكاسيه ومادرونة وانطلقت إلى مسقط رأسها ديوسبوليس بفلسطين. الأمير جاورجيوس الروماني بعد استشهاد الأمير أناسطاسيوس احتل مكانه الأمير يسطس، وكان يخاف الله ويحب السيد المسيح، لذلك أحسن إلى عائلة الشهيد أناسطاسيوس. وقام بتعليم الشاب جاورجيوس الفروسية لينخرط في سلك الجندية. تفوّق جاورجيوس على الجميع في ركوب الخيل وممارسة الفروسية، وأظهر شجاعة نادرة، وبسرعة صار بطلاً له صيته في كل فلسطين، وأصبح قائدًا لفرقة كبيرة تعدادها ألفًا من الجند. أرسله الأمير إلى الملك ومعه رسالة توصية تكشف عما حققه القائد جاورجيوس من البطولات، ويطلب من الملك أن يهبه رتبة \"أمير\". أحبه الملك جدًا ووافق على تذكية الأمير يسطس، وصار اسمه \"جاورجيوس الروماني\"، وعيّنه أميرًا يقود خمسة آلاف جنديًا، كما قدم له فرسًا أشهبًا من الأنواع النادرة تعبيرًا عن رضاه. صار جاورجيوس محبوبًا من الجميع بسبب هيئته التي كانت تدل على شجاعته خاصة في الحروب، مع حسن قيادته وتدبيره للأمور، فضلاً عن خصاله الحميدة، فأصبح قائدًا ومدبرًا للجيش، وكان سنه 20 عامًا وكان جاورجيوس يزداد كل يومٍ اعتبارًا وشرفًا. وفي سن العشرين تنيحت والدته. محبة الوالي له اشتاق يسطس أن يجعل من جاوجيوس ابنًا له بأن يزوجه ابنته الوحيدة الصغيرة التقية التي كانت تخاف الله، فأفصح عن ذلك للأميرة تأوبستي والدة الأمير جاورجيوس التي فرحت جدًا. أقام يسطس جاورجيوس خطيب ابنته وكيلاً على ممتلكاته، وقد أرجأوا الخطبة لصغر سن الفتاة. ولم يكن الكل يعلم أن الله كان يعد له طريقًا أعظم. غيرة الأمير جاورجيوس سمع جاورجيوس أن الملك قد اجتمع بسبعين واليًا، وأصدر أوامره بإبادة المسيحية تمامًا وهدم الكنائس."
+        },
+        {
+          "n": 3,
+          "id": "v2:ar-sts:e1086:c2",
+          "label": "قاموس آباء الكنيسة وقديسيها — الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)، ص 15–16",
+          "text": "سيرة: جاورجيوس الكبادوكي الشهيد ولم يكن الكل يعلم أن الله كان يعد له طريقًا أعظم. غيرة الأمير جاورجيوس سمع جاورجيوس أن الملك قد اجتمع بسبعين واليًا، وأصدر أوامره بإبادة المسيحية تمامًا وهدم الكنائس. استعد جاورجيوس لمواجهة الاضطهاد، إذ كان لابد أن يصرّح بدِينه أمام الملك. باع كل ما ورثه من والديه حتى أثاثات بيته وثيابه وقدم ثمنها للفقراء. وإذ صدر منشور بذلك أمسك القديس بالمنشور ومزقه علانية وسط الجماهير في مكانٍ عامٍ، بعد أن وزع كل ممتلكاته على الفقراء وحرر العبيد وتهيأ للاستشهاد بفرح. أمام الملك اقتيد أمام الملك الذي لاطفه كثيرًا ووعده بعطايا جزيلة فلم يبالِ. وإذ فشل الملك في إغرائه صار يعذبه لمدة سبع سنوات، وكانت يد الله تسنده ليقتنص نفوسًا كثيرة للإيمان خلال عذاباته، فقد مات ثلاث مرات وكان الرب يقيمه ليتمجد فيه، حتى استشهد في المرة الرابعة، كما كان ينعم برؤى سماوية وسط الآلام تسنده وتعينه. أقوى من السحر والسم من بين العذابات التي تعرض لها القديس جاورجيوس أن الملك أحضر له ساحرًا مشهورًا يُدعى أثناسيوس أعد له سُمًا قاتلاً، وقدمه للقديس لكي يشربه، أما القديس فبالإيمان شربه ولم ينله أذى، عندئذ آمن الساحر بالسيد المسيح. اغتاظ الملك وأمر بعصر القديس في معصرة بها أسنان حديدية حتى أسلم الروح، ولكن السيد المسيح أقامه، ورأته الجماهير، وآمن بسببه كثيرون قبلوا الاستشهاد باسم الرب. إذ رأى الولاة ذلك طلبوا منه في حضرة الملك أن يجعل كراسيهم تورق وتثمر فصلى إلى الله وتحقق طلبهم. وإذ دُهشوا حملوه إلى المقابر وطلبوا أن يقيم لهم أمواتًا، فصلى إلى الرب وقام بعض الأموات شهدوا بخلاص السيد المسيح ثم رقدوا. في هيكل الأوثان استخدم الملك معه اللطف قائلاً له إن قلبه مجروح بسبب ما أصابه، وأنه عزيز لديه جدًا، وسيقدم له أسمى مناصب الدولة. وأخيرًا سأله أن يذهب معه إلى هيكل الأوثان. انطلق جاورجيوس مع الملك إلى معبد الوثن، حيث ظن الأخير أنه سيبخر للأوثان فيعطيه ابنته زوجة، وإذ بلغ الاثنان إلى الهيكل ومعهما حاشية الملك، وجمع غفير من الشعب. وقف أمام تمثال أبولو وصرخ نحوه: \"هل أنت إله لأقدم لك ذبيحة؟\" فأجاب الصنم بصوت مريع: \"إني لست إلهًا\". رشم القديس علامة الصليب، فسقطت الأصنام وتهشمت. فصرخ الشعب طالبين الفتك بعدو آلهتهم. شعر الملك بالخزي الشديد، وانطلق إلى قصره مرّ النفس. أقوى من كل إغراء! سرّ قوة الشهيد مارجرجس الروماني ممارسته اليومية لحياة الاستشهاد، إذ غلب شهوات الجسد في معارك أرضها أعماقه الداخلية، وكما يقول الحكيم: \"مالك روحه خير من مالك مدينة\" (أم 16 : 32 .) إذ أُودع جاورجيوس في السجن استشار الإمبراطور رجاله عما يفعله مع هذا القائد الشجاع. فتقدم أحد الأمراء باقتراح أن هذا الشاب الوسيم لن يضعف أمام أية تهديدات، ويُسر حتى بالموت. لكن أمرًا واحدًا يمكن أن يحطمه وهو الإغراء بفتاة لعوب، تقتنصه بفتنتها وأُنوثتها الطاغية وخبراتها، بهذا يفقد جاورجيوس عفته، وينهار إيمانه. استدعى الإمبراطور المشرفة على محظيات الإمبراطور وجواريه، منها أن تختار فتاة لها خبرتها في هذا الأمر. أُرسلت الفتاة إلى السجن لتقضي ليلة مع الشاب حتى تغريه ويسقط معها."
+        },
+        {
+          "n": 4,
+          "id": "v2:ar-sts:e1086:c3",
+          "label": "قاموس آباء الكنيسة وقديسيها — الشهيد جاورجيوس الكبادوكي(الأمير جاورجيوس الروماني)، ص 16–17",
+          "text": "سيرة: جاورجيوس الكبادوكي الشهيد استدعى الإمبراطور المشرفة على محظيات الإمبراطور وجواريه، منها أن تختار فتاة لها خبرتها في هذا الأمر. أُرسلت الفتاة إلى السجن لتقضي ليلة مع الشاب حتى تغريه ويسقط معها. لكن مارجرجس الذي عرف أن يُقدم كل يوم ذبيحة حب على مذبح الطهارة في المسيح يسوع حوّل السجن إلى هيكل طاهر تُقام فيه الصلوات لأجل خلاص نفسه وخلاص هذه الفتاة وكل من حوله. لم يأتِ الصباح حتى تقدمت الفتاة إلى مارجرجس بدموع تطلب منه أن يتحدث معها عن سرّ طهارته وعفته وارتفاع قلبه إلى السماويات، فأخذ يبشرها بالخلاص ويقدم لها الحياة الإنجيلية الفائقة. جاء رجال الإمبراطور في الصباح الباكر لأخذ الفتاة إلى الإمبراطور، فوجدوها قد اكتست بالحشمة، وتوشحت بالعفة والوداعة، تعلن إيمانها بالسيد المسيح ملكها وخلصها. صُعق الإمبراطور ورجاله لما حدث، وصدر الأمر بقطع رقبتها بحد السيف. اُقتيدت إلى ساحة الاستشهاد حيث ركعت متهللة تصلي إلى مخلصها ربنا يسوع ليقبل روحها، وتنال إكليل الشهادة. صمم الإمبراطور على أن يُذيقه أقسى ألوان العذابات انتقامًا مما فعله مع الفتاة. في القصر الملكي لما كثرت المعجزات التي صنعها الرب على يديه وشعر الملك بالفشل، أخذه معه إلى القصر ليغريه أنه سيزوجه ابنته. هناك في القصر سمعته الملكة يصلي، فطلبت منه أن يشرح لها إيمانه، ففتح الرب قلبها وجذبها روح الله إلى الإيمان. أخذت الملكة ألكسندرة تعاتب الملك: \"ألم أقل لك لا تعاند الجليليين، لأن إلههم قوي\"، وإذ أدرك أن القديس أمال قلبها للرب، أمر بتمشيط جسمها وقطع رأسها لتنال إكليل الشهادة. إذ رأت الملكة جاورجيوس يُقاد إلى السجن نادته لتسأله عن عمادها. أجابها القديس ألا تضطرب، فإنه إن لم توجد فرصة لعمادها، فسفك دمها لحساب الإيمان بالسيد المسيح هو معمودية مقدسة تفتح لها أبواب الفردوس. تهلّلت نفسها، وتقدمت الملكة للاستشهاد، وهي تقول: \"يا رب لقد تركت باب قصري مفتوحًا على مصراعيه، فلا تغلق باب فردوسك في وجهي، يا من قبلتَ توبة اللص اليمين\". قُطعت رأس الملكة لتنطلق روحها إلى الفردوس تتمتع برؤية مخلصها. استشهاده خشي الملك من حدوث ثورة ضده، إذ ذاعت أعمال الله التي تمت على يديّ القديس، لذا أمر بقطع رأسه، وكان ذلك في 23 من برمهات. أيقونة الشهيد مارجرجس الروماني تحمل معنى رمزيًا: ❖ فالعروس التي تظهر في الأيقونة تُشير إلى الكنيسة التي تتطلع إلى أبنائها الشهداء بفرحٍ واعتزازٍ. ❖ والتنين يُشير إلى الشيطان الذي يحرك العالم الشرير ضد الإيمان. ❖ والحربة تشير إلى صليب رب المجد يسوع الذي يهب النصرة. ❖ وهزيمة التنين تُشير إلى هزيمة الشر ومصدره (إبليس) بقوة الإيمان."
+        },
+        {
+          "n": 5,
+          "id": "v2:ar-cat:q629:c1",
+          "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية — س 629 «ما هي أهم ملامح الأيقونات القبطية؟»، ص 405",
+          "text": "الكاتيكيزم، الكتاب الثالث › حامل الأيقونات \"الأيقونستاسز\" — 629. ما هي أهم ملامح الأيقونات القبطية؟ أولاً: تمثل الحياة المفرحة: أيقوناتنا مفرحة، فلا ترى قط ما يمثل آلام الرب والشهداء، ماعدا الصليب الحامل للنصرة، حيث علق ملك الملوك. وليس من صورة للجحيم، بل صور عن السماء والخليقة السماوية والأكاليل السماوية، كأن الكنيسة تود أن تبعث الرجاء في حياة أولادها. ثانيًا: مملوءة بروح الغلبة: إذ تسعى الكنيسة إلى خلق روح الثقة في أولادها، لهذا فهي لا تصور الشياطين وان صورتهم عند الضرورة يظهرون في أحجام صغيرة، مطروحين في ضعف. ثالثًا: تحمل روح الحب واللطف. من أمثلة ذلك: تتلاقى أحد وجنتي القديسة مريم مع أحد وجنتي ابنها في لطف عجيب، بينما يضع كل منهما يده على كتف الآخر في رقةٍ، وكأنه يصالح البشرية خلال أمه القديسة. رابعًا: تعبر عن قوة الروح. كأن الفنان القبطي يريد إبراز قوة الروح الداخلي، فيرسم رؤوس الأشخاص ضخمة كرمزٍ لله رأسنا السماوي، والأعين المتسعة علامة البصيرة الداخلية. خامسًا: أيقونات تمثل رجال الصلاة. فيظهر القديسون رافعين أياديهم للصلاة لله \"Orant \" كأنهم يعلنون أن الصلاة هي سرّ قداستهم. وهو الوضع الذي يفضله الشهداء والقديسون في لحظات انتقالهم. سادسًا: حمل الصليب. غالبية أيقونات الإسكندرية تصور السيد المسيح يحمل صليبًا قبطيًا. سابعًا: عناية الرب. يصور الرب على الصليب معلقًا بعينين مفتوحتين. يقول أولوجيوس الإسكندري : [ ربنا قليلاً حسب الجسد على الصليب، لكنه كإله بقيت عينا لاهوته مفتوحتان ثامنًا: انفتاح البصيرة الداخلية؟ يصورون القديسين وقد ظهر لكل منهما العينان علامة بصيرتهم الداخلية، أما الأشرار فيصورونهم من جنبهم فتظهر عين واحدة لهم، يتطلعون بها إلى الأرضيات. تاسعًا: القديسون المحاربون الشهداء مارجرجس ومارمينا والأمير تادرس والأمير بقطر وأبي سيفين."
+        },
+        {
+          "n": 6,
+          "id": "v2:ar-cat:q448:c2",
+          "label": "كاتيكيزم الكنيسة القبطية الأرثوذكسية — س 448 «ما هو دور الروح القدس في تكريس القلب لله؟»، ص 251–5",
+          "text": "الكاتيكيزم، الكتاب الثالث › الروح القدس والخلاص الإلهي — 448. ما هو دور الروح القدس في تكريس القلب لله؟ هذا الختم الناري يكرس النفس كما الجسد ليصير الإنسان بحقٍ عروسًا روحية للسيد المسيح الملك السمائي. وكما يقول القديس مقاريوس الكبير: [ النفس الخمسة المُدركة إن نالت النعمة من فوق وتقديس الروح صارت حقًا الخمس عذارى اللواتي نلن حكمة النعمة من فوق. كنيسة الشهيد مارجرجس سبورتنج - الإسكندرية كنيسة الملكة القديسة مريم والأمير تادرس ساوث برانزويك – نيو جيرسي باسم الآب والابن والروح القدس الله الواحد، آمين :ملاحظة تعريب العنوان عن الإنجليزية \"كاتيكيزم \" وعن الفرنسية \"كاتيشيزم \" يسرنا استقبال أي تعليق أو تصحيح لمراعاته في الطبعات التالية، وذلك خلال :المؤلف القمص تادرس يعقوب ملطي، الشماس بيشوي بشرى فايز. :الطبعة 2021.م :الناشر كنيسة الشهيد مار جرجس - سبورتنج. كنيسة الملكة القديسة مريم والأمير تادرس – ساوث برانزويك. :المطبعة American Pack رقم :الإيداع 11419/2018 ● مِصْرنا الداخلية والسماء المفتوحة. 1 (أ الكاتيكيزم. 1 )ب الكاتيكيزم القبطي عبر العصور. 2. المبادئ الأساسية للكاتيكيزم. 3. الإيمان العامل بالمحبة. 4. الكتاب المقدس. 5. التقليد المقدس. إذ هاجرت أعداد ضخمة من الأقباط خاصة إلى أمريكا وكندا وأستراليا وأوروبا، يتساءل كثيرون من مواطني هذه البلاد عن كاتيكيزم الكنيسة القبطية الأرثوذكسية، فالتهب قلبي شوقًا للبدء في تسجيل صورة مُبَس َّطة لهذا الكاتيكيزم. وفي نفس الوقت أرى استخدام اسم \"الكنيسة القبطية الأرثوذكسية\" لهذا العمل، ليس تعص ُّبًا للكنيسة القبطية، ولا لأني أدعو أن يتخل َّى المؤمن في العالم عن جنسيته وثقافته، إنما لإبراز أن ما ورد في الكتاب المقدس عن مصر يدعو كل مؤمنٍ أن يُرَك ِّز أنظاره على أعماقه الداخلية أيا كانت جنسيته، ويت َّسِع قلبه بالحب نحو كل البشر وجميع الأمم. لقد ذُكِر اسم مصر في الكتاب المقدس بعهديه (بما فيه الأسفار الواردة في الترجمة السبعينية) حوالي 600 مرة، نذكر الآتي: 1. فهي الدولة الوحيدة من الأمم التي التجأ إليها الطفل يسوع هربًا من وجه هيرودس (مت ٢: ١٣ - ١٩ )، وبمباركته لها يدعو كل الأمم أن تتمت َّع ببركته. 2. لجأ إليها إبراهيم وقت المجاعة (تك 12 : 10)؛ وهكذا يفتح المؤمن قلبه المملوء بالنعمة ليجتذب الكثيرين إلى الخيرات الإلهية. 3. دخلها يوسف كعبدٍ، فملأ مخازنها قمحًا (تك 41 : 57)، والتجأ إليه الشعب كما التجأت إليه البلاد المحيطة بمصر في وقت المجاعة. هكذا إذ يلتصق المؤمن بالربّ يفتح مخازن قلبه ليتمت َّع الكثيرون بالشبع من السيد المسيح النازل من السماء. 4. بروح النبوة قال إشعياء النبي: \"هوذا الربّ راكب على سحابة سريعة وقادم إلى مصر، فترتجف أوثان مصر من وجهه ويذوب قلب مصر داخلها\" (إش ١٩ : ١ ). هكذا يسرع ربّنا إلى مصر كما على سحابة ليُقِيم من كل مؤمن مَقْدِسًا له، ويتمت َّع بالمعرفة الإلهية. \"ويعرف المصريون الربّ في ذلك اليوم\" (إش 19 : ٢١ ). 5. إذ نقرأ في إشعياء: \"ويضرب الربّ مصر ضاربًا فشافيًا، \"فيرجعون إلى الربّ، فيستجيب لهم ويشفيهم\" (إش 19 : ٢٢ )."
+        },
+        {
+          "n": 7,
+          "id": "v2:ar-sts:e0260:c2",
+          "label": "قاموس آباء الكنيسة وقديسيها — متاؤس الثالث البابا المائة، ص 470",
+          "text": "سيرة: متاؤس الثالث بركة التسبيح والصلوات كانت الضيقة المالية التي عانت منها البطريركية إبان خدمته الدافع وراء التقاء البابا برعيته ورجوعه من رحلاته في صعيد مصر ممتلئ غبطة ومسرة، وانطلقت الألسن والعقول إلى عنان السماء بالتسبيح لرب الكنيسة، فظهرت صلوات التسبحة المقدسة قبطيًا وعربيًا مكتوبة بالألوان، ولأول مرة يصدر مخطوط عن تاريخ زيت الميرون وتقديسه، واستجابت السماء للصلاة والطلبة وزاد نهر النيل وعم الرخاء وانتعشت البلاد ورخصت الأسعار. عاد النيل للانحسار وقلّت الأرزاق، ورفعت الكنيسة الصلوات كل يوم حتى انفرجت الأزمة، وفرحت الأرض وزادت المحصولات واصلحت الأحوال. ليس غريبًا أن يصدر الوالي التركي أمرًا بهدم كنيسة كبرى في المحلة الكبرى استعظم على القبط اقتناؤها، ولما أراد أن يدارى سوء فعله بنى مدرسة مكانها. مطران للأثيوبيين أما عن أثيوبيا، فلما عاودت الكنيسة الرومانية إخضاعها لسلطانها رفض الملك فاسيلاوس وطرد الرهبان الروم، وأرسل للبابا السكندري ليرسم مطرانًا للكنيسة فرسم لهم البطريرك القبطي \"أنبا مرقس\" مطرانًا للأثيوبيين الذي لاقى اضطهادات كثيرة رغم مساندة الملك. نياحته في زيارته الرعوية إلى الوجه البحري زار برما وطنطا ثم اتجه إلى موطنه الأصلي طوخ النصارى الذي قابله شعبها بحفاوة بالغة، وطلبوا إليه أن يمكث وسطهم، فظل بينهم ما يقرب من العام. وفي سبت لعازر سنة 1646 م، بعد أن انتهى من القداس الإلهي وبارك الشعب وصرفه دخل إلى حجرته ونام نومته الأخيرة ووجهه مشرقًا، مسلمًا روحه الهادئة في يد خالقها، راقدا في شيخوخة صالحة ودفن بكنيسة مارجرجس بطوخ دلكة (طوخ النصارى)، وكان ذلك في أيام السلطان إبراهيم الأول وكان والي مصر محمد باشا بن حيدر باشا. القس روفائيل فريد واصف: كشف الأسرار في تاريخ البطاركة الأحبار (ج 3 )"
+        },
+        {
+          "n": 8,
+          "id": "v2:ar-sts:e0407:c1",
+          "label": "قاموس آباء الكنيسة وقديسيها — كيريّة الأم، ص 322–323",
+          "text": "سيرة: كيريّة الأم نشأتها وُلدت أوجيني من أسرة ثريّة تقيّة في مدينة طلخا، محافظة الدقهلية. اهتمت الأسرة بتربيتها، فالتحقت بإحدى المدارس الخاصة حيث اتقنت الفرنسية. في الإسكندرية شعرت الشابة أوجيني بنداء داخلي نحو تكريس حياتها للرب وهي على شاطئ البحر بالإسكندرية. لم تقاوم الروح فانطلقت نحو منزلها لا يشغل قلبها سوى خلاص نفسها والتصاقها بالرب. رهبنتها التصقت بمطران الدقهلية الأسبق \"نيافة الأنبا تيموثاوس\" وتتلمذت على يديه فالتهب قلبها بالحب الإلهي. كانت تهتم بالصلاة ودراسة الكتاب المقدس ومطالعة سير القديسين. بإرشاد أب اعترافها صارت راهبة باسم الأم كيرية عام 1941 بمدينة شربين، واستمرت بمنزل والدها. أرسلها أب اعترافها إلى دير أبي سيفين للراهبات بمصر القديمة، وقد حاول والدها أن يثني عزمها فلم يستطع. اتّسمت بحبها لممارسة الأعمال الصعبة والتي تنفر منها بعض الأمهات مثل تنظيف دورات المياه ... الخ. كانت تعمل بنشاطٍ وفرحٍ شديد، بجانب جهادها في الصلاة والسهر والتأمل مع خدمة الراهبات المسنّات. تتلمذت على يدي القمص مينا المتوحد (قداسة البابا كيرلس السادس) الذي البسها فيما بعد الإسكيم المقدس. وكانت تقوم بعمل ما يقرب من 550 مطانية يوميًا كقانون لبّاس الإسكيم. رئاسة دير مارجرجس بمصر القديمة أسند إليها البابا كيرلس السادس رئاسة دير مارجرجس بمصر القديمة عام 1961 م اهتمت بالعمل الروحي وإنشاء مكتبة للدير تضم الكثير من المخطوطات. كما اتسمت بحبها للعطاء حتى للحيوانات الضالة كالكلاب والقطط. اهتمت بتوزيع مساعدات شهرية للأسر المستترة. وهبها الله معرفة أمور كثيرة قبل حدوثها، كما ظهر لها الشهيد مارجرجس وأخبرها عن موعد رحيلها من العالم."
+        },
+        {
+          "n": 9,
+          "id": "v2:ar-sts:e0523:c3",
+          "label": "قاموس آباء الكنيسة وقديسيها — فيلوباتير مرقوريوس الشهيد(أبو سيفين)، ص 145–146",
+          "text": "سيرة: فيلوباتير مرقوريوس الشهيد وإذ خاف ديسيوس من غضب أهل روما أرسله إلى قيصرية بكبادوكيا حيث أمر بقطع رأسه بحد السيف بعد أن يجلد بالسياط، وكتب قضيته هكذا: \"حيث أن الأمير مرقوريوس عميد الجيوش أنكر الآلهة الكرام ورفض إطاعة الأوامر الملكية وعظمتها، نأمر أن يمضي به إلى قيصرية الكبادوك لتؤخذ رأسه هناك بحد السيف\". استشهاده حين وصلوا إلى مكان الاستشهاد بسط القديس يديه ووقف يصلي بحرارة راجيًا من الرب يسوع أن يقبله. وبينما هو قائم في الصلاة إذ به يبصر نورًا عظيمًا والرب يسوع في مجده مع ملائكته قد وقف أمامه وأعطاه السلام وباركه، فسجد القديس للرب، وبعد ذلك التفت إلى الجند وطلب منهم أن يعجّلوا في تنفيذ ما أُمِروا به. ثم أمال رأسه فضربها الجندي بحد السيف، وكان ذلك في الخامس والعشرين من شهر هاتور سنة 250 م وكان جسد القديس يضيء وقت استشهاده كما حدثت عجائب كثيرة ساعة دفنه. بعد انتهاء عصر الاستشهاد سمحت إرادة الرب بظهور جسده، فحمل الشعب الجسد المقدس بإكرام عظيم إلى الكنيسة التي بداخل مدينة قيصرية ووضعوه هناك إلى أن شيّدوا له كنيسة على اسمه. القديس باسيليوس يطلب صلواته يقول التقليد الشرقي أن القديس باسيليوس تشفّع بالقديس مرقوريوس ضد يوليانوس الجاحد. فكان القديس هو وسيلة الانتقام الإلهي من هذا الجاحد، فبينما كان الإمبراطور يحارب في بلاد الفرس ظهر القديس من السماء في زي جندي ممسكًا بسيف وحربة غرسها في صدر الإمبراطور فمات. ذلك لأن الإمبراطور يوليانوس قبل ذهابه إلى الحرب كان قد ألقى القديس باسيليوس في السجن، وكان القديس لشدّة حبه لأبي سيفين يحمل أيقونة الشهيد معه أينما ذهب. وفي أحد الأيام بينما كان قائمًا يصلي في السجن أمام الأيقونة أخذ يتأملها ويستشفع بصاحبها، وإذ بصورة الشهيد تغيب من الأيقونة فاندهش باسيليوس وظل يمعن النظر في الأيقونة وبعد برهة وجد أن الصورة عادت إلى ما كنت عليه غير أن الحربة التي كانت بيد الشهيد ملطخة بالدماء. يوجد دير باسم أبى سيفين للراهبات بمصر القديمة يلتجئ إليه الألوف من النفوس المتألمة للتمتع بالبركات الإلهية. الشهيد العظيم أبو سيفين، إصدار كنيسة مارجرجس باسبورتنج بالإسكندرية. Butler, November 25."
+        },
+        {
+          "n": 10,
+          "id": "v2:ar-sts:e0689:c1",
+          "label": "قاموس آباء الكنيسة وقديسيها — شهداء بسبب البدعة الأريوسية، ص 431–432",
+          "text": "سيرة: شهداء بسبب البدعة الأريوسية حين وافق الإمبراطور الأريوسي قنسطنس ابن الإمبراطور قسطنطين الكبير على بدعة أريوس أرسل إلى الإسكندرية رجلاً اسمه جاورجيوس الكبادوكي مع خمسمائة فارس ليكون بطريركًا على الإسكندرية بدلاً من البابا أثناسيوس الرسولي الذي رفض هذه البدعة وقاومها، وأمره بقتل كل الذين لا يطيعونه. فلم يقبله أهل الإسكندرية، فقتل منهم عدة آلاف وهرب الأنبا أثناسيوس وبقي مختفيًا ست سنوات ثم خرج ومضى إلى القسطنطينية حيث قابل الإمبراطور، فأمر بترحيله في سفينة بغير خبز ولا ماء لعلّه يهلك جوعًا أو يغرق في الطريق. لكن السفينة وصلت الإسكندرية بسلام، ففرح به شعبه فرحًا عظيمًا وأدخلوه إلى الكنيسة وأخرجوا منها جاورجيوس وأصحابه. في الفترة من عام 337 إلى 361م في عهد نفس الإمبراطور شمل اضطهاد الأريوسيين للأرثوذكس مصر كلها. ويقول القديس الأنبا أثناسيوس أنه من المستحيل وصف العذابات التي احتملها الأساقفة والكهنة في سبيل عقيدتهم الأرثوذكسية القويمة، حتى أنهم من فرط ما صب َّه الأريوسيون عليهم من ألوان العذاب تغي َّرت ملامحهم. أنذرهم الأريوسيون بالانسحاب من إيبارشياتهم وترك كراسيهم لهم، فلما لم يذعنوا قيّدوهم بالسلاسل ونفوهم إلى بلاد بعيدة. منهم الأسقف آمون والأسقف أولفيوس Adelphius اللذان نفوهما إلى الواحة الخارجية. والأساقفة مويس Muis وبسينوسيريس Psenosiris وبيلامون Pilammon وبلينيس Plenes ومرقس Marcos وأثينودوروس Athenodorus الذين نفوهم إلى واحة آمون التي هي واحة سيوه وكان محكومًا عليهم بالموت حرقًا. والأسقف دراكنتيوس الذي نفوه إلى صحراء القلزم بالقرب من السويس. والأسقف فيلون الذي نفوه إلى بابليون. والأساقفة أمونيوس وأغاثوس وأغاثوديمون Agathodemon وأبلونيوس ويولوجيوس وبفنوتيوس وأبوللون وجايوس وفلافيوس وديسقوروس وهراكليوس Heraclides وبسيان Psain والكاهنان هيراكس Hierax وديسقوروس نفوهم إلى أسوان، ثم راحوا يطاردونهم من كفر إلى كفر ويسخ ِّرون كثيرين منهم في المناجم والمحاجر، كما ذبحوا بعضهم الآخر بلا شفقة ولا رحمة. ليست هذه هي كل أسماء الأساقفة والقسوس الذين عُذّبوا أو استشهدوا، فإن قائمة الأسماء التي دوّنها البابا أثناسيوس فُقدت للأسف، وقد ذُكر في موضع آخر أسماء تسعين من الكهنة العظام طُردوا عن كراسيهم. أما أساقفة الخمس مدن الغربية فكان نصيبهم النفي إلى الواحة الخارجية، على عكس أساقفة الصعيد الذين نُفوا إلى واحة سيوه. وقد أوصى البابا أثناسيوس بتكريم هؤلاء في الكنيسة باعتبارهم شهداء وقديسين مباركين. موسوعة تاريخ الأقباط: الجزء 11 الكتاب الرابع، صفحة 127 . الاستشهاد في المسيحية، صفحة 245 ."
+        }
+      ],
+      "retrieved_count": 19,
+      "best_distance": 1.1611096858978271,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "stages_ms": {
+        "analysis": 1266.0,
+        "prepare": 0.0,
+        "retrieval": 1125.0
+      },
+      "refusal_reason": null,
+      "task_analysis": {
+        "retrieval_query": "من هو القديس مارجرجس الكبادوكي؟",
+        "output_format": "prose",
+        "broad": false,
+        "sub_queries": [],
+        "saint_name_filter": null,
+        "named_subjects": [
+          "القديس مارجرجس الكبادوكي"
+        ],
+        "in_scope": true,
+        "ok": true,
+        "used_history": false,
+        "error": null,
+        "model": "gpt-4o-mini",
+        "prompt_tokens": 915,
+        "completion_tokens": 80
+      },
+      "analysis_tokens": 995,
+      "entity_check": null,
+      "model": null,
+      "passage_tokens": [
+        1316,
+        1998,
+        1901,
+        1585,
+        1135,
+        1880,
+        1087,
+        1017,
+        1291,
+        1580
+      ],
+      "passage_spans": [
+        [
+          "full saints arabic.pdf",
+          947,
+          948
+        ],
+        [
+          "full saints arabic.pdf",
+          949,
+          950
+        ],
+        [
+          "full saints arabic.pdf",
+          950,
+          951
+        ],
+        [
+          "full saints arabic.pdf",
+          951,
+          952
+        ],
+        [
+          "full arabic catechism.pdf",
+          469,
+          469
+        ],
+        [
+          "full arabic catechism.pdf",
+          749,
+          756
+        ],
+        [
+          "full saints arabic.pdf",
+          223,
+          223
+        ],
+        [
+          "full saints arabic.pdf",
+          359,
+          360
+        ],
+        [
+          "full saints arabic.pdf",
+          454,
+          455
+        ],
+        [
+          "full saints arabic.pdf",
+          603,
+          604
+        ]
+      ],
+      "context_tokens": 14790,
+      "format_ok": null,
+      "recall_at_k": 1.0,
+      "recall_at_k_tol1": 1.0,
+      "recall_any": 1.0,
+      "recall_kept": 1.0,
+      "recall_shown": 1.0,
+      "expected_pages": [
+        "full saints arabic.pdf:p949",
+        "full saints arabic.pdf:p950"
+      ],
+      "spend_usd": 0.00019
+    }
+  ],
+  "timestamp": "20260922-233119"
+}

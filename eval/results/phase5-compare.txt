@@ -1,0 +1,62 @@
+COVERAGE (all answerable; mean of runs ± half the run-to-run spread)
+                                 v1           v2   n
+EN tune                  74.9 ± 1.1   74.5 ± 0.1   53
+EN holdout               80.4 ± 0.4   80.9 ± 0.1   23
+EN all                   76.6 ± 0.9   76.4 ± 0.0   76
+AR tune                  60.1 ± 0.4   73.4 ± 0.1   17
+AR holdout               71.7 ± 1.2   84.5 ± 1.7   3
+AR all                   61.8 ± 0.5   75.1 ± 0.1   20
+ALL                      73.5 ± 0.6   76.1 ± 0.1
+
+COVERAGE by category (all splits)
+  ar/arabic/catechism          77.2 ± 0.5   76.8 ± 2.5   10
+  ar/arabic/saints             46.5 ± 1.6   73.3 ± 2.8   10
+  en/catechism                 72.9 ± 0.1   76.7 ± 1.8   21
+  en/follow_up                 86.8 ± 1.4   88.2 ± 0.0   6
+  en/keyword                   86.0 ± 3.5   82.1 ± 5.0   10
+  en/multi_part                80.4 ± 0.9   96.7 ± 3.3   4
+  en/saints                    79.3 ± 0.5   78.7 ± 1.5   18
+  en/task                      68.1 ± 1.6   61.4 ± 1.4   17
+
+RECALL AT EQUAL CONTEXT BUDGET (budget = v1's mean context tokens per category, from the v1 runs)
+  v1 en   recall@budget  82.9  recall(all passages)  83.6  context tokens median   6286 mean   6723  prompt tokens mean   7638
+  v1 ar   recall@budget  62.5  recall(all passages)  62.5  context tokens median  14624 mean  14318  prompt tokens mean   8557
+  v1 all  recall@budget  78.6  recall(all passages)  79.2  context tokens median   6538 mean   8322  prompt tokens mean   7800
+  v2 en   recall@budget  89.5  recall(all passages)  89.9  context tokens median   6358 mean   6435  prompt tokens mean   8066
+  v2 ar   recall@budget  92.5  recall(all passages)  97.5  context tokens median  21642 mean  21485  prompt tokens mean  12560
+  v2 all  recall@budget  90.1  recall(all passages)  91.5  context tokens median   6562 mean   9603  prompt tokens mean   8857
+
+REFUSALS
+  v1: answerable refused   0.0  clarification   1.0 | out-of-corpus refused  93.4 (easy 100.0, near-miss  89.1, task 100.0, Arabic 100.0)
+  v2: answerable refused   1.0  clarification   1.0 | out-of-corpus refused  93.4 (easy 100.0, near-miss  89.1, task 100.0, Arabic 100.0)
+
+PER-QUESTION CHANGES (mean coverage over runs; |delta| >= 0.25)
+  -- worse on v2: 8
+     PRD-02  en catechism    v1 0.92 -> v2 0.42  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  why is coptic easter different than catholic
+     TSK-11  en task         v1 0.43 -> v2 0.00  outcomes v1 ['answered', 'answered'] v2 ['refused', 'refused']  list the saints named Gregory
+     TSK-02  en task         v1 0.35 -> v2 0.00  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  list saints who were martyred in Egypt
+     SNT-03  en saints       v1 0.83 -> v2 0.50  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  Who was St. Mary the Egyptian?
+     AR-07   ar arabic       v1 1.00 -> v2 0.67  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  ما هي أهمية الصلاة الربانية؟
+     SNT-02  en saints       v1 0.50 -> v2 0.25  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  How did St. Moses the Black come to faith?
+     KW-02   en keyword      v1 1.00 -> v2 0.75  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  fasting
+     TSK-13  en task         v1 0.44 -> v2 0.19  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  Write five quiz questions with answers about fasting
+  -- better on v2: 9
+     AR-03   ar arabic       v1 0.16 -> v2 0.97  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  من هو الأنبا بولا أول السواح؟
+     AR-14   ar arabic       v1 0.08 -> v2 0.83  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  من هو القديس أثناسيوس الرسولي؟
+     AR-04   ar arabic       v1 0.25 -> v2 0.86  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  من هو الأنبا أنطونيوس أب الرهبان؟
+     SNT-13  en saints       v1 0.43 -> v2 0.93  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  Who was St. Paul the First Hermit?
+     MP-04   en multi_part   v1 0.50 -> v2 0.95  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  Who was St. Demiana, and on which day is her martyrdom comme
+     CAT-01  en catechism    v1 0.20 -> v2 0.55  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  Why is prayer essential in the Coptic Orthodox life?
+     AR-06   ar arabic       v1 0.40 -> v2 0.75  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  لماذا يحتاج المؤمن إلى الصوم، وماذا يقول آباء الكنيسة عن الص
+     CAT-09  en catechism    v1 0.45 -> v2 0.75  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  Why is baptism necessary according to the Coptic Orthodox Ch
+     MP-01   en multi_part   v1 0.75 -> v2 1.00  outcomes v1 ['answered', 'answered'] v2 ['answered', 'answered']  Who was St. Abanoub, and how old was he when his parents die
+  out-of-corpus answered on v2 but never on v1: ['OOC-22', 'OOC-31']
+  out-of-corpus answered on v1 but never on v2: ['OOC-26', 'OOC-28']
+
+FAITHFULNESS (15 answers per corpus, same ids, judge gpt-4.1)
+  v1: supported  94.9  unsupported   3.8  bad citation   1.3  uncited   0.6  claims 157
+  v2: supported  97.8  unsupported   2.2  bad citation   0.0  uncited   2.2  claims 178
+
+spend v1: $0.763, $0.764
+
+spend v2: $0.825, $0.823
