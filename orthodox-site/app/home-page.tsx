@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ChatShell from "../components/ChatShell";
 import ChatSidebar from "../components/ChatSidebar";
@@ -19,7 +19,8 @@ const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
 const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
 const ROMAN = ["I", "II", "III", "IV", "V"];
 
-export default function HomePage() {
+/** `banner` is the server-rendered Today strip (CAL-005). */
+export default function HomePage({ banner }: { banner?: ReactNode }) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -110,6 +111,8 @@ export default function HomePage() {
     <main className="home-page">
       <div className={`home-layout ${hasHistory ? "home-layout-with-sidebar" : ""}`}>
         <div className="home-content">
+          {banner}
+
           <section className="hero" aria-labelledby="home-title">
             {/* The wordmark is the page title. Arabic pages add the Arabic name as text; the
                 English wordmark is then decorative. */}

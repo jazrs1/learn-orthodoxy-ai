@@ -69,6 +69,15 @@ function observance(id: ObservanceId): ObservanceView {
   return { id, kind, name: { en, ar } };
 }
 
+/** "Wednesday fast" reads better on a Wednesday than the rule's name. */
+function weeklyFast(day: number): ObservanceView {
+  return {
+    id: "wednesday-friday",
+    kind: "fast",
+    name: day === 3 ? { en: "Wednesday fast", ar: "صوم الأربعاء" } : { en: "Friday fast", ar: "صوم الجمعة" },
+  };
+}
+
 export function dayView(iso: string): DayView | null {
   const day = calendarDay(iso);
   if (!day) return null;
@@ -92,7 +101,7 @@ export function dayView(iso: string): DayView | null {
       short: { en: `${copticDay} ${monthEn}`, ar: `${arabicDigits(copticDay)} ${monthAr}` },
     },
     observances: day.observances.map(observance),
-    fast: day.fast ? observance(day.fast) : null,
+    fast: day.fast === "wednesday-friday" ? weeklyFast(weekday(iso)) : day.fast ? observance(day.fast) : null,
     fastFree: day.fastFree ? observance(day.fastFree) : null,
     suppressed: day.suppressed.map(observance),
     commemorations: commemorationsFor(day.coptic).map((entry) => ({

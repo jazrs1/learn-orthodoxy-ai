@@ -90,6 +90,8 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [CAL-001: Calendar data source — compute feasts and fasts ourselves; saints from Katameros only once permission is given](#cal-001-calendar-data-source--compute-feasts-and-fasts-ourselves-saints-from-katameros-only-once-permission-is-given)
   - [CAL-002: Feasts and fasts generated from written-out rules into a static file; coptic-calendar only converts dates](#cal-002-feasts-and-fasts-generated-from-written-out-rules-into-a-static-file-coptic-calendar-only-converts-dates)
   - [CAL-003: Katameros saint titles extracted once into one swappable file, linked conservatively to our saints index](#cal-003-katameros-saint-titles-extracted-once-into-one-swappable-file-linked-conservatively-to-our-saints-index)
+  - [CAL-004: "Today" comes from the visitor's clock, picked before first paint; the day boundary and saint order are one setting each](#cal-004-today-comes-from-the-visitors-clock-picked-before-first-paint-the-day-boundary-and-saint-order-are-one-setting-each)
+  - [CAL-005: Today strip at the top of the home page, linking the date to the calendar and the saint to our saints index](#cal-005-today-strip-at-the-top-of-the-home-page-linking-the-date-to-the-calendar-and-the-saint-to-our-saints-index)
 - [Open questions](#open-questions)
 
 ---
@@ -1441,6 +1443,40 @@ In summary:
 - **Files:** `orthodox-site/scripts/calendar/{extract-katameros-saints.ts,snapshot-saints-index.py,saints-index.snapshot.json,saint-link-overrides.json,node-sqlite.d.ts}`, `lib/calendar/data/saints.katameros.json`, `lib/calendar/saints.test.ts`.
 - **Concept to learn:** *Precision over recall in entity linking.* When a false match misleads the reader, tune the matcher to link fewer items, and link those correctly. Search: "entity linking precision recall trade-off".
 - **Revisit if:** the maintainer answers (update `source.permission`, or remove the file); the saints index is rebuilt (retake the snapshot and rerun the extractor); or the priest wants more saints linked (add overrides).
+
+### CAL-004: "Today" comes from the visitor's clock, picked before first paint; the day boundary and saint order are one setting each
+- **Date / Part:** 2026-09-22, calendar Step 2
+- **Context:** The server can't know the visitor's date. At any instant the world spans three civil dates (UTC−12 to UTC+14). Rendering "today" on the client only would either flash or shift the layout. Rendering it on the server would show the wrong day to many visitors.
+- **Decision:**
+  - The server renders every date that is "today" somewhere right now (`possibleTodays`: yesterday, today and tomorrow in UTC; one more with a sunset boundary). All but its own UTC date are `hidden`.
+  - A few lines of inline script placed right after the strip compute the visitor's local date and un-hide that one before the first paint.
+  - After hydration, `useSyncExternalStore` reads the same local date. The server snapshot equals the server's choice, so there is no hydration mismatch. React then agrees with what the script already did, and the date is rechecked every minute so an open tab rolls over.
+  - The script is generated from the same function the component uses (a test runs both). A client-side navigation to `/` skips the script and gets the right date straight from the component.
+  - `lib/calendar/config.ts` holds the two choices left to the priest:
+    - `DAY_BOUNDARY`: `"midnight"` (default) or `"sunset"`. Sunset is approximated as 18:00 local time, because we don't ask for the visitor's location.
+    - `BANNER_SAINT_ORDER`: `"source"` (default, Katameros's order) or `"linked-first"`.
+  - In both orders, the day's saints come before the monthly commemorations and events.
+  - `lib/calendar/view.ts` turns a day into a plain bilingual object. Pages pass the browser only the days they show; the 250 KB of JSON stays on the server.
+- **Verified:** production build, Playwright with the browser's time zone set to Toronto, Kiritimati (UTC+14), Pago Pago (UTC−11) and Tokyo:
+  - the visible day always equals the local date;
+  - no hydration warnings;
+  - layout shift 0 to 0.002 across runs;
+  - no horizontal overflow at 390 px.
+- **Files:** `orthodox-site/lib/calendar/{today,config,view,strings}.ts`, `lib/calendar/today.test.ts`.
+- **Concept to learn:** *Hydration and time.* Server HTML must match the first client render, so values that differ between the two (time, locale, random numbers) need a server snapshot plus a client update, or a pre-paint script. Search: "useSyncExternalStore getServerSnapshot", "hydration mismatch dates".
+- **Revisit if:** the priest chooses sunset. Then consider asking for or estimating the visitor's location for true sunset times.
+
+### CAL-005: Today strip at the top of the home page, linking the date to the calendar and the saint to our saints index
+- **Date / Part:** 2026-09-22, calendar Step 2
+- **Decision:**
+  - A slim strip between two hairlines sits above the wordmark on the home page (`components/calendar/TodayBanner.tsx` on the server, `TodayBannerStrip.tsx` in the browser). It uses the existing book style: a small-caps rubric "Today", the Coptic date in the display face, then the day's feasts and its fast or fast-free period. The day's first commemoration is below it in the reading face, followed by "and N more" (Arabic uses its dual and plural forms).
+  - The date links to `/calendar?d=YYYY-MM-DD`.
+  - When the first saint has an index entry in the page's language, its title links to `/chat?saint=<index name>#saints`. The chat page now opens that saint's entry when it sees `?saint=`. An "Ask about this saint" button then starts a chat with "Tell me about {name}." (Arabic "حدثني عن {name}.", which reads correctly for men and women). It uses the same pending-question hand-off as the home page's question box, now shared in `lib/pending-chat.ts`.
+  - The strip is fully server-rendered, not wrapped in Suspense, so nothing streams in late. `connection()` marks it as request-time.
+  - Text links in the strip are at least 32 px tall, which is above WCAG 2.5.8's 24 px. A full 44 px would double the strip's height; the calendar page uses 44 px throughout.
+  - The one Katameros entry with no Arabic title is shown in English and marked `lang="en"`.
+- **Files:** `orthodox-site/components/calendar/{TodayBanner.tsx,TodayBannerStrip.tsx,labels.ts}`, `app/page.tsx`, `app/home-page.tsx`, `app/chat/chat-page.tsx` (the `?saint=` effect), `lib/pending-chat.ts`, `lib/i18n.ts`, `app/globals.css`.
+- **Revisit if:** the priest sets the ordering rule, or wants monthly commemorations left out of the strip.
 
 ---
 

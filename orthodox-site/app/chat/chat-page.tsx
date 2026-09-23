@@ -896,6 +896,16 @@ function ChatPageContent() {
     [loadSaintDetail, saintLookup]
   );
 
+  // /chat?saint=<index name>#saints opens that saint's entry; the calendar links here (CAL-005).
+  // The name comes from the saints index snapshot, so it is not checked against the loaded list.
+  const handledSaintParamRef = useRef("");
+  useEffect(() => {
+    const name = searchParams.get("saint")?.trim() || "";
+    if (!name || name === handledSaintParamRef.current) return;
+    handledSaintParamRef.current = name;
+    void loadSaintDetail(name);
+  }, [loadSaintDetail, searchParams]);
+
   const retryFailedSend = useCallback(() => {
     if (!sendFailure) return;
     void handleSendMessage(sendFailure.question, {
