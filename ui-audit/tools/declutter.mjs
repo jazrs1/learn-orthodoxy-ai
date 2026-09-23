@@ -1,6 +1,6 @@
 // Home page declutter check (UI-017…): the home page in English and Arabic at 1440 and 390 px,
-// the first screen and the full page, the past-chats drawer open, and the chat page (whose
-// sidebar stays), with axe on every state. Every /api/* call is mocked, with past chats that
+// the first screen and the full page, the past-chats sidebar open and collapsed (desktop, UI-025)
+// or the drawer open (phone), and the chat page likewise, with axe on every state. Every /api/* call is mocked, with past chats that
 // repeat a title; no backend, database or OpenAI. BASE: http://localhost:3217 (README step 1).
 //   CHROME_BIN=/path/to/chrome node declutter.mjs ../declutter/after
 import { chromium } from "playwright";
@@ -59,26 +59,51 @@ for (const language of ["en", "ar"]) {
       horizontalOverflow: await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1),
     };
 
-    // Past chats as a drawer: the new button, else the header menu's event.
-    const button = page.locator(".past-chats-button");
-    if (await button.count()) await button.first().click();
-    else await page.evaluate(() => window.dispatchEvent(new CustomEvent("chat:openSidebar")));
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: `${OUT}/home-${tag}-drawer.png` });
-    states.drawer = {
-      axe: await axe(page),
-      titles: await page.locator(".chat-sidebar-mobile-open .chat-sidebar-item-title").allInnerTexts(),
-    };
-
+    // Desktop: collapse the sidebar with the header toggle (UI-025) when there is one.
+    // Phone: open the drawer from the header menu (or, before UI-025, the "Past chats" button).
+    const toggle = page.locator(".nav-sidebar-toggle");
+    async function collapsed(name) {
+      if (!(await toggle.count()) || !(await toggle.first().isVisible())) return null;
+      await toggle.first().click();
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: `${OUT}/${name}-${tag}-collapsed.png` });
+      const state = { axe: await axe(page), sidebarVisible: await page.locator(".chat-sidebar").first().isVisible() };
+      await toggle.first().click(); // back to open for the next page (the choice is remembered)
+      await page.waitForTimeout(300);
+      return state;
+    }
     if (width === "1440") {
-      await page.goto(BASE + "/chat", { waitUntil: "networkidle" });
-      await page.waitForTimeout(600);
-      await page.screenshot({ path: `${OUT}/chat-${tag}.png` });
-      states.chat = {
-        axe: await axe(page),
-        sidebarVisible: await page.locator(".chat-sidebar").first().isVisible(),
-        titles: await page.locator(".chat-sidebar-item-title").allInnerTexts(),
-      };
+      states.homeCollapsed = await collapsed("home");
+      const button = page.locator(".past-chats-button");
+      if (await button.count()) {
+        await button.first().click();
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: `${OUT}/home-${tag}-drawer.png` });
+        states.drawer = { axe: await axe(page), titles: await page.locator(".chat-sidebar-mobile-open .chat-sidebar-item-title").allInnerTexts() };
+      }
+    } else {
+      const menu = page.locator(".navbar-sidebar-toggle");
+      if (await menu.count()) await menu.first().click();
+      else await page.evaluate(() => window.dispatchEvent(new CustomEvent("chat:openSidebar")));
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `${OUT}/home-${tag}-drawer.png` });
+      states.drawer = { axe: await axe(page), titles: await page.locator(".chat-sidebar-mobile-open .chat-sidebar-item-title").allInnerTexts() };
+    }
+
+    await page.goto(BASE + "/chat", { waitUntil: "networkidle" });
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${OUT}/chat-${tag}.png` });
+    states.chat = {
+      axe: await axe(page),
+      sidebarVisible: await page.locator(".chat-sidebar").first().isVisible(),
+      titles: await page.locator(".chat-sidebar-item-title").allInnerTexts(),
+    };
+    if (width === "1440") states.chatCollapsed = await collapsed("chat");
+    else {
+      await page.locator(".navbar-sidebar-toggle").first().click();
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `${OUT}/chat-${tag}-drawer.png` });
+      states.chatDrawer = { axe: await axe(page) };
     }
     report[tag] = states;
     await ctx.close();
@@ -87,6 +112,6 @@ for (const language of ["en", "ar"]) {
 await browser.close();
 fs.writeFileSync(`${OUT}/declutter-report.json`, JSON.stringify(report, null, 1));
 const violations = Object.entries(report).flatMap(([tag, states]) =>
-  Object.entries(states).flatMap(([state, s]) => s.axe.map((v) => `${tag} ${state}: ${v.id} (${v.impact}, ${v.nodes})`))
+  Object.entries(states).filter(([, s]) => s).flatMap(([state, s]) => s.axe.map((v) => `${tag} ${state}: ${v.id} (${v.impact}, ${v.nodes})`))
 );
 console.log(violations.length ? violations.join("\n") : "axe: 0 violations in every state");

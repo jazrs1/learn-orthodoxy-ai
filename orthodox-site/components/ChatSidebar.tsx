@@ -27,8 +27,9 @@ type ChatSidebarProps = {
   onClose?: () => void;
   /** Hide the column on desktop (landing page with no history); the mobile drawer still works. */
   desktopHidden?: boolean;
-  /** A drawer at every width, never a column (the home page's past chats, UI-020). */
-  drawer?: boolean;
+  /** Desktop: a column in the page's own layout that stays in view as the page scrolls (the home
+   *  page, below the Today banner), instead of fixed under the header (the chat page). UI-025. */
+  inflow?: boolean;
 };
 
 export default function ChatSidebar({
@@ -45,7 +46,7 @@ export default function ChatSidebar({
   isMobileOpen = false,
   onClose,
   desktopHidden = false,
-  drawer = false,
+  inflow = false,
 }: ChatSidebarProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
@@ -55,17 +56,17 @@ export default function ChatSidebar({
     onCloseRef.current = onClose;
   });
 
-  // The home page's drawer (UI-020): focus moves into it when it opens, and Escape closes it.
+  // The phone drawer: focus moves into it when it opens, and Escape closes it (UI-020, UI-025).
   // Only on opening, so a later update (a deleted chat) doesn't pull focus back.
   useEffect(() => {
-    if (!drawer || !isMobileOpen) return;
+    if (!isMobileOpen) return;
     closeButton.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onCloseRef.current?.();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [drawer, isMobileOpen]);
+  }, [isMobileOpen]);
   const modes: Array<{ id: ChatMode; label: string }> = [
     { id: "chat", label: t("chat") },
     { id: "catechism", label: t("catechism") },
@@ -84,9 +85,10 @@ export default function ChatSidebar({
 
   return (
     <aside
+      id="chat-sidebar"
       className={`chat-sidebar ${isMobileOpen ? "chat-sidebar-mobile-open" : ""} ${
         desktopHidden ? "chat-sidebar-desktop-hidden" : ""
-      } ${drawer ? "chat-sidebar-drawer" : ""}`}
+      } ${inflow ? "chat-sidebar-inflow" : ""}`}
       aria-label={t("chats")}
     >
       <div className="chat-sidebar-details">

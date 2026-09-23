@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
 import { BRAND } from "../lib/brand";
-import { IconMenu } from "./Icons";
+import { IconMenu, IconSidebar } from "./Icons";
 import { useLanguage } from "./LanguageProvider";
 
 type ChatMode = "chat" | "catechism" | "saints";
@@ -16,6 +16,9 @@ export default function Navbar() {
   const { language, setLanguage, t } = useLanguage();
   const otherLanguage = language === "ar" ? "en" : "ar";
   const [hash, setHash] = useState("");
+  // The past-chats sidebar of the home and chat pages (UI-025): the page says whether there is
+  // one to toggle and whether it is open; the header's toggle asks the page to hide or show it.
+  const [sidebar, setSidebar] = useState({ available: false, open: true });
 
   const showsMobileSidebarToggle =
     pathname === "/" ||
@@ -38,6 +41,20 @@ export default function Navbar() {
       window.removeEventListener("chat:setMode", syncHash);
     };
   }, [pathname]);
+
+  useEffect(() => {
+    function onSidebarState(event: Event) {
+      const detail = (event as CustomEvent<{ available: boolean; open: boolean }>).detail;
+      setSidebar({ available: Boolean(detail?.available), open: Boolean(detail?.open) });
+    }
+    window.addEventListener("chat:sidebarState", onSidebarState);
+    window.dispatchEvent(new CustomEvent("chat:requestSidebarState"));
+    return () => window.removeEventListener("chat:sidebarState", onSidebarState);
+  }, [pathname]);
+
+  function toggleSidebar() {
+    window.dispatchEvent(new CustomEvent("chat:toggleSidebar"));
+  }
 
   function openMobileSidebar() {
     window.dispatchEvent(new CustomEvent("chat:openSidebar"));
@@ -70,6 +87,20 @@ export default function Navbar() {
             aria-label={t("openChatsPanel")}
           >
             <IconMenu size={24} />
+          </button>
+        ) : null}
+
+        {sidebar.available ? (
+          <button
+            type="button"
+            className="icon-button nav-sidebar-toggle"
+            onClick={toggleSidebar}
+            aria-label={sidebar.open ? t("hideChats") : t("showChats")}
+            title={sidebar.open ? t("hideChats") : t("showChats")}
+            aria-expanded={sidebar.open}
+            aria-controls="chat-sidebar"
+          >
+            <IconSidebar size={22} />
           </button>
         ) : null}
 
@@ -116,7 +147,7 @@ export default function Navbar() {
         <button
           type="button"
           lang={otherLanguage}
-          className="language-toggle-btn"
+          className="nav-link nav-language"
           onClick={() => setLanguage(otherLanguage)}
         >
           {otherLanguage === "ar" ? "العربية" : "English"}

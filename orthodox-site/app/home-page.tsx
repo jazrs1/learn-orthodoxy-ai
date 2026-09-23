@@ -11,6 +11,7 @@ import { IconArrowForward } from "../components/Icons";
 import { useLanguage } from "../components/LanguageProvider";
 import Ornament from "../components/Ornament";
 import SiteFooter from "../components/SiteFooter";
+import { useChatSidebar } from "../components/useChatSidebar";
 import { BRAND } from "../lib/brand";
 import { fetchConversationList, deleteConversationRequest } from "../lib/chat-client";
 import { ConversationSummary } from "../lib/chat-types";
@@ -29,35 +30,14 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const router = useRouter();
   const { language, t } = useLanguage();
   const content = HOME_CONTENT[language];
-  // Past chats open as a drawer from the "Past chats" button (and the phone menu); the home page
-  // has no history column (UI-020). The button only appears once there is history.
+  // The past-chats sidebar, shared with the chat page (UI-025): shown once there are chats, open
+  // by default on desktop and hidden from the header's toggle; a drawer on phones.
   const hasHistory = !loading && conversations.length > 0;
-
-  useEffect(() => {
-    function handleOpenSidebar() {
-      setMobileSidebarOpen(true);
-    }
-
-    window.addEventListener("chat:openSidebar", handleOpenSidebar);
-    return () => {
-      window.removeEventListener("chat:openSidebar", handleOpenSidebar);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mobileSidebarOpen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileSidebarOpen]);
+  const sidebar = useChatSidebar(hasHistory);
+  const setMobileSidebarOpen = sidebar.setMobileOpen;
 
   useEffect(() => {
     let cancelled = false;
@@ -116,7 +96,20 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
     <>
       <main className="home-page">
         {banner}
-        <div className="home-layout">
+        <div className={`home-layout ${sidebar.visible ? "home-layout-with-sidebar" : ""}`}>
+          <ChatSidebar
+            sessions={conversations}
+            onSelectSession={openSession}
+            onNewChat={startNewChat}
+            onDeleteSession={deleteSession}
+            showAppNav
+            loading={loading}
+            error={error}
+            isMobileOpen={sidebar.mobileOpen}
+            onClose={() => setMobileSidebarOpen(false)}
+            desktopHidden={!sidebar.visible}
+            inflow
+          />
           <div className="home-content">
             <section className="hero" aria-labelledby="home-title">
               {/* The wordmark is the page title. Arabic pages add the Arabic name as text; the
@@ -139,16 +132,6 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
               <div className="hero-chat-wrap">
                 <ChatShell onSubmit={startChatFromHome} />
                 <p className="hero-note">{content.aiNote}</p>
-                {hasHistory ? (
-                  <button
-                    type="button"
-                    className="past-chats-button"
-                    aria-expanded={mobileSidebarOpen}
-                    onClick={() => setMobileSidebarOpen(true)}
-                  >
-                    {t("pastChats")}
-                  </button>
-                ) : null}
               </div>
             </section>
 
@@ -217,22 +200,10 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
 
         <button
           type="button"
-          className={`chat-sidebar-overlay chat-sidebar-overlay-drawer ${mobileSidebarOpen ? "chat-sidebar-overlay-visible" : ""}`}
+          className={`chat-sidebar-overlay ${sidebar.mobileOpen ? "chat-sidebar-overlay-visible" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
           aria-hidden="true"
           tabIndex={-1}
-        />
-        <ChatSidebar
-          sessions={conversations}
-          onSelectSession={openSession}
-          onNewChat={startNewChat}
-          onDeleteSession={deleteSession}
-          showAppNav
-          loading={loading}
-          error={error}
-          isMobileOpen={mobileSidebarOpen}
-          onClose={() => setMobileSidebarOpen(false)}
-          drawer
         />
       </main>
       <SiteFooter />

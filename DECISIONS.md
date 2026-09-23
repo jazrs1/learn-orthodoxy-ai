@@ -93,6 +93,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-022: Four example questions, without dotted leaders](#ui-022-four-example-questions-without-dotted-leaders)
   - [UI-023: Home page declutter: what still competes on the first screen (report, not changed)](#ui-023-home-page-declutter-what-still-competes-on-the-first-screen-report-not-changed)
   - [UI-024: The Today banner goes back to the top, as a full-width band](#ui-024-the-today-banner-goes-back-to-the-top-as-a-full-width-band)
+  - [UI-025: A collapsible past-chats sidebar shared by the home and chat pages; a four-link header without divider; the language toggle set like the links](#ui-025-a-collapsible-past-chats-sidebar-shared-by-the-home-and-chat-pages-a-four-link-header-without-divider-the-language-toggle-set-like-the-links)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1469,6 +1470,27 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - Lighthouse mobile, six runs each on the same build setup: Today line at the bottom 94–96 (median 96, LCP median 2.84 s); banner at the top 94–98 (median 95, LCP median 2.92 s). The difference is inside the run-to-run spread; the LCP element is the hero description in both, and the font requests are the same.
   - Desktop: 100, LCP ≈ 0.49–0.58 s.
 - **Files changed:** `app/home-page.tsx`, `app/globals.css`, `components/calendar/TodayBannerStrip.tsx` (comment).
+
+### UI-025: A collapsible past-chats sidebar shared by the home and chat pages; a four-link header without divider; the language toggle set like the links
+- **Date / Part:** 2026-09-23, owner's review of the declutter. This replaces UI-020's "Past chats" button and its desktop drawer.
+- **Owner's request:** a sidebar for past chats instead of the drawer button, collapsible, on both pages; proper padding; no divider between Saints and Calendar; the language toggle the same size and style as the other links.
+- **Decision:**
+  - **One sidebar for both pages** (`components/useChatSidebar.ts`, `ChatSidebar`). It is shown only once the visitor has chats. Its contents are unchanged: "New chat" at the top, then past chats listed once per title (UI-020).
+    - **Desktop:** open by default. A toggle at the start of the header (a panel icon, "Hide past chats" / "Show past chats", `aria-expanded`, `aria-controls="chat-sidebar"`) hides and shows it. The choice is remembered in this browser (`localStorage`); if storage is unavailable, it stays open.
+    - **Phones:** a slide-in drawer from the header's menu button, as before. Focus moves into the drawer, and Escape closes it.
+  - **Padding:** on desktop the panel is inset 12 px from the window edges (`--sidebar-gap`), with a hairline all round, and it is narrower (256 px, was 280).
+    - **Chat page:** fixed under the header. The chat column makes room only while the panel is shown.
+    - **Home page:** in the page's own layout, below the Today banner, and it stays in view as the page scrolls. The layout is three columns (panel, content, and an empty column as wide as the panel), so the content stays centred in the window. Below 1320 px there is no room for the empty column, and the content takes the rest of the row.
+  - **Header:** Chat, Catechism, Saints and Calendar, with no divider after Saints.
+  - **Language toggle:** set as a header link.
+    - **"العربية" on English pages:** the system Arabic face (no Arabic font download, UI-011), one step smaller than the links (0.9375 rem) and at normal weight, so full-height Arabic letters read at the small capitals' size.
+    - **"ENGLISH" on Arabic pages:** capitals at small-capital height (0.8125 rem, tracked). The Garamond file loaded on Arabic pages has no small capitals.
+- **Removed:** the "Past chats" button and the UI-020 desktop drawer (`ChatSidebar drawer`) with their styles; the old two-word toggle's styles.
+- **Checks:**
+  - axe finds 0 violations in all 21 captured states. `ui-audit/tools/declutter.mjs` now captures, at 1440 and 390 px in English and Arabic: the home page (first screen, full page), the sidebar open and collapsed on desktop, and the drawer open on phones; the chat page likewise.
+  - Screenshots are in `ui-audit/declutter/sidebar-before` and `sidebar-after` (not committed). The chat page's "Unable to load chat" notice in both sets comes from the check's mocked `/api`, which answers 404 for a single chat.
+  - Tests: frontend 135; typecheck and lint clean.
+- **Files changed:** `components/useChatSidebar.ts` (new), `components/ChatSidebar.tsx`, `components/Navbar.tsx`, `components/Icons.tsx`, `app/home-page.tsx`, `app/chat/chat-page.tsx`, `lib/i18n.ts`, `app/globals.css`, `ui-audit/tools/declutter.mjs`.
 
 ## Code Cleanup
 

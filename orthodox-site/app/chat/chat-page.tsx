@@ -9,6 +9,7 @@ import ChatSidebar from "../../components/ChatSidebar";
 import AnswerWithSources from "../../components/AnswerWithSources";
 import { useLanguage } from "../../components/LanguageProvider";
 import { buildSaintLookup, isValidSaintName } from "../../components/saintNameUtils";
+import { useChatSidebar } from "../../components/useChatSidebar";
 import {
   createConversationRequest,
   deleteConversationRequest,
@@ -272,6 +273,11 @@ function ChatPageContent() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [conversationsError, setConversationsError] = useState("");
+  // The past-chats sidebar, shared with the home page (UI-025): shown once there are chats, open
+  // by default on desktop and hidden from the header's toggle; a drawer on phones.
+  const sidebar = useChatSidebar(!conversationsLoading && conversations.length > 0);
+  const mobileSidebarOpen = sidebar.mobileOpen;
+  const setMobileSidebarOpen = sidebar.setMobileOpen;
   const [activeConversationId, setActiveConversationId] = useState("");
   const [currentConversation, setCurrentConversation] = useState<ConversationDetail | null>(null);
   const [conversationLoading, setConversationLoading] = useState(false);
@@ -287,7 +293,6 @@ function ChatPageContent() {
   // Mode of the most recent request in this conversation. Follow-up chips reuse it so a
   // catechism thread stays in catechism mode and a saints thread in saints mode.
   const [conversationMode, setConversationMode] = useState<ChatMode>("chat");
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [pendingAutoSubmitText, setPendingAutoSubmitText] = useState("");
   const [saints, setSaints] = useState<string[]>([]);
   const [saintsTotal, setSaintsTotal] = useState(0);
@@ -751,18 +756,6 @@ function ChatPageContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    function handleOpenSidebar() {
-      setMobileSidebarOpen(true);
-    }
-
-    window.addEventListener("chat:openSidebar", handleOpenSidebar);
-    return () => {
-      window.removeEventListener("chat:openSidebar", handleOpenSidebar);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
 
     function selectMode(mode: string) {
       if (mode === "chat" || mode === "catechism" || mode === "saints") {
@@ -787,18 +780,6 @@ function ChatPageContent() {
       window.removeEventListener("chat:setMode", handleSetMode);
     };
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!mobileSidebarOpen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileSidebarOpen]);
 
   const loadSaintDetail = useCallback(async (name: string, saintId = "", namesakesOf = "") => {
     const trimmed = name.trim();
@@ -910,7 +891,7 @@ function ChatPageContent() {
       <div className="sr-only" role="status" aria-live="polite">
         {liveMessage}
       </div>
-      <div className="chat-layout">
+      <div className={`chat-layout ${sidebar.visible ? "chat-layout-with-sidebar" : ""}`}>
         <section className="chat-window">
           {activeTab === "chat" ? (
             <div className="chat-messages" ref={chatMessagesRef}>
@@ -1262,6 +1243,7 @@ function ChatPageContent() {
           error={conversationsError}
           isMobileOpen={mobileSidebarOpen}
           onClose={() => setMobileSidebarOpen(false)}
+          desktopHidden={!sidebar.visible}
         />
       </div>
     </main>

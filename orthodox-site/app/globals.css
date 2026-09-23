@@ -80,7 +80,9 @@
 
   /* Layout */
   --header-height: 64px;
-  --sidebar-width: 280px;
+  --sidebar-width: 256px;
+  /* The past-chats panel's distance from the window edges (UI-025). */
+  --sidebar-gap: var(--space-3);
   --reading-width: 46rem;
   --page-width: 72rem;
   --tap-target: 44px;
@@ -369,9 +371,6 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  padding-inline-end: var(--space-3);
-  margin-inline-end: var(--space-2);
-  border-inline-end: 1px solid var(--color-line);
 }
 
 .nav-link {
@@ -418,36 +417,43 @@ textarea:focus-visible {
   background: var(--color-accent);
 }
 
-/* Language switch: two words divided by a hairline; the current one is underlined in red. */
-.language-toggle-btn {
-  position: relative;
-  min-height: var(--tap-target);
-  padding: 0 var(--space-3);
+/* The language toggle is set like the header links (UI-025); as a button it needs a reset. */
+.nav-language {
   border: none;
-  background: transparent;
-  color: var(--color-ink-soft);
-  font-family: var(--font-ui);
-  font-size: var(--text-label);
-  font-variant-caps: var(--caps-label);
-  letter-spacing: var(--tracking-label);
+  background: none;
   line-height: 1;
-  white-space: nowrap;
+  cursor: pointer;
 }
 
-/* On English pages this label is the only Arabic text; a system face avoids downloading
-   Noto Naskh (92 KB) just for it (UI-011). Arabic pages have the font already. */
-.language-toggle-btn[lang="ar"] {
+/* On English pages "العربية" is the only Arabic text: a system face avoids downloading Noto Naskh
+   (92 KB) for it (UI-011). Same size as the links; Arabic takes no small caps or letter-spacing. */
+.nav-language:lang(ar) {
   font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
-  font-size: var(--text-sm);
+  /* Full-height Arabic letters beside small capitals: one step down reads as the same size. */
+  font-size: 0.9375rem;
+  font-weight: 400;
+  font-variant-caps: normal;
+  letter-spacing: 0;
 }
 
-:root:lang(ar) .language-toggle-btn[lang="ar"] {
-  font-family: var(--font-naskh), system-ui, sans-serif;
-  font-size: var(--text-label);
+/* On Arabic pages "English" looks as the English pages' links do: capitals at small-capital
+   height. The Garamond file loaded on Arabic pages has no small capitals, so they are set as
+   capitals at a smaller size rather than as font-variant-caps. */
+:root:lang(ar) .nav-language:lang(en) {
+  font-family: var(--font-garamond), Garamond, "Times New Roman", serif;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.language-toggle-btn:hover {
-  color: var(--color-primary);
+/* The header's show/hide past chats toggle (UI-025), desktop only; phones use the menu button. */
+.nav-sidebar-toggle {
+  flex: 0 0 auto;
+  margin-inline-start: calc(var(--space-2) * -1);
+}
+
+[dir="rtl"] .nav-sidebar-toggle svg {
+  transform: scaleX(-1);
 }
 
 /* ---------- Page footer (UI-019): Credits and Contact, moved out of the header ---------- */
@@ -495,31 +501,6 @@ textarea:focus-visible {
   display: flex;
   justify-content: center;
   padding: var(--space-7) var(--space-5) var(--space-8);
-}
-
-/* "Past chats" under the question box opens the history drawer (UI-020). */
-.past-chats-button {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap-target);
-  margin-top: var(--space-1);
-  padding: 0 var(--space-2);
-  border: none;
-  background: none;
-  color: var(--color-ink-soft);
-  font-family: var(--font-ui);
-  font-size: var(--text-label);
-  font-variant-caps: var(--caps-label);
-  letter-spacing: var(--tracking-label);
-  text-decoration: underline;
-  text-decoration-color: var(--color-rule);
-  text-underline-offset: 4px;
-  cursor: pointer;
-}
-
-.past-chats-button:hover {
-  color: var(--color-primary);
-  text-decoration-color: currentColor;
 }
 
 .home-content {
@@ -907,7 +888,11 @@ textarea:focus-visible {
   height: 100%;
   min-height: 0;
   display: flex;
-  padding-inline-start: var(--sidebar-width);
+}
+
+/* Room for the past-chats panel, only while it is shown (UI-025). */
+.chat-layout-with-sidebar {
+  padding-inline-start: calc(var(--sidebar-width) + 2 * var(--sidebar-gap));
 }
 
 .chat-window {
@@ -1114,63 +1099,56 @@ textarea:focus-visible {
   display: none;
 }
 
-/* The home page's past chats: a drawer at every width (UI-020). After the base sidebar and
-   overlay rules, which it overrides on desktop. */
+/* The past-chats panel on desktop (UI-025): inset from the window edges, a hairline all round.
+   The chat page fixes it under the header; the home page keeps it in its own layout, below the
+   Today banner, where it stays in view as the page scrolls. */
 @media (min-width: 821px) {
-  .chat-sidebar.chat-sidebar-drawer {
-    top: 0;
-    width: 320px;
-    z-index: 140;
-    transform: translateX(-100%);
-    transition: transform 0.25s ease, visibility 0s linear 0.25s;
-    visibility: hidden;
+  .chat-sidebar {
+    top: calc(var(--header-height) + var(--sidebar-gap));
+    bottom: var(--sidebar-gap);
+    inset-inline-start: var(--sidebar-gap);
   }
 
-  [dir="rtl"] .chat-sidebar.chat-sidebar-drawer {
-    transform: translateX(100%);
+  .chat-sidebar-details {
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
   }
 
-  .chat-sidebar.chat-sidebar-drawer.chat-sidebar-mobile-open {
-    transform: translateX(0);
-    visibility: visible;
-    transition-delay: 0s;
+  .chat-sidebar.chat-sidebar-inflow {
+    position: sticky;
+    top: calc(var(--header-height) + var(--sidebar-gap));
+    bottom: auto;
+    inset-inline-start: auto;
+    align-self: start;
+    grid-column: 1;
+    max-height: calc(100dvh - var(--header-height) - 2 * var(--sidebar-gap));
   }
 
-  .chat-sidebar.chat-sidebar-drawer .chat-sidebar-details {
-    box-shadow: var(--shadow-drawer);
+  .chat-sidebar-inflow .chat-sidebar-details {
+    height: auto;
+    max-height: inherit;
   }
 
-  .chat-sidebar.chat-sidebar-drawer .chat-sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: var(--header-height);
-    padding-block: 0;
-    padding-inline: var(--space-4) var(--space-2);
-    border-bottom: 1px solid var(--color-line);
+  /* With the panel, the home page is a row of three: the panel, the content, and an empty column
+     as wide as the panel, so the content stays centred in the window. */
+  .home-layout-with-sidebar {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--sidebar-width);
+    column-gap: var(--space-5);
+    align-items: start;
+    padding-inline: var(--sidebar-gap);
   }
 
-  .chat-sidebar.chat-sidebar-drawer .chat-sidebar-close-btn {
-    display: inline-flex;
-    width: var(--tap-target);
-    height: var(--tap-target);
+  .home-layout-with-sidebar > .home-content {
+    grid-column: 2;
+    justify-self: center;
   }
+}
 
-  .chat-sidebar-overlay.chat-sidebar-overlay-drawer {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 130;
-    padding: 0;
-    border: none;
-    background: transparent;
-    pointer-events: none;
-    transition: background-color 0.25s ease;
-  }
-
-  .chat-sidebar-overlay.chat-sidebar-overlay-drawer.chat-sidebar-overlay-visible {
-    background: var(--color-overlay);
-    pointer-events: auto;
+/* Narrower desktops can't keep an empty column: the content takes the rest of the row. */
+@media (min-width: 821px) and (max-width: 1319px) {
+  .home-layout-with-sidebar {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
 }
 
@@ -2857,9 +2835,8 @@ a.calendar-month-link:hover {
     height: var(--tap-target);
   }
 
-  .language-toggle-btn {
-    padding: 0 var(--space-2);
-    font-size: var(--text-base);
+  .nav-sidebar-toggle {
+    display: none;
   }
 
 

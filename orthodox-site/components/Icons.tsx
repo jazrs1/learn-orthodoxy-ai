@@ -76,6 +76,16 @@ export function IconMenu(props: IconProps) {
   );
 }
 
+/** A panel with its sidebar: the header's show/hide past chats toggle (UI-025). */
+export function IconSidebar(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="1.5" />
+      <path d="M9.5 4.5v15" />
+    </Svg>
+  );
+}
+
 export function IconPlus(props: IconProps) {
   return (
     <Svg {...props}>
