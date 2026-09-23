@@ -17,6 +17,8 @@ import statistics
 from collections import Counter
 from pathlib import Path
 
+from paired import describe, paired_difference
+
 NEAR = {"saint_not_in_books", "non_coptic_doctrine", "false_premise", "same_name_confusion"}
 
 
@@ -84,7 +86,13 @@ def main():
     args = parser.parse_args()
     before = [tune(p) for p in args.before]
     after = [tune(p) for p in args.after]
-    report = {"quality": {}, "speed": {}, "changed_refusals": [], "entity_check_after": [entity_actions(p) for p in args.backend_logs]}
+    report = {
+        "quality": {},
+        "coverage_change": {},
+        "speed": {},
+        "changed_refusals": [],
+        "entity_check_after": [entity_actions(p) for p in args.backend_logs],
+    }
     for language in ("en", "ar"):
         for label, runs in (("before", before), ("after", after)):
             per_run = [quality([r for r in run if r["language"] == language]) for run in runs]
@@ -94,6 +102,10 @@ def main():
                 if all(v[key] is not None for v in per_run)
             } | {"n (answerable, out-of-corpus)": per_run[0]["n"]}
             report["speed"][f"{language}/{label}"] = speed([[r for r in run if r["language"] == language] for run in runs])
+        # Question by question, with its noise band (RET-025): "+1.2 ± 3.4 pts; within noise".
+        keep = lambda run: {r["id"]: r for r in run if r["language"] == language and not r["should_refuse"]}  # noqa: E731
+        score = lambda r: 0.0 if refused(r) else (r.get("coverage_score") or 0.0)  # noqa: E731
+        report["coverage_change"][language] = describe(paired_difference([keep(r) for r in before], [keep(r) for r in after], score))
     # Questions refused in every before run but answered in an after run, or the other way round.
     ids = {r["id"] for r in after[0]}
     for qid in sorted(ids):

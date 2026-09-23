@@ -70,6 +70,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-021: A new chat's conversation is created when its first answer is saved; the answer and sources arrive before the IDs; a failed save is retried, then said plainly](#ret-021-a-new-chats-conversation-is-created-when-its-first-answer-is-saved-the-answer-and-sources-arrive-before-the-ids-a-failed-save-is-retried-then-said-plainly)
   - [RET-022: Owner's decisions after RET-020, and how small a regression one tune run can catch (proposal)](#ret-022-owners-decisions-after-ret-020-and-how-small-a-regression-one-tune-run-can-catch-proposal)
   - [RET-024: Production, hop by hop: ~0.25–0.45 s outside the backend; the slow parts are in the backend; Railway runs across the continent from Vercel and Neon](#ret-024-production-hop-by-hop-025045-s-outside-the-backend-the-slow-parts-are-in-the-backend-railway-runs-across-the-continent-from-vercel-and-neon)
+  - [RET-025: Checks of answer changes use two runs per side, Arabic four, and report the change with its noise band; the judge's share of the noise is small](#ret-025-checks-of-answer-changes-use-two-runs-per-side-arabic-four-and-report-the-change-with-its-noise-band-the-judges-share-of-the-noise-is-small)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -1247,6 +1248,30 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   2. **Move the Railway service to US East** (us-east4, Virginia) to sit with Vercel and Neon: **~60–70 ms saved per question** (one cross-continent round trip, plus half of one on the first byte back). The v2 Chroma store lives on a volume in us-west2, and volumes are tied to their region, so a move means building or copying the store in the new region (DEPLOY_V2.md's background build) and a short cut-over. Worth doing at the next redeploy, not urgently.
   3. **Cold starts** (one of six turns here) can't be measured further until RET-018 is live. Vercel's fluid compute keeps instances warm while there is traffic.
 - **Spend:** $0.0292 (6 answers with gpt-4.1-mini plus analysis calls). 3 conversations were saved to the production database under a new anonymous visitor.
+
+### RET-025: Checks of answer changes use two runs per side, Arabic four, and report the change with its noise band; the judge's share of the noise is small
+- **Date / Part:** 2026-09-23, speed branch (the owner approved RET-022's items 1, 2 and 3 and the one-off re-judge check. Item 2: Arabic tune questions 4 runs per side for now, and the Arabic set grown gradually, each question checked against the PDFs.)
+- **Decision:**
+  - **Procedure** for a change that can alter answers, written into `eval/run_eval.py`'s usage notes. Each side gets:
+    - 2 coverage runs on tune, restarting the backend between them;
+    - 2 Arabic-only runs (`--split tune --language ar --coverage-only`), for 4 Arabic runs per side in all.
+    - Stored baselines are reused while their configuration matches production. About $1.50 per side.
+  - **`--language en|ar`** (new) limits a live run or a re-judge to one language.
+  - **`--rejudge`** now honours `--coverage-only`, `--split` and `--language`. Before, it always ran the legacy and faithfulness judges on every record, several times the cost.
+  - **`eval/paired.py`** (new) reports a change question by question: each side's runs averaged, the mean of the per-question differences, and a 95% band.
+    - With at least two runs per side, the band is the measured re-run noise: each question's spread across its repeats, pooled (RET-022's method).
+    - With single runs it falls back to a t-interval over questions, labelled "conservative". That interval also counts real question-to-question differences in the change: for the RET-019 comparison it gave ±6.0 pts in English, against ±2.4 from the repeats.
+  - `eval/speed_compare.py` and `eval/phase5_compare.py` print it, e.g. `-2.1 ± 5.1 pts (95%, re-run noise; 17 questions, 2 vs 2 runs); within noise`.
+  - **Growing the Arabic set** is ongoing: small batches, each question checked against the Arabic PDFs (pages, reference answer, key facts) and marked `verified`. No questions added yet.
+- **Results with the new report:**
+  - The speed changes (RET-019): English **+1.2 ± 2.4 pts**, Arabic **−2.1 ± 5.1 pts**; both within noise.
+  - v1 → v2 (ING-006): English −0.4 ± 2.5 on tune; **Arabic +13.3 ± 4.4 on tune (better)**, matching ING-006's +13 points.
+- **Judge-noise check** (the approved one-off): the answers of `20260923-181810` were re-scored with the same coverage judge (gpt-4.1, temperature 0), tune only (`20260923-195912`).
+  - The judge changed its score on 9 of 52 English answers and 1 of 17 Arabic. Mean shifts were +0.9 and +0.6 pts.
+  - Its per-question spread (0.032 English, 0.017 Arabic) is **~13% and ~3% of the run-to-run variance** (0.090 and 0.107 per question). Almost all the noise comes from generating the answer.
+  - So averaging two judgings would buy little; repeated runs are the right lever, as proposed.
+  - Cost: 69 judge calls, about $0.20. `--rejudge` doesn't keep a spend ledger, so this is estimated from RET-019's judge spend per question.
+- **Files changed:** `eval/paired.py`, `tests/test_paired.py` (new); `eval/speed_compare.py`, `eval/phase5_compare.py`, `eval/run_eval.py`; `eval/results/20260923-195912.json`.
 
 ## Prompting & Generation
 

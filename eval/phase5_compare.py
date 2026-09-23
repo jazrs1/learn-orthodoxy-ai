@@ -16,6 +16,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import budget_recall
+from paired import describe, paired_difference
 
 NEAR = {"saint_not_in_books", "non_coptic_doctrine", "false_premise", "same_name_confusion"}
 
@@ -70,6 +71,16 @@ def main() -> None:
             print(f"{label:22} {cell(corpora['v1'], select, coverage):>12} {cell(corpora['v2'], select, coverage):>12}   {n}")
     select_all = lambda r: not r["should_refuse"]  # noqa: E731
     print(f"{'ALL':22} {cell(corpora['v1'], select_all, coverage):>12} {cell(corpora['v2'], select_all, coverage):>12}")
+
+    # The same comparison question by question, with its noise band (RET-025).
+    print("\nCOVERAGE CHANGE v1 → v2 (paired by question; 95% band)")
+    score = lambda r: r.get("coverage_score") if r.get("coverage_score") is not None else 0.0  # noqa: E731
+    for lang in ("en", "ar"):
+        for split in ("tune", None):
+            keep = lambda r, l=lang, s=split: r["language"] == l and (s is None or r.get("split") == s) and not r["should_refuse"]  # noqa: E731
+            by_id = lambda runs: [{r["id"]: r for r in run["records"] if keep(r)} for run in runs]  # noqa: E731
+            result = paired_difference(by_id(corpora["v1"]), by_id(corpora["v2"]), score)
+            print(f"  {lang.upper()} {split or 'all':8} {describe(result)}")
 
     print("\nCOVERAGE by category (all splits)")
     cats = sorted({(r["language"], r.get("category"), r.get("mode")) for r in corpora["v1"][0]["records"] if not r["should_refuse"]})

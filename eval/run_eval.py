@@ -11,7 +11,16 @@ Usage (from the repo root, backend running locally with INTERNAL_API_KEY set):
     python eval/run_eval.py --backend https://... # another deployment
     python eval/run_eval.py --rejudge eval/results/<file>.json
                                                   # re-score the answers in an existing results file
-                                                  # with the current judges (no backend calls)
+                                                  # with the current judges (no backend calls);
+                                                  # --split, --language and --coverage-only apply
+
+Checking a change that can alter answers (RET-025): one tune run can't see a drop of a couple of
+points (±3.4 pts English, ±7.2 Arabic; RET-022), so each side gets
+    2 x  --split tune --coverage-only                 (restart the backend between runs)
+    2 x  --split tune --language ar --coverage-only   (with the two above: 4 Arabic runs, ~$0.15 each)
+and the sides are compared with eval/speed_compare.py (or phase5_compare.py), which prints the
+change question by question with its noise band, e.g. "+1.2 ± 2.4 pts; within noise". Stored
+baseline runs are reused while their configuration still matches production. About $1.50 per side.
 
 Environment:
     INTERNAL_API_KEY / ORTHODOX_API_KEY  shared secret sent as X-Internal-Key (required for live runs)
@@ -522,6 +531,11 @@ def run_rejudge(args: argparse.Namespace) -> int:
     records = prior["records"]
     if args.ids:
         records = [r for r in records if r["id"] in set(args.ids)]
+    # The same filters as a live run, so a re-judge can cover just the tune split or one language.
+    if args.split:
+        records = [r for r in records if (questions.get(r["id"]) or {}).get("split") == args.split]
+    if args.language:
+        records = [r for r in records if r.get("language") == args.language]
     print(f"Re-scoring {len(records)} records from {source.name} with {args.judge_model}\n")
     for index, record in enumerate(records, start=1):
         record["judge_score_prev"] = record.get("judge_score")
@@ -536,7 +550,7 @@ def run_rejudge(args: argparse.Namespace) -> int:
         passages = record.get("passages") or load_passages_from_chroma(record.get("merged_ids") or [])
         record["subtype"] = item.get("subtype")
         record["format_ok"] = scoring.format_check(item.get("expected_format"), record.get("answer") or "") if record["outcome"] == "answered" else None
-        score_record(record, item, client, args.judge_model, passages)
+        score_record(record, item, client, args.judge_model, passages, coverage_only=args.coverage_only)
         print(
             f"[{index:2d}/{len(records)}] {record['id']:<7} {record['outcome']:<10} prev={record['judge_score_prev']!s:<4} judge={record.get('judge_score')!s:<4} "
             f"cov={fmt(record.get('coverage_score'))} faith-sup={fmt(record.get('faith_supported'))} unsup={fmt(record.get('faith_unsupported'))}  {record['question'][:50]}"
@@ -565,6 +579,9 @@ def run_live(args: argparse.Namespace) -> int:
 
     base_url = args.backend.rstrip("/")
     items = load_questions(Path(args.questions), args.ids, args.limit, args.split)
+    if args.language:
+        # One language only: e.g. the Arabic tune questions run several times (RET-025).
+        items = [item for item in items if item.get("language") == args.language]
     if not items:
         print("No questions selected.", file=sys.stderr)
         return 2
@@ -703,6 +720,7 @@ def run_live(args: argparse.Namespace) -> int:
         "k": args.k,
         "judge_model": None if client is None else args.judge_model,
         "split_filter": args.split,
+        "language_filter": args.language,
         "coverage_only": bool(args.coverage_only),
         "retrieve_only": bool(args.retrieve_only),
         "spend_usd": round(ledger.run_usd, 5),
@@ -734,6 +752,7 @@ def main() -> int:
     parser.add_argument("--judge-model", default=os.getenv("EVAL_JUDGE_MODEL", DEFAULT_JUDGE_MODEL))
     parser.add_argument("--no-judge", action="store_true")
     parser.add_argument("--split", choices=["tune", "holdout"], help="only run questions from this split")
+    parser.add_argument("--language", choices=["en", "ar"], help="only run questions in this language")
     parser.add_argument("--coverage-only", action="store_true", help="skip the faithfulness and legacy judges (coverage + refusal metrics only)")
     parser.add_argument("--rejudge", metavar="RESULTS_JSON", help="re-score an existing results file with the current judges")
     parser.add_argument("--label", default="", help="free-text label stored in the results file")
