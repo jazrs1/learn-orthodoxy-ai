@@ -58,6 +58,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-009: Distance threshold 1.25, as an off-topic guard only](#ret-009-distance-threshold-125-as-an-off-topic-guard-only)
   - [RET-010: Namesake menus select by saint ID; a menu only for genuinely shared names](#ret-010-namesake-menus-select-by-saint-id-a-menu-only-for-genuinely-shared-names)
   - [RET-011: Default saints for bare names; hand-written alias audit](#ret-011-default-saints-for-bare-names-hand-written-alias-audit)
+  - [RET-023: AR-03 with the RET-010/011 saint commits on and off: no regression](#ret-023-ar-03-with-the-ret-010011-saint-commits-on-and-off-no-regression)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -877,6 +878,25 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - the priest decides St. Paul, or the Kyrillos question;
   - a name's second saint is added to a dictionary;
   - the index is rebuilt (the seed fixes then land in `saints_index.json` too, and the Arabic ownership pass becomes a no-op for them).
+
+### RET-023: AR-03 with the RET-010/011 saint commits on and off: no regression
+- **Date / Part:** 2026-09-23, own branch (`ar03-check`), apart from the speed work, as the owner asked (RET-022 on the `speed` branch)
+- **Question:** RET-019 (on the `speed` branch) found AR-03 ("من هو الأنبا بولا أول السواح؟", "Who is Anba Paul, the first hermit?") at 0.94 and 1.0 coverage in the 22 September baselines, and 0.81 and 0.56 since RET-010/011 put an Arabic saint's own dictionary entry first in the context. Is that a regression?
+- **Method:** AR-03 alone, 4 times each, coverage only (the same gpt-4.1 judge and harness), against a local v2 backend with gpt-4.1-mini:
+  - **off:** `c47acff`, the last commit before RET-010;
+  - **on:** `33b8ff9`, with RET-010 and RET-011 and nothing later.
+  - Each ran from its own worktree against the same v2 store. The "on" retrieval is identical to today's code (the same chunks as RET-019's runs).
+- **Result:**
+
+| | run 1 | run 2 | run 3 | run 4 | mean |
+|---|---|---|---|---|---|
+| saint commits off | 0.81 | 0.88 | 0.88 | 0.81 | **0.84** |
+| saint commits on | 1.00 | 0.81 | 1.00 | 0.75 | **0.89** |
+
+  - **No regression:** with the entry first, AR-03 scores at least as well. The fact most often missed with the commits off, his brother Peter's claim to the inheritance, was missed in 4 of 4 runs off and 2 of 4 on.
+  - The 0.56 in RET-019 was a low draw. This one question ranges from 0.75 to 1.00 across runs of the same code, as RET-022's noise estimate predicts (per-question spread ~0.11 in Arabic).
+- **Spend:** $0.0814 (ledger `eval/results/spend-ar03.json`).
+- **Files:** `eval/results/20260923-193224.json` … `-193328.json` (8 runs), `eval/results/spend-ar03.json`.
 
 ## Prompting & Generation
 
