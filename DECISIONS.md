@@ -65,6 +65,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [GEN-004: Prompt v3 — flexible about format and task, strict about content](#gen-004-prompt-v3--flexible-about-format-and-task-strict-about-content)
   - [GEN-005: Generation model: gpt-4.1-mini recommended over gpt-4o-mini](#gen-005-generation-model-gpt-41-mini-recommended-over-gpt-4o-mini)
   - [GEN-006: Named-subject check before generation, plus a scope gate for Arabic](#gen-006-named-subject-check-before-generation-plus-a-scope-gate-for-arabic)
+  - [GEN-007: Streaming answers — plan: SSE from FastAPI through the Next.js route, /chat unchanged](#gen-007-streaming-answers--plan-sse-from-fastapi-through-the-nextjs-route-chat-unchanged)
 - [Frontend](#frontend)
   - [FE-001: Follow-up chips are ordinary user turns in the conversation's own mode](#fe-001-follow-up-chips-are-ordinary-user-turns-in-the-conversations-own-mode)
   - [FE-002: Answers are rendered as Markdown (GFM tables), wide tables scroll inside the bubble](#fe-002-answers-are-rendered-as-markdown-gfm-tables-wide-tables-scroll-inside-the-bubble)
@@ -991,6 +992,28 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
 - **Files changed:** `entity_check.py` (new), `task_analysis.py`, `api.py`.
 - **Concept to learn:** *Entity grounding / attribution gating.* Before generating, confirm that the thing the user named is in the evidence; if it is not, the honest answer is a decline, and a cheap lexical check is enough because the analysis step already isolated the names. Search: "entity linking RAG hallucination", "answerability detection".
 - **Revisit if:** the saint index gains aliases (then match subjects against aliases too), a false block appears in production logs (`entity_check.action=decline` on an answerable question), or phrase-level subjects like AR-08's cause visible hedging.
+
+### GEN-007: Streaming answers — plan: SSE from FastAPI through the Next.js route, /chat unchanged
+- **Date / Part:** 2026-09-23, streaming branch Step 1 (plan)
+- **Audit ref:** A6, C25 (priority 7)
+- **Context:** An answer takes 3–8 s and nothing appears until the whole reply is written. Most of that is generation, so the reader waits for text that already exists at OpenAI.
+- **Options considered:**
+  1. *Server-Sent Events* (`text/event-stream`, read with `fetch()` and a stream reader in the browser). One HTTP response, plain text, passes through Railway, Vercel and the Next.js route as ordinary bytes.
+  2. *A raw streamed body* (bare tokens, then a sentinel and JSON). Simpler to write, but the final sources and an error need an ad-hoc framing anyway.
+  3. *WebSockets.* Two-way, which we don't need, and not supported by Vercel functions.
+- **Decision:** option 1, with named events. `EventSource` is not used (it only does GET and can't send the body); the browser reads the POST response with `fetch()`.
+  - **Path:** OpenAI (`stream=True`, with usage in the last chunk) → FastAPI `POST /chat/stream` → Next.js `POST /api/chat/stream` → browser.
+  - **Events:** `delta` `{"t": "..."}` for each piece of text; `done` with everything `/chat` returns (answer, sources, entities, options, `can_learn_more`, namesakes); `error` `{"message", "retryable"}`.
+  - **Before generation nothing changes.** `/chat/stream` runs the same code as `/chat` (analysis, retrieval, entity check, threshold, saint menus), moved into one shared function that stops where the model would be called. A refusal, a menu or an HTTP error (400, 429, 503) comes back at once as ordinary JSON with its normal status code, exactly as `/chat` would send it. Only a real answer is streamed. `/chat` itself keeps its code path and response, so the eval harness and smoke tests are unaffected.
+  - **The `done` event is authoritative.** Post-processing (grounding, cited sources, follow-ups, the entity-check decline) runs on the full text, as now. If the entity check expects a decline (GEN-006), the first ~48 characters are held back until the opening can be checked. If it opens with a decline, streaming continues; if not, generation is stopped and the enforced decline is sent in `done`, so a from-memory answer is never shown.
+  - **Auth and rate limiting:** the new path sits behind the same `X-Internal-Key` middleware (every path except `/health`) and calls the same `_enforce_chat_rate_limit` with the forwarded `X-Client-IP`. The key stays in the Vercel function; the browser only talks to `/api/chat/stream`.
+  - **Next.js route:** the same checks, history lookup and error mapping as `/api/chat` (the shared parts move into one module). A JSON reply is saved and returned exactly as `/api/chat` does. A stream is passed on event by event with no buffering (`Cache-Control: no-cache, no-transform`, `X-Accel-Buffering: no`). When the backend's `done` arrives, the route saves the turn to Postgres as today and sends its own `done` with the saved `conversation`, `userMessage` and `assistantMessage`, so saved chats hold the final answer and sources as now. Timeouts: 20 s for the backend to start replying (as today), then 30 s of silence at most between events; `maxDuration` 60 s.
+  - **Disconnects:** the browser's Stop (or closing the tab) aborts its fetch. The Next.js route then aborts its backend fetch. On the backend, the next write fails; the generator closes the OpenAI stream, which stops generation, and the request log line records `outcome="client_disconnected"`. A stopped answer is not saved: it stays on screen marked as stopped, but it isn't part of the stored conversation or of the history sent with later questions.
+  - **Errors mid-stream:** an OpenAI failure after the stream started becomes an `error` event with the usual generic text. The frontend drops the partial answer and shows the existing alert with Retry. If the Next.js route loses the backend (a network error or the 30 s silence), it sends the same `error` event.
+  - **Fallback:** if `/api/chat/stream` can't be reached, or answers 404/405/502/504 (for example, the backend isn't deployed yet), the page sends the same request to `/api/chat` and shows the whole answer when it arrives. It doesn't fall back on 400, 429, 500 or 503: those are real answers from the backend, and repeating the request would count twice against the rate limit.
+  - **Logging:** one request line per stream, as now (`endpoint="chat_stream"`), plus `stream=true`, `ttft_ms` (request start to the first token sent), `generation_ms`, the token usage from the final chunk and `disconnected`.
+- **Risks checked before building:** Starlette 1.0's `StreamingResponse` notices a disconnect only when the next write fails. That is fine here, because text is written many times a second. Railway and Vercel both pass streamed responses through; the headers above stop proxies from buffering or compressing them. Both are checked end to end in Step 4 (local only; production is checked after deploy).
+- **Concept to learn:** *Server-Sent Events over fetch.* One long HTTP response carries small framed messages (`event:` / `data:` lines, a blank line between messages). It works through ordinary proxies, and the final message can carry structured data. Search: "server-sent events fetch ReadableStream", "OpenAI stream_options include_usage".
 
 ## Frontend
 
