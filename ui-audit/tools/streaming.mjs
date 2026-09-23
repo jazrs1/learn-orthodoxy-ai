@@ -217,41 +217,60 @@ if (MODE === "real") {
     await page.context().close();
   }
 
-  // 3. Jump to latest (phone): scrolling up mid-answer holds the view; the button brings it back.
-  for (const language of ["en", "ar"]) {
-    const page = await open(390, language);
-    await ask(page, language === "ar" ? "ما هي الصلاة؟" : "What is prayer?");
-    // Once the answer is well past the bottom of the view, so there is somewhere to scroll up to.
-    await page.waitForFunction(() => {
-      const el = document.querySelector(".chat-messages");
-      return el.scrollHeight > el.clientHeight + 400;
-    });
-    const box = await page.locator(".chat-messages").boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.wheel(0, -600);
-    await page.waitForTimeout(400);
-    const scrollTop = () => page.evaluate(() => document.querySelector(".chat-messages").scrollTop);
-    const before = await scrollTop();
-    await page.waitForTimeout(1200);
-    const after = await scrollTop();
-    const jumpVisible = await page.locator(".jump-to-latest").isVisible();
-    if (!jumpVisible) {
-      console.error(`jump (${language}): not shown; still streaming: ${await page.locator("[aria-busy=true]").count()}`);
-    }
-    await page.screenshot({ path: `${OUT}/jump-${language}-390.png` });
-    await axe(page, `jump-${language}-390`);
-    await page.locator(".jump-to-latest").click();
-    await page.waitForTimeout(1500);
-    report[`jump-${language}`] = {
-      viewHeldWhileScrolledUp: Math.abs(after - before) < 2,
-      jumpVisible,
-      distanceFromBottomAfterJump: await page.evaluate(() => {
-        const el = document.querySelector(".chat-messages");
-        return el.scrollHeight - el.clientHeight - el.scrollTop;
-      }),
-      jumpHiddenAfter: (await page.locator(".jump-to-latest").count()) === 0,
-    };
+  // 3. Scrolling around a new answer (UI-028), 1440 and 390, English and Arabic: the second question
+  //    is scrolled once to near the top and the view then stays put while the answer streams; "↓"
+  //    shows while the text runs past the view and jumps to it once, without following afterwards.
+  //    On the phone, the keyboard closing after send (the view growing) keeps the question in place.
+  for (const [width, language] of [[1440, "en"], [390, "en"], [1440, "ar"], [390, "ar"]]) {
+    const tag = `${language}-${width}`;
+    const page = await open(width, language);
+    const [first, second] = language === "ar" ? ["ما هي الصلاة؟", "لماذا نصلي؟"] : ["What is prayer?", "Why do we pray?"];
+    await ask(page, first);
     await page.waitForSelector(".answer-sources", { timeout: 60000 });
+    if (width === 390) await page.setViewportSize({ width: 390, height: 520 }); // keyboard open
+    await ask(page, second);
+    if (width === 390) {
+      await page.waitForTimeout(150);
+      await page.setViewportSize(VIEWPORTS[390]); // keyboard closed
+    }
+    await page.waitForSelector("[aria-busy=true] .stream-word", { timeout: 30000 });
+    await page.waitForTimeout(1000); // the smooth scroll settles
+    const at = () =>
+      page.evaluate(() => {
+        const list = document.querySelector(".chat-messages");
+        const question = [...list.querySelectorAll("[data-message-role=user]")].at(-1);
+        return {
+          scrollTop: Math.round(list.scrollTop),
+          questionFromTop: Math.round(question.getBoundingClientRect().top - list.getBoundingClientRect().top),
+          streaming: !!list.querySelector("[aria-busy=true]"),
+          jump: !!document.querySelector(".jump-to-latest"),
+        };
+      });
+    const placed = await at();
+    // Until the text runs past the bottom of the view (the "↓" appears) or the answer ends.
+    await page
+      .waitForFunction(() => document.querySelector(".jump-to-latest") || !document.querySelector("[aria-busy=true]"), null, { timeout: 30000 })
+      .catch(() => undefined);
+    const later = await at();
+    await page.screenshot({ path: `${OUT}/scroll-${tag}-streaming.png` });
+    await axe(page, `scroll-${tag}-streaming`);
+    let jumped = null;
+    let afterJump = null;
+    if (later.jump) {
+      await page.locator(".jump-to-latest").click();
+      await page.waitForTimeout(900);
+      jumped = await at();
+      await page.waitForTimeout(1500);
+      afterJump = await at();
+    }
+    report[`scroll-${tag}`] = {
+      questionFromTop: placed.questionFromTop,
+      viewHeldWhileStreaming: placed.scrollTop === later.scrollTop && later.streaming,
+      jumpShown: later.jump,
+      jumpMovedDown: jumped ? jumped.scrollTop > later.scrollTop : null,
+      notFollowedAfterJump: afterJump ? afterJump.scrollTop === jumped.scrollTop && afterJump.streaming : null,
+    };
+    await page.waitForSelector(".answer-sources >> nth=1", { timeout: 60000 });
     await page.context().close();
   }
 

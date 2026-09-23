@@ -34,7 +34,7 @@ EN = (
     "with humility and love [2].\n\nThere are several kinds of prayer:\n\n1. **Praise**, glorifying God for who He is [1].\n"
     "2. **Thanksgiving**, for His gifts [3].\n3. **Repentance**, asking forgiveness [2].\n4. **Intercession**, praying for others [3].\n\n"
     "St. Anthony taught that prayer should be constant, and the Agpeya gives the hours of the day a shape [4]. "
-) * 3
+) * 5
 TABLE = (
     "Here are the main fasts of the Coptic Orthodox Church [1]:\n\n| Fast | Length | Notes |\n| --- | --- | --- |\n"
     "| Great Lent | 55 days | Before the Feast of the Resurrection [1] |\n| Apostles' Fast | varies | After Pentecost [2] |\n"

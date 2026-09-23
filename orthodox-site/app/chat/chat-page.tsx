@@ -11,7 +11,7 @@ import StreamingAnswer from "../../components/StreamingAnswer";
 import { useLanguage } from "../../components/LanguageProvider";
 import { buildSaintLookup, isValidSaintName } from "../../components/saintNameUtils";
 import { useChatSidebar } from "../../components/useChatSidebar";
-import { useFollowBottom } from "../../components/useFollowBottom";
+import { useAnswerScroll } from "../../components/useAnswerScroll";
 import {
   createConversationRequest,
   deleteConversationRequest,
@@ -312,14 +312,10 @@ function ChatPageContent() {
   const [saintDetailError, setSaintDetailError] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
-  const latestUserMessageRef = useRef<HTMLDivElement | null>(null);
-  const chatMessagesRef = useRef<HTMLDivElement | null>(null);
   const saintsListRef = useRef<HTMLDivElement>(null);
   const saintsLoadingRef = useRef(false);
   const saintsRequestIdRef = useRef(0);
   const submittingRef = useRef(false);
-  const pendingScrollToUserMessageRef = useRef(false);
-  const pendingScrollToMessageIdRef = useRef("");
   const createdConversationRef = useRef(false);
   const processedQuestionRef = useRef("");
   const handledChatRef = useRef("");
@@ -336,14 +332,10 @@ function ChatPageContent() {
     () => (language === "ar" ? CATECHISM_TOPICS_AR : CATECHISM_TOPICS),
     [language]
   );
-  const latestUserMessageId = useMemo(() => {
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      if (messages[index].role === "user") return messages[index].id;
-    }
-    return "";
-  }, [messages]);
   const hasMoreSaints = saints.length < saintsTotal;
-  const follow = useFollowBottom(chatMessagesRef, isSending, messages);
+  // The message just sent, scrolled once to near the top while its answer arrives below (UI-028).
+  const [scrollAnchorId, setScrollAnchorId] = useState("");
+  const answerScroll = useAnswerScroll(scrollAnchorId, messages);
 
   useEffect(() => {
   }, [language]);
@@ -371,6 +363,7 @@ function ChatPageContent() {
       setConversationLoading(true);
       setConversationError("");
       const conversation = await fetchConversation(conversationId);
+      setScrollAnchorId("");
       setCurrentConversation(conversation);
       setActiveConversationId(conversation.id);
       return conversation;
@@ -385,41 +378,6 @@ function ChatPageContent() {
   useEffect(() => {
     void loadConversationList();
   }, [loadConversationList]);
-
-  useEffect(() => {
-    if (!pendingScrollToUserMessageRef.current || activeTab !== "chat") return;
-
-    const scrollToPendingMessage = () => {
-      const container = chatMessagesRef.current;
-      const messageId = pendingScrollToMessageIdRef.current;
-      const target =
-        messageId && container
-          ? container.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(messageId)}"]`)
-          : latestUserMessageRef.current;
-
-      if (!container || !target) return false;
-
-      const containerTop = container.getBoundingClientRect().top;
-      const targetTop = target.getBoundingClientRect().top;
-      const scrollMargin = window.matchMedia("(max-width: 720px)").matches ? 72 : 96;
-
-      container.scrollTo({
-        top: container.scrollTop + targetTop - containerTop - scrollMargin,
-        behavior: "smooth",
-      });
-      return true;
-    };
-
-    requestAnimationFrame(() => {
-      const didScroll = scrollToPendingMessage();
-      pendingScrollToUserMessageRef.current = false;
-      pendingScrollToMessageIdRef.current = "";
-
-      if (didScroll) {
-        window.setTimeout(scrollToPendingMessage, 120);
-      }
-    });
-  }, [messages, activeTab]);
 
   useEffect(() => {
     saintsLoadingRef.current = saintsLoading;
@@ -529,8 +487,7 @@ function ChatPageContent() {
     const updateRoute = options?.updateRoute ?? true;
 
     handledChatRef.current = "";
-    pendingScrollToUserMessageRef.current = false;
-    pendingScrollToMessageIdRef.current = "";
+    setScrollAnchorId("");
     setCurrentConversation(null);
     setActiveConversationId("");
     setConversationError("");
@@ -594,8 +551,7 @@ function ChatPageContent() {
         { ...optimisticMessage(optimisticAssistantId, "assistant", ""), isTyping: true },
       ];
 
-      pendingScrollToUserMessageRef.current = !hideUserMessage;
-      pendingScrollToMessageIdRef.current = hideUserMessage ? "" : optimisticUserId;
+      setScrollAnchorId(hideUserMessage ? optimisticAssistantId : optimisticUserId);
 
       setCurrentConversation((prev) =>
         prev && prev.id === localConversationId
@@ -714,6 +670,10 @@ function ChatPageContent() {
             ],
           };
         });
+        // The saved copies replace the optimistic messages: keep the anchor on the same message.
+        setScrollAnchorId(
+          hideUserMessage ? result.assistantMessage.id : saved && result.userMessage ? result.userMessage.id : optimisticUserId
+        );
         // The whole answer is announced once, when it is complete, never word by word (UI-026).
         setLiveMessage(`${t("answerReady")} ${plainAnswerText(result.assistantMessage.content)}`);
         if (saved) {
@@ -981,7 +941,7 @@ function ChatPageContent() {
       <div className={`chat-layout ${sidebar.visible ? "chat-layout-with-sidebar" : ""}`}>
         <section className="chat-window">
           {activeTab === "chat" ? (
-            <div className="chat-messages" ref={chatMessagesRef}>
+            <div className="chat-messages" ref={answerScroll.listRef}>
               {conversationError ? (
                 <div className="chat-alert" role="alert">
                   <IconAlert className="chat-alert-icon" size={20} />
@@ -1001,11 +961,6 @@ function ChatPageContent() {
                   >
                     <div className="message-stack">
                       <div
-                        ref={
-                          message.role === "user" && message.id === latestUserMessageId
-                            ? latestUserMessageRef
-                            : null
-                        }
                         className={`message-bubble ${
                           message.role === "user" ? "user-bubble" : "assistant-bubble"
                         }`}
@@ -1120,6 +1075,8 @@ function ChatPageContent() {
                   </div>
                 </div>
               ) : null}
+              {/* Room below a short answer, so its question can sit near the top (UI-028). */}
+              <div ref={answerScroll.spacerRef} className="answer-scroll-spacer" aria-hidden="true" />
             </div>
           ) : activeTab === "catechism" ? (
             <div className="catechism-page-panel">
@@ -1313,10 +1270,15 @@ function ChatPageContent() {
 
           {activeTab === "chat" ? (
             <div className="chat-bottom-bar">
-              {follow.showJump ? (
-                <button type="button" className="jump-to-latest" onClick={follow.jumpToLatest}>
-                  <IconArrowDown size={16} />
-                  <span>{t("jumpToLatest")}</span>
+              {answerScroll.showJump ? (
+                <button
+                  type="button"
+                  className="jump-to-latest"
+                  onClick={answerScroll.jumpToLatest}
+                  aria-label={t("jumpToLatest")}
+                  title={t("jumpToLatest")}
+                >
+                  <IconArrowDown size={18} />
                 </button>
               ) : null}
               <ChatShell

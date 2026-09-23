@@ -98,6 +98,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-025: A collapsible past-chats sidebar shared by the home and chat pages; a four-link header without divider; the language toggle set like the links](#ui-025-a-collapsible-past-chats-sidebar-shared-by-the-home-and-chat-pages-a-four-link-header-without-divider-the-language-toggle-set-like-the-links)
   - [UI-026: Streamed answers in the chat page: words fade in, tables wait for their last row, Stop, Jump to latest, one announcement](#ui-026-streamed-answers-in-the-chat-page-words-fade-in-tables-wait-for-their-last-row-stop-jump-to-latest-one-announcement)
   - [UI-027: Verification of streaming: time to first text against v2, a colour fade instead of an opacity one, axe at 0](#ui-027-verification-of-streaming-time-to-first-text-against-v2-a-colour-fade-instead-of-an-opacity-one-axe-at-0)
+  - [UI-028: The question is scrolled near the top once; the view stays put while the answer streams; a small "↓" jumps to the latest text](#ui-028-the-question-is-scrolled-near-the-top-once-the-view-stays-put-while-the-answer-streams-a-small--jumps-to-the-latest-text)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1573,7 +1574,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
     - A citation marker cut in half ("[1", "[1,") is hidden until it closes.
     - Open `**` is closed, so bold never flashes as asterisks.
     - Citation numbers show unlinked while streaming. When `done` arrives, the answer is replaced by the usual `AnswerWithSources`, with linked `[n]` and the Sources list.
-  - **Auto-scroll** (`useFollowBottom`, `lib/follow-scroll.ts`): the list follows the bottom while an answer is on its way, and once more when it completes, so the Sources list comes into view.
+  - **Auto-scroll** (`useFollowBottom`, `lib/follow-scroll.ts`; replaced in UI-028, which no longer follows the text): the list follows the bottom while an answer is on its way, and once more when it completes, so the Sources list comes into view.
     - Scrolling up stops following at once, on wheel up, touch drag down or ArrowUp/PageUp/Home, or on a scroll that moves up out of the bottom 48 px. "Jump to latest" then appears above the composer.
     - Scrolling back down to the bottom, or pressing the button, resumes following.
     - The first version waited for the view to leave the bottom zone. In the browser, a wheel scrolls in small animated steps, and the next draw pulled the view back down every time, so upward input now counts directly.
@@ -1649,6 +1650,29 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - Total about $0.0193, under the $0.03 allowed. No quota or key errors.
 - **Not checked here:** Railway's and Vercel's proxies (local only). After deploying, `curl -N` on `/api/chat/stream` should show events arriving one by one, and the backend log should show `endpoint="chat_stream"` with `ttft_ms`.
 - **Files changed:** `ui-audit/tools/streaming.mjs`, `ui-audit/tools/fake_stream_backend.py`, `ui-audit/tools/pg-server.mjs` (new), `ui-audit/tools/README.md`, `.gitignore`, `orthodox-site/app/globals.css` (colour fade), `orthodox-site/components/useFollowBottom.ts` (upward input only when the list can scroll up).
+
+### UI-028: The question is scrolled near the top once; the view stays put while the answer streams; a small "↓" jumps to the latest text
+- **Date / Part:** 2026-09-23, speed branch Part A.1. This replaces UI-026's auto-scroll.
+- **Owner's request:** following the text as it is written makes an answer hard to read from the beginning. Instead, scroll once so the question sits near the top, then leave the scroll position alone. When the answer runs past the bottom of the view, show a small, unobtrusive "↓" that scrolls to the latest text once, without following afterwards. The same in Arabic and on phones, allowing for the keyboard closing after send.
+- **Decision** (`lib/answer-scroll.ts` for the rules, `components/useAnswerScroll.ts` for the DOM):
+  - **One scroll per question:** on send, the list scrolls smoothly (instantly with reduced motion) so the question sits 96 px below the top of the view (72 px up to 720 px wide), as the old send scroll aimed to. After that, nothing moves the view while the answer streams.
+  - **A spacer below the last message** makes that scroll possible while the answer is still short: without it, the question could only go as high as the bottom of the list allowed.
+    - It is sized in the same frame as each piece of text, so it shrinks by exactly what the answer grows. The page height stays the same and nothing under the reader moves.
+    - It is 0 once the answer is taller than the view. It is kept until the next question or conversation, so a short answer ends with empty space below, as in ChatGPT.
+  - **The anchor follows the saved copies:** when the answer finishes, the optimistic messages are replaced by their saved copies, which have new IDs. The anchor moves to the saved question in the same update, so the spacer isn't lost and the view doesn't jump.
+  - **Phones:** sending disables the composer, which closes the keyboard, and the view grows. Until the reader scrolls, any resize of the list or of the visual viewport (the keyboard, a rotation) puts the question back at its place. Wheel, touch and scrolling keys hand control to the reader.
+  - **"↓"** is a 36 px round button above the composer with an arrow only (accessible name "Jump to latest"). It shows whenever the end of the text is more than 48 px below the view, during streaming or after. Pressing it scrolls to the end of the text once (not into the spacer); the view is not followed afterwards.
+  - **Removed:** `useFollowBottom`, `lib/follow-scroll.ts` with its tests, and the old one-off scroll-to-question effect with its refs.
+- **Checks:**
+  - Unit tests: `lib/answer-scroll.test.ts` (7), covering the question's scroll position, a spacer that shrinks as the answer grows (so the page height stays constant), none for a long answer, one that grows when the keyboard closes, when "↓" shows, and where it scrolls to.
+  - Browser (`streaming.mjs MODE=fake`, the scripted backend and a local database; no OpenAI). A second question was sent in a conversation that already had one answer, at 1440 and 390, in English and Arabic:
+    - the question landed 96 px (1440) and 72 px (390) from the top of the view;
+    - the view held still while the answer streamed;
+    - "↓" appeared once the text ran past the view, moved the view down, and the view then stayed put while text kept arriving.
+    - At 390 the view was 520 px tall at send (keyboard open) and 844 px straight after (closed), and the question still ended 72 px from the top.
+  - axe: 0 violations in the four streaming states.
+- **Files changed:** `lib/answer-scroll.ts` (+ test), `components/useAnswerScroll.ts` (new), `app/chat/chat-page.tsx`, `app/globals.css`; removed `components/useFollowBottom.ts` and `lib/follow-scroll.ts` (+ test); `ui-audit/tools/streaming.mjs` (scroll scenario), `ui-audit/tools/fake_stream_backend.py` (a longer English answer, so it runs past the view at 1440).
+- **Concept to learn:** *Reading position vs "stick to bottom".* Chat interfaces that follow new text suit short, glanceable replies; for long answers read from the top, anchoring the question and reserving space below it keeps the reader's place stable. Search: "chat UI scroll anchoring question at top", "CSS overflow-anchor".
 
 ## Code Cleanup
 

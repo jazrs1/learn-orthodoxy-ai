@@ -1772,7 +1772,7 @@ textarea:focus-visible {
   margin-top: var(--space-2);
 }
 
-/* Shown above the composer when the reader has scrolled up while an answer arrives; centred in
+/* "↓": shown above the composer while the end of the text is below the view (UI-028). Centred in
    both directions, so left/transform rather than logical insets. */
 .jump-to-latest {
   position: absolute;
@@ -1781,21 +1781,15 @@ textarea:focus-visible {
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  min-height: 36px;
-  padding: 0 var(--space-4);
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 1px solid var(--color-line-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-round);
   background: var(--color-surface);
   color: var(--color-primary);
-  font-family: var(--font-ui);
-  font-size: var(--text-label);
-  font-weight: 600;
-  font-variant-caps: var(--caps-label);
-  letter-spacing: var(--tracking-label);
-  line-height: 1;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(43, 32, 20, 0.12);
+  box-shadow: 0 1px 4px rgba(43, 32, 20, 0.1);
   cursor: pointer;
 }
 
