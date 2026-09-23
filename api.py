@@ -131,6 +131,9 @@ TASK_ANALYSIS_TIMEOUT_SECONDS = _env_float("TASK_ANALYSIS_TIMEOUT_SECONDS", 8.0)
 
 # --- Named-subject check (DECISIONS.md GEN-006) ---
 ENTITY_CHECK_ENABLED = _env_flag("ENTITY_CHECK_ENABLED", "1")
+# Speed (RET-013 onwards); each can be switched off to compare or roll back.
+# The Arabic lexical scan reads and normalises the Arabic chunks once, then scans them in memory.
+ARABIC_LEXICAL_CACHE = _env_flag("ARABIC_LEXICAL_CACHE", "1")
 
 # --- Broad and list requests (DECISIONS.md RET-007) ---
 # Broad requests retrieve more chunks, from the main query plus the analysis sub-queries.
@@ -1351,23 +1354,11 @@ def _arabic_query_phrases(question: str) -> List[str]:
     return phrases
 
 
-def _retrieve_arabic_lexical_documents(
-    question: str,
-    top_k: int,
-    metadata_filter: Dict[str, Any] | None = None,
-) -> Tuple[List[str], List[Dict[str, Any]]]:
-    if arabic_collection is None:
-        return [], []
-
-    terms = _arabic_query_terms(question)
-    phrases = _arabic_query_phrases(question)
-    if not terms:
-        return [], []
-
-    scored: List[Tuple[int, int, str, Dict[str, Any]]] = []
+def _scan_arabic_collection(metadata_filter: Dict[str, Any] | None):
+    """Every Arabic chunk (matching the filter) as (searchable text, page, document, metadata), in
+    the collection's order. Reading and normalising all of them takes ~0.7 s (AUDIT C13)."""
     offset = 0
     page_size = 500
-
     while True:
         get_kwargs: Dict[str, Any] = {
             "include": ["documents", "metadatas"],
@@ -1393,22 +1384,73 @@ def _retrieve_arabic_lexical_documents(
                     ]
                 )
             )
-            if not searchable:
-                continue
-            hits = sum(1 for term in terms if term in searchable)
-            phrase_hits = sum(1 for phrase in phrases if phrase in searchable)
-            if hits <= 0 and phrase_hits <= 0:
-                continue
-            score = hits * 10 + phrase_hits * 120
-            if len(terms) >= 2 and all(term in searchable for term in terms[:2]):
-                score += 25
-            if " ".join(terms[:2]) and " ".join(terms[:2]) in searchable:
-                score += 40
-            scored.append((score, int(metadata.get("page") or 0), doc or "", metadata))
+            if searchable:
+                yield searchable, int(metadata.get("page") or 0), doc or "", metadata
 
         if len(docs) < page_size:
             break
         offset += len(docs)
+
+
+# The scanned rows are kept per metadata filter (all, catechism, saints) for the collection they
+# came from: the store is read-only while the process runs (RET-013).
+_arabic_lexical_cache: Dict[str, Any] = {"collection": None, "rows": {}}
+_arabic_lexical_lock = threading.Lock()
+
+
+def _arabic_lexical_rows(metadata_filter: Dict[str, Any] | None) -> List[Tuple[str, int, str, Dict[str, Any]]]:
+    key = json.dumps(metadata_filter, sort_keys=True)
+    cache = _arabic_lexical_cache
+    if cache["collection"] is arabic_collection and key in cache["rows"]:
+        return cache["rows"][key]
+    with _arabic_lexical_lock:
+        if cache["collection"] is not arabic_collection:
+            cache["collection"], cache["rows"] = arabic_collection, {}
+        if key not in cache["rows"]:
+            started = time.monotonic()
+            cache["rows"][key] = list(_scan_arabic_collection(metadata_filter))
+            logger.info(
+                "arabic lexical index built filter=%s rows=%d ms=%.0f",
+                key, len(cache["rows"][key]), (time.monotonic() - started) * 1000,
+            )
+        return cache["rows"][key]
+
+
+def _warm_arabic_lexical_index() -> None:
+    """Builds the rows for every mode in the background, so no visitor waits for the first build."""
+    try:
+        for mode in ("chat", "catechism", "saints"):
+            _arabic_lexical_rows(_arabic_metadata_filter_for_mode(mode))
+    except Exception:
+        logger.exception("Building the Arabic lexical index failed; it will be built on first use")
+
+
+def _retrieve_arabic_lexical_documents(
+    question: str,
+    top_k: int,
+    metadata_filter: Dict[str, Any] | None = None,
+) -> Tuple[List[str], List[Dict[str, Any]]]:
+    if arabic_collection is None:
+        return [], []
+
+    terms = _arabic_query_terms(question)
+    phrases = _arabic_query_phrases(question)
+    if not terms:
+        return [], []
+
+    scored: List[Tuple[int, int, str, Dict[str, Any]]] = []
+    rows = _arabic_lexical_rows(metadata_filter) if ARABIC_LEXICAL_CACHE else _scan_arabic_collection(metadata_filter)
+    for searchable, page, doc, metadata in rows:
+        hits = sum(1 for term in terms if term in searchable)
+        phrase_hits = sum(1 for phrase in phrases if phrase in searchable)
+        if hits <= 0 and phrase_hits <= 0:
+            continue
+        score = hits * 10 + phrase_hits * 120
+        if len(terms) >= 2 and all(term in searchable for term in terms[:2]):
+            score += 25
+        if " ".join(terms[:2]) and " ".join(terms[:2]) in searchable:
+            score += 40
+        scored.append((score, page, doc, metadata))
 
     scored.sort(key=lambda item: (-item[0], item[1]))
     docs: List[str] = []
@@ -2643,6 +2685,8 @@ def startup():
         logger.info("saints_loaded_count=%d", len(_build_saint_name_index()))
     except Exception:
         logger.exception("Failed to build saint name index at startup")
+    if ARABIC_LEXICAL_CACHE:
+        threading.Thread(target=_warm_arabic_lexical_index, name="arabic-lexical-index", daemon=True).start()
     logger.info("Startup complete. model=%s", CHAT_MODEL)
 
 

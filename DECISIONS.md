@@ -59,6 +59,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-010: Namesake menus select by saint ID; a menu only for genuinely shared names](#ret-010-namesake-menus-select-by-saint-id-a-menu-only-for-genuinely-shared-names)
   - [RET-011: Default saints for bare names; hand-written alias audit](#ret-011-default-saints-for-bare-names-hand-written-alias-audit)
   - [RET-012: Where a request's time goes, and what could make it faster (report, not changed)](#ret-012-where-a-requests-time-goes-and-what-could-make-it-faster-report-not-changed)
+  - [RET-013: The Arabic lexical scan runs over an in-memory copy of the normalised chunks](#ret-013-the-arabic-lexical-scan-runs-over-an-in-memory-copy-of-the-normalised-chunks)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -939,6 +940,23 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - Estimate: one tune run is about $0.59 (from the recorded runs: $0.82 for 134 questions, $0.29 of it the gpt-4.1 judge). Two "after" runs, to judge noise the same way the baselines were judged, come to about $1.20. The smoke set is about $0.04. First token before/after on five streamed questions costs about $0.02. **Total about $1.25.**
   - If the owner prefers fresh baselines on the same day as the "after" runs, add about $1.20.
 - **Files changed:** `eval/latency_baseline.py` (new).
+
+### RET-013: The Arabic lexical scan runs over an in-memory copy of the normalised chunks
+- **Date / Part:** 2026-09-23, speed branch Part B3, change 1 of RET-012 (approved)
+- **Audit ref:** AUDIT C13
+- **Context:** every Arabic question and Arabic saint lookup read all 4,484 Arabic chunks from Chroma in pages of 500 and normalised each one in Python before scoring them. That took 0.74 s median locally (RET-012), and it is most of the Arabic retrieval stage. The store doesn't change while the process runs.
+- **Decision:**
+  - The reading and normalising moved into `_scan_arabic_collection`, and its rows (normalised text, page, document, metadata, in the collection's order) are kept in memory per metadata filter: all, catechism, saints.
+  - Scoring, ordering and deduplication are unchanged, so the results are the same.
+  - The rows are built in a background thread at startup (1.5 s for all three filters locally), so no visitor waits for them. If that thread hasn't finished, the first request builds what it needs.
+  - A different collection object (a test's fake, a rebuilt store) starts a fresh index.
+  - Memory is roughly the Arabic text twice, about 20 MB.
+  - `ARABIC_LEXICAL_CACHE=0` goes back to the scan.
+- **Checks:**
+  - `eval/check_arabic_lexical_cache.py` (no OpenAI) ran on the real v2 store with the 23 Arabic eval questions and 20 Arabic saint lookups, each in all three modes. **All 129 comparisons returned the same chunks in the same order.** Median time went from 538 to 23 ms, p90 from 723 to 39 ms.
+  - `tests/test_speed.py`: the same results with and without the index for three questions and three filters; the collection is read once per filter; a new collection is read again.
+  - Backend suite: 199 passed.
+- **Files changed:** `api.py`, `tests/test_speed.py` (new), `eval/check_arabic_lexical_cache.py` (new).
 
 ## Prompting & Generation
 
