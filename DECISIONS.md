@@ -69,6 +69,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-020: The path from click to first word, hop by hop, and what creating the conversation in the stream route would save (report)](#ret-020-the-path-from-click-to-first-word-hop-by-hop-and-what-creating-the-conversation-in-the-stream-route-would-save-report)
   - [RET-021: A new chat's conversation is created when its first answer is saved; the answer and sources arrive before the IDs; a failed save is retried, then said plainly](#ret-021-a-new-chats-conversation-is-created-when-its-first-answer-is-saved-the-answer-and-sources-arrive-before-the-ids-a-failed-save-is-retried-then-said-plainly)
   - [RET-022: Owner's decisions after RET-020, and how small a regression one tune run can catch (proposal)](#ret-022-owners-decisions-after-ret-020-and-how-small-a-regression-one-tune-run-can-catch-proposal)
+  - [RET-024: Production, hop by hop: ~0.25–0.45 s outside the backend; the slow parts are in the backend; Railway runs across the continent from Vercel and Neon](#ret-024-production-hop-by-hop-025045-s-outside-the-backend-the-slow-parts-are-in-the-backend-railway-runs-across-the-continent-from-vercel-and-neon)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -1206,6 +1207,46 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   4. **Optional, $0.21 once:** re-judge one stored tune run (`run_eval.py --rejudge`) to confirm the judge's share of the noise is small. If it isn't, averaging two judgings is cheaper than generating twice.
   - A cheaper-looking option was rejected: comparing both sides at generation temperature 0. It would cut the noise, but it measures a setting production doesn't use.
   - **Recommendation:** 1 + 2(a) + 3. A typical check then costs about $1.65 instead of $0.60, and catches about 3.5 pts in English and 5 in Arabic.
+
+### RET-024: Production, hop by hop: ~0.25–0.45 s outside the backend; the slow parts are in the backend; Railway runs across the continent from Vercel and Neon
+- **Date / Part:** 2026-09-23, speed branch (owner's request after RET-022: the Railway region first, then 3 new chats and 3 follow-ups on the live site, compared with the local numbers)
+- **Where things run:**
+  - Railway `web` service: **us-west2 (US West)**, one replica (from `railway status --json`; the edge log says `edgeRegion: us-west2`).
+  - Vercel functions: **iad1 (Washington, D.C.)**, from the `x-vercel-id` header `iad1::iad1::…`.
+  - Neon: **AWS us-east-1**.
+  - So the site and its database sit together in the US East, and every call from the site to the backend crosses the continent. Railway's edge log shows the calls coming from `3.81.189.165`, an AWS us-east-1 address.
+- **Method:**
+  - `ui-audit/tools/hops.mjs` against https://learnorthodoxy.net: 2 English and 1 Arabic new chats, each with a follow-up.
+  - The live site runs the code before RET-018 and RET-021: it creates the conversation first, and it has no route timing or forwarded request ID. The browser's timings were therefore joined to the backend's request lines (`railway logs --json`) by question and order, and to Railway's edge log (`railway logs --http --json`).
+  - Plus warm probes on one reused connection, which make no OpenAI call and write nothing: a static file, `/api/conversations` (Vercel + Neon) and `/api/saints` (Vercel + Railway).
+- **Results (ms):**
+
+| turn | click → first word | backend first token (analysis / retrieval / model's first token) | outside the backend | of which conversation create |
+|---|---|---|---|---|
+| English new chat 1 | 4,308 | 3,184 (1,810 / 654 / 720) | **1,124** (cold) | 126 |
+| English follow-up 1 | 1,854 | 1,610 (769 / 433 / 409) | 244 | — |
+| English new chat 2 | 2,499 | 2,038 (1,007 / 579 / 452) | 461 | 187 |
+| English follow-up 2 | 1,832 | 1,582 (975 / 188 / 419) | 250 | — |
+| Arabic new chat | 5,844 | 5,411 (1,602 / **2,904** / 904) | 433 | 164 |
+| Arabic follow-up | 2,663 | 2,358 (747 / **1,095** / 515) | 305 | — |
+
+  - **Warm probes** (from the owner's machine):
+    - static file through Vercel's edge: ~35 ms;
+    - Vercel function + Neon read: 66–78 ms;
+    - Vercel function + Railway lookup: 126–168 ms, with Railway's edge timing the backend part at 24–31 ms.
+    - So one Vercel → Railway round trip is **~90 ms**: ~65 ms across the continent plus ~25 ms at Railway's edge. A Neon call from the same region is ~30–40 ms.
+  - **A follow-up's ~250 ms outside the backend, piece by piece:** the page (~30), to Vercel (~35), history read (~35), to Railway and its edge (~65), the first chunk back through Vercel to the browser (~50), and drawing (~5). About 220 ms estimated against 244–305 measured.
+  - **A new chat adds creating the conversation:** 126–187 ms as a browser round trip, plus the empty history read.
+  - **The first question of the run spent ~950 ms more outside the backend** than the others. That points to a cold start: a new Vercel function instance for the stream route and a first connection to Railway. The site's route timing (RET-018, not yet deployed) will split it.
+- **Compared with local (RET-020):**
+  - Outside the backend: **~50–60 ms locally, ~250–460 ms in production.** The difference is the real network (browser → Vercel, Vercel → Railway across the continent, Neon) and the conversation-create round trip.
+  - Inside the backend, production is slower where our own code runs: **Arabic retrieval took 2.9 s and 1.1 s on Railway**, against ~0.8 s locally, which suggests a slower CPU scanning the Arabic collection. The analysis call ranged 0.75–1.8 s and the model's first token 0.4–0.9 s, as locally.
+- **The "~2.5 s gap outside the backend" doesn't exist.** Outside the backend is ~0.25 s on a follow-up and ~0.45 s on a new chat, with a one-off ~1.1 s on a cold start. What makes production feel slow is inside the backend: the analysis call (~1 s), Arabic retrieval (1–3 s) and the model's first token (~0.5 s).
+- **What would help, in order:**
+  1. **Deploy the speed branch.** RET-013 (the in-memory Arabic index) should save more in production than locally, where it saved ~0.8 s; the Arabic scan takes 1.1–2.9 s on Railway. RET-015 overlaps the embedding with analysis, and RET-021 removes the conversation create and the empty history read (~160–220 ms on every new chat). Then rerun `hops.mjs` against production: with RET-018's route timing live, every hop, including the cold start, becomes visible.
+  2. **Move the Railway service to US East** (us-east4, Virginia) to sit with Vercel and Neon: **~60–70 ms saved per question** (one cross-continent round trip, plus half of one on the first byte back). The v2 Chroma store lives on a volume in us-west2, and volumes are tied to their region, so a move means building or copying the store in the new region (DEPLOY_V2.md's background build) and a short cut-over. Worth doing at the next redeploy, not urgently.
+  3. **Cold starts** (one of six turns here) can't be measured further until RET-018 is live. Vercel's fluid compute keeps instances warm while there is traffic.
+- **Spend:** $0.0292 (6 answers with gpt-4.1-mini plus analysis calls). 3 conversations were saved to the production database under a new anonymous visitor.
 
 ## Prompting & Generation
 
