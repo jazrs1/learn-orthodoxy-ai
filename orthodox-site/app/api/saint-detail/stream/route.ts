@@ -58,9 +58,9 @@ export async function POST(request: Request) {
     relayStream<BackendSaintResponse>(
       backendResponse.body,
       upstream,
-      async (payload) => {
+      async (payload, emit) => {
         timing.mark("done");
-        return saintDetailFromBackend(payload);
+        emit("done", saintDetailFromBackend(payload));
       },
       {
         onFirstDelta: () => timing.mark("first_delta"),

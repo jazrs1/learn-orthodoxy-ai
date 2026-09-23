@@ -12,10 +12,12 @@ type ConversationResponse = {
 };
 
 export type ChatResponse = {
-  /** Null only when a streamed answer could not be saved (it is still shown). */
+  /** Null when the turn couldn't be saved (the answer is still shown, RET-021). */
   conversation: ConversationSummary | null;
   userMessage: ChatMessage | null;
   assistantMessage: ChatMessage;
+  /** False when every attempt to store the turn failed; a follow-up won't have it as context. */
+  saved?: boolean;
 };
 
 /** A failed API call. `message` is the server's text and is not meant for display (UI-008). */
@@ -41,16 +43,6 @@ export async function fetchConversationList() {
   const response = await fetch("/api/conversations", { cache: "no-store" });
   const data = await readJson<ConversationsResponse>(response);
   return data.conversations;
-}
-
-export async function createConversationRequest() {
-  const response = await fetch("/api/conversations", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
-  });
-  const data = await readJson<{ conversation: ConversationSummary }>(response);
-  return data.conversation;
 }
 
 export async function fetchConversation(conversationId: string) {
@@ -99,6 +91,16 @@ const FALLBACK_STATUSES = new Set([404, 405, 502, 504]);
 
 export type StreamOptions = { signal?: AbortSignal; onDelta: (text: string) => void };
 
+type ReadOptions<T> = {
+  onDelta: (text: string) => void;
+  /** The event that ends the answer: `done`, or `saved` for the chat, which sends it after `done` (RET-021). */
+  finalEvent?: "done" | "saved";
+  /** Called with `done`'s data when a later event ends the answer. */
+  onDone?: (data: unknown) => void;
+  /** The result when the stream ends after `done` but before the final event. */
+  afterDoneOnly?: (data: unknown) => T;
+};
+
 /**
  * Asks for an answer through `streamPath`: `onDelta` receives the text as it is written and the
  * promise resolves with the final `done` payload. A refusal or a saint menu comes back whole as
@@ -109,7 +111,7 @@ async function streamRequest<T>(
   streamPath: string,
   wholePath: string,
   payload: unknown,
-  { signal, onDelta }: StreamOptions
+  { signal, ...read }: { signal?: AbortSignal } & ReadOptions<T>
 ): Promise<T> {
   const post = (path: string) =>
     fetch(path, {
@@ -130,12 +132,26 @@ async function streamRequest<T>(
   if (!response.ok || !response.body || !contentType.includes("text/event-stream")) {
     return readJson<T>(response);
   }
-  return readStream<T>(response.body, onDelta);
+  return readStream<T>(response.body, read);
 }
 
-/** A chat answer through /api/chat/stream (fallback /api/chat); resolves with the saved turn. */
-export function streamChatRequest(payload: ChatRequestPayload, options: StreamOptions) {
-  return streamRequest<ChatResponse>("/api/chat/stream", "/api/chat", payload, options);
+/**
+ * A chat answer through /api/chat/stream (fallback /api/chat). `onAnswer` receives the finished
+ * answer and its sources as soon as they arrive; the promise then resolves with the turn as saved,
+ * which carries the conversation's IDs, or `saved: false` (RET-021).
+ */
+export function streamChatRequest(
+  payload: ChatRequestPayload,
+  { onAnswer, ...options }: StreamOptions & { onAnswer?: (message: ChatMessage) => void }
+) {
+  const answerOf = (data: unknown) => (data as { assistantMessage: ChatMessage }).assistantMessage;
+  return streamRequest<ChatResponse>("/api/chat/stream", "/api/chat", payload, {
+    ...options,
+    finalEvent: "saved",
+    onDone: (data) => onAnswer?.(answerOf(data)),
+    // The answer arrived but the confirmation didn't: shown, and treated as not saved.
+    afterDoneOnly: (data) => ({ conversation: null, userMessage: null, assistantMessage: answerOf(data), saved: false }),
+  });
 }
 
 export type SaintDetailRequestPayload = {
@@ -152,14 +168,20 @@ export function streamSaintDetail(payload: SaintDetailRequestPayload, options: S
   return streamRequest<SaintDetail>("/api/saint-detail/stream", "/api/saint-detail", payload, options);
 }
 
-export async function readStream<T>(body: ReadableStream<Uint8Array>, onDelta: (text: string) => void): Promise<T> {
+export async function readStream<T>(
+  body: ReadableStream<Uint8Array>,
+  { onDelta, finalEvent = "done", onDone, afterDoneOnly }: ReadOptions<T>
+): Promise<T> {
   const reader = body.getReader();
-  const result: { turn: T | null; failure: StreamError | null } = { turn: null, failure: null };
+  const result: { turn: T | null; failure: StreamError | null; done: unknown } = { turn: null, failure: null, done: undefined };
   const parser = new SseParser(({ event, data }) => {
     if (result.turn || result.failure) return;
     if (event === "delta") onDelta(String(JSON.parse(data).t ?? ""));
-    else if (event === "done") result.turn = JSON.parse(data) as T;
-    else if (event === "error") result.failure = new StreamError(String(JSON.parse(data).message || "Stream failed."));
+    else if (event === finalEvent) result.turn = JSON.parse(data) as T;
+    else if (event === "done") {
+      result.done = JSON.parse(data);
+      onDone?.(result.done);
+    } else if (event === "error") result.failure = new StreamError(String(JSON.parse(data).message || "Stream failed."));
   });
   let ended = false;
   try {
@@ -177,6 +199,7 @@ export async function readStream<T>(body: ReadableStream<Uint8Array>, onDelta: (
     else reader.releaseLock();
   }
   if (result.failure) throw result.failure;
+  if (!result.turn && result.done !== undefined && afterDoneOnly) return afterDoneOnly(result.done);
   if (!result.turn) throw new StreamError("The answer stream ended early.");
   return result.turn;
 }

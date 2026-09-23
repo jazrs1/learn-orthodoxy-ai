@@ -48,6 +48,8 @@ export type ChatMessage = {
   isStreaming?: boolean;
   /** Client-only, never saved: the reader stopped this answer; it isn't part of the conversation. */
   stopped?: boolean;
+  /** Client-only: every attempt to save this answer failed (RET-021); a follow-up won't see it. */
+  unsaved?: boolean;
 };
 
 export type ConversationSummary = {

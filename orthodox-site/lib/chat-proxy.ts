@@ -5,9 +5,10 @@ import { backendConfigError } from "./backend";
 import { getOrCreateAnonymousSessionId } from "./chat-auth";
 import { getRecentHistory, saveChatTurn } from "./conversations";
 import { getDatabaseConfigError } from "./db";
-import type { ChatMessage, SourceRef } from "./chat-types";
+import type { ChatMessage, ConversationSummary, SourceRef } from "./chat-types";
 import { Language, normalizeLanguage } from "./i18n";
 import { backendSaintSelection, namesakesFromBackend, optionsFromBackend } from "./message-options";
+import { withRetry } from "./retry";
 import type { RouteTiming } from "./route-timing";
 
 // Shared by /api/chat and /api/chat/stream (GEN-007): the same checks, history, backend request,
@@ -130,20 +131,53 @@ export async function prepareChat(
   };
 }
 
-/** Saves the finished turn; the reply the browser gets once the answer is complete. */
-export async function saveAnswer(chat: PreparedChat, data: BackendChatResponse) {
-  const saved = await saveChatTurn({
-    sessionId: chat.sessionId,
-    conversationId: chat.conversationId,
-    question: chat.displayQuestion,
-    assistantMessage: normalizeAssistantMessage(data),
-    saveUserMessage: !chat.hideUserMessage,
-  });
-  return {
-    conversation: saved.conversation,
-    userMessage: saved.userMessage,
-    assistantMessage: saved.assistantMessage,
-  };
+/** The browser's copy of a finished turn; `saved: false` when it couldn't be stored (RET-021). */
+export type SavedTurn = {
+  conversation: ConversationSummary | null;
+  userMessage: ChatMessage | null;
+  assistantMessage: ChatMessage;
+  saved: boolean;
+};
+
+// Three attempts, pausing 0.4 s and 1.2 s: long enough for a dropped connection to come back.
+// (A waking Neon database is slow rather than failing: the first attempt simply waits for it.)
+const SAVE_RETRY_DELAYS_MS = [400, 1200];
+
+/** The backend's answer as the assistant message the page shows and the database stores. */
+export function assistantMessageFrom(data: BackendChatResponse): ChatMessage {
+  return { role: "assistant", ...normalizeAssistantMessage(data) };
+}
+
+/**
+ * Saves the finished turn, creating the conversation on a new chat's first question (RET-021).
+ * Retried when the write fails; the IDs are fixed first, so a retry after a write that did commit
+ * finds it instead of saving it twice. If every attempt fails, the answer still goes back to the
+ * page with `saved: false`, and the page says so.
+ */
+export async function saveTurn(chat: PreparedChat, assistantMessage: ChatMessage): Promise<SavedTurn> {
+  const ids = { newConversationId: crypto.randomUUID(), userMessageId: crypto.randomUUID() };
+  try {
+    const saved = await withRetry(
+      () =>
+        saveChatTurn({
+          sessionId: chat.sessionId,
+          conversationId: chat.conversationId,
+          question: chat.displayQuestion,
+          assistantMessage,
+          saveUserMessage: !chat.hideUserMessage,
+          ...ids,
+        }),
+      {
+        delaysMs: SAVE_RETRY_DELAYS_MS,
+        // No database configured: waiting won't help.
+        shouldRetry: (error) => !/POSTGRES_URL|DATABASE_URL/.test(String(error)),
+      }
+    );
+    return { ...saved, saved: true };
+  } catch (error) {
+    console.error("saving the chat turn failed after retries", error);
+    return { conversation: null, userMessage: null, assistantMessage, saved: false };
+  }
 }
 
 /** The backend answered with an error status: its message, or a generic one. */

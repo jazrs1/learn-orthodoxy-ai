@@ -190,20 +190,54 @@ export async function getRecentHistory(
   return result.rows.reverse();
 }
 
+/**
+ * Saves a finished question and answer, creating the conversation when there is none yet (a new
+ * chat's first question, RET-021). Safe to repeat: the IDs are fixed by the caller, and when an
+ * earlier attempt already stored this answer (its write committed but the reply was lost), the
+ * stored turn is returned instead of a second copy.
+ */
 export async function saveChatTurn({
   sessionId,
   conversationId,
   question,
   assistantMessage,
   saveUserMessage = true,
+  newConversationId = crypto.randomUUID(),
+  userMessageId = crypto.randomUUID(),
 }: {
   sessionId: string;
   conversationId?: string;
   question: string;
   assistantMessage: Omit<ChatMessage, "role">;
   saveUserMessage?: boolean;
+  newConversationId?: string;
+  userMessageId?: string;
 }) {
   return withTransaction(async (client) => {
+    const already = await client.query<ConversationRow>(
+      `
+        select c.id, c.title, c.created_at, c.updated_at
+        from chat_messages m
+        join chat_conversations c on c.id = m.conversation_id
+        where m.id = $1 and c.session_id = $2
+        limit 1
+      `,
+      [assistantMessage.id, sessionId]
+    );
+    if (already.rows[0]) {
+      const stored = await client.query<{ id: string }>(
+        "select id from chat_messages where id = $1 limit 1",
+        [userMessageId]
+      );
+      return {
+        conversation: conversationSummaryFromRow(already.rows[0]),
+        userMessage: stored.rows[0] && saveUserMessage
+          ? { id: userMessageId, role: "user" as const, content: question, entities: [], options: [], sources: [] }
+          : null,
+        assistantMessage: { ...assistantMessage, role: "assistant" as const },
+      };
+    }
+
     let conversation = conversationId
       ? await client.query<ConversationRow>(
           `
@@ -225,7 +259,7 @@ export async function saveChatTurn({
           values ($1, $2, $3)
           returning id, title, created_at, updated_at
         `,
-        [crypto.randomUUID(), sessionId, deriveConversationTitle(question)]
+        [newConversationId, sessionId, deriveConversationTitle(question)]
       );
       conversation = created.rows[0];
     }
@@ -233,7 +267,7 @@ export async function saveChatTurn({
     const firstSortOrder = await getNextSortOrder(client, conversation.id);
     const userMessage: ChatMessage | null = saveUserMessage
       ? {
-          id: crypto.randomUUID(),
+          id: userMessageId,
           role: "user",
           content: question,
           entities: [],

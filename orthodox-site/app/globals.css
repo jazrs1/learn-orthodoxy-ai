@@ -1772,6 +1772,14 @@ textarea:focus-visible {
   margin-top: var(--space-2);
 }
 
+/* An answer shown but not saved (RET-021): said plainly under it. */
+.answer-unsaved-note {
+  margin: var(--space-3) 0 0;
+  color: var(--color-ink-soft);
+  font-family: var(--font-text);
+  font-size: var(--text-sm);
+}
+
 /* "↓": shown above the composer while the end of the text is below the view (UI-028). Centred in
    both directions, so left/transform rather than logical insets. */
 .jump-to-latest {

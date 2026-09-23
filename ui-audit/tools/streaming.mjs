@@ -242,15 +242,19 @@ if (MODE === "real") {
     await page.screenshot({ path: `${OUT}/stopped-1440.png` });
     await axe(page, "stopped-1440");
     const conversations = await page.evaluate(async () => (await (await fetch("/api/conversations")).json()).conversations);
-    const savedMessages = await page.evaluate(
-      async (id) => (await (await fetch(`/api/conversations/${id}`)).json()).conversation.messages.length,
-      conversations[0].id
-    );
+    // Since RET-021 a new chat's conversation only exists once an answer is saved.
+    const savedMessages = conversations.length
+      ? await page.evaluate(
+          async (id) => (await (await fetch(`/api/conversations/${id}`)).json()).conversation.messages.length,
+          conversations[0].id
+        )
+      : 0;
     report.stop = {
       shownChars: (await page.locator("[data-message-role=assistant]").last().innerText()).length,
       announced: await page.locator("[role=status]").first().innerText(),
       sendButtonBack: (await page.locator(".chat-submit:not(.chat-stop)").count()) === 1,
       savedMessages,
+      conversationsLeft: conversations.length,
     };
     await page.context().close();
   }

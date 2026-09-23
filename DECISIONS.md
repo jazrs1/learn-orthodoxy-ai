@@ -67,6 +67,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-018: Each hop of a question is timed: the site's routes and the backend write lines that join up](#ret-018-each-hop-of-a-question-is-timed-the-sites-routes-and-the-backend-write-lines-that-join-up)
   - [RET-019: Verification of the speed changes: quality holds; Arabic answers start ~0.7 s sooner, English ~0.1 s, repeated example questions at once](#ret-019-verification-of-the-speed-changes-quality-holds-arabic-answers-start-07-s-sooner-english-01-s-repeated-example-questions-at-once)
   - [RET-020: The path from click to first word, hop by hop, and what creating the conversation in the stream route would save (report)](#ret-020-the-path-from-click-to-first-word-hop-by-hop-and-what-creating-the-conversation-in-the-stream-route-would-save-report)
+  - [RET-021: A new chat's conversation is created when its first answer is saved; the answer and sources arrive before the IDs; a failed save is retried, then said plainly](#ret-021-a-new-chats-conversation-is-created-when-its-first-answer-is-saved-the-answer-and-sources-arrive-before-the-ids-a-failed-save-is-retried-then-said-plainly)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -1137,6 +1138,41 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - **OpenAI keep-alive:** checked (RET-019); no gain.
   - **Nothing else outside the backend costs more than a few tens of ms locally.** The remaining time to first text is the analysis call (~1.0 s) and the model's first token (~0.4–1.0 s).
 - **To finish the production picture** (after `railway login`): run `hops.mjs` against the production site (3 new chats and 3 follow-ups, about $0.03, writing 3 conversations to the production database under a fresh anonymous visitor), then join it with `railway logs` by request ID. The per-hop split inside Vercel (history, save, relay) needs RET-018's route timing deployed; until then, the browser's timings and the backend's log give the Vercel → Railway and database hops by difference.
+
+### RET-021: A new chat's conversation is created when its first answer is saved; the answer and sources arrive before the IDs; a failed save is retried, then said plainly
+- **Date / Part:** 2026-09-23, speed branch, RET-012's change 6 (approved by the owner after RET-020, with two conditions: say what happens when the database write fails after the answer is on screen, and send the answer and sources before the conversation IDs)
+- **Context:** the page used to create a conversation (`POST /api/conversations`, a Vercel function run and a Neon insert) before sending a new chat's first question, and the stream route then read that conversation's empty history. Both sat on the path before the backend was even asked: about 0.1–0.2 s warm in production, and up to ~2 s when Neon was waking (RET-020).
+- **Decision:**
+  - **No conversation first.** The page sends a new chat's first question without a conversation ID. The route skips the history read, and saving the finished turn creates the conversation (`saveChatTurn` already could).
+  - **Two final events.** `done` carries the answer and its sources as soon as the backend finishes. `saved` follows after the database write, with `{conversation, userMessage, assistantMessage, saved}`. A single event can't show the answer before its own IDs, so the owner's "answer and sources before the IDs in the final event" became two events in that order.
+    - The page shows the finished answer, links its citations and announces it on `done`.
+    - It takes the conversation ID, URL and sidebar entry from `saved`.
+    - Stop disappears once the answer is complete; only the save is left.
+  - **If the write fails after the answer is on screen:**
+    - **Retry:** `saveTurn` (`lib/chat-proxy.ts`) makes three attempts, pausing 0.4 s and 1.2 s (`lib/retry.ts`). A missing database configuration fails at once.
+    - **No duplicates:** the conversation and message IDs are fixed before the first attempt, and `saveChatTurn` first checks whether this answer's message is already stored. A retry after a write that committed but lost its reply returns the stored turn instead of saving a second copy.
+    - **Never silent:** if every attempt fails, `saved` says `saved: false` and the answer stays on screen with a note under it, also read out by screen readers: "This answer couldn't be saved, so it won't appear in your past chats, and a follow-up question won't take it into account."
+      - With no conversation ID, the next question starts a new conversation. The unsaved turn stays visible above it; the draft keeps its local ID, so the screen isn't cleared.
+      - In an existing conversation, the next question continues it; its history lacks the unsaved turn, as the note says.
+    - The same holds when the stream ends after `done` without a `saved`: the answer counts as not saved, not as an error.
+    - `/api/chat` (the fallback) and JSON replies (refusals, menus) save the same way and return `saved: false` instead of a 500 error.
+  - **Stop and failures before the answer** save nothing, as before, and a new chat no longer leaves an empty "New Chat" conversation behind.
+  - The page's `createConversationRequest` is removed. `POST /api/conversations` stays for now, unused.
+- **Checks:**
+  - Frontend unit tests 169 → 176:
+    - `withRetry`: success at once; two failures then success, with the given pauses; the last failure thrown; configuration errors not retried.
+    - The stream client: `done` reported before `saved`; `saved: false` passed through; a stream that ends after `done` resolves as not saved.
+  - Browser (`ui-audit/tools/save-failure.mjs`, new; scripted backend and local PGlite):
+    - A new chat sent **0** conversation requests. The URL and sidebar entry arrived with the answer, the follow-up carried the same ID, and 4 messages were stored.
+    - Stop on a new chat left **0** conversations.
+    - With the database stopped mid-answer: the answer and its sources still showed, then the note (announced); no Stop after the answer. The next question went without an ID and was saved once the database came back, and the unsaved turn stayed on screen above it. A first version cleared it (each question made a new draft ID); fixed so a draft keeps its ID until a save gives it a real one.
+  - `streaming.mjs MODE=fake` (scroll, saints pane, Stop, errors, both fallbacks, reduced motion) passes on the new events; axe finds 0 violations in 13 states. Its Stop check now expects no conversation at all.
+  - Typecheck and lint clean.
+- **Files changed:**
+  - `orthodox-site/lib/retry.ts` (+ test), `orthodox-site/lib/conversations.ts`, `orthodox-site/lib/chat-proxy.ts`, `orthodox-site/lib/stream-proxy.ts`
+  - `orthodox-site/app/api/chat/route.ts`, `orthodox-site/app/api/chat/stream/route.ts`, `orthodox-site/app/api/saint-detail/stream/route.ts`
+  - `orthodox-site/lib/chat-client.ts` (+ test), `orthodox-site/lib/chat-types.ts`, `orthodox-site/lib/i18n.ts`, `orthodox-site/app/chat/chat-page.tsx`, `orthodox-site/app/globals.css`
+  - `ui-audit/tools/save-failure.mjs` (new), `ui-audit/tools/streaming.mjs`
 
 ## Prompting & Generation
 

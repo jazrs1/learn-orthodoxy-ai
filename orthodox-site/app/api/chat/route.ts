@@ -5,8 +5,9 @@ import {
   BackendChatResponse,
   backendErrorReply,
   jsonWithSession,
+  assistantMessageFrom,
   prepareChat,
-  saveAnswer,
+  saveTurn,
   thrownErrorReply,
 } from "../../../lib/chat-proxy";
 import { RouteTiming } from "../../../lib/route-timing";
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
 
     if (!backendResponse.ok) return backendErrorReply(backendResponse, sessionId);
     const assistantPayload = (await backendResponse.json()) as BackendChatResponse;
-    const saved = await timing.time("save", () => saveAnswer(chat, assistantPayload));
+    const saved = await timing.time("save", () => saveTurn(chat, assistantMessageFrom(assistantPayload)));
     timing.log();
     const response = await jsonWithSession(saved, sessionId);
     for (const [name, value] of Object.entries(timingHeaders(timing, backendResponse))) response.headers.set(name, value);

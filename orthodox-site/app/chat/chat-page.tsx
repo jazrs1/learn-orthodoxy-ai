@@ -22,7 +22,6 @@ import { buildSaintLookup, isValidSaintName } from "../../components/saintNameUt
 import { useChatSidebar } from "../../components/useChatSidebar";
 import { useAnswerScroll } from "../../components/useAnswerScroll";
 import {
-  createConversationRequest,
   deleteConversationRequest,
   fetchConversation,
   fetchConversationList,
@@ -287,6 +286,8 @@ function ChatPageContent() {
   const [conversationLoading, setConversationLoading] = useState(false);
   const [conversationError, setConversationError] = useState("");
   const [isSending, setIsSending] = useState(false);
+  // The answer is on screen and only its save is left: Stop no longer applies (RET-021).
+  const [answerComplete, setAnswerComplete] = useState(false);
   const [sendFailure, setSendFailure] = useState<SendFailure | null>(null);
   // Polite screen-reader announcement for the chat ("Searching…", "Answer ready.").
   const [liveMessage, setLiveMessage] = useState("");
@@ -319,7 +320,6 @@ function ChatPageContent() {
   const saintsLoadingRef = useRef(false);
   const saintsRequestIdRef = useRef(0);
   const submittingRef = useRef(false);
-  const createdConversationRef = useRef(false);
   const processedQuestionRef = useRef("");
   const handledChatRef = useRef("");
   // Opening the most recent chat is attempted once; a failed load must not retry in a loop.
@@ -543,12 +543,13 @@ function ChatPageContent() {
       const displayQuestion = options?.displayMessage?.trim() || question;
       const hideUserMessage = Boolean(options?.hideUserMessage);
 
-      let conversationId = activeConversationId;
-      if (!conversationId && createdConversationRef.current) {
-        return;
-      }
+      const conversationId = activeConversationId;
 
-      const localConversationId = conversationId || `draft-${crypto.randomUUID()}`;
+      // A chat not saved yet (a new chat, or one whose save failed, RET-021) keeps its draft ID, so
+      // the next question continues it on screen instead of clearing it.
+      const localConversationId =
+        conversationId ||
+        (currentConversation?.id.startsWith("draft-") ? currentConversation.id : `draft-${crypto.randomUUID()}`);
 
       const optimisticUserId = crypto.randomUUID();
       const optimisticAssistantId = crypto.randomUUID();
@@ -588,6 +589,7 @@ function ChatPageContent() {
         setActiveTab("chat");
       }
 
+      setAnswerComplete(false);
       const answerAbort = new AbortController();
       answerAbortRef.current = answerAbort;
       streamTextRef.current = "";
@@ -620,28 +622,31 @@ function ChatPageContent() {
         streamDrawTimerRef.current = undefined;
       };
 
-      try {
-        if (!conversationId) {
-          createdConversationRef.current = true;
-          const conversation = await createConversationRequest();
-          conversationId = conversation.id;
-          handledChatRef.current = conversation.id;
-          setConversations((prev) => mergeConversationSummary(prev, conversation));
-          setCurrentConversation((prev) => ({
-            ...(prev && prev.id === localConversationId ? prev : { ...conversation, messages: [] }),
-            ...conversation,
-            messages: prev?.id === localConversationId ? prev.messages : nextMessages,
-          }));
-          setActiveConversationId(conversation.id);
-          setIsDraftChat(false);
-        } else {
-        }
+      // The finished answer replaces the placeholder: as soon as `done` arrives for a stream, or
+      // with the whole reply otherwise.
+      const showAnswer = (answer: ChatMessage) => {
+        cancelDraw();
+        setAnswerComplete(true);
+        setCurrentConversation((prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: prev.messages.map((message) => (message.id === optimisticAssistantId ? answer : message)),
+              }
+            : prev
+        );
+        if (hideUserMessage) setScrollAnchorId(answer.id);
+        // The whole answer is announced once, when it is complete, never word by word (UI-026).
+        setLiveMessage(`${t("answerReady")} ${plainAnswerText(answer.content)}`);
+      };
 
+      try {
+        // A new chat has no conversation yet: saving its first answer creates it (RET-021).
         const result = await streamChatRequest(
           {
             question,
             displayQuestion,
-            conversationId,
+            conversationId: conversationId || undefined,
             mode: requestMode,
             language,
             hideUserMessage,
@@ -649,45 +654,38 @@ function ChatPageContent() {
             saintName: options?.saintName,
             namesakesOf: options?.namesakesOf,
           },
-          { signal: answerAbort.signal, onDelta: receiveText }
+          { signal: answerAbort.signal, onDelta: receiveText, onAnswer: showAnswer }
         );
-        cancelDraw();
-        const saved = result.conversation;
+        showAnswer(result.assistantMessage);
+        const saved = result.saved !== false ? result.conversation : null;
         if (saved) {
           handledChatRef.current = saved.id;
           setIsDraftChat(false);
           setConversations((prev) => mergeConversationSummary(prev, saved));
-        }
-        setCurrentConversation((prev) => {
-          // A turn that could not be saved keeps the question as shown (GEN-007).
-          const baseMessages = prev?.messages.filter(
-            (message) =>
-              message.id !== optimisticAssistantId && (!saved || message.id !== optimisticUserId)
-          ) || [];
-
-          return {
-            ...(saved || prev || {
-              id: localConversationId,
-              title: t("newChat"),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }),
-            messages: [
-              ...baseMessages,
-              ...(saved && result.userMessage ? [result.userMessage] : []),
-              result.assistantMessage,
-            ],
-          };
-        });
-        // The saved copies replace the optimistic messages: keep the anchor on the same message.
-        setScrollAnchorId(
-          hideUserMessage ? result.assistantMessage.id : saved && result.userMessage ? result.userMessage.id : optimisticUserId
-        );
-        // The whole answer is announced once, when it is complete, never word by word (UI-026).
-        setLiveMessage(`${t("answerReady")} ${plainAnswerText(result.assistantMessage.content)}`);
-        if (saved) {
+          // The saved copies carry the IDs the database gave them: the question's changes.
+          setCurrentConversation((prev) => ({
+            ...saved,
+            messages: (prev?.messages || []).map((message) =>
+              message.id === optimisticUserId && result.userMessage ? result.userMessage : message
+            ),
+          }));
+          if (!hideUserMessage && result.userMessage) setScrollAnchorId(result.userMessage.id);
           setActiveConversationId(saved.id);
           router.replace(`/chat?chat=${encodeURIComponent(saved.id)}`, { scroll: false });
+        } else {
+          // Every attempt to store it failed: the answer stays, marked, so nobody assumes a
+          // follow-up can build on it (RET-021).
+          setCurrentConversation((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  messages: prev.messages.map((message) =>
+                    message.id === result.assistantMessage.id ? { ...message, unsaved: true } : message
+                  ),
+                }
+              : prev
+          );
+          setLiveMessage((previous) => `${previous} ${t("answerNotSaved")}`);
         }
       } catch (error) {
         cancelDraw();
@@ -728,9 +726,9 @@ function ChatPageContent() {
         });
       } finally {
         if (answerAbortRef.current === answerAbort) answerAbortRef.current = null;
-        createdConversationRef.current = false;
         submittingRef.current = false;
         setIsSending(false);
+        setAnswerComplete(false);
       }
     },
     [activeConversationId, activeTab, currentConversation, language, router, t]
@@ -1068,6 +1066,7 @@ function ChatPageContent() {
                                   ) : null
                                 }
                               />
+                              {message.unsaved ? <p className="answer-unsaved-note">{t("answerNotSaved")}</p> : null}
                               {(() => {
                                 const options = visibleMessageOptions(message.options, message.optionIds, (label) =>
                                   isValidSaintName(label, saintLookup)
@@ -1360,7 +1359,7 @@ function ChatPageContent() {
                 initialValue={composerInitialValue}
                 onSubmit={handleSendMessage}
                 isSubmitting={isSending}
-                onStop={stopAnswer}
+                onStop={answerComplete ? undefined : stopAnswer}
               />
             </div>
           ) : null}

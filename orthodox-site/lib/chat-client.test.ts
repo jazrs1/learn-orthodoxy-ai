@@ -69,13 +69,56 @@ describe("streamChatRequest", () => {
         formatSseEvent("delta", { t: "talking " }) + formatSseEvent("delta", { t: "with God" }).slice(0, 10),
         formatSseEvent("delta", { t: "with God" }).slice(10),
         formatSseEvent("delta", { t: " [1]." }),
-        formatSseEvent("done", TURN),
+        formatSseEvent("done", { assistantMessage: TURN.assistantMessage }),
+        formatSseEvent("saved", { ...TURN, saved: true }),
       ])
     );
     const pieces: string[] = [];
     const turn = await streamChatRequest({ question: "What is prayer?" }, { onDelta: (t) => pieces.push(t) });
     assert.deepEqual(pieces, ["Prayer is ", "talking ", "with God", " [1]."]);
-    assert.deepEqual(turn, TURN);
+    assert.deepEqual(turn, { ...TURN, saved: true });
+  });
+
+  test("the answer and its sources come before the conversation's IDs (RET-021)", async () => {
+    const order: string[] = [];
+    fakeFetch((init) =>
+      eventStream(init, [
+        formatSseEvent("delta", { t: "Prayer is talking with God [1]." }),
+        formatSseEvent("done", { assistantMessage: TURN.assistantMessage }),
+        formatSseEvent("saved", { ...TURN, saved: true }),
+      ])
+    );
+    const turn = await streamChatRequest(
+      { question: "What is prayer?" },
+      { onDelta: () => order.push("text"), onAnswer: (message) => order.push(`answer ${message.id}`) }
+    );
+    order.push(`saved ${turn.conversation?.id}`);
+    assert.deepEqual(order, ["text", "answer a1", "saved c1"]);
+  });
+
+  test("a save that failed comes back as saved: false, with the answer", async () => {
+    fakeFetch((init) =>
+      eventStream(init, [
+        formatSseEvent("done", { assistantMessage: TURN.assistantMessage }),
+        formatSseEvent("saved", { conversation: null, userMessage: null, assistantMessage: TURN.assistantMessage, saved: false }),
+      ])
+    );
+    const turn = await streamChatRequest({ question: "q" }, { onDelta: () => undefined });
+    assert.equal(turn.saved, false);
+    assert.equal(turn.conversation, null);
+    assert.equal(turn.assistantMessage.id, "a1");
+  });
+
+  test("a stream that ends after the answer but before the save counts as not saved, not as an error", async () => {
+    fakeFetch(() =>
+      new Response(formatSseEvent("done", { assistantMessage: TURN.assistantMessage }), {
+        headers: { "Content-Type": "text/event-stream" },
+      })
+    );
+    const answers: string[] = [];
+    const turn = await streamChatRequest({ question: "q" }, { onDelta: () => undefined, onAnswer: (m) => answers.push(m.id) });
+    assert.deepEqual(answers, ["a1"]);
+    assert.deepEqual(turn, { conversation: null, userMessage: null, assistantMessage: TURN.assistantMessage, saved: false });
   });
 
   test("Stop aborts the request: it rejects with an AbortError and no more text is delivered", async () => {

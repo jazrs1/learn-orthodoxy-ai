@@ -46,13 +46,15 @@ export function isEventStream(response: Response): response is Response & { body
 }
 
 /**
- * The backend's events passed on one at a time; its `done` payload is replaced by what `finish`
- * returns (the saved turn, the saint detail…). A dropped or silent backend becomes an `error`.
+ * The backend's events passed on one at a time. Its `done` payload goes to `finish`, which sends the
+ * final events itself with `emit`: the chat sends `done` (answer and sources) at once, then `saved`
+ * (the conversation's IDs) after the database write (RET-021); the saints pane only `done`.
+ * A dropped or silent backend becomes an `error`.
  */
 export function relayStream<T>(
   body: ReadableStream<Uint8Array>,
   upstream: AbortController,
-  finish: (payload: T) => Promise<unknown>,
+  finish: (payload: T, emit: (event: string, data: unknown) => void) => Promise<void>,
   hooks: { onFirstDelta?: () => void; onEnd?: (outcome: "done" | "error" | "gone") => void } = {}
 ) {
   const encoder = new TextEncoder();
@@ -98,7 +100,7 @@ export function relayStream<T>(
               }
               send(`event: delta\ndata: ${event.data}\n\n`);
             } else if (event.event === "done") {
-              send(formatSseEvent("done", await finish(JSON.parse(event.data) as T)));
+              await finish(JSON.parse(event.data) as T, (name, data) => send(formatSseEvent(name, data)));
               finished = true;
               outcome = "done";
               break;
