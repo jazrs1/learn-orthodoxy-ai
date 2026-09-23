@@ -56,3 +56,13 @@ FONT_DIR=/path/to/fonts CHROME_BIN=/path/to/chrome node reading-fonts.mjs ../ui-
 ```sh
 node compare.mjs ../ui-audit/before-traditional ../ui-audit/after-traditional
 ```
+
+## Calendar (CAL-007)
+
+`calendar.mjs` captures the Today strip and `/calendar` in seven states, in English and Arabic at 1440 and
+390 px, with axe and a tap-target/overflow report (needs `playwright` and `@axe-core/playwright`):
+
+```sh
+BASE_URL=http://localhost:3217 CHROME_BIN=/path/to/chrome node calendar.mjs ../calendar
+PAGES=calendar,home BASE_URL=http://localhost:3217 CHROME_BIN=/path/to/chrome node lighthouse.mjs ../calendar 2
+```

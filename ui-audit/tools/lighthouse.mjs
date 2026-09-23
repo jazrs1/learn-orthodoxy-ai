@@ -12,7 +12,9 @@ const OUT = process.argv[2];
 const RUNS = Number(process.argv[3] || 2);
 // Lighthouse reports an error instead of scores for a page that answers 404, so the 404 page is
 // covered by capture.mjs (axe) only.
-const PAGES = [["home", "/"], ["chat", "/chat"], ["credits", "/credits"], ["contact", "/contact"]];
+const ALL_PAGES = [["home", "/"], ["chat", "/chat"], ["calendar", "/calendar"], ["credits", "/credits"], ["contact", "/contact"]];
+// PAGES=calendar,home runs a subset (CAL-007).
+const PAGES = process.env.PAGES ? ALL_PAGES.filter(([name]) => process.env.PAGES.split(",").includes(name)) : ALL_PAGES;
 fs.mkdirSync(path.join(OUT, "lighthouse"), { recursive: true });
 
 const chrome = await chromeLauncher.launch({ chromePath: process.env.CHROME_BIN, chromeFlags: ["--headless=new"] });

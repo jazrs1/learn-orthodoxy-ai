@@ -93,6 +93,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [CAL-004: "Today" comes from the visitor's clock, picked before first paint; the day boundary and saint order are one setting each](#cal-004-today-comes-from-the-visitors-clock-picked-before-first-paint-the-day-boundary-and-saint-order-are-one-setting-each)
   - [CAL-005: Today strip at the top of the home page, linking the date to the calendar and the saint to our saints index](#cal-005-today-strip-at-the-top-of-the-home-page-linking-the-date-to-the-calendar-and-the-saint-to-our-saints-index)
   - [CAL-006: /calendar — one server-rendered month at a time, a keyboard grid, and a detail panel with saint links](#cal-006-calendar--one-server-rendered-month-at-a-time-a-keyboard-grid-and-a-detail-panel-with-saint-links)
+  - [CAL-007: Verification of the calendar feature](#cal-007-verification-of-the-calendar-feature)
 - [Open questions](#open-questions)
 
 ---
@@ -1510,6 +1511,34 @@ In summary:
   - 115 unit tests pass, including month building, URL handling, short titles and weekday fast names.
 - **Files:** `orthodox-site/app/calendar/{page.tsx,calendar-page.tsx}`, `lib/calendar/{month.ts,month.test.ts}`, `components/PageDrawer.tsx`, `components/calendar/useLocalToday.ts`, `components/Navbar.tsx`, `components/ChatSidebar.tsx`, `app/sitemap.ts`, `app/globals.css`.
 - **Concept to learn:** *The ARIA grid pattern.* A grid is one tab stop; arrow keys move inside it. That keeps a 31-day month from costing 31 Tab presses. Search: "WAI-ARIA APG grid pattern", "roving tabindex".
+
+### CAL-007: Verification of the calendar feature
+- **Date / Part:** 2026-09-22, calendar Step 4
+- **Setup:** production build with dead database and backend addresses (as in UI-003). Every `/api/*` call is mocked in the browser, and there were 0 OpenAI calls. Tools: `ui-audit/tools/calendar.mjs` (new) for screenshots, axe and a layout report; `ui-audit/tools/lighthouse.mjs`, which now includes `/calendar` and accepts `PAGES=calendar,home`. Output goes to `ui-audit/calendar/`, which is git-ignored like the other audit folders and can be regenerated with the tools (README updated).
+- **Results:**
+  - **Tests:** `npm test` passes 115 of 115. `tsc` and `eslint` are clean, and `next build` succeeds.
+  - **Screenshots:** 28 of them: 7 states (home strip; this month; Holy Week 2026 with the Annunciation note; St. George 2027 with index links; Nativity 2027; keyboard focus; out-of-range date) × English/Arabic × 1440/390 px.
+  - **axe** (WCAG 2.0/2.1 A–AA and 2.2 AA): **0 violations in all 28 states**, no console errors, no horizontal overflow.
+  - **Tap targets:** every control on `/calendar` is at least 44 px, apart from inline text links in running text, which are exempt. On the home strip the date and "and N more" links are 32 px tall, by design (CAL-005).
+  - **Lighthouse, 2 runs each:**
+
+    | Page | Performance | Accessibility | SEO | Layout shift | Mobile first paint |
+    |---|---|---|---|---|---|
+    | `/calendar` mobile | 96–99 | 100 | 100 | 0 | 0.75 s |
+    | `/calendar` desktop | 100 | 100 | 100 | 0.001 | — |
+    | Home mobile | 95 | 100 | 100 | 0 | — |
+    | Home desktop | 100 | 100 | 100 | 0 | — |
+
+    Home mobile is within the 94–96 measured in UI-016, so the Today strip costs nothing measurable. Both pages still load 2 font files (93 KB). Best practices is 96 only because the test setup's dead database makes `/api/conversations` return 500; this is not a calendar issue.
+- **Still for the priest** (collected from CAL-002 to CAL-005):
+  - the saint ordering rule and whether monthly commemorations count in the strip;
+  - midnight or sunset for the day boundary;
+  - the "Holy Week fast" name;
+  - Wednesday/Friday fasts on Nayrouz and minor feasts;
+  - Paramoun days;
+  - English month spellings;
+  - the 21 hand-picked saint links.
+- **Not done here:** the Katameros permission reply (pending), and moving the credits and contact pages to `PageDrawer`.
 
 ---
 
