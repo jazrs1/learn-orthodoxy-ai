@@ -592,6 +592,11 @@ textarea:focus-visible {
   margin-top: var(--space-7);
 }
 
+/* On the home page they follow the hero as their own section (UI-017); the page gap spaces them. */
+.home-content > .example-questions {
+  margin-top: 0;
+}
+
 .toc-list {
   margin: 0;
   padding: 0;

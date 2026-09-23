@@ -19,7 +19,11 @@ const PENDING_CHAT_MESSAGE_KEY = "orthodox:pending-chat-message";
 const PENDING_CHAT_TOKEN_KEY = "orthodox:pending-chat-token";
 const ROMAN = ["I", "II", "III", "IV", "V"];
 
-/** `banner` is the server-rendered Today strip (CAL-005). */
+/**
+ * `banner` is the server-rendered Today line (CAL-005). The page reads top to bottom as
+ * hero (wordmark, description, question box, AI note) → example questions → Today → Explore
+ * (UI-017): the brand appears once, in the hero, and nothing sits above it.
+ */
 export default function HomePage({ banner }: { banner?: ReactNode }) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,8 +115,6 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
     <main className="home-page">
       <div className={`home-layout ${hasHistory ? "home-layout-with-sidebar" : ""}`}>
         <div className="home-content">
-          {banner}
-
           <section className="hero" aria-labelledby="home-title">
             {/* The wordmark is the page title. Arabic pages add the Arabic name as text; the
                 English wordmark is then decorative. */}
@@ -135,9 +137,11 @@ export default function HomePage({ banner }: { banner?: ReactNode }) {
               <ChatShell onSubmit={startChatFromHome} />
               <p className="hero-note">{content.aiNote}</p>
             </div>
-
-            <ExampleQuestions onPick={startChatFromHome} />
           </section>
+
+          <ExampleQuestions onPick={startChatFromHome} />
+
+          {banner}
 
           <Ornament />
 

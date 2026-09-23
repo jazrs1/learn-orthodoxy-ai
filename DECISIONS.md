@@ -85,6 +85,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-014: Book-style layout replaces the app patterns; logo assets wired in through one switch](#ui-014-book-style-layout-replaces-the-app-patterns-logo-assets-wired-in-through-one-switch)
   - [UI-015: Verification of the traditional design; the italic font is preloaded only where it is used](#ui-015-verification-of-the-traditional-design-the-italic-font-is-preloaded-only-where-it-is-used)
   - [UI-016: Italic reserved for quoted matter inside answers; the italic font file is dropped](#ui-016-italic-reserved-for-quoted-matter-inside-answers-the-italic-font-file-is-dropped)
+  - [UI-017: Home page order: the hero first, the Today line below the example questions](#ui-017-home-page-order-the-hero-first-the-today-line-below-the-example-questions)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -1359,6 +1360,16 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:** `orthodox-site/app/globals.css`, `orthodox-site/app/page.tsx`, `orthodox-site/app/chat/page.tsx`, `orthodox-site/app/credits/page.tsx`, `orthodox-site/app/font-italic.tsx` (deleted), `UI_AUDIT.md`.
 - **Concept to learn:** *Synthetic italic.* With no italic file, the browser slants the roman one. It is acceptable for a few words and poor for a paragraph. Search: "font-synthesis", "synthetic oblique typography".
 - **Revisit if:** emphasis inside answers needs a true italic; then load Source Serif 4 italic without preloading it, so it arrives only when an answer actually uses it.
+
+### UI-017: Home page order: the hero first, the Today line below the example questions
+- **Date / Part:** 2026-09-23, home page declutter (branch `home-declutter`), item 1.
+- **Context:** The Today banner sat above the hero, so the first screen opened on a boxed calendar strip before the wordmark. With the header's lettermark and name, the brand also appeared twice before the question box.
+- **Decision:**
+  - **Order:** header → hero (wordmark, description, question box, AI note) → example questions → Today line → Explore → footer.
+  - **Brand:** the header's lettermark and name stay, and the hero's wordmark stays, so the brand appears once in the page.
+  - **Example questions** move out of the hero into their own section, at the same distance from the question box as before.
+- **Kept, for review:** the "How it works" and "Before you start" sections stay after Explore; the brief's order didn't mention them. So does the tagline under the wordmark (UI-022 lists it).
+- **Files changed:** `app/home-page.tsx`, `app/globals.css`.
 
 ## Code Cleanup
 
