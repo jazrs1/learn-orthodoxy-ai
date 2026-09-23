@@ -68,6 +68,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [RET-019: Verification of the speed changes: quality holds; Arabic answers start ~0.7 s sooner, English ~0.1 s, repeated example questions at once](#ret-019-verification-of-the-speed-changes-quality-holds-arabic-answers-start-07-s-sooner-english-01-s-repeated-example-questions-at-once)
   - [RET-020: The path from click to first word, hop by hop, and what creating the conversation in the stream route would save (report)](#ret-020-the-path-from-click-to-first-word-hop-by-hop-and-what-creating-the-conversation-in-the-stream-route-would-save-report)
   - [RET-021: A new chat's conversation is created when its first answer is saved; the answer and sources arrive before the IDs; a failed save is retried, then said plainly](#ret-021-a-new-chats-conversation-is-created-when-its-first-answer-is-saved-the-answer-and-sources-arrive-before-the-ids-a-failed-save-is-retried-then-said-plainly)
+  - [RET-022: Owner's decisions after RET-020, and how small a regression one tune run can catch (proposal)](#ret-022-owners-decisions-after-ret-020-and-how-small-a-regression-one-tune-run-can-catch-proposal)
 - [Prompting & Generation](#prompting--generation)
   - [GEN-001: System prompts live in versioned files under prompts/](#gen-001-system-prompts-live-in-versioned-files-under-prompts)
   - [GEN-002: A learner-oriented prompt with one refusal rule, numbered passages and inline [n] citations](#gen-002-a-learner-oriented-prompt-with-one-refusal-rule-numbered-passages-and-inline-n-citations)
@@ -1173,6 +1174,37 @@ Results files: baseline `20260915-170734`, step 1 `20260915-171208`, step 2 `202
   - `orthodox-site/app/api/chat/route.ts`, `orthodox-site/app/api/chat/stream/route.ts`, `orthodox-site/app/api/saint-detail/stream/route.ts`
   - `orthodox-site/lib/chat-client.ts` (+ test), `orthodox-site/lib/chat-types.ts`, `orthodox-site/lib/i18n.ts`, `orthodox-site/app/chat/chat-page.tsx`, `orthodox-site/app/globals.css`
   - `ui-audit/tools/save-failure.mjs` (new), `ui-audit/tools/streaming.mjs`
+
+### RET-022: Owner's decisions after RET-020, and how small a regression one tune run can catch (proposal)
+- **Date / Part:** 2026-09-23, speed branch
+- **Owner's decisions:**
+  1. **Change 6: go ahead,** with two conditions: a failed write after the answer is on screen must be retried or must not silently break the next turn, and the answer and sources go out before the conversation IDs. Done in RET-021: it retries, and if the save still fails the reader is told plainly.
+  2. **Production hop timing:** first check Railway's region in the dashboard and report it. Then, after the owner's `railway login`, run 3 new chats and 3 follow-ups on the live site (~$0.03). *Status:* the Railway CLI's login has expired, and the dashboard needs the owner's sign-in too, so both steps wait for `railway login`.
+  3. **AR-03** (0.94/1.0 before the RET-010/011 saint commits, 0.81/0.56 after, RET-019): investigate separately from this branch, and don't let it block merging. Run AR-03 alone at least 3 times with those commits on and off; no full tune run.
+  4. **Neon:** stay on the free plan, with no keep-warm ping for now. Its ~2 s wake after 5 minutes idle stays; RET-021 has taken it off a new chat's first question.
+- **How small a regression one tune run can catch:**
+  - Estimated from the two pairs of same-code runs (the two baselines, and the two RET-019 "after" runs), per question, so the comparison is paired. The per-question run-to-run spread is about 0.09 (English) and 0.11 (Arabic) in coverage.
+  - Noise band is 95%; "caught" means a drop that size is detected 80% of the time.
+
+| comparison on tune | English (53 answerable) | Arabic (17 answerable) |
+|---|---|---|
+| 1 run vs 1 baseline run | ±3.4 pts; caught ≈ 4.9 pts | **±7.2 pts; caught ≈ 10.3 pts** |
+| 2 vs 2 (averaged) | ±2.4; ≈ 3.5 | ±5.1; ≈ 7.3 |
+| 3 vs 3 | ±2.0; ≈ 2.8 | ±4.2; ≈ 5.9 |
+
+  - So a single run can't reliably see a drop of a couple of points in either language, and Arabic's 0.745 → 0.682 between two runs of the same code (RET-019) is inside its noise.
+  - The judge runs at temperature 0, so most of the noise is the answer itself (temperature 0.2).
+- **Proposal (not implemented; costs from RET-019's measured $0.60 per tune run, about $0.006 per English question and ~$0.008 per Arabic one):**
+  1. **Two runs per side, compared question by question** for any change that can alter answers. Stored baselines are reused while their configuration still matches production. **+$0.60 per check.** English: ±2.4 pts. Arabic: still ±5.1.
+  2. **Arabic needs more than repetition:** 17 answerable questions is too few. Either:
+     - **(a)** run the 19 Arabic tune questions 4 times per side (~$0.15 a run, **+$0.45 per side**): Arabic ±3.6, caught ≈ 5.1; or
+     - **(b)** grow the Arabic tune set to ~50 answerable questions (writing and checking them against the PDFs is the cost; +~$0.25 per run afterwards): with 2 vs 2, Arabic ±3.0, caught ≈ 4.2.
+
+     (a) for now; (b) over time.
+  3. **Report a paired difference with its noise band** in `eval/speed_compare.py` and `eval/phase5_compare.py`, so a report reads "−1.2 ± 3.4 pts" rather than two means. Free.
+  4. **Optional, $0.21 once:** re-judge one stored tune run (`run_eval.py --rejudge`) to confirm the judge's share of the noise is small. If it isn't, averaging two judgings is cheaper than generating twice.
+  - A cheaper-looking option was rejected: comparing both sides at generation temperature 0. It would cut the noise, but it measures a setting production doesn't use.
+  - **Recommendation:** 1 + 2(a) + 3. A typical check then costs about $1.65 instead of $0.60, and catches about 3.5 pts in English and 5 in Arabic.
 
 ## Prompting & Generation
 
