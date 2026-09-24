@@ -1,0 +1,86 @@
+{
+ "total_usd": 0.08144,
+ "max_spend": 0.15,
+ "entries": [
+  {
+   "label": "20260923-193224.json AR-03 saint commits off run 1",
+   "usd": 0.01019,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.00619,
+    "gpt-4.1:judge": 0.00381,
+    "gpt-4o-mini:analysis": 0.00019,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  },
+  {
+   "label": "20260923-193233.json AR-03 saint commits off run 2",
+   "usd": 0.0102,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.00622,
+    "gpt-4.1:judge": 0.00379,
+    "gpt-4o-mini:analysis": 0.00019,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  },
+  {
+   "label": "20260923-193241.json AR-03 saint commits off run 3",
+   "usd": 0.01,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.00621,
+    "gpt-4.1:judge": 0.0036,
+    "gpt-4o-mini:analysis": 0.00019,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  },
+  {
+   "label": "20260923-193249.json AR-03 saint commits off run 4",
+   "usd": 0.01041,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.00627,
+    "gpt-4.1:judge": 0.00395,
+    "gpt-4o-mini:analysis": 0.00019,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  },
+  {
+   "label": "20260923-193303.json AR-03 saint commits on run 1",
+   "usd": 0.00998,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.00599,
+    "gpt-4.1:judge": 0.0038,
+    "gpt-4o-mini:analysis": 0.00019,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  },
+  {
+   "label": "20260923-193312.json AR-03 saint commits on run 2",
+   "usd": 0.01016,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.00613,
+    "gpt-4.1:judge": 0.00383,
+    "gpt-4o-mini:analysis": 0.00019,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  },
+  {
+   "label": "20260923-193320.json AR-03 saint commits on run 3",
+   "usd": 0.0103,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.00602,
+    "gpt-4.1:judge": 0.00409,
+    "gpt-4o-mini:analysis": 0.00019,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  },
+  {
+   "label": "20260923-193328.json AR-03 saint commits on run 4",
+   "usd": 0.0102,
+   "by_model": {
+    "gpt-4.1-mini:generation": 0.00608,
+    "gpt-4.1:judge": 0.00393,
+    "gpt-4o-mini:analysis": 0.00019,
+    "text-embedding-3-small:embedding": 0.0
+   }
+  }
+ ]
+}
