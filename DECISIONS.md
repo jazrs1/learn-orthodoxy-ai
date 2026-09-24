@@ -115,6 +115,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-028: The question is scrolled near the top once; the view stays put while the answer streams; a small "↓" jumps to the latest text](#ui-028-the-question-is-scrolled-near-the-top-once-the-view-stays-put-while-the-answer-streams-a-small--jumps-to-the-latest-text)
   - [UI-029: The saints pane streams its answer like the chat; every place that asks for an answer checked](#ui-029-the-saints-pane-streams-its-answer-like-the-chat-every-place-that-asks-for-an-answer-checked)
   - [UI-030: Share links: a frozen snapshot of one answer at /s/<id>, a Share button, and a shared page with link previews](#ui-030-share-links-a-frozen-snapshot-of-one-answer-at-sid-a-share-button-and-a-shared-page-with-link-previews)
+  - [UI-031: The Copy button copies an answer with its question and numbered sources, as plain text](#ui-031-the-copy-button-copies-an-answer-with-its-question-and-numbered-sources-as-plain-text)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -2198,6 +2199,40 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:**
   - New: `migrations/002_shared_answers.sql`, `lib/share-store.ts`, `lib/share-page.ts`, `lib/share-client.ts`, `app/api/share/route.ts`, `app/s/[id]/page.tsx`, `app/s/[id]/not-found.tsx`, `components/SharedAnswer.tsx`.
   - Changed: `api.py` (`meta`), `lib/conversations.ts`, `lib/chat-proxy.ts`, `lib/chat-types.ts`, `lib/i18n.ts`, `components/AnswerWithSources.tsx`, `components/Icons.tsx` (`IconShare`), `app/chat/chat-page.tsx`, `app/globals.css`, `app/robots.ts`, `next.config.ts`, `tests/test_chat_stream.py`, `ui-audit/tools/pg-server.mjs` (applies several migrations).
+
+### UI-031: The Copy button copies an answer with its question and numbered sources, as plain text
+- **Date / Part:** 2026-09-23, share branch, step 2
+- **Owner's request:** the existing copy button should include the question and sources, as plain text.
+- **Before:** Copy put the answer's raw Markdown on the clipboard. That meant `**` and `|---|` marks, and `[n]` citations that pointed nowhere once pasted.
+- **Decision:** for an answer, Copy now gives three parts, separated by blank lines (`lib/copy-text.ts`):
+  1. **The question.** It is the nearest question before the answer, the same one a share link uses.
+  2. **The answer as plain text.** It is converted line by line, so the shape survives:
+     - Paragraphs and lists stay as they were; bullets are written as "-".
+     - Heading, quote, bold, italic and code marks are dropped.
+     - A table becomes rows of cells separated by " | ", without its rule line.
+     - A link keeps its address in brackets.
+     - The `[n]` citations stay.
+  3. **"Sources:"** in the chat's language, followed by the numbered list: `n. entry, book, Vol. · p.`, the same wording as the source list on screen.
+
+  The question's own Copy button and a stopped answer copy their text as before.
+- **Checks:**
+  - Unit tests: frontend 176 → 181 (`lib/copy-text.test.ts`). They cover lists and citations, a table, a link, the full question–answer–sources layout, and an answer with no sources.
+  - In the browser on the local build, a table answer copied as:
+
+    ```
+    Show me a table of the fasts
+
+    Here are the main fasts of the Coptic Orthodox Church [1]:
+
+    Fast | Length | Notes
+    Great Lent | 55 days | Before the Feast of the Resurrection [1]
+    ...
+
+    Sources:
+    1. What is prayer?, Catechism of the Coptic Orthodox Church, Vol. 1 · p. 31
+    ...
+    ```
+- **Files changed:** `lib/copy-text.ts` and its test (new); `app/chat/chat-page.tsx`.
 
 ## Code Cleanup
 

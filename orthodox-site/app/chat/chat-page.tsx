@@ -33,6 +33,7 @@ import { ChatMessage, ConversationDetail, ConversationSummary, NamesakeLink, Sai
 import { chatErrorKey } from "../../lib/errors";
 import type { TranslationKey } from "../../lib/i18n";
 import { displaySaintName } from "../../lib/saint-display";
+import { answerCopyText } from "../../lib/copy-text";
 import { ShareLinkError, createShareLink, shareLink } from "../../lib/share-client";
 import { plainAnswerText } from "../../lib/stream-markdown";
 import {
@@ -1153,7 +1154,21 @@ function ChatPageContent() {
                           <button
                             type="button"
                             className="icon-button message-action-btn"
-                            onClick={() => void copyMessage(message.id, message.content)}
+                            onClick={() =>
+                              void copyMessage(
+                                message.id,
+                                // An answer is copied with its question and sources (UI-031).
+                                message.role === "assistant" && !message.stopped
+                                  ? answerCopyText({
+                                      question: questionBefore(messages, index),
+                                      answer: message.content,
+                                      sources: message.sources,
+                                      language,
+                                      sourcesLabel: t("answerSources"),
+                                    })
+                                  : message.content
+                              )
+                            }
                             aria-label={copiedMessageId === message.id ? t("copied") : t("copyMessage")}
                             title={copiedMessageId === message.id ? t("copied") : t("copy")}
                           >
