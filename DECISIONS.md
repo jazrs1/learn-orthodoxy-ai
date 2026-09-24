@@ -117,6 +117,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-030: Share links: a frozen snapshot of one answer at /s/<id>, a Share button, and a shared page with link previews](#ui-030-share-links-a-frozen-snapshot-of-one-answer-at-sid-a-share-button-and-a-shared-page-with-link-previews)
   - [UI-031: The Copy button copies an answer with its question and numbered sources, as plain text](#ui-031-the-copy-button-copies-an-answer-with-its-question-and-numbered-sources-as-plain-text)
   - [UI-032: One database pool per server process: production opened a new connection for every query](#ui-032-one-database-pool-per-server-process-production-opened-a-new-connection-for-every-query)
+  - [UI-033: Verification of share links: tests, the Share flow and shared page in both languages at 1440 and 390, link previews checked with a validator, axe at 0](#ui-033-verification-of-share-links-tests-the-share-flow-and-shared-page-in-both-languages-at-1440-and-390-link-previews-checked-with-a-validator-axe-at-0)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -2256,6 +2257,62 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - With PGlite's debug log on, the same browser run (two sessions, two shares, two shared pages) opened **1 connection instead of 20+**, and every share succeeded.
   - Typecheck and lint are clean.
 - **Files changed:** `lib/db.ts`.
+
+### UI-033: Verification of share links: tests, the Share flow and shared page in both languages at 1440 and 390, link previews checked with a validator, axe at 0
+- **Date / Part:** 2026-09-23, share branch, step 3
+- **Setup:**
+  - A production build, the scripted backend (`fake_stream_backend.py`, no OpenAI calls), and a fresh local Postgres with both migrations (`pg-server.mjs`).
+  - Browser checks with `ui-audit/tools/share.mjs`. Screenshots and `report.json` are in `ui-audit/share/`, which is not committed.
+- **Unit tests** (frontend 181 → 198), run against a real Postgres in process: PGlite, now a dev dependency, running migrations 001 and 002.
+  - **Snapshot creation (`lib/share-store.test.ts`):**
+    - The answer and the question before it come from the visitor's own conversation, with its sources, language and versions.
+    - Refused: another visitor's answer, a question, an unknown ID, an archived conversation.
+    - An Arabic answer is marked Arabic.
+    - The ID has 16 base-62 characters; 2,000 made in a row had no repeats.
+    - No column is named after a session, user, conversation, message or IP, and the stored rows contain none of those values.
+  - **Reuse:** the same answer shared again, or from another session, gets the same ID with `reused: true`, and there is one row. Different content gets a new ID.
+  - **Rate limit:** 20 allowed and the 21st refused. Another client is still allowed. Requests older than 10 minutes don't count, and rows older than an hour are deleted. Only a keyed hash is stored, never the IP.
+  - **Unknown or malformed IDs** return nothing; an injection-shaped ID never reaches the query.
+  - **The shared page's tags (`lib/share-page.test.ts`):**
+    - The title is the question, and the description is a plain excerpt with no `**`, `[n]` or `|`.
+    - Tables are left out of the excerpt unless the answer is only a table.
+    - Open Graph `article` with the locale and the site's card; Twitter `summary_large_image`.
+    - `noindex, nofollow` and a canonical URL.
+    - Long questions are shortened, and the date is written in the snapshot's language.
+- **Browser (`share.mjs`), last three runs:**
+  - **The Share flow:**
+    - English and Arabic at 1440: the link was copied, and "Link copied" / "تم نسخ الرابط" showed beside the button.
+    - At 390: the share sheet received the question as the title and the link.
+    - Each answer shared again gave the same path with `reused: true`. Desktop and phone, in separate sessions, got the same link for the same answer.
+  - **The shared page:** six cases, in the answer's own language and on a page in the other language, at 1440 and 390. All gave:
+    - status 200;
+    - the question as the heading;
+    - the table (4 rows), the sources (4 English, 3 Arabic) with book, question and printed page;
+    - the footer text and date;
+    - "Ask your own question" linking to `/`;
+    - `lang`/`dir` of the answer (`ar`/`rtl` inside an English page, and the reverse);
+    - `noindex, nofollow`, and no sideways scroll.
+  - **Not found:** a well-formed unknown ID and a malformed one both gave 404, "This shared answer isn't here" and `noindex`.
+  - **Rate limit:** the 21st link request since the database started was refused with 429. Pressing Share then showed "Too many links for now. Please try again in a few minutes."
+  - **Link previews:**
+    - The shared pages were fetched with the user agents of WhatsApp, iMessage (facebookexternalhit), Facebook, Twitter/X, Telegram, Slack, Discord, LinkedIn, Signal and a normal browser, in English and Arabic.
+    - For every one, all seven tags were inside `<head>` (`og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `twitter:card`, `twitter:image`), with `noindex, nofollow`.
+    - `open-graph-scraper` parsed each page as: the question as title; the excerpt as description; `https://learnorthodoxy.net/og-image.png` at 1200×630; the `/s/<id>` URL on learnorthodoxy.net; `article`; `en_US`/`ar_EG`; `summary_large_image`.
+    - The card image is served locally at 1200×630. The live address answers 200 `image/png`.
+    - The sitemap has no `/s/`, and robots.txt doesn't block it (UI-030).
+  - **axe: 0 violations in 12 states** (4 Share flows, 6 shared pages, 2 not-found pages) in each of the last three runs.
+    - Two earlier runs each found one `document-title` violation on `/chat`, just after sharing, while the chat was replacing its URL with `?chat=…` (RET-021). The title was in `<head>` straight after, and a MutationObserver never saw it leave in 12 more flows.
+    - The Share button doesn't touch the title. The flows now wait for that URL change to settle before axe runs.
+- **Fixed along the way:**
+  - **The pool bug (UI-032):** production built a new database pool for every query, which caused the "Couldn't create a link" errors.
+  - **Excerpts of table answers:** the preview read the table flat ("Fast Length Notes Great Lent 55 days…"). It now uses the prose around the table: "Here are the main fasts of the Coptic Orthodox Church: Fasting is always joined with prayer and almsgiving."
+  - **Small caps:** "A shared answer" and the button lost them on English shared pages. `.shared-answer:lang(en)` set `font-synthesis: weight style`, which switches off the synthesized small caps EB Garamond needs; it is now `initial`.
+- **Not checked:**
+  - **A real phone's share sheet:** headless Chrome has none, so the check records what the page hands to `navigator.share`.
+  - **Real WhatsApp and iMessage previews:** these need the page on a public URL. The tags were checked as those fetchers receive them. After deploying, pasting a link into WhatsApp and iMessage is the final check.
+- **Files changed:**
+  - New: `lib/share-store.test.ts`, `lib/share-page.test.ts`, `ui-audit/tools/share.mjs`.
+  - Changed: `package.json` (`@electric-sql/pglite` dev dependency), `lib/share-page.ts`, `app/globals.css`, `ui-audit/tools/fake_stream_backend.py` (an Arabic table answer for questions with "جدول"), `ui-audit/tools/README.md`, `.gitignore`.
 
 ## Code Cleanup
 

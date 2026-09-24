@@ -128,7 +128,7 @@
   --text-reading: 1.0625rem;
   --text-lg: 1.25rem;
   --leading-reading: 1.7;
-  font-synthesis: weight style;
+  font-synthesis: initial; /* all of it, small caps included: the Arabic page turns it off */
 }
 
 /* Amiri is loaded in one weight: show it as drawn instead of a synthetic bold. (Naskh is a

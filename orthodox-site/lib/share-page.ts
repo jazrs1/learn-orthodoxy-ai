@@ -5,9 +5,17 @@ import { OG_IMAGE, SITE_NAME } from "./site.ts";
 import { plainAnswerText } from "./stream-markdown.ts";
 import type { Snapshot } from "./share-store.ts";
 
-/** A preview's description: the answer as plain text, cut at a word near `limit` characters. */
+/**
+ * A preview's description: the answer's prose as plain text, cut at a word near `limit`
+ * characters. Tables are left out (flattened, their cells read as nonsense), unless there is
+ * nothing else.
+ */
 export function shareExcerpt(answer: string, limit = 160): string {
-  const text = plainAnswerText(answer);
+  const prose = answer
+    .split("\n")
+    .filter((line) => !/^\s*\|/.test(line))
+    .join("\n");
+  const text = plainAnswerText(prose) || plainAnswerText(answer);
   if (text.length <= limit) return text;
   const cut = text.slice(0, limit);
   const lastSpace = cut.lastIndexOf(" ");
