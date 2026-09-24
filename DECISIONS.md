@@ -118,6 +118,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-031: The Copy button copies an answer with its question and numbered sources, as plain text](#ui-031-the-copy-button-copies-an-answer-with-its-question-and-numbered-sources-as-plain-text)
   - [UI-032: One database pool per server process: production opened a new connection for every query](#ui-032-one-database-pool-per-server-process-production-opened-a-new-connection-for-every-query)
   - [UI-033: Verification of share links: tests, the Share flow and shared page in both languages at 1440 and 390, link previews checked with a validator, axe at 0](#ui-033-verification-of-share-links-tests-the-share-flow-and-shared-page-in-both-languages-at-1440-and-390-link-previews-checked-with-a-validator-axe-at-0)
+  - [UI-034: A shared answer is dated by the sharer's calendar, the same for every reader](#ui-034-a-shared-answer-is-dated-by-the-sharers-calendar-the-same-for-every-reader)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -2182,7 +2183,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
     - An Arabic answer reads right to left in Arabic type inside an English page, and the reverse.
     - The type tokens `:root:lang(ar)` sets are also set on `.shared-answer:lang(ar)`, and reset on `.shared-answer:lang(en)`.
     - `AnswerWithSources` takes a `language` prop for this.
-  - **The date** is shown in UTC, since the server can't know the reader's time zone. An answer given late in the evening in the US shows the next day's date.
+  - **The date** is shown in UTC, since the server can't know the reader's time zone. An answer given late in the evening in the US shows the next day's date. Superseded by UI-034: the date is now the sharer's calendar day.
   - **Link previews:** Open Graph and Twitter tags.
     - **What they show:** the question as the title and a plain-text excerpt of about 160 characters as the description.
     - **Other tags:** `og:type` article, the locale, and the site's `og-image.png` (1200×630, an absolute URL through `metadataBase`).
@@ -2313,6 +2314,26 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
 - **Files changed:**
   - New: `lib/share-store.test.ts`, `lib/share-page.test.ts`, `ui-audit/tools/share.mjs`.
   - Changed: `package.json` (`@electric-sql/pglite` dev dependency), `lib/share-page.ts`, `app/globals.css`, `ui-audit/tools/fake_stream_backend.py` (an Arabic table answer for questions with "جدول"), `ui-audit/tools/README.md`, `.gitignore`.
+
+### UI-034: A shared answer is dated by the sharer's calendar, the same for every reader
+- **Date / Part:** 2026-09-24, share branch, before deploying
+- **Owner's decision:** record the sharer's local date (their time zone at share time) on the snapshot, and show that date to everyone who opens the link. This replaces UI-030's UTC date: an answer given in the evening in the US showed the next day.
+- **Decision:**
+  - **What the browser sends:** with the answer's ID, its time zone name (`Intl…resolvedOptions().timeZone`, e.g. "America/Los_Angeles").
+  - **What the server does:** it checks the name against the time zones it knows, then works out the day the answer was given (its stored time) on that calendar.
+  - **What is stored:** only that date, in `shared_answers.answered_on` (`date`, added to migration 002 before it has run anywhere). The time zone name is not stored, since it says roughly where the sharer is.
+  - **Limits:** the answer's time comes from the database, so a client can move the date by a day at most. A missing or unknown time zone gives the UTC day.
+  - **Display:** the page shows `answered_on` as it is, the same for every reader, whatever their own time zone. Snapshots without it fall back to the UTC day of the answer.
+  - **Reuse:** a reused snapshot keeps its first sharer's date. It is one frozen page, and the date says when the answer was given, not when it was shared.
+- **Checks:**
+  - **Unit tests:** frontend 198 → 202. An answer given at 03:04 UTC on 24 September is dated the 23rd from Los Angeles and the 24th from Cairo. The date survives saving and reading back. Sharing again from Cairo keeps the first date. The table has a `date` column and no time zone column. Unknown time zone names are refused. A day that crosses the year boundary lands right (Tokyo).
+  - **Browser:** `share.mjs` now shares the English answer from Los Angeles and the Arabic one from Cairo, and opens every page from Tokyo. At 02:30 UTC on 24 September, all six pages showed the sharer's date: "Answered on September 23, 2026" and "أُجيب في ٢٤ سبتمبر ٢٠٢٦". In Tokyo it was already the 24th, which the English pages did not show.
+- **Also found: the `document-title` flake in UI-033.**
+  - **What it is:** the chat page replaces its URL with `?chat=…` after the first answer is saved (`router.replace`, RET-021). Next then swaps the page's `<title>`.
+  - **When it shows:** on a server that has just started, the title was missing for ~300 ms (removed at 1405 ms, back at 1709 ms). This happened on 1 of 4 cold starts; on the others, and on a warm server, it was removed and put back at the same instant. Axe run in that gap reports `document-title`.
+  - **Cause:** the chat page's URL change, not sharing.
+  - **Possible fix, not made:** `window.history.replaceState`, which Next 16 syncs with `useSearchParams`, would change the URL without a server round trip. That would also save one request on every new chat.
+- **Files changed:** `migrations/002_shared_answers.sql`, `lib/share-store.ts` (+ test), `lib/share-page.ts` (+ test), `lib/share-client.ts`, `app/api/share/route.ts`, `ui-audit/tools/share.mjs`.
 
 ## Code Cleanup
 

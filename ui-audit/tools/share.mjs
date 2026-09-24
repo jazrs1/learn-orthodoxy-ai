@@ -23,9 +23,14 @@ const report = { base: BASE, at: new Date().toISOString(), flows: {}, pages: {},
 
 const QUESTIONS = { en: "Show me a table of the fasts", ar: "اعرض جدولًا بأصوام الكنيسة" };
 
-async function newContext(lang, width) {
+// Sharers in two time zones, readers in a third: the page shows the sharer's date (UI-034).
+const SHARER_ZONES = { en: "America/Los_Angeles", ar: "Africa/Cairo" };
+const READER_ZONE = "Asia/Tokyo";
+
+async function newContext(lang, width, timezoneId = READER_ZONE) {
   const phone = width < 600;
   const context = await browser.newContext({
+    timezoneId,
     viewport: { width, height: phone ? 844 : 900 },
     isMobile: phone,
     hasTouch: phone,
@@ -107,12 +112,13 @@ const links = {};
 for (const lang of ["en", "ar"]) {
   for (const width of [1440, 390]) {
     const name = `flow-${lang}-${width}`;
-    const context = await newContext(lang, width);
+    const context = await newContext(lang, width, SHARER_ZONES[lang]);
     const page = await context.newPage();
     await ask(page, QUESTIONS[lang]);
     const result = await share(page, width < 600, name);
-    // Let the chat's own URL change (?chat=…, RET-021) finish first: axe run during it has twice
-    // found the document title missing for a moment, though it was there straight after (UI-033).
+    // The chat's own URL change (?chat=…, RET-021) swaps the page's <title>; on a server that has
+    // just started, the new one can arrive ~300 ms later, and axe run in that gap reports
+    // `document-title` (UI-034). Waiting for the network lowers the odds but can't rule it out.
     await page.waitForLoadState("networkidle");
     await axe(page, name);
     // The same answer shared again gets the same link.
@@ -125,6 +131,10 @@ for (const lang of ["en", "ar"]) {
     await context.close();
   }
 }
+// Each sharer's calendar day when the check ran, to compare with the date the pages show.
+report.sharerDates = Object.fromEntries(
+  Object.entries(SHARER_ZONES).map(([lang, timeZone]) => [lang, new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date())])
+);
 report.sameLinkAcrossSessions = {
   en: report.flows["flow-en-1440"].url === report.flows["flow-en-390"].url,
   ar: report.flows["flow-ar-1440"].url === report.flows["flow-ar-390"].url,
@@ -158,6 +168,7 @@ for (const [snapshotLang, pageLang, width] of PAGE_CASES) {
       sources: article?.querySelectorAll(".answer-source").length,
       sourceLine: article?.querySelector(".answer-source")?.textContent,
       footer: document.querySelector(".shared-answer-footer")?.textContent,
+      date: document.querySelector(".shared-answer-footer time")?.getAttribute("datetime"),
       ask: ask ? { text: ask.textContent, href: ask.getAttribute("href") } : null,
       robots: document.querySelector('meta[name="robots"]')?.getAttribute("content"),
       title: document.title,

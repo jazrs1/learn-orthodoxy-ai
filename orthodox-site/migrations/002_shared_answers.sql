@@ -12,6 +12,7 @@ create table if not exists shared_answers (
   prompt_version text null,
   model text null,
   answered_at timestamptz null,       -- when the answer was given
+  answered_on date null,              -- that day on the sharer's calendar (their time zone when sharing); shown on the page
   created_at timestamptz not null default now()
 );
 

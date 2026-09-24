@@ -27,6 +27,8 @@ export type SnapshotContent = {
   promptVersion: string | null;
   model: string | null;
   answeredAt: string | null;
+  /** The day it was answered on the sharer's calendar, "YYYY-MM-DD" (UI-034). */
+  answeredOn: string | null;
 };
 
 export type Snapshot = SnapshotContent & { id: string; createdAt: string };
@@ -62,6 +64,29 @@ export function ipHash(ip: string, secret: string): string {
   return createHmac("sha256", secret || "learn-orthodoxy-share").update(ip || "unknown").digest("hex");
 }
 
+/** A time zone name the runtime knows ("America/Los_Angeles"), or null. */
+export function validTimeZone(value: unknown): string | null {
+  if (typeof value !== "string" || !value || value.length > 64 || !/^[A-Za-z0-9_+\-/]+$/.test(value)) return null;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/** The calendar day ("YYYY-MM-DD") an instant falls on in a time zone; UTC when it has none. */
+export function localDate(instant: string, timeZone: string | null): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timeZone || "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(instant));
+  const part = (type: string) => parts.find((p) => p.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 export function languageOf(text: string): ShareLanguage {
   return /[؀-ۿ]/.test(text) ? "ar" : "en";
 }
@@ -92,7 +117,8 @@ const iso = (value: string | Date | null | undefined) =>
 export async function loadShareableAnswer(
   db: Executor,
   sessionId: string,
-  messageId: string
+  messageId: string,
+  timeZone: string | null = null
 ): Promise<SnapshotContent | null> {
   const { rows } = await db.query<MessageRow>(
     `
@@ -119,6 +145,7 @@ export async function loadShareableAnswer(
   const question = (asked.rows[0]?.content || message.title || "").trim();
   const meta = parse<Record<string, unknown>>(message.meta, {});
   const text = (key: string) => (typeof meta[key] === "string" ? (meta[key] as string) : null);
+  const answeredAt = iso(message.created_at);
   return {
     question,
     answer: message.content,
@@ -127,7 +154,9 @@ export async function loadShareableAnswer(
     corpusVersion: text("corpus_version"),
     promptVersion: text("prompt_version"),
     model: text("model"),
-    answeredAt: iso(message.created_at),
+    answeredAt,
+    // The date the page shows is fixed now, as the sharer's calendar has it, not by each reader.
+    answeredOn: answeredAt ? localDate(answeredAt, timeZone) : null,
   };
 }
 
@@ -151,8 +180,8 @@ export async function saveSnapshot(db: Executor, content: SnapshotContent): Prom
   const inserted = await db.query<{ id: string }>(
     `
       insert into shared_answers
-        (id, content_hash, question, answer, sources, language, corpus_version, prompt_version, model, answered_at)
-      values ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
+        (id, content_hash, question, answer, sources, language, corpus_version, prompt_version, model, answered_at, answered_on)
+      values ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11::date)
       on conflict (content_hash) do nothing
       returning id
     `,
@@ -167,6 +196,7 @@ export async function saveSnapshot(db: Executor, content: SnapshotContent): Prom
       content.promptVersion,
       content.model,
       content.answeredAt,
+      content.answeredOn,
     ]
   );
   if (inserted.rows[0]) return { id: inserted.rows[0].id, reused: false };
@@ -184,13 +214,15 @@ type SnapshotRow = {
   prompt_version: string | null;
   model: string | null;
   answered_at: string | Date | null;
+  answered_on: string | null;
   created_at: string | Date;
 };
 
 export async function getSnapshot(db: Executor, id: string): Promise<Snapshot | null> {
   if (!SHARE_ID_PATTERN.test(id)) return null;
   const { rows } = await db.query<SnapshotRow>(
-    `select id, question, answer, sources, language, corpus_version, prompt_version, model, answered_at, created_at
+    `select id, question, answer, sources, language, corpus_version, prompt_version, model, answered_at,
+            answered_on::text as answered_on, created_at
      from shared_answers where id = $1`,
     [id]
   );
@@ -206,6 +238,7 @@ export async function getSnapshot(db: Executor, id: string): Promise<Snapshot | 
     promptVersion: row.prompt_version,
     model: row.model,
     answeredAt: iso(row.answered_at),
+    answeredOn: row.answered_on,
     createdAt: iso(row.created_at) as string,
   };
 }

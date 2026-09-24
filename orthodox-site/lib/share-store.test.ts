@@ -10,8 +10,10 @@ import {
   getSnapshot,
   ipHash,
   loadShareableAnswer,
+  localDate,
   newShareId,
   saveSnapshot,
+  validTimeZone,
   type Executor,
 } from "./share-store.ts";
 
@@ -119,6 +121,7 @@ describe("share snapshots (UI-030)", () => {
     assert.equal(snapshot.language, "en");
     assert.equal(snapshot.corpusVersion, "v2-test");
     assert.equal(snapshot.answeredAt, content.answeredAt);
+    assert.equal(snapshot.answeredOn, content.answeredOn);
 
     const columns = (
       await pg.query<{ column_name: string }>(
@@ -162,6 +165,43 @@ describe("share snapshots (UI-030)", () => {
     const ids = new Set(Array.from({ length: 2000 }, () => newShareId()));
     assert.equal(ids.size, 2000);
     for (const id of ids) assert.match(id, SHARE_ID_PATTERN);
+  });
+});
+
+describe("the sharer's date (UI-034)", () => {
+  it("dates the answer by the sharer's time zone and keeps that date", async () => {
+    await seedConversation("session-a", "c1", [["What is prayer?", "Prayer is speaking with God [1]."]]);
+    await pg.query("update chat_messages set created_at = '2026-09-24T03:04:00Z' where id = 'c1-a1'");
+    const inLosAngeles = await loadShareableAnswer(db, "session-a", "c1-a1", "America/Los_Angeles");
+    assert.equal(inLosAngeles?.answeredOn, "2026-09-23");
+    assert.equal((await loadShareableAnswer(db, "session-a", "c1-a1", "Africa/Cairo"))?.answeredOn, "2026-09-24");
+    assert.equal((await loadShareableAnswer(db, "session-a", "c1-a1"))?.answeredOn, "2026-09-24");
+
+    const { id } = await saveSnapshot(db, inLosAngeles!);
+    assert.equal((await getSnapshot(db, id))?.answeredOn, "2026-09-23");
+    // Shared again from Cairo: the same snapshot, still with the first sharer's date.
+    const again = await saveSnapshot(db, (await loadShareableAnswer(db, "session-a", "c1-a1", "Africa/Cairo"))!);
+    assert.deepEqual(again, { id, reused: true });
+    assert.equal((await getSnapshot(db, id))?.answeredOn, "2026-09-23");
+  });
+
+  it("stores the date only, not the time zone", async () => {
+    const columns = (
+      await pg.query<{ column_name: string; data_type: string }>(
+        "select column_name, data_type from information_schema.columns where table_name = 'shared_answers'"
+      )
+    ).rows;
+    assert.ok(columns.some((c) => c.column_name === "answered_on" && c.data_type === "date"));
+    assert.ok(!columns.some((c) => /zone|tz/.test(c.column_name)));
+  });
+
+  it("accepts real time zone names only", () => {
+    assert.equal(validTimeZone("America/Los_Angeles"), "America/Los_Angeles");
+    assert.equal(validTimeZone("Africa/Cairo"), "Africa/Cairo");
+    assert.equal(validTimeZone("UTC"), "UTC");
+    for (const bad of ["Mars/Olympus", "", "a,b", "x".repeat(65), 42, null]) assert.equal(validTimeZone(bad), null);
+    assert.equal(localDate("2026-12-31T23:30:00Z", "Asia/Tokyo"), "2027-01-01");
+    assert.equal(localDate("2026-12-31T23:30:00Z", null), "2026-12-31");
   });
 });
 

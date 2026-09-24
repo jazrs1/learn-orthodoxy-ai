@@ -28,14 +28,20 @@ export function shareTitle(question: string, limit = 90): string {
   return text.length <= limit ? text : `${text.slice(0, limit - 1).trimEnd()}…`;
 }
 
-export function shareDate(snapshot: Pick<Snapshot, "answeredAt" | "createdAt" | "language">): { iso: string; text: string } {
-  const iso = snapshot.answeredAt || snapshot.createdAt;
+/**
+ * The day the answer was given, as the sharer's calendar had it when they shared it (UI-034), so
+ * every reader sees the same date. Snapshots without it fall back to the UTC day.
+ */
+export function shareDate(
+  snapshot: Pick<Snapshot, "answeredOn" | "answeredAt" | "createdAt" | "language">
+): { iso: string; text: string } {
+  const iso = snapshot.answeredOn || (snapshot.answeredAt || snapshot.createdAt).slice(0, 10);
   const text = new Intl.DateTimeFormat(snapshot.language === "ar" ? "ar-EG" : "en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
     timeZone: "UTC",
-  }).format(new Date(iso));
+  }).format(new Date(`${iso}T00:00:00Z`));
   return { iso, text };
 }
 

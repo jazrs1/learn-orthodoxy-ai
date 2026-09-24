@@ -14,7 +14,8 @@ const snapshot: Snapshot = {
   corpusVersion: "v2",
   promptVersion: "p7",
   model: "gpt-test",
-  answeredAt: "2026-09-23T18:04:00.000Z",
+  answeredAt: "2026-09-24T03:04:00.000Z",
+  answeredOn: "2026-09-23",
   createdAt: "2026-09-23T19:00:00.000Z",
 };
 
@@ -65,9 +66,14 @@ describe("shared page text and link-preview tags (UI-030)", () => {
     assert.equal(shareExcerpt(table), "Fast Length Great Lent 55 days");
   });
 
-  it("dates the answer in the snapshot's language", () => {
-    assert.deepEqual(shareDate(snapshot), { iso: snapshot.answeredAt, text: "September 23, 2026" });
-    assert.match(shareDate({ ...snapshot, language: "ar" }).text, /سبتمبر/);
-    assert.equal(shareDate({ ...snapshot, answeredAt: null }).iso, snapshot.createdAt);
+  it("shows the sharer's date to every reader, in the snapshot's language (UI-034)", () => {
+    // Answered at 03:04 UTC on the 24th, which was still the 23rd where it was shared.
+    assert.deepEqual(shareDate(snapshot), { iso: "2026-09-23", text: "September 23, 2026" });
+    assert.equal(shareDate({ ...snapshot, language: "ar" }).text, "٢٣ سبتمبر ٢٠٢٦");
+  });
+
+  it("falls back to the UTC day for a snapshot without the sharer's date", () => {
+    assert.deepEqual(shareDate({ ...snapshot, answeredOn: null }), { iso: "2026-09-24", text: "September 24, 2026" });
+    assert.equal(shareDate({ ...snapshot, answeredOn: null, answeredAt: null }).iso, "2026-09-23");
   });
 });

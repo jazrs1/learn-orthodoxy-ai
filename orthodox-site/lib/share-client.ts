@@ -20,7 +20,8 @@ export async function createShareLink(messageId: string): Promise<string> {
   const response = await fetch("/api/share", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messageId }),
+    // The page dates the answer by the sharer's calendar (UI-034).
+    body: JSON.stringify({ messageId, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
   });
   const data = (await response.json().catch(() => ({}))) as { path?: unknown };
   if (!response.ok || typeof data.path !== "string") throw new ShareLinkError(response.status);
