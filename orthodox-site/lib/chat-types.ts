@@ -50,6 +50,8 @@ export type ChatMessage = {
   stopped?: boolean;
   /** Client-only: every attempt to save this answer failed (RET-021); a follow-up won't see it. */
   unsaved?: boolean;
+  /** Corpus and prompt version and model behind an answer, as the backend reported it (UI-030). */
+  meta?: Record<string, string>;
 };
 
 export type ConversationSummary = {

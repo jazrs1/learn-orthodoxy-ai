@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { SourceRef } from "../lib/chat-types";
+import { translations, type Language, type TranslationKey } from "../lib/i18n";
 import { sourceDetails, sourceDomId, sourceSummary, toDisplaySources } from "../lib/sources";
 import InteractiveAnswer, { type CitationTarget } from "./InteractiveAnswer";
 import { useLanguage } from "./LanguageProvider";
@@ -16,6 +17,8 @@ type AnswerWithSourcesProps = {
   headingLevel?: 2 | 3;
   /** Shown right after the answer text, before its sources (the namesakes link, RET-011). */
   afterAnswer?: ReactNode;
+  /** The answer's own language, when it differs from the page's (a shared answer, UI-030). */
+  language?: Language;
 };
 
 const COLLAPSED_COUNT = 5;
@@ -29,8 +32,15 @@ export default function AnswerWithSources({
   saintLookup,
   headingLevel = 2,
   afterAnswer,
+  language: answerLanguage,
 }: AnswerWithSourcesProps) {
-  const { language, t } = useLanguage();
+  const page = useLanguage();
+  const language = answerLanguage ?? page.language;
+  const pageT = page.t;
+  const t = useCallback(
+    (key: TranslationKey) => (answerLanguage ? translations[answerLanguage][key] : pageT(key)),
+    [answerLanguage, pageT]
+  );
   const items = useMemo(() => toDisplaySources(sources), [sources]);
   const [expanded, setExpanded] = useState(false);
   const [highlighted, setHighlighted] = useState<number | null>(null);

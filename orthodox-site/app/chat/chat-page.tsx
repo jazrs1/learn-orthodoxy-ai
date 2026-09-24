@@ -12,6 +12,7 @@ import {
   IconCheck,
   IconRetry,
   IconSearch,
+  IconShare,
   IconStop,
 } from "../../components/Icons";
 import ChatSidebar from "../../components/ChatSidebar";
@@ -32,6 +33,7 @@ import { ChatMessage, ConversationDetail, ConversationSummary, NamesakeLink, Sai
 import { chatErrorKey } from "../../lib/errors";
 import type { TranslationKey } from "../../lib/i18n";
 import { displaySaintName } from "../../lib/saint-display";
+import { ShareLinkError, createShareLink, shareLink } from "../../lib/share-client";
 import { plainAnswerText } from "../../lib/stream-markdown";
 import {
   type MessageOption,
@@ -48,6 +50,14 @@ type SaintsListResponse = {
 };
 
 type ChatMode = "chat" | "saints" | "catechism";
+
+/** The question an answer replies to: the nearest question before it. */
+function questionBefore(messages: ChatMessage[], index: number) {
+  for (let i = index - 1; i >= 0; i -= 1) {
+    if (messages[i].role === "user") return messages[i].content.trim();
+  }
+  return "";
+}
 
 type SendOptions = {
   displayMessage?: string;
@@ -294,6 +304,11 @@ function ChatPageContent() {
   const [isDraftChat, setIsDraftChat] = useState(false);
   const [composerInitialValue, setComposerInitialValue] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState("");
+  // Share links (UI-030): the answer whose link is being made, the one whose link was just
+  // copied, and one whose link is ready but needs another tap to share.
+  const [sharingMessageId, setSharingMessageId] = useState("");
+  const [shareNote, setShareNote] = useState<{ messageId: string; key: "linkCopied" | "shareTapAgain" } | null>(null);
+  const shareLinksRef = useRef(new Map<string, string>());
   const [activeTab, setActiveTab] = useState<ChatMode>("chat");
   // Mode of the most recent request in this conversation. Follow-up chips reuse it so a
   // catechism thread stays in catechism mode and a saints thread in saints mode.
@@ -994,6 +1009,43 @@ function ChatPageContent() {
     }
   }, [t]);
 
+  const shareMessage = useCallback(
+    (messageId: string, question: string) => {
+      if (sharingMessageId === messageId) return;
+      // Called straight from the tap, so the share sheet or clipboard still counts it as one.
+      const known = shareLinksRef.current.get(messageId);
+      const link = known ? Promise.resolve(known) : createShareLink(messageId);
+      if (!known) setSharingMessageId(messageId);
+      setShareNote(null);
+      link.then(
+        (url) => shareLinksRef.current.set(messageId, url),
+        () => undefined
+      );
+      shareLink(link, question || t("shareAnswer"))
+        .then((outcome) => {
+          if (outcome === "copied" || outcome === "needs-tap") {
+            if (outcome === "needs-tap" && known) {
+              setConversationError(t("copyFailed"));
+              return;
+            }
+            const key = outcome === "copied" ? "linkCopied" : "shareTapAgain";
+            setShareNote({ messageId, key });
+            setLiveMessage(t(key));
+            window.setTimeout(() => {
+              setShareNote((current) => (current?.messageId === messageId && current.key === key ? null : current));
+            }, outcome === "copied" ? 2400 : 8000);
+          }
+        })
+        .catch((error) => {
+          setConversationError(
+            t(error instanceof ShareLinkError && error.status === 429 ? "shareRateLimited" : "shareFailed")
+          );
+        })
+        .finally(() => setSharingMessageId((current) => (current === messageId ? "" : current)));
+    },
+    [sharingMessageId, t]
+  );
+
   return (
     <main className="chat-page">
       <h1 className="sr-only">{t(activeTab === "catechism" ? "catechism" : activeTab === "saints" ? "saintsSearch" : "chat")}</h1>
@@ -1014,7 +1066,7 @@ function ChatPageContent() {
               ) : null}
               {conversationLoading ? <div className="chat-empty-state">{t("loadingChat")}</div> : null}
               {!conversationLoading && messages.length ? (
-                messages.map((message) => (
+                messages.map((message, index) => (
                   <div
                     key={message.id}
                     data-message-id={message.id}
@@ -1107,6 +1159,34 @@ function ChatPageContent() {
                           >
                             {copiedMessageId === message.id ? <IconCheck size={18} /> : <IconCopy size={18} />}
                           </button>
+                          {message.role === "assistant" &&
+                          (message.sources?.length ?? 0) > 0 &&
+                          !message.stopped &&
+                          !message.unsaved &&
+                          !(isSending && index === messages.length - 1) ? (
+                            <>
+                              <button
+                                type="button"
+                                className="icon-button message-action-btn"
+                                onClick={() => shareMessage(message.id, questionBefore(messages, index))}
+                                aria-label={t("shareAnswer")}
+                                title={t("shareAnswer")}
+                                aria-busy={sharingMessageId === message.id ? "true" : undefined}
+                              >
+                                {shareNote?.messageId === message.id && shareNote.key === "linkCopied" ? (
+                                  <IconCheck size={18} />
+                                ) : (
+                                  <IconShare size={18} />
+                                )}
+                              </button>
+                              {shareNote?.messageId === message.id ? (
+                                // Announced through the live region; shown here beside the button.
+                                <span className="message-action-note" aria-hidden="true">
+                                  {t(shareNote.key)}
+                                </span>
+                              ) : null}
+                            </>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>

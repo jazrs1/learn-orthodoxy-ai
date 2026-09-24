@@ -154,3 +154,12 @@ export function IconAlert(props: IconProps) {
     </Svg>
   );
 }
+
+export function IconShare(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 15V4M8 8l4-4 4 4" />
+      <path d="M6 12H5a1 1 0 0 0-1 1v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a1 1 0 0 0-1-1h-1" />
+    </Svg>
+  );
+}
