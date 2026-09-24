@@ -20,22 +20,22 @@ function createPool() {
     throw new Error(getDatabaseConfigError());
   }
 
-  return new Pool({
+  const pool = new Pool({
     connectionString,
     ssl: connectionString.includes("localhost") ? false : { rejectUnauthorized: false },
   });
+  // An idle connection the server drops (Neon suspending, a network blip) is removed from the
+  // pool; without a listener its error would be unhandled and stop the process.
+  pool.on("error", (error) => console.error("idle database connection lost", error.message));
+  return pool;
 }
 
+// One pool per server process. It used to be kept only outside production, so a production server
+// made a new pool, and a new connection, for every query (found in UI-032). The global also
+// survives dev reloads.
 function getPool() {
-  if (globalThis.__orthodoxPgPool) {
-    return globalThis.__orthodoxPgPool;
-  }
-
-  const pool = createPool();
-  if (process.env.NODE_ENV !== "production") {
-    globalThis.__orthodoxPgPool = pool;
-  }
-  return pool;
+  globalThis.__orthodoxPgPool ??= createPool();
+  return globalThis.__orthodoxPgPool;
 }
 
 export async function query<T extends QueryResultRow>(text: string, params: unknown[] = []) {

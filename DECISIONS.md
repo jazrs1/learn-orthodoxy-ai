@@ -116,6 +116,7 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-029: The saints pane streams its answer like the chat; every place that asks for an answer checked](#ui-029-the-saints-pane-streams-its-answer-like-the-chat-every-place-that-asks-for-an-answer-checked)
   - [UI-030: Share links: a frozen snapshot of one answer at /s/<id>, a Share button, and a shared page with link previews](#ui-030-share-links-a-frozen-snapshot-of-one-answer-at-sid-a-share-button-and-a-shared-page-with-link-previews)
   - [UI-031: The Copy button copies an answer with its question and numbered sources, as plain text](#ui-031-the-copy-button-copies-an-answer-with-its-question-and-numbered-sources-as-plain-text)
+  - [UI-032: One database pool per server process: production opened a new connection for every query](#ui-032-one-database-pool-per-server-process-production-opened-a-new-connection-for-every-query)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -2195,7 +2196,7 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
   - Browser smoke test on a local production build, with the scripted backend and PGlite running both migrations:
     - **Desktop:** a table answer was shared, "Link copied" showed, and the link was on the clipboard. The shared page showed the table, 4 sources and the footer.
     - **Phone:** an Arabic answer opened the share sheet with the question as the title, and the shared page was `lang="ar" dir="rtl"`. The same answer shared from another session got the same link.
-  - **A local-only error:** the local PGlite socket server sometimes resets a pooled connection after another client closes (`ECONNRESET`). The Share button then shows "Couldn't create a link right now". Postgres on Neon doesn't do this, and the conversation routes hit the same thing locally.
+  - **An error blamed on the local database, wrongly:** the Share button sometimes showed "Couldn't create a link right now" (`ECONNRESET`), and this entry first put it down to the local PGlite socket server. The real cause was the site opening a new connection for every query in production builds; see UI-032.
 - **Files changed:**
   - New: `migrations/002_shared_answers.sql`, `lib/share-store.ts`, `lib/share-page.ts`, `lib/share-client.ts`, `app/api/share/route.ts`, `app/s/[id]/page.tsx`, `app/s/[id]/not-found.tsx`, `components/SharedAnswer.tsx`.
   - Changed: `api.py` (`meta`), `lib/conversations.ts`, `lib/chat-proxy.ts`, `lib/chat-types.ts`, `lib/i18n.ts`, `components/AnswerWithSources.tsx`, `components/Icons.tsx` (`IconShare`), `app/chat/chat-page.tsx`, `app/globals.css`, `app/robots.ts`, `next.config.ts`, `tests/test_chat_stream.py`, `ui-audit/tools/pg-server.mjs` (applies several migrations).
@@ -2233,6 +2234,28 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
     ...
     ```
 - **Files changed:** `lib/copy-text.ts` and its test (new); `app/chat/chat-page.tsx`.
+
+### UI-032: One database pool per server process: production opened a new connection for every query
+- **Date / Part:** 2026-09-23, share branch, found while verifying step 1 (UI-033)
+- **What happened:** in the local production build, pressing Share sometimes failed with "Couldn't create a link right now" (`ECONNRESET`). UI-030 blamed the local PGlite socket server.
+  - PGlite's debug log showed the real cause: 20 open connections, its maximum. The next connection was refused.
+  - The share route makes five queries, so it was the first route to reach the limit.
+- **Cause:** `getPool()` in `lib/db.ts` kept the pool on `globalThis` only when `NODE_ENV !== "production"`, and nowhere else.
+  - A production server (Vercel, or `next start`) therefore created a new `pg.Pool` for every `query()` call, with a new connection each time.
+  - Each pool stayed open until its idle timeout, 10 s later.
+  - This follows the usual "cache on globalThis in dev" pattern, but that pattern relies on a module-level constant to cache the pool in production, and here there wasn't one.
+- **What it cost in production:**
+  - Every Neon query paid for a new TCP and TLS connection and a login.
+  - Saving an answer, loading a conversation and the sidebar list each run several queries.
+  - RET-024 measured a Neon call from Vercel at ~30–40 ms. That figure includes this connection setup, so a reused connection should be much faster. This is estimated, not measured; rerunning `hops.mjs` against production after deploying will show it.
+  - Connections also piled up under load.
+- **Decision:**
+  - One pool per server process, kept on `globalThis` in every environment. In development that also survives hot reloads.
+  - The pool gets an `error` listener. A long-lived pool can hold an idle connection that the server drops (Neon suspending on the free plan, a network blip). Without a listener, that error is unhandled and stops the process. It is logged instead, and `pg` removes the connection from the pool.
+- **Checks:**
+  - With PGlite's debug log on, the same browser run (two sessions, two shares, two shared pages) opened **1 connection instead of 20+**, and every share succeeded.
+  - Typecheck and lint are clean.
+- **Files changed:** `lib/db.ts`.
 
 ## Code Cleanup
 
