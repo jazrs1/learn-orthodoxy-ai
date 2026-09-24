@@ -148,9 +148,9 @@ async function insertMessage(
   await client.query(
     `
       insert into chat_messages (
-        id, conversation_id, role, content, entities, options, sources, sort_order
+        id, conversation_id, role, content, entities, options, sources, sort_order, meta
       )
-      values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8)
+      values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8, $9::jsonb)
     `,
     [
       message.id,
@@ -161,6 +161,7 @@ async function insertMessage(
       JSON.stringify(encodeStoredOptions(message.options, message.optionIds, message.namesakes)),
       JSON.stringify(message.sources || []),
       sortOrder,
+      JSON.stringify(message.meta || {}),
     ]
   );
 }

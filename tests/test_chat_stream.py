@@ -140,7 +140,7 @@ def test_an_answer_is_streamed_then_done_carries_the_chat_payload(client, logs, 
     got = events(response.text)
     assert got[:2] == [("delta", {"t": "Prayer is "}), ("delta", {"t": "talking with God [1]."})]
     assert got[2][0] == "done"
-    assert got[2][1] == api.ChatResponse(**pending().finish("Prayer is talking with God [1].")).model_dump(mode="json")
+    assert got[2][1] == api._chat_payload(pending().finish("Prayer is talking with God [1]."))
     assert seen == ["Prayer is talking with God [1]."]
     assert fake.calls[0]["stream"] is True and fake.calls[0]["stream_options"] == {"include_usage": True}
     assert fake.stream.closed
@@ -166,7 +166,7 @@ def test_a_refusal_or_menu_comes_back_at_once_as_chat_json(client, logs, monkeyp
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
-    assert response.json() == api.ChatResponse(**menu).model_dump(mode="json")
+    assert response.json() == api._chat_payload(menu)
     [line] = logs
     assert line["outcome"] == "options" and line["stream"] is True
 
@@ -265,7 +265,7 @@ def test_chat_is_unchanged_and_uses_the_same_preparation(client, monkeypatch):
     response = client.post("/chat", json={"question": "q"}, headers={"X-Internal-Key": KEY})
 
     assert response.status_code == 200
-    assert response.json() == api.ChatResponse(**pending().finish("Prayer is talking with God [1].")).model_dump(mode="json")
+    assert response.json() == api._chat_payload(pending().finish("Prayer is talking with God [1]."))
     assert "stream" not in calls[0] and calls[0]["max_tokens"] == 50
 
 

@@ -7,7 +7,7 @@ the model by a stream that sends a canned answer word by word (UI-026, streaming
     python ui-audit/tools/fake_stream_backend.py            # port 8001; PORT and FAKE_DELAY (s/word) override
 
 Question contains "menu" -> a saint menu (JSON); "refuse" -> a refusal (JSON); "table" -> an answer
-with a table; Arabic text -> an Arabic answer; "fail" -> an OpenAI error after 25 words; otherwise a
+with a table; Arabic text -> an Arabic answer (with a table if it contains "جدول"); "fail" -> an OpenAI error after 25 words; otherwise a
 long English answer.
 """
 
@@ -45,6 +45,12 @@ AR = (
     "**الصلاة** هي صلة الإنسان بالله، وهي نسمة الحياة الروحية [1]. يعلّم الكاتيكيزم أن المسيحي يصلّي بقلبه كله "
     "وليس بلسانه فقط [2].\n\nومن أنواع الصلاة:\n\n1. **التسبيح** لله [1].\n2. **الشكر** على عطاياه [3].\n3. **التوبة** وطلب الغفران [2].\n\n"
 ) * 5
+AR_TABLE = (
+    "هذه أهم أصوام الكنيسة القبطية الأرثوذكسية [1]:\n\n| الصوم | المدة | ملاحظات |\n| --- | --- | --- |\n"
+    "| الصوم الكبير | ٥٥ يومًا | قبل عيد القيامة [1] |\n| صوم الرسل | متغيّر | بعد العنصرة [2] |\n"
+    "| صوم الميلاد | ٤٣ يومًا | قبل عيد الميلاد [2] |\n| صوم يونان | ٣ أيام | قبل الصوم الكبير بأسبوعين [3] |\n\n"
+    "والصوم يقترن دائمًا بالصلاة والصدقة [3]."
+)
 SOURCES = [
     {"source_type": "pdf", "pdf": "catechism1.pdf", "page": 30 + n, "n": n, "label": f"Catechism, Volume 1, p. {30 + n}", "entry": "What is prayer?"}
     for n in range(1, 5)
@@ -67,7 +73,7 @@ def prepare(req, trace):
         trace.set(outcome="refused", refusal=True)
         return {"answer": api._no_source_answer("en"), "sources": [], "entities": [], "options": []}
     arabic = api._contains_arabic(question)
-    text = AR if arabic else TABLE if "table" in question else EN
+    text = (AR_TABLE if "جدول" in question else AR) if arabic else TABLE if "table" in question else EN
     sources = AR_SOURCES if arabic else SOURCES
 
     def finish(reply):

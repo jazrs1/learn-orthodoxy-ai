@@ -88,8 +88,10 @@
   --tap-target: 44px;
 }
 
-/* Arabic: Naskh leads, and needs a little more size and line height to read comfortably. */
-:root:lang(ar) {
+/* Arabic: Naskh leads, and needs a little more size and line height to read comfortably.
+   A shared answer takes its own language's type, whatever the page's language (UI-030). */
+:root:lang(ar),
+.shared-answer:lang(ar) {
   --font-display: var(--font-amiri), var(--font-naskh), "Times New Roman", serif;
   --font-reading: var(--font-naskh), var(--font-serif), "Times New Roman", serif;
   --font-ui: var(--font-naskh), var(--font-garamond), "Times New Roman", serif;
@@ -109,9 +111,30 @@
   --leading-reading: 1.9;
 }
 
+/* An English shared answer on an Arabic page: back to the Latin type. */
+.shared-answer:lang(en) {
+  --font-display: var(--font-garamond), Garamond, "Times New Roman", serif;
+  --font-reading: var(--font-serif), var(--font-naskh), Georgia, "Times New Roman", serif;
+  --font-ui: var(--font-garamond), Garamond, "Times New Roman", serif;
+  --font-text: var(--font-serif), var(--font-naskh), Georgia, "Times New Roman", serif;
+  --caps-label: all-small-caps;
+  --tracking-label: 0.06em;
+  --tracking-tagline: 0.094em;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-label: 1.0625rem;
+  --text-question: 1.1875rem;
+  --text-reading: 1.0625rem;
+  --text-lg: 1.25rem;
+  --leading-reading: 1.7;
+  font-synthesis: initial; /* all of it, small caps included: the Arabic page turns it off */
+}
+
 /* Amiri is loaded in one weight: show it as drawn instead of a synthetic bold. (Naskh is a
    variable font with real weights, so bold body text is unaffected.) */
-:root:lang(ar) {
+:root:lang(ar),
+.shared-answer:lang(ar) {
   font-synthesis: none;
 }
 
@@ -1247,6 +1270,15 @@ textarea:focus-visible {
   color: var(--color-ink-faint);
 }
 
+/* "Link copied" beside the Share button (UI-030). */
+.message-action-note {
+  align-self: center;
+  margin-inline-start: var(--space-1);
+  color: var(--color-ink-soft);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
 .chat-empty-state {
   padding: var(--space-4) 0;
   color: var(--color-ink-soft);
@@ -1597,7 +1629,8 @@ textarea:focus-visible {
   font-style: italic;
 }
 
-:root:lang(ar) .answer-source-title {
+:root:lang(ar) .answer-source-title,
+.shared-answer:lang(ar) .answer-source-title {
   font-style: normal;
 }
 
@@ -2178,6 +2211,67 @@ textarea:focus-visible {
 
 .credits-mobile-sidebar {
   display: none;
+}
+
+/* Shared answer (UI-030) */
+
+.shared-answer {
+  font-family: var(--font-text);
+}
+
+.shared-answer-label {
+  margin: 0 0 var(--space-3);
+  color: var(--color-accent);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: 600;
+  font-variant-caps: var(--caps-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.shared-answer-question {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.shared-answer:lang(ar) .shared-answer-question {
+  line-height: 1.7;
+}
+
+.shared-answer-body {
+  font-family: var(--font-reading);
+  font-size: var(--text-reading);
+  line-height: var(--leading-reading);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.shared-answer-footer {
+  margin-top: var(--space-7);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-line);
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.shared-answer-footer p {
+  margin: 0 0 var(--space-1);
+}
+
+.shared-answer-actions {
+  margin-top: var(--space-6);
+}
+
+/* The arrow follows the answer's direction, not the page's. */
+.shared-answer[dir="ltr"] .icon-directional {
+  transform: none;
+}
+
+.shared-answer[dir="rtl"] .icon-directional {
+  transform: scaleX(-1);
 }
 
 /* 404 */

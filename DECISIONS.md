@@ -114,6 +114,11 @@ Entries are grouped by category and numbered per category (`SEC-001`, `LOG-001`,
   - [UI-027: Verification of streaming: time to first text against v2, a colour fade instead of an opacity one, axe at 0](#ui-027-verification-of-streaming-time-to-first-text-against-v2-a-colour-fade-instead-of-an-opacity-one-axe-at-0)
   - [UI-028: The question is scrolled near the top once; the view stays put while the answer streams; a small "↓" jumps to the latest text](#ui-028-the-question-is-scrolled-near-the-top-once-the-view-stays-put-while-the-answer-streams-a-small--jumps-to-the-latest-text)
   - [UI-029: The saints pane streams its answer like the chat; every place that asks for an answer checked](#ui-029-the-saints-pane-streams-its-answer-like-the-chat-every-place-that-asks-for-an-answer-checked)
+  - [UI-030: Share links: a frozen snapshot of one answer at /s/<id>, a Share button, and a shared page with link previews](#ui-030-share-links-a-frozen-snapshot-of-one-answer-at-sid-a-share-button-and-a-shared-page-with-link-previews)
+  - [UI-031: The Copy button copies an answer with its question and numbered sources, as plain text](#ui-031-the-copy-button-copies-an-answer-with-its-question-and-numbered-sources-as-plain-text)
+  - [UI-032: One database pool per server process: production opened a new connection for every query](#ui-032-one-database-pool-per-server-process-production-opened-a-new-connection-for-every-query)
+  - [UI-033: Verification of share links: tests, the Share flow and shared page in both languages at 1440 and 390, link previews checked with a validator, axe at 0](#ui-033-verification-of-share-links-tests-the-share-flow-and-shared-page-in-both-languages-at-1440-and-390-link-previews-checked-with-a-validator-axe-at-0)
+  - [UI-034: A shared answer is dated by the sharer's calendar, the same for every reader](#ui-034-a-shared-answer-is-dated-by-the-sharers-calendar-the-same-for-every-reader)
 - [Code Cleanup](#code-cleanup)
 - [Deployment & Config](#deployment--config)
   - [DEP-001: Model name and tuning knobs moved to environment variables](#dep-001-model-name-and-tuning-knobs-moved-to-environment-variables)
@@ -2133,6 +2138,202 @@ _(Audit write-up: [UI_AUDIT.md](UI_AUDIT.md); screenshots in `ui-audit/before/`.
     - OpenAI spend: $0.0109, of the $0.02 allowed for Part A.
   - axe: 0 violations in 13 states, across the chat scroll states (UI-028) and the saints pane streaming, finished and stopped. The first run found `scrollable-region-focusable` on the saints list. The scripted backend has no saints index, so the list held only an error message with nothing focusable; the check now serves three saint names to the browser, as the other audit tools do with fixtures.
 - **Files changed:** `app/api/saint-detail/stream/route.ts`, `lib/stream-proxy.ts`, `lib/saint-detail.ts` (new); `app/api/saint-detail/route.ts`, `app/api/chat/stream/route.ts`, `lib/chat-client.ts` (+ test), `lib/chat-types.ts`, `lib/stream-markdown.ts` (+ test), `app/chat/chat-page.tsx`, `app/globals.css`; `ui-audit/tools/streaming.mjs` (saints scenarios, the saints-list fixture, and `load` rather than `networkidle` for a page that starts an answer on load: an open stream keeps the network busy until it ends).
+
+### UI-030: Share links: a frozen snapshot of one answer at /s/<id>, a Share button, and a shared page with link previews
+- **Date / Part:** 2026-09-23, share branch, step 1
+- **Owner's request:** people can share an answer without copy-paste. No OpenAI calls.
+- **Decision:**
+  - **The snapshot:** a frozen copy of one question, its answer and sources, not the live conversation.
+    - **Built on the server** from the stored message, never from text the browser sends. The browser sends only the answer's ID, and only an answer from the visitor's own conversations can be shared. A learnorthodoxy.net link only ever shows an answer the site gave.
+    - **The question** is the nearest question saved before the answer, or else the conversation title.
+    - **Stored** (`shared_answers`, migration `002_shared_answers.sql`): a random ID, the question, answer, sources, language, corpus and prompt version, model, when it was answered and when it was shared.
+    - **Not stored:** no session, visitor, conversation or message ID.
+    - **The ID:** 16 random base-62 characters (about 95 bits), so it can't be guessed or enumerated. The page rejects any other shape before it reads the database.
+    - **Reuse:** the same content shared again, by anyone, gets the same link. The key is a SHA-256 of the question, answer, sources and language, unique in the table.
+    - **Versions:** the backend now sends `meta` (corpus version, prompt version, model) with every answer. It is saved with the message (`chat_messages.meta`, same migration) and copied into the snapshot. Answers saved before this have no versions, so their snapshots leave those fields empty.
+  - **Rate limit:** 20 links per client per 10 minutes, then a 429 with "Too many links for now".
+    - **Counted in Postgres** (`share_requests`), so it holds across serverless instances.
+    - **No IP stored:** only a keyed hash of it (HMAC with `SHARE_RATE_SECRET`, falling back to `ORTHODOX_API_KEY`).
+    - **Cleanup:** rows older than an hour are deleted as new requests come in.
+    - **Repeat shares count:** sharing the same answer again is still a request.
+  - **`POST /api/share`** takes `{messageId}` and returns `{path: "/s/<id>", reused}`. Errors:
+    - 400 without an ID;
+    - 404 for an answer that isn't the visitor's, or isn't saved;
+    - 429 over the limit;
+    - 500 on a database error.
+  - **The Share button** sits beside Copy under each finished answer that has sources. It is hidden:
+    - while the answer is still being saved;
+    - on a stopped answer;
+    - on an answer that could not be saved.
+  - **Phones** (`navigator.share` and a coarse pointer): the system share sheet opens with the link, and the question as the title.
+  - **Desktop, or no share sheet:** the link is copied and "Link copied" shows beside the button. Screen readers hear the same through the chat's live region.
+  - **A tap that goes stale:** the share sheet and the clipboard both need a recent tap, and the link only exists once the server has answered.
+    - The clipboard is handed the pending link at once (`ClipboardItem` with a promise, which Safari needs).
+    - If the share sheet refuses, the link is copied instead.
+    - If a browser still refuses, the link is kept and "Link ready. Tap Share again." shows. The next tap shares at once.
+    - Cancelling the share sheet does nothing.
+  - **The shared page `/s/<id>`:** server-rendered in the site's design. It shows:
+    - "A shared answer";
+    - the question as the heading;
+    - the answer, with tables, lists and citations as in the chat (the same `AnswerWithSources`);
+    - the sources, with book, question number or saint, and printed page;
+    - the footer: "Prepared by AI from the books of Fr. Tadros Malaty and the Coptic Orthodox catechism, with sources shown." and "Answered on <date>";
+    - an "Ask your own question" button to the home page.
+  - **Language:** the article is set in the snapshot's language (`lang`, `dir`, its own labels), whatever the visitor's language.
+    - An Arabic answer reads right to left in Arabic type inside an English page, and the reverse.
+    - The type tokens `:root:lang(ar)` sets are also set on `.shared-answer:lang(ar)`, and reset on `.shared-answer:lang(en)`.
+    - `AnswerWithSources` takes a `language` prop for this.
+  - **The date** is shown in UTC, since the server can't know the reader's time zone. An answer given late in the evening in the US shows the next day's date. Superseded by UI-034: the date is now the sharer's calendar day.
+  - **Link previews:** Open Graph and Twitter tags.
+    - **What they show:** the question as the title and a plain-text excerpt of about 160 characters as the description.
+    - **Other tags:** `og:type` article, the locale, and the site's `og-image.png` (1200×630, an absolute URL through `metadataBase`).
+    - **In `<head>`:** preview fetchers get the tags there (Next's blocking metadata). Next's own list already covers WhatsApp, facebookexternalhit (which iMessage uses), Twitterbot, Slackbot, LinkedInBot and Discordbot.
+    - **`htmlLimitedBots`** in `next.config.ts` repeats that list and adds TelegramBot, Signal, Viber, Pinterest, Mastodon, Iframely, Embedly and Snapchat.
+  - **Search engines:** shared pages are `noindex, nofollow` and are left out of the sitemap. `robots.txt` still allows `/s/`, for two reasons:
+    - preview bots obey robots.txt;
+    - a search engine has to fetch the page to see its noindex.
+  - **A snapshot that doesn't exist** (or a malformed ID) shows a friendly not-found page with status 404: "This shared answer isn't here", and "Ask your own question".
+- **Checks (full verification is UI-032):**
+  - Typecheck and lint are clean. Frontend tests: 176 pass. Backend tests: 222 pass; `tests/test_chat_stream.py` now expects `meta` in the final event.
+  - Browser smoke test on a local production build, with the scripted backend and PGlite running both migrations:
+    - **Desktop:** a table answer was shared, "Link copied" showed, and the link was on the clipboard. The shared page showed the table, 4 sources and the footer.
+    - **Phone:** an Arabic answer opened the share sheet with the question as the title, and the shared page was `lang="ar" dir="rtl"`. The same answer shared from another session got the same link.
+  - **An error blamed on the local database, wrongly:** the Share button sometimes showed "Couldn't create a link right now" (`ECONNRESET`), and this entry first put it down to the local PGlite socket server. The real cause was the site opening a new connection for every query in production builds; see UI-032.
+- **Files changed:**
+  - New: `migrations/002_shared_answers.sql`, `lib/share-store.ts`, `lib/share-page.ts`, `lib/share-client.ts`, `app/api/share/route.ts`, `app/s/[id]/page.tsx`, `app/s/[id]/not-found.tsx`, `components/SharedAnswer.tsx`.
+  - Changed: `api.py` (`meta`), `lib/conversations.ts`, `lib/chat-proxy.ts`, `lib/chat-types.ts`, `lib/i18n.ts`, `components/AnswerWithSources.tsx`, `components/Icons.tsx` (`IconShare`), `app/chat/chat-page.tsx`, `app/globals.css`, `app/robots.ts`, `next.config.ts`, `tests/test_chat_stream.py`, `ui-audit/tools/pg-server.mjs` (applies several migrations).
+
+### UI-031: The Copy button copies an answer with its question and numbered sources, as plain text
+- **Date / Part:** 2026-09-23, share branch, step 2
+- **Owner's request:** the existing copy button should include the question and sources, as plain text.
+- **Before:** Copy put the answer's raw Markdown on the clipboard. That meant `**` and `|---|` marks, and `[n]` citations that pointed nowhere once pasted.
+- **Decision:** for an answer, Copy now gives three parts, separated by blank lines (`lib/copy-text.ts`):
+  1. **The question.** It is the nearest question before the answer, the same one a share link uses.
+  2. **The answer as plain text.** It is converted line by line, so the shape survives:
+     - Paragraphs and lists stay as they were; bullets are written as "-".
+     - Heading, quote, bold, italic and code marks are dropped.
+     - A table becomes rows of cells separated by " | ", without its rule line.
+     - A link keeps its address in brackets.
+     - The `[n]` citations stay.
+  3. **"Sources:"** in the chat's language, followed by the numbered list: `n. entry, book, Vol. · p.`, the same wording as the source list on screen.
+
+  The question's own Copy button and a stopped answer copy their text as before.
+- **Checks:**
+  - Unit tests: frontend 176 → 181 (`lib/copy-text.test.ts`). They cover lists and citations, a table, a link, the full question–answer–sources layout, and an answer with no sources.
+  - In the browser on the local build, a table answer copied as:
+
+    ```
+    Show me a table of the fasts
+
+    Here are the main fasts of the Coptic Orthodox Church [1]:
+
+    Fast | Length | Notes
+    Great Lent | 55 days | Before the Feast of the Resurrection [1]
+    ...
+
+    Sources:
+    1. What is prayer?, Catechism of the Coptic Orthodox Church, Vol. 1 · p. 31
+    ...
+    ```
+- **Files changed:** `lib/copy-text.ts` and its test (new); `app/chat/chat-page.tsx`.
+
+### UI-032: One database pool per server process: production opened a new connection for every query
+- **Date / Part:** 2026-09-23, share branch, found while verifying step 1 (UI-033)
+- **What happened:** in the local production build, pressing Share sometimes failed with "Couldn't create a link right now" (`ECONNRESET`). UI-030 blamed the local PGlite socket server.
+  - PGlite's debug log showed the real cause: 20 open connections, its maximum. The next connection was refused.
+  - The share route makes five queries, so it was the first route to reach the limit.
+- **Cause:** `getPool()` in `lib/db.ts` kept the pool on `globalThis` only when `NODE_ENV !== "production"`, and nowhere else.
+  - A production server (Vercel, or `next start`) therefore created a new `pg.Pool` for every `query()` call, with a new connection each time.
+  - Each pool stayed open until its idle timeout, 10 s later.
+  - This follows the usual "cache on globalThis in dev" pattern, but that pattern relies on a module-level constant to cache the pool in production, and here there wasn't one.
+- **What it cost in production:**
+  - Every Neon query paid for a new TCP and TLS connection and a login.
+  - Saving an answer, loading a conversation and the sidebar list each run several queries.
+  - RET-024 measured a Neon call from Vercel at ~30–40 ms. That figure includes this connection setup, so a reused connection should be much faster. This is estimated, not measured; rerunning `hops.mjs` against production after deploying will show it.
+  - Connections also piled up under load.
+- **Decision:**
+  - One pool per server process, kept on `globalThis` in every environment. In development that also survives hot reloads.
+  - The pool gets an `error` listener. A long-lived pool can hold an idle connection that the server drops (Neon suspending on the free plan, a network blip). Without a listener, that error is unhandled and stops the process. It is logged instead, and `pg` removes the connection from the pool.
+- **Checks:**
+  - With PGlite's debug log on, the same browser run (two sessions, two shares, two shared pages) opened **1 connection instead of 20+**, and every share succeeded.
+  - Typecheck and lint are clean.
+- **Files changed:** `lib/db.ts`.
+
+### UI-033: Verification of share links: tests, the Share flow and shared page in both languages at 1440 and 390, link previews checked with a validator, axe at 0
+- **Date / Part:** 2026-09-23, share branch, step 3
+- **Setup:**
+  - A production build, the scripted backend (`fake_stream_backend.py`, no OpenAI calls), and a fresh local Postgres with both migrations (`pg-server.mjs`).
+  - Browser checks with `ui-audit/tools/share.mjs`. Screenshots and `report.json` are in `ui-audit/share/`, which is not committed.
+- **Unit tests** (frontend 181 → 198), run against a real Postgres in process: PGlite, now a dev dependency, running migrations 001 and 002.
+  - **Snapshot creation (`lib/share-store.test.ts`):**
+    - The answer and the question before it come from the visitor's own conversation, with its sources, language and versions.
+    - Refused: another visitor's answer, a question, an unknown ID, an archived conversation.
+    - An Arabic answer is marked Arabic.
+    - The ID has 16 base-62 characters; 2,000 made in a row had no repeats.
+    - No column is named after a session, user, conversation, message or IP, and the stored rows contain none of those values.
+  - **Reuse:** the same answer shared again, or from another session, gets the same ID with `reused: true`, and there is one row. Different content gets a new ID.
+  - **Rate limit:** 20 allowed and the 21st refused. Another client is still allowed. Requests older than 10 minutes don't count, and rows older than an hour are deleted. Only a keyed hash is stored, never the IP.
+  - **Unknown or malformed IDs** return nothing; an injection-shaped ID never reaches the query.
+  - **The shared page's tags (`lib/share-page.test.ts`):**
+    - The title is the question, and the description is a plain excerpt with no `**`, `[n]` or `|`.
+    - Tables are left out of the excerpt unless the answer is only a table.
+    - Open Graph `article` with the locale and the site's card; Twitter `summary_large_image`.
+    - `noindex, nofollow` and a canonical URL.
+    - Long questions are shortened, and the date is written in the snapshot's language.
+- **Browser (`share.mjs`), last three runs:**
+  - **The Share flow:**
+    - English and Arabic at 1440: the link was copied, and "Link copied" / "تم نسخ الرابط" showed beside the button.
+    - At 390: the share sheet received the question as the title and the link.
+    - Each answer shared again gave the same path with `reused: true`. Desktop and phone, in separate sessions, got the same link for the same answer.
+  - **The shared page:** six cases, in the answer's own language and on a page in the other language, at 1440 and 390. All gave:
+    - status 200;
+    - the question as the heading;
+    - the table (4 rows), the sources (4 English, 3 Arabic) with book, question and printed page;
+    - the footer text and date;
+    - "Ask your own question" linking to `/`;
+    - `lang`/`dir` of the answer (`ar`/`rtl` inside an English page, and the reverse);
+    - `noindex, nofollow`, and no sideways scroll.
+  - **Not found:** a well-formed unknown ID and a malformed one both gave 404, "This shared answer isn't here" and `noindex`.
+  - **Rate limit:** the 21st link request since the database started was refused with 429. Pressing Share then showed "Too many links for now. Please try again in a few minutes."
+  - **Link previews:**
+    - The shared pages were fetched with the user agents of WhatsApp, iMessage (facebookexternalhit), Facebook, Twitter/X, Telegram, Slack, Discord, LinkedIn, Signal and a normal browser, in English and Arabic.
+    - For every one, all seven tags were inside `<head>` (`og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `twitter:card`, `twitter:image`), with `noindex, nofollow`.
+    - `open-graph-scraper` parsed each page as: the question as title; the excerpt as description; `https://learnorthodoxy.net/og-image.png` at 1200×630; the `/s/<id>` URL on learnorthodoxy.net; `article`; `en_US`/`ar_EG`; `summary_large_image`.
+    - The card image is served locally at 1200×630. The live address answers 200 `image/png`.
+    - The sitemap has no `/s/`, and robots.txt doesn't block it (UI-030).
+  - **axe: 0 violations in 12 states** (4 Share flows, 6 shared pages, 2 not-found pages) in each of the last three runs.
+    - Two earlier runs each found one `document-title` violation on `/chat`, just after sharing, while the chat was replacing its URL with `?chat=…` (RET-021). The title was in `<head>` straight after, and a MutationObserver never saw it leave in 12 more flows.
+    - The Share button doesn't touch the title. The flows now wait for that URL change to settle before axe runs.
+- **Fixed along the way:**
+  - **The pool bug (UI-032):** production built a new database pool for every query, which caused the "Couldn't create a link" errors.
+  - **Excerpts of table answers:** the preview read the table flat ("Fast Length Notes Great Lent 55 days…"). It now uses the prose around the table: "Here are the main fasts of the Coptic Orthodox Church: Fasting is always joined with prayer and almsgiving."
+  - **Small caps:** "A shared answer" and the button lost them on English shared pages. `.shared-answer:lang(en)` set `font-synthesis: weight style`, which switches off the synthesized small caps EB Garamond needs; it is now `initial`.
+- **Not checked:**
+  - **A real phone's share sheet:** headless Chrome has none, so the check records what the page hands to `navigator.share`.
+  - **Real WhatsApp and iMessage previews:** these need the page on a public URL. The tags were checked as those fetchers receive them. After deploying, pasting a link into WhatsApp and iMessage is the final check.
+- **Files changed:**
+  - New: `lib/share-store.test.ts`, `lib/share-page.test.ts`, `ui-audit/tools/share.mjs`.
+  - Changed: `package.json` (`@electric-sql/pglite` dev dependency), `lib/share-page.ts`, `app/globals.css`, `ui-audit/tools/fake_stream_backend.py` (an Arabic table answer for questions with "جدول"), `ui-audit/tools/README.md`, `.gitignore`.
+
+### UI-034: A shared answer is dated by the sharer's calendar, the same for every reader
+- **Date / Part:** 2026-09-24, share branch, before deploying
+- **Owner's decision:** record the sharer's local date (their time zone at share time) on the snapshot, and show that date to everyone who opens the link. This replaces UI-030's UTC date: an answer given in the evening in the US showed the next day.
+- **Decision:**
+  - **What the browser sends:** with the answer's ID, its time zone name (`Intl…resolvedOptions().timeZone`, e.g. "America/Los_Angeles").
+  - **What the server does:** it checks the name against the time zones it knows, then works out the day the answer was given (its stored time) on that calendar.
+  - **What is stored:** only that date, in `shared_answers.answered_on` (`date`, added to migration 002 before it has run anywhere). The time zone name is not stored, since it says roughly where the sharer is.
+  - **Limits:** the answer's time comes from the database, so a client can move the date by a day at most. A missing or unknown time zone gives the UTC day.
+  - **Display:** the page shows `answered_on` as it is, the same for every reader, whatever their own time zone. Snapshots without it fall back to the UTC day of the answer.
+  - **Reuse:** a reused snapshot keeps its first sharer's date. It is one frozen page, and the date says when the answer was given, not when it was shared.
+- **Checks:**
+  - **Unit tests:** frontend 198 → 202. An answer given at 03:04 UTC on 24 September is dated the 23rd from Los Angeles and the 24th from Cairo. The date survives saving and reading back. Sharing again from Cairo keeps the first date. The table has a `date` column and no time zone column. Unknown time zone names are refused. A day that crosses the year boundary lands right (Tokyo).
+  - **Browser:** `share.mjs` now shares the English answer from Los Angeles and the Arabic one from Cairo, and opens every page from Tokyo. At 02:30 UTC on 24 September, all six pages showed the sharer's date: "Answered on September 23, 2026" and "أُجيب في ٢٤ سبتمبر ٢٠٢٦". In Tokyo it was already the 24th, which the English pages did not show.
+- **Also found: the `document-title` flake in UI-033.**
+  - **What it is:** the chat page replaces its URL with `?chat=…` after the first answer is saved (`router.replace`, RET-021). Next then swaps the page's `<title>`.
+  - **When it shows:** on a server that has just started, the title was missing for ~300 ms (removed at 1405 ms, back at 1709 ms). This happened on 1 of 4 cold starts; on the others, and on a warm server, it was removed and put back at the same instant. Axe run in that gap reports `document-title`.
+  - **Cause:** the chat page's URL change, not sharing.
+  - **Possible fix, not made:** `window.history.replaceState`, which Next 16 syncs with `useSearchParams`, would change the URL without a server round trip. That would also save one request on every new chat.
+- **Files changed:** `migrations/002_shared_answers.sql`, `lib/share-store.ts` (+ test), `lib/share-page.ts` (+ test), `lib/share-client.ts`, `app/api/share/route.ts`, `ui-audit/tools/share.mjs`.
 
 ## Code Cleanup
 

@@ -125,3 +125,21 @@ POSTGRES_URL=postgres://postgres:postgres@localhost:5433/postgres ORTHODOX_API_U
 MODE=fake CHROME_BIN=/path/to/chrome node streaming.mjs ../streaming/fake
 MODE=real CHROME_BIN=/path/to/chrome node streaming.mjs ../streaming/real
 ```
+
+`pg-server.mjs` applies every migration it is given, in order; pass `../../orthodox-site/migrations/*.sql`.
+
+## Share links (UI-030 to UI-033)
+
+`share.mjs` checks share links end to end, without OpenAI. It covers:
+
+- the Share flow: English and Arabic, at 1440 (copy) and 390 (share sheet);
+- the shared page, in its own language and on a page in the other one;
+- the not-found page, reuse of a link, and the rate limit;
+- the link-preview tags, as ten preview fetchers' user agents receive them, parsed by `open-graph-scraper`;
+- axe on every state.
+
+It needs `playwright`, `@axe-core/playwright` and `open-graph-scraper`. Run it with the fake backend and a fresh `pg-server.mjs` (with both migrations): the rate-limit check counts every link made since the database started.
+
+```sh
+CHROME_BIN=/path/to/chrome node share.mjs ../share
+```

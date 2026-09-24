@@ -2086,12 +2086,15 @@ class ChatResponse(BaseModel):
     namesakes: Dict[str, str] | None = None
     can_learn_more: bool = False
     debug: Dict[str, Any] | None = None
+    # What produced the answer (UI-030): corpus and prompt version and model, stored with the
+    # message by the site and copied into a shared answer's snapshot.
+    meta: Dict[str, Any] | None = None
 
     @model_serializer(mode="wrap")
     def _omit_absent_option_ids(self, handler):
         # Responses without a saint menu keep their previous shape.
         data = handler(self)
-        for key in ("option_ids", "namesakes"):
+        for key in ("option_ids", "namesakes", "meta"):
             if data.get(key) is None:
                 data.pop(key, None)
         return data
@@ -3937,7 +3940,7 @@ def chat(req: ChatRequest, request: Request, response: Response):
             client_ip=_client_ip(request),
         )
         _enforce_chat_rate_limit(request)
-        payload = _chat_impl(req, trace)
+        payload = {"meta": _answer_meta(), **_chat_impl(req, trace)}
         if req.debug:
             payload = {**payload, "debug": trace.debug_payload()}
         return payload
@@ -4611,9 +4614,14 @@ def _sse(event: str, data: Dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
+def _answer_meta() -> Dict[str, Any]:
+    """The versions behind an answer (UI-030)."""
+    return {"corpus_version": CORPUS_VERSION, "prompt_version": PROMPT_VERSION, "model": CHAT_MODEL}
+
+
 def _chat_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """A /chat payload serialised the way /chat's response model sends it."""
-    return ChatResponse(**payload).model_dump(mode="json")
+    """A /chat payload serialised the way /chat's response model sends it, with its `meta`."""
+    return ChatResponse(**{"meta": _answer_meta(), **payload}).model_dump(mode="json")
 
 
 def _prepare_or_http_error(req: ChatRequest, trace: RequestTrace) -> Dict[str, Any] | PendingAnswer:

@@ -25,6 +25,8 @@ export type BackendChatResponse = {
   option_ids?: string[];
   namesakes?: { label?: string; name?: string } | null;
   sources?: SourceRef[];
+  /** Corpus and prompt version and model behind the answer (UI-030). */
+  meta?: Record<string, string> | null;
 };
 
 type ChatRequestBody = {
@@ -58,6 +60,7 @@ export function normalizeAssistantMessage(data: BackendChatResponse): Omit<ChatM
     // Saint menus: each option's entry ID, sent back when the option is chosen (RET-010).
     ...optionsFromBackend(data),
     ...(namesakesFromBackend(data) ? { namesakes: namesakesFromBackend(data) } : {}),
+    ...(data.meta && typeof data.meta === "object" ? { meta: data.meta } : {}),
     sources: Array.isArray(data.sources)
       ? data.sources.filter(
           (source) =>
